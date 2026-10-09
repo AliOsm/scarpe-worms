@@ -1,0 +1,142 @@
+{
+  "version": "0.4.0",
+  "checked_at": "2026-10-09T18:57:04Z",
+  "platform": "x86_64-linux",
+  "ruby": "4.0.7",
+  "seconds": 1800.03,
+  "headless": false,
+  "clock": "real monotonic",
+  "audio": true,
+  "audio_driver": "null",
+  "biomes": [
+    "glacier",
+    "volcano",
+    "desert",
+    "meadow"
+  ],
+  "teams": 6,
+  "grubs": 36,
+  "computer_teams": 4,
+  "matches": 14,
+  "completed_matches": 13,
+  "turns": 580,
+  "human_socket_shots": 202,
+  "terrain_changes": 558,
+  "resizes": 59,
+  "camera_changes": 349,
+  "rejected_late_inputs": {
+    "Wait for your team's turn.": 2
+  },
+  "retained_after_gc": [
+    {
+      "match": 2,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 99696
+    },
+    {
+      "match": 3,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 101624
+    },
+    {
+      "match": 4,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 99754
+    },
+    {
+      "match": 5,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 100014
+    },
+    {
+      "match": 6,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 99895
+    },
+    {
+      "match": 7,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 101958
+    },
+    {
+      "match": 8,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 101960
+    },
+    {
+      "match": 9,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 100212
+    },
+    {
+      "match": 10,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 100366
+    },
+    {
+      "match": 11,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 100535
+    },
+    {
+      "match": 12,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 100466
+    },
+    {
+      "match": 13,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 100482
+    },
+    {
+      "match": 14,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 102592
+    }
+  ],
+  "app_update_intervals": {
+    "count": 105089,
+    "mean_ms": 17.17895373957122,
+    "p95_ms": 17.945671919733286,
+    "max_ms": 714.142601005733
+  },
+  "ruby_scene_preparation": {
+    "count": 104402,
+    "mean_ms": 3.8297251822904594,
+    "p95_ms": 7.425630930811167,
+    "max_ms": 96.6603271663189
+  },
+  "result": "passed",
+  "report": "native-soak-0.4.0.json",
+  "peak_rss_kib": {
+    "ruby": 103560,
+    "native": 132504,
+    "host": 102260,
+    "terrain": 99708
+  },
+  "maximum_retained_scenes": 1,
+  "maximum_retained_terrain_workers": 1,
+  "sample_count": 178,
+  "sampled_effect_peak": 93,
+  "sampled_motion_history_peak": 31,
+  "source_snapshot": {
+    "files": 33,
+    "sha256": "40f7da49bed91cee9a4f93520fbb72387555f8f76c3b3ec7dc54cfcb9310656a"
+  },
+  "limits": "Windowed Linux native application with OpenAL null output. Entire-session timing includes startup, rematches, resizes and explicit GC; it is not the continuous-motion benchmark. Raw 10-second observations remain local.",
+  "post_capture_ui_change": "Pickup-label capsule width, padding and height now use the same readable display scale as their text. A native overview regression and final rendering/package checks cover this later visual-only correction.",
+  "post_capture_startup_change": "Worker launch now joins load-path filesystem bytes without changing their encoding. This fixes a Unicode installation path under C/unset locales. Final core and relocated-package checks cover this change; the 30-minute source soak predates it."
+}

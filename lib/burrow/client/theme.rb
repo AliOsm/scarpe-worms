@@ -7,6 +7,8 @@ module Burrow
       MUTED = "#5d6f72"
       PAPER = "#f7f2e6"
       WELL = "#eee7d7"
+      PANEL = "#fffaf0"
+      SLATE = "#29444c"
       WHITE = "#fffaf0"
       TEAL = "#407d80"
       ORANGE = "#f57c49"
@@ -46,13 +48,24 @@ module Burrow
         @shoes.image(File.join(Theme::ART, "#{name}.png"), left: px(x), top: px(y), width: px(width), height: px(height), alt: alt)
       end
 
-      def button(text, x, y, width, height: 38, primary: false, selected: false, danger: false, &action)
-        @shoes.button(text, left: px(x), top: px(y), width: px(width), height: px(height), size: px(14),
-          font: Theme.sans, color: primary ? Theme::TEAL : selected ? "#d6e6dd" : Theme::WELL,
-          text_color: primary ? Theme::WHITE : danger ? "#98472f" : Theme::INK) do
+      def button(text, x, y, width, height: 38, primary: false, selected: false, danger: false,
+        size: 14, font: Theme.sans, color: nil, text_color: nil, &action)
+        @shoes.button(text, left: px(x), top: px(y), width: px(width), height: px(height), size: px(size),
+          font: font, color: color || (primary ? Theme::TEAL : selected ? "#d6e6dd" : Theme::WELL),
+          text_color: text_color || (primary ? Theme::WHITE : danger ? "#98472f" : Theme::INK)) do
           @audio&.play("click", volume: 0.5)
           action&.call
         end
+      end
+
+      def panel(x, y, width, height, color: Theme::PANEL, radius: 14)
+        box(x, y + 3, width, height, color: "#182d3510", radius: radius)
+        box(x, y, width, height, color: color, radius: radius, stroke: Theme::LINE)
+      end
+
+      def short_text(text, limit)
+        value = text.to_s
+        value.length > limit ? value[0, limit - 1] + "…" : value
       end
 
       def input(text, x, y, width, secret: false, &change)

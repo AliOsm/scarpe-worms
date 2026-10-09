@@ -8,4 +8,6 @@
 # Preserve upstream patches and license notices verbatim.
 *.patch -whitespace
 assets/fonts/*-LICENSE -text -whitespace
+assets/audio/source/kenney/*-LICENSE.txt -text -whitespace
+assets/audio/KENNEY-NOTICES.txt -text -whitespace
 packaging/macos/licenses/** -text -whitespace

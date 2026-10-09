@@ -1,23 +1,31 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Original synthesis: no samples or copyrighted recordings. Deterministic stereo PCM.
+# Original synthesis plus reviewed CC0 Kenney cues. All builds use committed
+# canonical PCM masters; neither ffmpeg nor a network connection is required.
 require "fileutils"
+require "digest"
+require "json"
 ROOT = File.expand_path("..", __dir__)
 RATE = 22_050
 FileUtils.mkdir_p(File.join(ROOT, "assets/audio"))
 
-def wave(name, seconds, &block)
+def wave(name, seconds, stereo: false, &block)
   rng = Random.new(73)
   count = (seconds * RATE).to_i
-  pcm = String.new(capacity: count * 4, encoding: Encoding::BINARY)
+  channels = stereo ? 2 : 1
+  pcm = String.new(capacity: count * channels * 2, encoding: Encoding::BINARY)
   count.times do |i|
     t = i.fdiv(RATE)
     sample = block.call(t, seconds, rng).clamp(-0.92, 0.92)
-    pan = Math.sin(t * 1.7) * 0.12
-    pcm << [(sample * (1 - pan) * 24_000).round, (sample * (1 + pan) * 24_000).round].pack("s<s<")
+    if stereo
+      pan = Math.sin(t * 1.7) * 0.12
+      pcm << [(sample * (1 - pan) * 24_000).round, (sample * (1 + pan) * 24_000).round].pack("s<s<")
+    else
+      pcm << [(sample * 24_000).round].pack("s<")
+    end
   end
-  header = "RIFF" + [36 + pcm.bytesize].pack("V") + "WAVEfmt " + [16, 1, 2, RATE, RATE * 4, 4, 16].pack("VvvVVvv") + "data" + [pcm.bytesize].pack("V")
+  header = "RIFF" + [36 + pcm.bytesize].pack("V") + "WAVEfmt " + [16, 1, channels, RATE, RATE * channels * 2, channels * 2, 16].pack("VvvVVvv") + "data" + [pcm.bytesize].pack("V")
   File.binwrite(File.join(ROOT, "assets/audio/#{name}.wav"), header + pcm)
 end
 
@@ -35,7 +43,7 @@ wave("pickup", 0.52) { |t, _, _| note = [523.25, 659.255, 783.99, 1046.5][[(t / 
 wave("teleport", 0.75) { |t, _, _| Math.sin(tau * (300 * t + 600 * t * t)) * Math.sin(tau * 7 * t) * Math.sin(Math::PI * t / 0.75) * 0.3 }
 wave("victory", 2.5) { |t, _, _| notes = [392, 493.88, 587.33, 783.99, 659.25, 783.99, 987.77, 1174.66]; f = notes[[(t / 0.28).floor, 7].min]; phase = t % 0.28; (Math.sin(tau * f * t) + Math.sin(tau * f * 2 * t) * 0.2) * Math.exp(-phase * 8) * [1, (2.5 - t) * 3].min * 0.28 }
 # A 24-second loop of gentle marimba-like melody, warm bass and soft brushed noise.
-wave("music", 24) do |t, _, r|
+wave("music", 24, stereo: true) do |t, _, r|
   beat = (t / 0.375).floor
   melody = [64, 67, 71, 67, 62, 66, 69, 66, 60, 64, 67, 64, 62, 66, 69, 74]
   note = melody[(beat / 2) % melody.length]
@@ -47,4 +55,17 @@ wave("music", 24) do |t, _, r|
   brush = (r.rand * 2 - 1) * Math.exp(-(t % 0.375) * 70) * 0.025
   (top + bass + brush) * [t * 4, 1, (24 - t) * 4].min
 end
-puts "Generated #{Dir[File.join(ROOT, 'assets/audio/*.wav')].length} original stereo cues."
+# A short, dry gun report; use separate beam/impact sounds for lasers and punches.
+wave("shot", 0.23) do |t, _, r|
+  ((r.rand * 2 - 1) * Math.exp(-t * 32) * 0.72 +
+    Math.sin(tau * (145 * t - 220 * t * t)) * Math.exp(-t * 24) * 0.36) * [t * 1000, 1].min
+end
+
+source = File.join(ROOT, "assets/audio/source/kenney")
+manifest = JSON.parse(File.read(File.join(source, "manifest.json"), encoding: Encoding::UTF_8))
+manifest.fetch("cues").each do |cue|
+  master = File.join(source, cue.fetch("master"))
+  raise "Audio master checksum changed: #{master}" unless Digest::SHA256.file(master).hexdigest == cue.fetch("master_sha256")
+  FileUtils.cp(master, File.join(ROOT, "assets/audio", "#{cue.fetch('cue')}.wav"))
+end
+puts "Built #{Dir[File.join(ROOT, 'assets/audio/*.wav')].length} cues: original synthesis and #{manifest.fetch('cues').length} CC0 Kenney samples."

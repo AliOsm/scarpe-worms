@@ -51,6 +51,7 @@ click_on "Apply rules"
 wait_real.call { client.room.dig("config", "worms") == 6 }
 $online_friends.each { |friend| friend.send_action("ready", ready: true) }
 wait_real.call { client.room["members"].drop(1).all? { |m| m["ready"] } }
+wait_real.call { client.instance_variable_get(:@map_preview_path) }
 snapshot "six-player-lobby"
 click_on "Start the mischief"
 wait_real.call { client.state && client.scene&.terrain_revision.to_i >= 0 }
@@ -63,6 +64,11 @@ click_on chat
 type_text "Ready for a little mayhem?"
 click_on "Send"
 wait_real.call { client.room["messages"].any? { |m| m["text"] == "Ready for a little mayhem?" } }
+wait_real.call { client.instance_variable_get(:@chat_content).text.include?("Ready for a little mayhem?") }
+$online_friends.first.send_action("chat", text: "A live reply from another team.")
+wait_real.call { client.instance_variable_get(:@chat_content).text.include?("A live reply from another team.") }
+assert_equal "", chat.text
+snapshot "online-chat"
 click_on "Close"
 assert client.my_turn?
 worm = client.active_worm
@@ -101,6 +107,8 @@ snapshot "six-player-recovered"
 # Snapshots coalesce, so the explicit match identity must recreate the scene.
 $online_friends.each { |friend| friend.send_action("surrender") }
 wait_real.call { client.state["phase"] == "finished" }
+wait_real.call { client.overlay? }
+snapshot "six-player-results"
 previous_scene = client.scene
 previous_match_id = client.room["match_id"]
 client.action("rematch")

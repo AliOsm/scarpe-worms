@@ -1,0 +1,305 @@
+{
+  "version": "0.4.0",
+  "protocol": 3,
+  "build": "20261009.6",
+  "validated_at": "2026-10-09T19:33:46.695396+00:00",
+  "status": "Polished preview validated on Linux; target-platform and human acceptance remain.",
+  "sales_ready": false,
+  "macos_execution_of_this_build": false,
+  "work_window": {
+    "started_at": "2026-10-09T14:27:00Z",
+    "target_finish": "2026-10-09T19:27:00Z",
+    "provider_outage_approximate_utc": [
+      "15:28",
+      "16:44"
+    ],
+    "note": "Five-hour requested elapsed window, including a provider outage, plus a short overrun to fix Unicode installation startup and finish archive validation. Not five uninterrupted implementation hours."
+  },
+  "source": {
+    "base_revision": "e004fce3156fbf8d34ddbfad6b1e8d82a1889614",
+    "branch": "polish/wmd-presentation",
+    "changes_uncommitted": true,
+    "runtime_ruby_snapshot": {
+      "files": 33,
+      "sha256": "bd1debc8d63101cf5bd7f20797c2d2b947fc214ed89d3a8f6edff679b9627aa3"
+    }
+  },
+  "research": "../ART_RESEARCH.md",
+  "art_direction": "../ART_DIRECTION.md",
+  "opus_review": "presentation-review-0.4.0.json",
+  "core": [
+    {
+      "tests": 91,
+      "assertions": 5014,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "version": "0.4.0",
+      "ruby": "3.4.7",
+      "checked_at": "2026-10-09T19:28:39.710840+00:00",
+      "elapsed_seconds": 60.297099,
+      "includes_unicode_installation_path_regression": true,
+      "report": "core-0.4.0-ruby-3.4.7.json"
+    },
+    {
+      "tests": 91,
+      "assertions": 5014,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "version": "0.4.0",
+      "ruby": "4.0.7",
+      "checked_at": "2026-10-09T19:29:37.294601+00:00",
+      "elapsed_seconds": 56.909586,
+      "includes_unicode_installation_path_regression": true,
+      "report": "core-0.4.0-ruby-4.0.7.json"
+    }
+  ],
+  "native": {
+    "journeys": 7,
+    "assertions": 204,
+    "report": "native-0.4.0.json"
+  },
+  "assets": {
+    "art_version": "2026.10.09.3",
+    "weapons": 48,
+    "animation_frames": 336,
+    "directional_combat_sprites": 23,
+    "portraits": 12,
+    "biomes": 4,
+    "painting_sources_verified": 5,
+    "material_sources_verified": 4,
+    "licensed_audio_masters_verified": 12,
+    "runtime_png_count": 516,
+    "runtime_png_bytes": 21441652
+  },
+  "asset_audit": "assets-0.4.0.json",
+  "reproducibility": "asset-reproducibility-0.4.0.json",
+  "audio": {
+    "version": "0.4.0",
+    "checked_at": "2026-10-09T17:54:31.349707+00:00",
+    "cues": 22,
+    "licensed_cc0_masters": 12,
+    "backend": "OpenAL Soft",
+    "output": "Linux null driver",
+    "preloaded_buffers": true,
+    "mono_effect_positioning_checked": true,
+    "mute_resume": true,
+    "idempotent_shutdown": true,
+    "audible_output_tested": false,
+    "scope": "Decoding and real OpenAL calls, error checks and source positions. Not a listening test or native Mac output."
+  },
+  "endurance": {
+    "report": "native-soak-0.4.0.json",
+    "seconds": 1800.03,
+    "teams": 6,
+    "grubs": 36,
+    "matches": 14,
+    "completed_matches": 13,
+    "turns": 580,
+    "human_socket_shots": 202,
+    "terrain_changes": 558,
+    "resizes": 59,
+    "camera_changes": 349,
+    "peak_rss_kib": {
+      "ruby": 103560,
+      "native": 132504,
+      "host": 102260,
+      "terrain": 99708
+    },
+    "maximum_retained_scenes": 1,
+    "maximum_retained_terrain_workers": 1,
+    "source_snapshot": {
+      "files": 33,
+      "sha256": "40f7da49bed91cee9a4f93520fbb72387555f8f76c3b3ec7dc54cfcb9310656a"
+    }
+  },
+  "rendering": {
+    "source": {
+      "report": "rendering-0.4.0-source-linux.json",
+      "ruby": "4.0.7",
+      "combat": {
+        "count": 536,
+        "mean_ms": 16.099648689156147,
+        "p95_ms": 19.9124813079834,
+        "p99_ms": 24.327516555786133,
+        "max_ms": 32.00888633728027,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "pan": {
+        "count": 359,
+        "mean_ms": 16.689566632311976,
+        "p95_ms": 18.643827000001778,
+        "p99_ms": 20.176574000000613,
+        "max_ms": 42.25846799999999,
+        "over_33ms": 1,
+        "over_50ms": 0
+      },
+      "combat_gui_update_max_ms": 19.950949121266603,
+      "zoom_paint_max_ms": 14.896556,
+      "zoom_presentation_max_ms": 48.54298599999751,
+      "wait_backend": {
+        "name": "TimerFD",
+        "error": null
+      }
+    },
+    "source_with_100ms_timer_slack": {
+      "report": "rendering-0.4.0-source-slack-linux.json",
+      "ruby": "4.0.7",
+      "combat": {
+        "count": 685,
+        "mean_ms": 16.32944893662947,
+        "p95_ms": 20.2486515045166,
+        "p99_ms": 23.8037109375,
+        "max_ms": 31.594514846801758,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "pan": {
+        "count": 358,
+        "mean_ms": 16.704662650837992,
+        "p95_ms": 18.70626699999889,
+        "p99_ms": 20.665161999996684,
+        "max_ms": 42.416937999998794,
+        "over_33ms": 2,
+        "over_50ms": 0
+      },
+      "combat_gui_update_max_ms": 25.708163157105446,
+      "zoom_paint_max_ms": 13.070497,
+      "zoom_presentation_max_ms": 82.64152399999958,
+      "wait_backend": {
+        "name": "TimerFD",
+        "error": null
+      }
+    },
+    "packaged": {
+      "report": "rendering-0.4.0-linux.json",
+      "ruby": "3.4.7",
+      "combat": {
+        "count": 795,
+        "mean_ms": 16.567884601137173,
+        "p95_ms": 20.409584045410156,
+        "p99_ms": 24.7499942779541,
+        "max_ms": 57.35898017883301,
+        "over_33ms": 2,
+        "over_50ms": 1
+      },
+      "pan": {
+        "count": 360,
+        "mean_ms": 16.640146383333338,
+        "p95_ms": 19.26431599999745,
+        "p99_ms": 20.872429999997166,
+        "max_ms": 22.584546000000927,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "combat_gui_update_max_ms": 43.443785049021244,
+      "zoom_paint_max_ms": 12.303937,
+      "zoom_presentation_max_ms": 84.35345800000249,
+      "wait_backend": {
+        "name": "TimerFD",
+        "error": null
+      }
+    },
+    "packaged_with_100ms_timer_slack": {
+      "report": "rendering-0.4.0-slack-linux.json",
+      "ruby": "3.4.7",
+      "combat": {
+        "count": 799,
+        "mean_ms": 16.4802089352184,
+        "p95_ms": 21.160364151000977,
+        "p99_ms": 24.488449096679688,
+        "max_ms": 38.141489028930664,
+        "over_33ms": 4,
+        "over_50ms": 0
+      },
+      "pan": {
+        "count": 359,
+        "mean_ms": 16.675710852367683,
+        "p95_ms": 19.294647999998915,
+        "p99_ms": 20.48626999999925,
+        "max_ms": 26.275715999997118,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "combat_gui_update_max_ms": 24.023031815886497,
+      "zoom_paint_max_ms": 12.524865,
+      "zoom_presentation_max_ms": 81.50580900000293,
+      "wait_backend": {
+        "name": "TimerFD",
+        "error": null
+      }
+    }
+  },
+  "timing_investigation": "rendering-0.4.0-investigation.json",
+  "timing_limits": "Final continuous-motion budgets passed. An earlier genuine 61.23 ms outlier remains unexplained. V2 motion analysis corrects a separate skipped-idle-frame false positive; it does not erase the genuine outlier. Discrete zoom and rematch/resize transitions are not promises of 60 FPS.",
+  "scarpe": {
+    "pinned_revision_and_12_patches_verified": true,
+    "new_patches": 0,
+    "preserved": "0.2.4 precise deadline waits, elapsed-time playback, short-flight presentation and history-pruning recovery"
+  },
+  "package": {
+    "archive": "../../dist/Burrow-Brigade-0.4.0-macos-arm64.zip",
+    "architecture": "arm64",
+    "minimum_macos": "13.0",
+    "notarized": false,
+    "static_report": "macos-arm64-package-0.4.0.json",
+    "integrity_report": "distributable-0.4.0.json",
+    "integrity": {
+      "version": "0.4.0",
+      "current_launcher_files": 2,
+      "current_game_source_and_asset_files": 594,
+      "current_scarpe_runtime_files": 176,
+      "zip_entries_matched": 3479,
+      "zip_crc": true,
+      "zip_executable_permissions": true,
+      "symlinks_preserved": true,
+      "sha256": "2281c188eb6c9771227f1d0e7d36550d8c42b866ae87f2dd4788898a5a6d2fd3",
+      "zip_bytes": 43002767
+    },
+    "relocated_runtime_checks": [
+      {
+        "report": "package-0.4.0-relocated-linux.json",
+        "launches": 2,
+        "launch_locale": "unset",
+        "headless": true,
+        "macos_execution": false,
+        "unicode_data_path": true,
+        "unicode_terrain_path": true,
+        "bounded_local_diagnostics": true,
+        "activation_cancels_charge": true,
+        "resize_reuses_terrain": true,
+        "resize_preserves_playback": true
+      },
+      {
+        "report": "package-0.4.0-relocated-linux-windowed-locale-c.json",
+        "launches": 2,
+        "launch_locale": "c",
+        "headless": false,
+        "macos_execution": false,
+        "unicode_data_path": true,
+        "unicode_terrain_path": true,
+        "bounded_local_diagnostics": true,
+        "activation_cancels_charge": true,
+        "resize_reuses_terrain": true,
+        "resize_preserves_playback": true
+      }
+    ],
+    "linux_substitutions": "Ruby 3.4.7, native renderer and ffi platform extension; actual Darwin binaries were not executed.",
+    "tested_runtime_files_identical_to_final_archive": 1259,
+    "warnings": [
+      "Pinned Ruby 3.4 JSON emits a forward-compatibility warning for a UTF-8 string tagged BINARY in locale smoke checks; launches and recovery pass."
+    ]
+  },
+  "screenshots": "../evidence/README.md",
+  "remaining": [
+    "Native 0.4.0 execution on Apple silicon Macs, including Finder launch, Retina/external displays, focus and sleep/wake.",
+    "Audible sound and music acceptance on the Mac device.",
+    "Human aiming, balance, camera and readability playtests; two through six people on separate internet connections.",
+    "Developer ID signing, notarization, stapling and clean-machine Gatekeeper verification.",
+    "Investigate the isolated timing outlier if it reproduces on target hardware."
+  ],
+  "publication": "No push, PR, external deployment or publishing performed.",
+  "startup_encoding": "encoding-0.4.0.json"
+}

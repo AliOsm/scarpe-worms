@@ -8,23 +8,36 @@ class EncodingTest < Minitest::Test
   # Isolate the locale in another VM; changing this test runner's locale would
   # neither change Ruby's startup encoding nor cover the worker process boundary.
   def under_ascii_locale(source)
-    output, error, status = Open3.capture3(
-      {"LC_ALL" => "C", "LANG" => "C", "RUBYOPT" => nil, "BURROW_RUBY" => RbConfig.ruby},
-      RbConfig.ruby, "-EUS-ASCII", "-I", $LOAD_PATH.join(File::PATH_SEPARATOR), "-e", <<~RUBY + source)
-        require "burrow"
-        require "tmpdir"
-        raise "Expected an ASCII startup locale" unless Encoding.default_external == Encoding::US_ASCII
-        def wait_for
-          deadline = Burrow.clock + 12
-          loop do
-            value = yield
-            return value if value
-            raise "Timed out" if Burrow.clock >= deadline
-            sleep 0.01
+    Dir.mktmpdir do |temporary|
+      # mktmpdir strips non-ASCII prefix bytes; use a real Unicode subdirectory.
+      installation = File.join(temporary, "Brigade \u00C9quipe")
+      Dir.mkdir(installation)
+      File.symlink(File.expand_path("../lib", __dir__), File.join(installation, "lib"))
+      Dir.mkdir(File.join(installation, "extra"))
+      output, error, status = Open3.capture3(
+        {"LC_ALL" => "C", "LANG" => "C", "RUBYOPT" => nil, "BURROW_RUBY" => RbConfig.ruby,
+         "BUNDLE_GEMFILE" => nil, "BUNDLE_BIN_PATH" => nil, "BUNDLER_SETUP" => nil, "RUBYGEMS_GEMDEPS" => nil,
+         "RUBYLIB" => File.join(installation, "extra"), "BURROW_TEST_INSTALL_LIB" => File.join(installation, "lib")},
+        RbConfig.ruby, "-EUS-ASCII", "-I", $LOAD_PATH.join(File::PATH_SEPARATOR), "-e", <<~RUBY + source)
+          # RUBYLIB paths retain the startup locale's encoding even after boot
+          # chooses UTF-8. Runtime-added paths have UTF-8; the worker must accept
+          # both without transcoding or losing the installed directory's bytes.
+          $LOAD_PATH.unshift(ENV.fetch("BURROW_TEST_INSTALL_LIB").dup.force_encoding(Encoding::UTF_8))
+          require "burrow"
+          require "tmpdir"
+          raise "Expected an ASCII startup locale" unless Encoding.default_external == Encoding::US_ASCII
+          def wait_for
+            deadline = Burrow.clock + 12
+            loop do
+              value = yield
+              return value if value
+              raise "Timed out" if Burrow.clock >= deadline
+              sleep 0.01
+            end
           end
-        end
-    RUBY
-    assert status.success?, "ASCII-locale subprocess failed:\n#{output}\n#{error}"
+      RUBY
+      assert status.success?, "ASCII-locale subprocess failed:\n#{output}\n#{error}"
+    end
   end
 
   def test_host_workers_start_and_restore_unicode_matches_with_tcp_and_tls
@@ -34,7 +47,9 @@ class EncodingTest < Minitest::Test
       require "burrow/client/connection"
       # The old boot.rb did this, but its child VMs still defaulted to US-ASCII.
       Encoding.default_external = Encoding::UTF_8
-      Dir.mktmpdir("Burrow\u00A0Jos\u00E9-") do |directory|
+      Dir.mktmpdir do |temporary|
+        directory = File.join(temporary, "Burrow\u00A0Jos\u00E9")
+        Dir.mkdir(directory)
         [false, true].each do |tls|
           options = {host: "127.0.0.1", port: 0, data_dir: File.join(directory, tls ? "host" : "local")}
           if tls
@@ -90,7 +105,9 @@ class EncodingTest < Minitest::Test
     under_ascii_locale(<<~'RUBY')
       require "burrow/client/terrain_art"
       Encoding.default_external = Encoding::UTF_8
-      Dir.mktmpdir("Burrow\u00A0terrain-") do |directory|
+      Dir.mktmpdir do |temporary|
+        directory = File.join(temporary, "Burrow\u00A0terrain")
+        Dir.mkdir(directory)
         ENV["TMPDIR"] = directory
         worker = Burrow::Client::TerrainArt.new
         terrain = Burrow::Terrain.new(seed: 291, width: 1440, height: 720)

@@ -1,11 +1,11 @@
 # Release status and remaining acceptance work
 
-Version 0.3.0 is a functional preview with the implemented game and automated
+Version 0.4.0 is a functional preview with the implemented game and automated
 validation. It is **not yet certified for sale**. The evidence in VALIDATION.md
 describes what actually ran; generated workflows are not execution evidence.
 
-The user confirmed 0.2.4 runs smoothly on an M3 Pro; 0.3.0 retains that renderer
-fix and needs the same Mac acceptance pass for its new art and weapon controls.
+The user confirmed 0.2.4 runs smoothly on an M3 Pro; 0.4.0 retains that renderer
+fix and needs the same Mac acceptance pass for its new art, camera, UI and audio.
 The available workstation is Linux. The remaining Mac-specific requirements
 cannot be established by its cross-compiler or headless Linux renderer:
 

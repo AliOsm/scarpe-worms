@@ -20,7 +20,11 @@ click_on "Save settings"
 assert_equal "River crew", client.preferences["name"]
 assert_equal "River crew", Burrow::Client::Preferences.new["name"]
 refute client.overlay?
+client.notify("Your settings have been saved.")
 click_on "The arsenal"
+refute client.instance_variable_get(:@toast).hidden, "opening a dialog must not erase a live notice"
+notice = layout_of(client.instance_variable_get(:@toast))
+assert_operator notice.y + notice.h, :<, 70
 assert_equal 48, buttons.count { |b| b.text.match?(/(?:∞|\d+)\z/) }
 assert images.any? { |image| image.path.end_with?("weapons/rocket.png") }
 snapshot "arsenal-catalog"

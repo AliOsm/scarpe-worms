@@ -18,7 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def stats(values):
     ordered = sorted(values)
-    assert ordered, 'No samples were collected'
+    if not ordered:
+        return dict(count=0, mean_ms=None, p95_ms=None, p99_ms=None, max_ms=None, over_33ms=0, over_50ms=0)
     return dict(count=len(values), mean_ms=statistics.mean(values),
                 p95_ms=ordered[min(len(ordered)-1, int(len(ordered)*.95))],
                 p99_ms=ordered[min(len(ordered)-1, int(len(ordered)*.99))],
@@ -26,17 +27,32 @@ def stats(values):
 
 
 def moving_intervals(rows, samples, started_unix):
-    """Use the latest completed app sample, including explicit transitions to idle.
+    """Measure motion gaps using completed updates, never update start times.
 
-    A nearby *earlier* moving sample must not label a later idle interval a stall.
-    Conversely, if updates stop while motion is active, retain the entire gap.
+    A turn handoff can move the camera once and then become idle before the next
+    paint. If that move was already presented, an explicit idle update ends the
+    interval. Any NEW movement inside the gap remains unpainted until its end,
+    even if it stops meanwhile. Absent updates retain the entire active stall.
+    Emit at most one interval per native gap to avoid inflating sample counts.
     """
     times = [s[0] for s in samples]
     intervals = []
     for a, b in zip(rows, rows[1:]):
-        index = bisect.bisect_right(times, started_unix+a[0])-1
-        if index >= 0 and samples[index][4]:
-            intervals.append((b[0]-a[0])*1000)
+        start, end = started_unix + a[0], started_unix + b[0]
+        index = bisect.bisect_right(times, start) - 1
+        stop = bisect.bisect_right(times, end)
+        updates = samples[index + 1:stop]
+        active = index >= 0 and samples[index][4]
+        idle_at = next((s[0] for s in updates if not s[4]), end)
+        pending_at = next((s[0] for s in updates if s[4]), None)
+        duration = max(0, idle_at - start) if active else 0
+        if pending_at is not None:
+            # Continuing motion is charged from the preceding presentation.
+            # A new burst after a confirmed idle begins at its first update.
+            pending_start = start if active and pending_at < idle_at else pending_at
+            duration = max(duration, end - pending_start)
+        if duration > 0:
+            intervals.append(duration * 1000)
     return intervals
 
 
@@ -118,7 +134,8 @@ def main():
         index = gameplay['columns'].index('backlog_ms')
         report['playback_backlog'] = stats([r[index] for r in gameplay['frames'] if r[index] is not None])
         report['audio_output'] = 'Linux OpenAL null driver' if args.audio and sys.platform=='linux' else 'device' if args.audio else 'muted'
-        report['motion_interval_selection'] = 'latest completed app sample at the starting presentation; includes stalled updates while motion remains active'
+        report['motion_analysis_version'] = 2
+        report['motion_interval_selection'] = 'completed updates; already-presented motion may end at idle, new unpainted movement is charged until the next presentation; at most one sample per gap'
         if args.linux_ruby:
             report['linux_substitutions'] = dict(ruby=str(args.linux_ruby), renderer=env['SCARPE_NATIVE_BIN'],
                                                  ffi_extension=env.get('BURROW_TEST_FFI_EXTENSION'))
@@ -131,8 +148,14 @@ def main():
             assert report['wait_backend']['error'] is None
             for name in ('combat', 'pan'):
                 interval = results[name]['presented_intervals']
+                assert interval['count'] >= 2, f'{name}: insufficient active-motion evidence'
                 assert interval['mean_ms'] < 18.5 and interval['p95_ms'] < 25, f'{name}: sustained motion missed its budget'
                 assert interval['max_ms'] < 60, f'{name}: a frame stalled'
+            # Damage-based rendering intentionally skips unchanged idle frames.
+            # The GUI still updates at 60Hz: catch a blocked thread even while
+            # actors/camera are idle, without demanding redundant native paints.
+            assert results['combat']['app_update']['max_ms'] < 60, 'Combat GUI updates stalled, including idle time'
+            assert results['zoom']['paint']['count'], 'Zoom did not paint'
             assert results['zoom']['paint']['max_ms'] < 55, 'Zoom stalled in painting'
 
 

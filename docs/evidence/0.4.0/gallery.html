@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-sans, system-ui); color: var(--foreground, #172f38); }
+nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+button { font: inherit; font-size: 13px; color: var(--foreground, #172f38); background: transparent; border: 1px solid var(--border, #b7c2c2); border-radius: 7px; padding: 8px 11px; cursor: pointer; }
+button[aria-pressed="true"] { color: var(--primary-foreground, #fff); background: var(--primary, #244d58); border-color: var(--primary, #244d58); }
+button:hover { border-color: var(--muted-foreground, #617780); }
+button:focus-visible { outline: 2px solid var(--ring, #ee794b); outline-offset: 3px; }
+figure { margin: 0; }
+.frame { overflow: hidden; border-radius: 10px; border: 1px solid var(--border, #b7c2c2); background: #182d35; }
+.frame img { display: block; width: 100%; height: auto; aspect-ratio: 8 / 5; object-fit: contain; }
+.frame img[hidden], [hidden] { display: none; }
+.description { margin: 12px 0 5px; font-size: 14px; line-height: 1.55; }
+.meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.meta span { font-size: 12px; color: var(--muted-foreground, #617780); line-height: 1.6; }
+#compare { font-size: 12px; padding: 6px 9px; }
+@media (max-width: 420px) { nav { gap: 5px; } button { padding: 7px 9px; font-size: 12px; } }
+</style>
+</head>
+<body>
+<nav aria-label="Native game screenshots">
+  <button aria-pressed="true" data-view="meadow">Meadow</button>
+  <button aria-pressed="false" data-view="desert">Desert</button>
+  <button aria-pressed="false" data-view="glacier">Glacier</button>
+  <button aria-pressed="false" data-view="volcano">Volcano</button>
+  <button aria-pressed="false" data-view="menu">Menu</button>
+  <button aria-pressed="false" data-view="arsenal">Arsenal</button>
+  <button aria-pressed="false" data-view="lobby">Lobby</button>
+  <button aria-pressed="false" data-view="results">Results</button>
+  <button aria-pressed="false" data-view="overview">Overview</button>
+</nav>
+<figure>
+  <div class="frame">
+    <img id="meadow" src="./battle.png" alt="Native meadow battlefield with painted mountains and earth, character health labels, turn cue and tactical map.">
+    <img id="desert" src="./desert.png" alt="Desert battle with painted sandstone and a warm sunset." hidden>
+    <img id="glacier" src="./glacier.png" alt="Glacier battlefield with fractured blue ice and an aurora sky." hidden>
+    <img id="volcano" src="./volcano.png" alt="Volcanic battlefield with charcoal basalt and distant ember-lit mountains." hidden>
+    <img id="menu" src="./menu.png" alt="New Burrow Brigade menu with an original painted crew illustration and prominent Quick battle action." hidden>
+    <img id="before" src="../0.3.0/menu.png" alt="Original 0.3.0 menu, retained for comparison." hidden>
+    <img id="arsenal" src="./arsenal.png" alt="The arsenal, with 48 original weapon illustrations, category buttons and weapon details." hidden>
+    <img id="lobby" src="./lobby.png" alt="Six-team lobby with crew list, full-width map preview, chat and start controls." hidden>
+    <img id="results" src="./results.png" alt="Results screen with a winner portrait, surviving grubs, damage scores and rematch action." hidden>
+    <img id="overview" src="./overview.png" alt="Whole-world camera overview of the destructible meadow map." hidden>
+  </div>
+  <figcaption>
+    <p class="description" id="caption" aria-live="polite">Painted environments, sharper combat sprites, readable health and turn cues, and a tactical map.</p>
+    <div class="meta">
+      <span id="stamp">Burrow Brigade 0.4.0 preview · Unedited native Linux capture</span>
+      <button id="compare" aria-pressed="false" hidden>Show original menu</button>
+    </div>
+  </figcaption>
+</figure>
+<script>
+const captions = {
+  meadow: 'Painted environments, sharper combat sprites, readable health and turn cues, and a tactical map.',
+  desert: 'Sandstone layers and warm distant haze give the desert its own material and light palette.',
+  glacier: 'Fractured ice, snow edges and a quiet aurora backdrop keep the battlefield readable.',
+  volcano: 'Charcoal basalt and ember light give the volcanic biome a distinct silhouette.',
+  menu: 'An original painted crew illustration, larger primary action and unified paper, teal and orange styling.',
+  arsenal: 'Sharper illustrations for all 48 weapons, clear categories and a persistent description panel.',
+  lobby: 'Six connected teams, an accurately proportioned map preview, room controls and crew chat.',
+  results: 'Winner portraits, surviving grubs and damage scores lead directly into the rematch.',
+  overview: 'The overview preserves the world’s proportions. Scouting stays manual until Follow is selected.'
+};
+let current = 'meadow', before = false;
+const controls = [...document.querySelectorAll('[data-view]')];
+function show(view) {
+  current = view; before = false;
+  controls.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.view === view)));
+  document.querySelectorAll('.frame img').forEach(img => img.hidden = img.id !== view);
+  document.getElementById('caption').textContent = captions[view];
+  document.getElementById('stamp').textContent = 'Burrow Brigade 0.4.0 preview · Unedited native Linux capture';
+  const compare = document.getElementById('compare');
+  compare.hidden = view !== 'menu'; compare.textContent = 'Show original menu'; compare.setAttribute('aria-pressed', 'false');
+}
+controls.forEach((button, i) => {
+  button.addEventListener('click', () => show(button.dataset.view));
+  button.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? controls.length - 1 : (i + (event.key === 'ArrowRight' ? 1 : -1) + controls.length) % controls.length;
+    controls[next].focus(); show(controls[next].dataset.view);
+  });
+});
+document.getElementById('compare').addEventListener('click', event => {
+  before = !before;
+  document.getElementById('menu').hidden = before; document.getElementById('before').hidden = !before;
+  event.currentTarget.textContent = before ? 'Show polished menu' : 'Show original menu';
+  event.currentTarget.setAttribute('aria-pressed', String(before));
+  document.getElementById('stamp').textContent = before ? 'Burrow Brigade 0.3.0 · Original native menu' : 'Burrow Brigade 0.4.0 preview · Unedited native Linux capture';
+  document.getElementById('caption').textContent = before ? 'The original menu, before this presentation pass.' : captions.menu;
+});
+window.addEventListener('load', () => {
+  const images = [...document.images];
+  console.log('Native screenshots loaded:', images.filter(img => img.complete && img.naturalWidth > 0).length, '/', images.length);
+  console.log('Horizontal overflow:', document.documentElement.scrollWidth > document.documentElement.clientWidth);
+});
+</script>
+</body>
+</html>

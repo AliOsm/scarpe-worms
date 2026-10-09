@@ -1,0 +1,101 @@
+---
+display: native
+timeout: 150
+----------- app code
+ENV["BURROW_DATA_DIR"] = File.join(Dir.pwd, "presentation-data")
+load File.join(ENV.fetch("BURROW_ROOT"), "game.rb")
+----------- test code
+client = Shoes.APPS.first.instance_variable_get(:@burrow)
+auto = Scarpe::Native::DisplayService.instance.automation
+wait_real = lambda do |seconds = 18, &condition|
+  deadline = Burrow.clock + seconds
+  until condition.call
+    raise "Presentation journey timed out at #{caller_locations(1, 1).first}" if Burrow.clock > deadline
+    sleep 0.025
+    advance 0.03
+  end
+end
+resize_window 1080, 675
+wait_real.call { client.instance_variable_get(:@dimensions) == [1080, 675] }
+click_on "Settings"
+snapshot "settings-small"
+assert_operator layout_of(button("Save settings")).y + layout_of(button("Save settings")).h, :<=, 675
+click_on "Close"
+click_on "How to play"
+snapshot "guide-small"
+click_on "Got it"
+click_on "The arsenal"
+snapshot "arsenal-small"
+click_on "Close"
+# Exercise room pagination with UI-only directory entries; no remote server or
+# external room is contacted by this fixture.
+rooms = 10.times.map do |i|
+  {"name" => "Crew #{i + 1} — a very long room name", "code" => "ROOM#{i + 1}",
+    "biome" => "meadow", "count" => 2, "locked" => false, "stage" => "lobby"}
+end
+client.instance_variable_set(:@rooms, rooms)
+client.instance_variable_set(:@page, :browser)
+client.send(:draw_page)
+assert_equal 8, buttons.count { |b| b.text.start_with?("Join ROOM") }
+click_on "Next"
+assert_equal 2, buttons.count { |b| b.text.start_with?("Join ROOM") }
+assert paras.any? { |p| p.text.include?("Page 2 of 2") }
+snapshot "browser-small"
+click_on "Main menu"
+click_on "Create a match"
+wait_real.call { client.page == :lobby }
+# The long-message stream must scroll, while the composer remains reachable.
+12.times do |i|
+  sent = Burrow.clock
+  client.action("chat", text: "#{i + 1}: " + "Our plan is to keep moving after the shot. " * 4)
+  wait_real.call { client.room["messages"].length > i && Burrow.clock - sent > 0.75 }
+end
+wait_real.call { client.room["messages"].length == 12 }
+click_on "Chat"
+wait_real.call { client.instance_variable_get(:@chat_log).scroll_max > 0 }
+log = client.instance_variable_get(:@chat_log)
+assert_operator log.scroll_top, :>, 0
+send_bounds = layout_of(buttons.select { |b| b.text == "Send" }.last)
+log_bounds = layout_of(log)
+assert_operator log_bounds.y + log_bounds.h, :<, send_bounds.y
+auto.wheel(-240, x: log_bounds.x + 50, y: log_bounds.y + 80)
+advance 0.08
+snapshot "chat-small"
+click_on "Close"
+click_on edit_lines.last
+type_text "Back in the lobby"
+click_on "Send"
+wait_real.call { client.room["messages"].last["text"] == "Back in the lobby" }
+assert_equal "", edit_lines.last.text
+click_on "Match rules"
+snapshot "rules-battle-small"
+click_on "World"
+snapshot "rules-world-small"
+click_on "Arsenal"
+snapshot "rules-arsenal-small"
+click_on "Close"
+resize_window 1440, 900
+wait_real.call { client.instance_variable_get(:@dimensions) == [1440, 900] }
+%w[meadow desert glacier volcano].each do |biome|
+  client.action("configure", config: client.room["config"].merge("biome" => biome, "seed" => "polish-#{biome}",
+    "terrain" => "islands", "turn_seconds" => 90, "worms" => 4))
+  wait_real.call { client.room.dig("config", "biome") == biome && client.instance_variable_get(:@map_preview_path) }
+  click_on "Start the mischief"
+  wait_real.call { client.page == :match && client.scene.terrain_revision >= 0 && client.instance_variable_get(:@fire_button).state != "disabled" }
+  assert_equal biome, client.state.dig("config", "biome")
+  assert_equal client.state["terrain_checksum"], client.scene.terrain.checksum
+  snapshot "biome-#{biome}"
+  press_key "g"
+  advance 0.08
+  snapshot "biome-#{biome}-overview"
+  if biome == "meadow"
+    client.action("fire", weapon: "skip")
+    wait_real.call { client.state["turn"] > 1 }
+    assert client.scene.camera.overview?, "turn change must preserve the manual overview"
+    refute client.scene.camera.following
+  end
+  client.action("surrender")
+  wait_real.call { client.state["phase"] == "finished" && client.overlay? }
+  click_on "Play another"
+  wait_real.call { client.page == :lobby }
+end

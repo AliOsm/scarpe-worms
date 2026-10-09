@@ -3,10 +3,11 @@
 An original desktop artillery game built with [Scarpe](https://github.com/scarpe-team/scarpe)'s native renderer.
 Up to six teams, destructible random maps, 48 weapons and tools, and self-hosted online play.
 
-![Burrow Brigade gameplay](docs/evidence/0.3.0/projectile.png)
+![Burrow Brigade gameplay](docs/evidence/0.4.0/battle.png)
 
-**Status: 0.3.0 preview.** The first distribution target is Apple silicon, macOS 13+.
-Art, physics, and controls are still being refined. This is not yet a sales release.
+**Status: 0.4.0 preview.** Painted environments, sharper combat art, improved camera
+framing, and redesigned native menus. The first distribution target is Apple
+silicon, macOS 13+; native Mac and human acceptance remain before a sales release.
 See [current status and next work](docs/STATUS.md).
 
 ## Run from source
@@ -41,7 +42,9 @@ App bundles and ZIPs are build artifacts, not files in the source checkout.
 | Overview / follow / zoom | G · F · Q/R or mouse wheel |
 | Pan / menu | Middle-drag or minimap · Escape |
 
-The on-screen hint explains each weapon's stages. See the [weapon guide](docs/WEAPONS.md).
+Wheel zoom stays under the pointer; dragging or scouting leaves the camera in
+manual mode until **F / Follow**. The on-screen hint explains each weapon's
+stages. See the [weapon guide](docs/WEAPONS.md).
 Hosts and clients must use **protocol 3** together.
 
 ## Host online

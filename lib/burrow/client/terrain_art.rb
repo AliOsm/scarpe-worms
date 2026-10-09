@@ -46,7 +46,9 @@ module Burrow
       private
 
       def work
-        command = [ENV.fetch("BURROW_RUBY") { RbConfig.ruby }, "-EUTF-8", "-I", $LOAD_PATH.join(File::PATH_SEPARATOR), File.join(__dir__, "terrain_worker.rb"), directory]
+        # Combine filesystem bytes, independent of each path's startup encoding.
+        load_path = $LOAD_PATH.map(&:b).join(File::PATH_SEPARATOR)
+        command = [ENV.fetch("BURROW_RUBY") { RbConfig.ruby }, "-EUTF-8", "-I", load_path, File.join(__dir__, "terrain_worker.rb"), directory]
         IO.popen(command, "r+:UTF-8") do |io|
           @pid = io.pid
           io.sync = true

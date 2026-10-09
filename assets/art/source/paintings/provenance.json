@@ -1,0 +1,63 @@
+{
+  "version": "2026.10.09.2",
+  "method": "Codex built-in imagegen",
+  "created": "2026-10-09",
+  "reference_policy": "New scenes generated from written direction. Menu uses only this project\u2019s existing original menu illustration as an identity/composition reference. No third-party game imagery was supplied to generation.",
+  "assets": [
+    {
+      "name": "menu-bg",
+      "source": "menu-bg.png",
+      "sha256": "a0a05ce3f94a83c60837c5e404fc86260e5e834f8b4e4884acc9ae2abbc9da0d",
+      "output_size": [
+        1440,
+        900
+      ],
+      "prompt": "Use case: style-transfer. Asset type: final original game main-menu background, landscape 1440x900 composition. Input image is Burrow Brigade's own current menu painting; preserve the character identity, peach segmented grub bodies, giant expressive eyes, colored scarves, goggles/helmet/propeller cap and friendly mischief. Replace the flat vector environment with beautiful premium hand-painted 2D artillery-game key art: richly textured moss and stone on the floating island, atmospheric teal mountain valley, softly painted sunlit clouds, warm cream sunlight, organic foliage, dimensional but graphic colorful toy weapons. Keep characters clean, ink-outlined and cel shaded but refine expressions and weight so they feel professionally animated. Composition MUST preserve existing menu layout: entire LEFT 42% of canvas is quiet almost-solid warm ivory #f7f2e6 blank space with barely visible paper texture, no characters, no objects, no text; gently merge into illustration from x=600 onward. All recognizable content lives on RIGHT 55%: goggled grub with teal rocket launcher standing on lush island at lower-right, helmeted friend peeking from burrow, one jubilant mustard-scarf grub, small parachuting propeller-cap friend upper-right; small sheep/crate are fine in same existing composition. Painterly landscape may be detailed but must not invade blank left menu column. Luxurious hand-brushed gouache landscape contrasts with clean cartoon crew, charming comic action and dynamic composition, muted teal, warm orange, gold, peach. No UI, no letters, no logos, no border, no watermark. Original Burrow Brigade characters only, no Team17 characters or branding. Retain composition suitable for 16:10 game menu and large typography on left.",
+      "reference": "Original assets/art/menu-bg.png at git e004fce"
+    },
+    {
+      "name": "sky-meadow",
+      "source": "sky-meadow.png",
+      "sha256": "627cf6a81ec9b815f64f28e0285a27590fd1d6c4bb3b68ae4d8e528cfe9c44e0",
+      "output_size": [
+        1600,
+        800
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: shipping background painting for a premium original 2D artillery videogame; one clean wide 2:1 image, requested 1600x800 or larger exact 2:1 ratio. Scene: SUNLIT MEADOW / alpine coast, side-on distant panorama with a broad turquoise sky, sculpted creamy clouds, hazy blue alpine peaks, softly painted layered hills, tiny distant weathered windmill on one hazy ridge, sea mist and a quiet pale teal lake. Hand-painted gouache / richly brushed animated-film background, purposeful confident brush shapes, subtle painterly texture and atmospheric depth, warm sun from upper right. Palette desaturated teal-blue, sage-green, dusty stone-blue, cream gold highlights. CRITICAL game readability: this is entirely distant background behind separately rendered destructible terrain. No foreground rocks, ledges, platforms, islands, props, large trees, characters, weapons, interface or text. Never include hard dark outlines or black silhouettes. Horizon and most mountain detail across top 30-60%; entire lower 40% fades into calm luminous teal mist and water, with only very soft distant bands, so foreground caves remain unambiguously empty. Medium-low contrast throughout, lighter lower half, darkest background still a hazy blue. Avoid vector shapes, geometric gradients, sticker clouds, floating islands, oversaturated green, photorealism, lens blur, vignette, watermark, border, logo. Make the panorama art-directed, lush and elegant, with recognizably painted brushwork at full resolution but calm at game scale.",
+      "reference": null
+    },
+    {
+      "name": "sky-desert",
+      "source": "sky-desert.png",
+      "sha256": "fb5fe2ce70c8f3d211f6393c96685607e4187868ed3c9baf863f0f03e2d53216",
+      "output_size": [
+        1600,
+        800
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: shipping background painting for a premium original 2D artillery videogame, one clean wide 2:1 image, 1600x800 or larger exact 2:1. Scene: DESERT CANYON at peach-gold sunset. A broad open apricot sky with softly layered sunlit cloud ribbons, far away lilac mesas and ancient weathered sandstone buttes, distant eroded arch only as faint small landmark on horizon, bands of dusty ochre dunes dissolving into pale warm valley haze. Rich hand-painted gouache animated-film background, confident irregular brush strokes, warm caprock highlights and lavender atmospheric shadows, subtle paper brush texture, not geometric vector art. Art direction for a playful original artillery game: detailed picturesque horizon but entirely distant nonplayable scenery. CRITICAL: No foreground rocks, ledges, platforms, islands, trees, characters, weapons, UI or text. No hard dark outlines or black silhouettes. Mountains and interesting details in middle/top 25-60%; lower 40% must be calm light dusty peach/mauve mist with barely visible distant horizontal dune bands, no dark foreground at bottom. Separately rendered dark orange destructible terrain must pop crisply over this background. Medium-low contrast, broad quiet negative space, muted warm desert orange plus cool lavender depth, painterly edges, no photorealism, no lens blur, no vignette or watermark. Match the quality of an atmospheric painted 2D videogame panorama, not a flat illustration.",
+      "reference": null
+    },
+    {
+      "name": "sky-glacier",
+      "source": "sky-glacier.png",
+      "sha256": "39848bd9d16b0e20efe46c027097754e2808b8a5d0e20f6fab9de48ff5fe9eea",
+      "output_size": [
+        1600,
+        800
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: shipping background painting for a premium original 2D artillery videogame; one wide 2:1 panorama, 1600x800 or larger exact 2:1. Scene: GLACIER / AURORA LAKE. Luminous mint and turquoise aurora sweeping across a dusky cobalt-lavender night sky, a small softly glowing crescent moon, a few fine stars, beautifully painted distant snowy alpine spires and an icy fjord dissolving into pale lavender-blue frost mist. Rich hand-brushed gouache animated-film background; layered atmospheric mountains with slate-blue shadows, subtle violet ice planes and silver snow highlights; soft expressive brushwork. CRITICAL game readability: entirely distant scenery behind separately rendered destructible ice terrain. No foreground silhouettes, rocks, icebergs, trees, platforms, islands, characters, weapons, UI or text. No hard dark outlines. Mountains and aurora details live in upper 60%; lower 40% is luminous calm periwinkle mist and faint softly painted frozen water, light enough for dark mid-blue ice caves to be clearly readable on top. Darkest tones confined to upper sky; background never nearly black. Restrained elegant night mood, high sense of depth but medium-low contrast. No flat vectors, geometric sticker clouds, photorealism, lens blur, vignette, logo, frame or watermark. A distinctive premium arctic scene with usable clear gameplay negative space.",
+      "reference": null
+    },
+    {
+      "name": "sky-volcano",
+      "source": "sky-volcano.png",
+      "sha256": "098b4fc40c2545291a1820739d702a9eb9c7a1b06f582c70c46ac118b8916d5a",
+      "output_size": [
+        1600,
+        800
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: shipping background painting for a premium original 2D artillery videogame; one clean wide 2:1 panorama, 1600x800 or larger exact 2:1 ratio. Scene: VOLCANIC ISLANDS / EMBER COAST at twilight. Far away in upper half, a grand stylized purple-mauve volcano with a small warm coral plume and subtle lava fissures, layered distant smoky mountain ranges, glowing apricot clouds over a dusky plum sky. Rich hand-brushed gouache / animated-film background with expressive brush strokes and sophisticated atmospheric perspective; distant slopes have irregular facets, warm rimlight, smoke curls softly into sky. Palette dusty violet, plum, terracotta and amber haze, no overwhelming red. CRITICAL gameplay composition: all scenery is distant background behind separately rendered dark basalt terrain. No foreground rocks, cliffs, platforms, floating islands, trees, characters, objects, weapons, UI or text. No sharp black outlines or black silhouettes. Keep all volcanic mountain detail above the lower 40%; the bottom 40% fades into a quiet pale orange-coral glowing sea of mist with a few gentle horizontal bands. Foreground charcoal terrain must remain strongly separated and caves must look empty. The painting feels adventurous and playful, not horror or realistic catastrophe. Low-to-medium contrast, no lens blur, no vignette, no border, watermark or logos. Hand-painted premium game art, never vector/geometric stock illustration.",
+      "reference": null
+    }
+  ]
+}

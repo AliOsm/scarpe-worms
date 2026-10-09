@@ -1,0 +1,14 @@
+{
+  "version": "0.4.0",
+  "checked_at": "2026-10-09T17:54:31.349707+00:00",
+  "cues": 22,
+  "licensed_cc0_masters": 12,
+  "backend": "OpenAL Soft",
+  "output": "Linux null driver",
+  "preloaded_buffers": true,
+  "mono_effect_positioning_checked": true,
+  "mute_resume": true,
+  "idempotent_shutdown": true,
+  "audible_output_tested": false,
+  "scope": "Decoding and real OpenAL calls, error checks and source positions. Not a listening test or native Mac output."
+}

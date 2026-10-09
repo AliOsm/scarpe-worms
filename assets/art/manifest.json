@@ -1,7 +1,7 @@
 {
   "name": "BURROW BRIGADE art",
-  "version": "2026.10.09.1",
-  "generator": "tools/build_art.py (procedural cairo vector art, see docs/ART_DIRECTION.md)",
+  "version": "2026.10.09.3",
+  "generator": "tools/build_art.py (procedural Cairo foregrounds and compiled painted backgrounds; see docs/ART_DIRECTION.md)",
   "license": "Original artwork created for BURROW BRIGADE; see docs/ART_DIRECTION.md",
   "palette": {
     "ink": "#182d35",
@@ -50,19 +50,23 @@
   ],
   "grubs": {
     "frame_size": [
+      160,
+      160
+    ],
+    "logical_size": [
       80,
       80
     ],
     "anchor": [
-      40.0,
-      68.0
+      80.0,
+      136.0
     ],
-    "anchor_note": "feet/ground contact point; place sprite at (x - 40, y - 68)",
+    "anchor_note": "Source pixels; logical foot anchor (40,68) on an 80x80 canvas. 2x raster for Retina displays.",
     "facing": "right",
     "left_facing": "grubs/left/{team}-{state}-{frame}.png (pre-mirrored, same anchor)",
     "recommended_draw_size": [
-      40,
-      40
+      64,
+      64
     ],
     "teams": 6,
     "portraits": {
@@ -125,8 +129,41 @@
       }
     }
   },
+  "combat": {
+    "size": [
+      128,
+      128
+    ],
+    "facing": "right",
+    "anchor": [
+      64,
+      64
+    ],
+    "held": [
+      "rocket",
+      "homing",
+      "mortar",
+      "shotgun",
+      "rifle",
+      "minigun",
+      "laser",
+      "flamethrower",
+      "rope",
+      "blowtorch"
+    ],
+    "projectiles": [
+      "rocket",
+      "homing",
+      "mortar"
+    ],
+    "left_facing": "held/left/{id}.png"
+  },
   "weapons": {
     "size": [
+      128,
+      128
+    ],
+    "logical_size": [
       64,
       64
     ],
@@ -189,35 +226,50 @@
         1440,
         900
       ],
-      "note": "x 0..540 solid warm ivory panel for ink/muted menu text, eased fade to clear by x 720; crew diorama on the right"
+      "note": "Quiet warm ivory left column for menu text; painted original crew and island on the right",
+      "origin": "Original AI-assisted painting; Codex built-in imagegen",
+      "source": "source/paintings/menu-bg.png",
+      "source_sha256": "a0a05ce3f94a83c60837c5e404fc86260e5e834f8b4e4884acc9ae2abbc9da0d"
     },
     "sky-meadow": {
       "path": "sky-meadow.png",
       "size": [
         1600,
         800
-      ]
+      ],
+      "origin": "Original AI-assisted painting; Codex built-in imagegen",
+      "source": "source/paintings/sky-meadow.png",
+      "source_sha256": "627cf6a81ec9b815f64f28e0285a27590fd1d6c4bb3b68ae4d8e528cfe9c44e0"
     },
     "sky-desert": {
       "path": "sky-desert.png",
       "size": [
         1600,
         800
-      ]
+      ],
+      "origin": "Original AI-assisted painting; Codex built-in imagegen",
+      "source": "source/paintings/sky-desert.png",
+      "source_sha256": "fb5fe2ce70c8f3d211f6393c96685607e4187868ed3c9baf863f0f03e2d53216"
     },
     "sky-glacier": {
       "path": "sky-glacier.png",
       "size": [
         1600,
         800
-      ]
+      ],
+      "origin": "Original AI-assisted painting; Codex built-in imagegen",
+      "source": "source/paintings/sky-glacier.png",
+      "source_sha256": "39848bd9d16b0e20efe46c027097754e2808b8a5d0e20f6fab9de48ff5fe9eea"
     },
     "sky-volcano": {
       "path": "sky-volcano.png",
       "size": [
         1600,
         800
-      ]
+      ],
+      "origin": "Original AI-assisted painting; Codex built-in imagegen",
+      "source": "source/paintings/sky-volcano.png",
+      "source_sha256": "098b4fc40c2545291a1820739d702a9eb9c7a1b06f582c70c46ac118b8916d5a"
     }
   },
   "props": {
@@ -232,30 +284,30 @@
     "crate": {
       "path": "crate.png",
       "size": [
-        64,
-        64
+        128,
+        128
       ],
       "note": "weapon crate; crate-health.png and crate-utility.png variants"
     },
     "crate-health": {
       "path": "crate-health.png",
       "size": [
-        64,
-        64
+        128,
+        128
       ]
     },
     "crate-utility": {
       "path": "crate-utility.png",
       "size": [
-        64,
-        64
+        128,
+        128
       ]
     },
     "grave": {
       "path": "grave.png",
       "size": [
-        64,
-        64
+        128,
+        128
       ],
       "anchor": [
         32,
@@ -266,65 +318,65 @@
     "grave-0": {
       "path": "grave-0.png",
       "size": [
-        64,
-        64
+        128,
+        128
       ]
     },
     "grave-1": {
       "path": "grave-1.png",
       "size": [
-        64,
-        64
+        128,
+        128
       ]
     },
     "grave-2": {
       "path": "grave-2.png",
       "size": [
-        64,
-        64
+        128,
+        128
       ]
     },
     "grave-3": {
       "path": "grave-3.png",
       "size": [
-        64,
-        64
+        128,
+        128
       ]
     },
     "grave-4": {
       "path": "grave-4.png",
       "size": [
-        64,
-        64
+        128,
+        128
       ]
     },
     "grave-5": {
       "path": "grave-5.png",
       "size": [
-        64,
-        64
+        128,
+        128
       ]
     },
     "cloud": {
       "path": "cloud.png",
       "size": [
-        256,
-        128
+        512,
+        256
       ],
       "note": "transparent parallax cloud; cloud-small.png too"
     },
     "cloud-small": {
       "path": "cloud-small.png",
       "size": [
-        128,
-        64
+        256,
+        128
       ]
     },
     "mine-prop": {
       "path": "mine-prop.png",
       "size": [
-        32,
-        32
+        64,
+        64
       ],
       "anchor": [
         16,
@@ -335,15 +387,15 @@
     "mine-prop-lit": {
       "path": "mine-prop-lit.png",
       "size": [
-        32,
-        32
+        64,
+        64
       ]
     },
     "barrel-prop": {
       "path": "barrel-prop.png",
       "size": [
-        40,
-        48
+        80,
+        96
       ],
       "anchor": [
         20,
@@ -404,14 +456,14 @@
   "terrain": {
     "cell": 2,
     "fill_size": [
-      256,
-      256
+      512,
+      512
     ],
     "crust_rows": 20,
     "tuft_rows": 12,
     "masonry_size": [
-      64,
-      32
+      128,
+      64
     ],
     "girder": "terrain/girder.png",
     "girder_size": [
@@ -431,6 +483,7 @@
         "crust": "terrain/meadow-crust.png",
         "tufts": "terrain/meadow-tufts.png",
         "masonry": "terrain/meadow-masonry.png",
+        "masonry-edge": "terrain/meadow-masonry-edge.png",
         "minimap": "#986d4a",
         "minimap_top": "#a9d865"
       },
@@ -442,6 +495,7 @@
         "crust": "terrain/desert-crust.png",
         "tufts": "terrain/desert-tufts.png",
         "masonry": "terrain/desert-masonry.png",
+        "masonry-edge": "terrain/desert-masonry-edge.png",
         "minimap": "#c47a4a",
         "minimap_top": "#f9dca3"
       },
@@ -453,6 +507,7 @@
         "crust": "terrain/glacier-crust.png",
         "tufts": "terrain/glacier-tufts.png",
         "masonry": "terrain/glacier-masonry.png",
+        "masonry-edge": "terrain/glacier-masonry-edge.png",
         "minimap": "#7fb0cf",
         "minimap_top": "#ffffff"
       },
@@ -464,10 +519,13 @@
         "crust": "terrain/volcano-crust.png",
         "tufts": "terrain/volcano-tufts.png",
         "masonry": "terrain/volcano-masonry.png",
+        "masonry-edge": "terrain/volcano-masonry-edge.png",
         "minimap": "#4b4049",
         "minimap_top": "#9a8590"
       }
-    }
+    },
+    "sampling": "mirrored repeat at 512 cells; world coordinates, independent of render tile",
+    "source": "source/materials/provenance.json"
   },
   "extras": {
     "fx": [
@@ -522,7 +580,12 @@
           80
         ],
         "fps": 18,
-        "pattern": "fx/explosion-{frame}.png"
+        "pattern": "fx/explosion-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          320,
+          320
+        ]
       },
       "smoke": {
         "frames": 6,
@@ -535,7 +598,12 @@
           32
         ],
         "fps": 10,
-        "pattern": "fx/smoke-{frame}.png"
+        "pattern": "fx/smoke-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          128,
+          128
+        ]
       },
       "dust": {
         "frames": 5,
@@ -549,7 +617,12 @@
         ],
         "fps": 14,
         "pattern": "fx/dust-{frame}.png",
-        "note": "landing/walk puff"
+        "note": "landing/walk puff",
+        "raster_scale": 2,
+        "source_size": [
+          128,
+          64
+        ]
       },
       "splash": {
         "frames": 6,
@@ -563,7 +636,12 @@
         ],
         "fps": 14,
         "pattern": "fx/splash-{frame}.png",
-        "note": "falling into water"
+        "note": "falling into water",
+        "raster_scale": 2,
+        "source_size": [
+          192,
+          192
+        ]
       },
       "sparkle": {
         "frames": 4,
@@ -576,7 +654,12 @@
           24
         ],
         "fps": 12,
-        "pattern": "fx/sparkle-{frame}.png"
+        "pattern": "fx/sparkle-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          96,
+          96
+        ]
       },
       "crosshair": {
         "frames": 1,
@@ -588,7 +671,12 @@
           20,
           20
         ],
-        "pattern": "ui/crosshair.png"
+        "pattern": "ui/crosshair.png",
+        "raster_scale": 2,
+        "source_size": [
+          80,
+          80
+        ]
       },
       "wind-arrow": {
         "frames": 1,
@@ -601,7 +689,12 @@
           16
         ],
         "pattern": "ui/wind-arrow.png",
-        "note": "points right; rotate/mirror for wind direction"
+        "note": "points right; rotate/mirror for wind direction",
+        "raster_scale": 2,
+        "source_size": [
+          128,
+          64
+        ]
       },
       "turn-marker": {
         "frames": 4,
@@ -615,7 +708,12 @@
         ],
         "fps": 8,
         "pattern": "ui/turn-marker-{frame}.png",
-        "note": "bobbing arrow above the active grub; tint-free"
+        "note": "bobbing arrow above the active grub; tint-free",
+        "raster_scale": 2,
+        "source_size": [
+          64,
+          64
+        ]
       }
     }
   }

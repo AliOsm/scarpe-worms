@@ -14,18 +14,52 @@ ENV.delete("BURROW_CONNECT")
 ENV.delete("BURROW_AUTOPLAY")
 failed, phase, pan = false, nil, false
 last_update, last_pan, last_camera = nil, nil, nil
-samples, stages, shots = [], [], Set.new
+last_pixels, last_origin = nil, nil
+samples, stages, shots, slow_phases = [], [], Set.new, []
+thread_cpu = -> { Process.clock_gettime(Process::CLOCK_THREAD_CPUTIME_ID) }
+
+# Optional diagnosis separates Ruby work from a descheduled GUI thread. This
+# instrumentation lives only in the benchmark, never in normal game updates.
+if ENV["BURROW_BENCH_PROFILE"] == "1"
+  profiling = Module.new
+  %i[render render_camera render_backdrop update_terrain reconcile_actors
+    reconcile_objects cache_frame render_aim render_effects render_navigation].each do |method|
+    profiling.define_method(method) do |*args, **kwargs, &block|
+      at, cpu = Burrow.clock, thread_cpu.call
+      result = super(*args, **kwargs, &block)
+      elapsed, cost = (Burrow.clock - at) * 1000, (thread_cpu.call - cpu) * 1000
+      if phase && elapsed >= 8 && slow_phases.length < 200
+        slow_phases << {at: Time.now.to_f, phase: phase, method: method, wall_ms: elapsed, cpu_ms: cost}
+      end
+      result
+    end
+  end
+  Burrow::Client::Scene.prepend(profiling)
+end
 
 Burrow::Client::App.prepend(Module.new do
   define_method(:update) do
     at = Burrow.clock
+    cpu = thread_cpu.call
     gc_time = GC.stat(:time)
     super()
     if phase && scene
       camera = scene.camera
       visual = scene.instance_variable_get(:@state)
-      moving = pan || visual["projectiles"].any? || visual["worms"].any? { |w| w["hp"] > 0 && w["vx"].abs + w["vy"].abs > 8 }
-      moving ||= last_camera && Math.hypot(camera.x - last_camera[0], camera.y - last_camera[1]) > 0.1
+      velocity_motion = visual["projectiles"].any? || visual["worms"].any? { |w| w["hp"] > 0 && w["vx"].abs + w["vy"].abs > 8 }
+      # Collision/interpolation can retain a small velocity while rounded draw
+      # positions remain unchanged. Measure the positions actually sent to the
+      # renderer, so idle gravity probes do not demand redundant native paints.
+      origin = scene.instance_variable_get(:@origin)
+      pixels = scene.actors.filter_map { |id, node| [id, node[:position]] if node[:visible] }.to_h
+      scene.instance_variable_get(:@projectile_nodes).each do |id, node|
+        shot = visual["projectiles"].find { |p| p["id"] == id }
+        next unless shot && camera.screen(shot["x"], shot["y"]).zip([1440, 720]).all? { |at, limit| at.between?(-30, limit + 30) }
+        pixels[id] = [node[:image].left, node[:image].top]
+      end
+      pixel_changes = last_pixels ? (pixels.keys | last_pixels.keys).count { |id| pixels[id] != last_pixels[id] } : 0
+      camera_changed = last_origin && origin != last_origin
+      moving = pan || pixel_changes > 0 || camera_changed
       ui_scale = scene.instance_variable_get(:@ui_scale)
       visible_speed = (visual["worms"] + visual["projectiles"]).filter_map do |actor|
         sx, sy = camera.screen(actor["x"], actor["y"])
@@ -33,7 +67,8 @@ Burrow::Client::App.prepend(Module.new do
         Math.hypot(actor["vx"], actor["vy"]) * camera.zoom * ui_scale
       end.max || 0
       camera_speed = last_camera && last_update ? Math.hypot(camera.x-last_camera[0], camera.y-last_camera[1]) * camera.zoom * ui_scale / [at-last_update, 0.001].max : 0
-      samples << [Time.now.to_f, phase, last_update && (at - last_update) * 1000, (Burrow.clock - at) * 1000, !!moving, GC.stat(:time) - gc_time, visible_speed, camera_speed]
+      samples << [Time.now.to_f, phase, last_update && (at - last_update) * 1000, (Burrow.clock - at) * 1000, !!moving, GC.stat(:time) - gc_time, visible_speed, camera_speed, (thread_cpu.call - cpu) * 1000, !!velocity_motion, pixel_changes, !!camera_changed]
+      last_pixels, last_origin = pixels, origin
       last_camera = [camera.x, camera.y]
       shots.merge(scene.timeline.seen_shots)
     end
@@ -72,6 +107,8 @@ Scarpe::Native.after_first_heartbeat do
     wait.call { client.room["members"].size == 6 && client.room.dig("config", "worms") == 6 }
     auto.click({text: "Start the mischief"})
     wait.call { client.scene && client.scene.terrain_revision >= 0 }
+    auto.window_focus(true) # Xvfb has no window manager to grant activation.
+    wait.call { client.instance_variable_get(:@window_active) }
     auto.advance(1)
     # Apply only to the already-running UI thread. The renderer, network thread,
     # host and terrain worker retain their normal policies. This recreates the
@@ -122,7 +159,10 @@ Scarpe::Native.after_first_heartbeat do
     report = {version: Burrow::VERSION, ruby: RUBY_VERSION, platform: RUBY_PLATFORM,
       window: [width, height], world: client.state.values_at("world_width", "world_height"),
       grubs: client.state["worms"].length, stages: stages, samples: samples,
-      sample_columns: %w[at phase update_interval_ms update_ms moving gc_ms visible_speed camera_speed],
+      sample_columns: %w[at phase update_interval_ms update_ms moving gc_ms visible_speed camera_speed update_cpu_ms velocity_motion actor_pixel_changes camera_pixel_changed],
+      motion_detection_version: 2,
+      motion_detection: "Changed rounded visible actor/projectile positions and camera origin actually sent to the renderer; velocity-only gravity probes are not visible movement",
+      profiled_slow_phases: slow_phases,
       audio: client.instance_variable_get(:@audio).available, projectile_ids: shots.to_a,
       terrain_revision: client.scene.terrain_revision}
     File.write(ENV.fetch("BURROW_BENCH_REPORT"), JSON.pretty_generate(report) + "\n")

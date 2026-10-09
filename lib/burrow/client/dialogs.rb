@@ -5,21 +5,30 @@ module Burrow
     module Dialogs
       def overlay(title, subtitle = "", width: 1060, height: 700, &body)
         cancel_controls
+        @audio&.play("open", volume: 0.4) unless @overlay
+        @chat_log = @chat_content = @chat_signature = nil
         @overlay = title
         @content.style(inert: true)
         @modal.show
         @modal.clear do
-          box(0, 0, 1440, 900, color: "#182d3588", radius: 0)
+          box(0, 0, 1440, 900, color: "#10252cb8", radius: 0)
           @dialog_x, @dialog_y = (1440 - width) / 2, (900 - height) / 2
-          box(@dialog_x, @dialog_y, width, height, color: Theme::PAPER, radius: 22)
-          label(title, @dialog_x + 30, @dialog_y + 24, width - 220, size: 31, font: Theme.display)
-          label(subtitle, @dialog_x + 32, @dialog_y + 72, width - 80, size: 14, color: Theme::MUTED) unless subtitle.empty?
-          button("Close", @dialog_x + width - 116, @dialog_y + 27, 86, height: 32) { hide_overlay }
+          box(@dialog_x, @dialog_y + 7, width, height, color: "#071b2b66", radius: 18)
+          box(@dialog_x, @dialog_y, width, height, color: Theme::PANEL, radius: 18)
+          box(@dialog_x, @dialog_y, width, 106, color: Theme::INK, radius: 18)
+          box(@dialog_x, @dialog_y + 74, width, 32, color: Theme::INK, radius: 0)
+          box(@dialog_x + 30, @dialog_y + 103, 72, 3, color: Theme::ORANGE, radius: 1)
+          label(title, @dialog_x + 30, @dialog_y + 22, width - 190, size: 31, font: Theme.display, color: Theme::WHITE)
+          label(subtitle, @dialog_x + 32, @dialog_y + 72, width - 64, size: 14, color: "#b6cdcb") unless subtitle.empty?
+          button("Close", @dialog_x + width - 116, @dialog_y + 27, 86, height: 32,
+            color: Theme::SLATE, text_color: Theme::WHITE) { hide_overlay }
           body.call(@dialog_x, @dialog_y)
         end
+        place_toast
       end
 
       def hide_overlay
+        @audio&.play("close", volume: 0.35) if @overlay
         @overlay = nil
         @rules_draft = nil unless @switching_rules_tab
         @content&.style(inert: false)
@@ -28,6 +37,8 @@ module Burrow
         @keys.clear
         @mouse_charge = false
         @charge_started = nil
+        @chat_log = @chat_content = @chat_signature = nil
+        place_toast
       end
 
       def show_connect
@@ -105,9 +116,9 @@ module Burrow
         overlay("Make yourself comfortable", "Sound, motion, and your name are saved on this computer.", width: 960, height: 650) do |x, y|
           label("Your name", x + 36, y + 133, 450, size: 17, font: Theme.display)
           name = input(preferences["name"], x + 540, y + 125, 384)
-          settings_toggle("Sound effects", "Explosions, little victories, and the occasional splash.", "muted", x, y + 197, inverted: true)
+          settings_toggle("Master sound", "All game audio. Press M during battle to mute or unmute.", "muted", x, y + 197, inverted: true)
           settings_toggle("Music", "An original, gently mischievous soundtrack.", "music", x, y + 277)
-          settings_toggle("Animated effects", "Turn off for reduced movement and fewer particles.", "motion", x, y + 357)
+          settings_toggle("Animated effects", "Turn off animated poses, scenery drift, and extra particles.", "motion", x, y + 357)
           settings_toggle("Trusted LAN connections", "Allow unencrypted tcp:// connections on your local network.", "allow_lan", x, y + 437)
           label("Volume", x + 36, y + 530, 220, size: 17, font: Theme.display)
           select(%w[0% 25% 50% 75% 100%], "#{(preferences['volume'] * 100 / 25).round * 25}%", x + 280, y + 522, 180) do |control|
@@ -244,6 +255,7 @@ module Burrow
       def show_arsenal(browse: false, group: "All")
         @arsenal_pick ||= @selected_weapon
         overlay("The toy box", browse ? "48 very questionable ideas. Pick one to learn what it does." : "Choose your next bright idea. Ammo belongs to your team.", width: 1300, height: 820) do |x, y|
+          box(x + 14, y + 118, 184, 524, color: Theme::WELL, radius: 10)
           (["All"] + Catalog::GROUPS).each_with_index do |name, i|
             button(name, x + 26, y + 126 + i * 41, 158, height: 32, selected: name == group) { show_arsenal(browse: browse, group: name) }
           end
@@ -251,15 +263,17 @@ module Burrow
           weapons.each_with_index do |weapon, i|
             col, row = i % 5, i / 5
             bx, by = x + 207 + col * 211, y + 124 + row * 52
-            image("weapons/#{weapon[:id]}", bx, by + 1, 34, 34)
+            box(bx, by, 38, 38, color: weapon[:id] == @arsenal_pick ? "#d6e6dd" : Theme::WELL, radius: 8)
+            image("weapons/#{weapon[:id]}", bx + 1, by + 1, 36, 36)
             ammo = browse ? weapon[:ammo] : (my_inventory || {}).fetch(weapon[:id], 0)
             text = "#{weapon[:name]} #{ammo < 0 ? '∞' : ammo}"
-            control = button(text, bx + 38, by, 168, height: 32, selected: weapon[:id] == @arsenal_pick) do
+            control = button(text, bx + 41, by, 165, height: 38, selected: weapon[:id] == @arsenal_pick) do
               @arsenal_pick = weapon[:id]
               show_arsenal(browse: browse, group: group)
             end
-            control.style(size: px(11), tooltip: weapon[:description])
+            control.style(size: px(12), tooltip: weapon[:description])
           end
+          box(x + 14, y + 668, 1272, 138, color: Theme::WELL, radius: 12)
           line(x + 26, y + 659, x + 1274, y + 659)
           weapon = Catalog.fetch(@arsenal_pick)
           image("weapons/#{weapon[:id]}", x + 36, y + 681, 78, 78)
@@ -319,11 +333,27 @@ module Burrow
 
       def show_chat
         overlay("A little friendly banter", "Messages are visible to everyone in your room.", width: 860, height: 600) do |x, y|
-          label(room["messages"].last(12).map { |m| "#{m['name']}: #{m['text']}" }.join("\n"), x + 36, y + 130, 790, size: 15)
+          box(x + 32, y + 126, 796, 352, color: Theme::WELL, radius: 10)
+          @chat_log = @shoes.stack(left: px(x + 36), top: px(y + 130), width: px(788), height: px(344), scroll: true) do
+            @chat_content = @shoes.para("", width: px(754), size: px(15), font: Theme.sans,
+              stroke: Theme::INK, margin: px(12))
+          end
           @chat_field = input("", x + 36, y + 508, 650)
-          @chat_field.finish = proc { send_chat; show_chat }
-          button("Send", x + 704, y + 508, 120, primary: true) { send_chat; show_chat }
+          @chat_field.finish = proc { send_chat }
+          button("Send", x + 704, y + 508, 120, primary: true) { send_chat }
+          micro("ENTER TO SEND  ·  SCROLL FOR EARLIER MESSAGES", x + 38, y + 563, 780)
+          refresh_chat
         end
+      end
+
+      def refresh_chat
+        return unless @chat_log && room && @chat_signature != room["messages"]
+        at_bottom = @chat_log.scroll_top + px(12) >= @chat_log.scroll_max
+        @chat_signature = room["messages"]
+        text = @chat_signature.empty? ? "No messages yet. Say hello to your crew." :
+          @chat_signature.map { |m| "#{m['name']}: #{m['text']}" }.join("\n\n")
+        set_text(@chat_content, text)
+        @chat_log.scroll_top = 1_000_000 if at_bottom
       end
 
       def confirm_leave
@@ -335,22 +365,44 @@ module Burrow
 
       def show_result
         winner = state["teams"].find { |team| team["id"] == state["winner"] }
-        overlay(winner ? "#{winner['name']} takes the island!" : "A spectacular draw!", "Good friends. Questionable tactics. One very different island.", width: 1000, height: 710) do |x, y|
-          grub(winner ? winner["color"] : 0, x + 690, y + 143, size: 218, state: "victory", frame: 2)
-          micro("THE DAMAGE REPORT", x + 40, y + 144, 570)
-          state["teams"].sort_by { |t| -t["score"] }.each_with_index do |team, i|
-            top = y + 186 + i * 58
-            label(team["name"], x + 44, top, 422, size: 20, font: Theme.display, color: team["id"] == state["winner"] ? Theme::TEAL : Theme::INK)
-            label("#{team['score']} damage", x + 457, top + 3, 190, size: 15, color: Theme::MUTED, align: "right")
-            line(x + 40, top + 44, x + 650, top + 44)
+        overlay(winner ? "#{short_text(winner['name'], 24)} takes the island!" : "A spectacular draw!", "Good friends. Questionable tactics. One very different island.", width: 1100, height: 720) do |x, y|
+          color = winner ? COLORS[winner["color"]] : Theme::GOLD
+          panel(x + 32, y + 132, 302, 420, color: Theme::INK)
+          micro(winner ? "ISLAND CHAMPIONS" : "NOBODY LEFT STANDING", x + 52, y + 153, 262, color: Theme::GOLD)
+          box(x + 77, y + 220, 212, 212, color: color + "30", radius: 106)
+          grub(winner ? winner["color"] : 0, x + 46, y + 181, size: 276, state: "victory", frame: 2)
+          label(winner ? short_text(winner["name"], 24) : "Mutual destruction", x + 49, y + 446, 268,
+            size: 25, font: Theme.display, color: Theme::WHITE, align: "center")
+          survivors = state["worms"].count { |w| winner && w["team"] == winner["id"] && w["hp"] > 0 }
+          label(winner ? "#{survivors} grub#{survivors == 1 ? '' : 's'} still standing" : "A rematch should settle it.",
+            x + 49, y + 490, 268, size: 14, color: "#b6cdcb", align: "center")
+          micro("THE DAMAGE REPORT", x + 362, y + 143, 380, color: Theme::TEAL)
+          micro("DAMAGE", x + 950, y + 143, 110)
+          teams = state["teams"].sort_by { |t| [t["id"] == state["winner"] ? 0 : 1, -t["score"]] }
+          row_height = [372.0 / teams.length, 98].min
+          teams.each_with_index do |team, i|
+            top = y + 176 + i * row_height
+            winning = team["id"] == state["winner"]
+            box(x + 352, top, 714, row_height - 8, color: winning ? "#e2ece3" : Theme::WELL, radius: 10)
+            box(x + 364, top + 13, 3, row_height - 34, color: COLORS[team["color"]], radius: 1)
+            grub(team["color"], x + 375, top + (row_height - 56) / 2 - 5, size: 50)
+            label(short_text(team["name"], 30), x + 436, top + 12, 430, size: 19, font: Theme.display)
+            count = state["worms"].count { |w| w["team"] == team["id"] && w["hp"] > 0 }
+            label(winning ? "Winner · #{count} surviving" : "#{count} surviving", x + 438, top + 39, 440,
+              size: 11, color: Theme::MUTED) if row_height >= 60
+            label(team["score"].to_s, x + 921, top + (row_height - 36) / 2, 119, size: 22,
+              font: Theme.mono, color: winning ? Theme::TEAL : Theme::INK, align: "right")
           end
-          label("#{state['round']} round#{state['round'] == 1 ? '' : 's'}\n#{state['turn']} turn#{state['turn'] == 1 ? '' : 's'}\nSeed: #{state.dig('config', 'seed')}", x + 703, y + 395, 240, size: 15, color: Theme::MUTED)
-          button("View the battlefield", x + 40, y + 619, 256) { hide_overlay }
-          button("Leave room", x + 316, y + 619, 250) { leave_room }
+          line(x + 32, y + 577, x + 1068, y + 577)
+          label("#{state['round']} round#{state['round'] == 1 ? '' : 's'}  ·  #{state['turn']} turns  ·  #{state.dig('config', 'biome').capitalize}",
+            x + 38, y + 594, 490, size: 14, font: Theme.display)
+          micro("SEED  #{short_text(state.dig('config', 'seed'), 38)}", x + 550, y + 597, 512)
+          button("View the battlefield", x + 36, y + 646, 256) { hide_overlay }
+          button("Leave room", x + 308, y + 646, 226) { leave_room }
           if room_host?
-            button("Play another", x + 660, y + 619, 300, primary: true) { action("rematch"); hide_overlay }
+            button("Play another", x + 760, y + 644, 304, height: 42, primary: true) { action("rematch"); hide_overlay }
           else
-            label("Waiting for your host to start another.", x + 618, y + 628, 340, size: 13, color: Theme::MUTED)
+            label("Waiting for your host to start another.", x + 724, y + 655, 340, size: 13, color: Theme::MUTED)
           end
         end
       end

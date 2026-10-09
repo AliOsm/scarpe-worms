@@ -12,9 +12,9 @@ Sections: grubs, portraits, icons, props, terrain, scenes, previews.  The manife
 (assets/art/manifest.json) is always rewritten from whatever exists on disk
 plus the metadata produced by the sections that ran.
 
-The build is deterministic: every random choice is seeded, the backdrop grain
-is seeded per asset, and the manifest carries a fixed ART_VERSION instead of
-a date, so rebuilding unchanged sources reproduces identical files.
+The build is deterministic: procedural random choices are seeded, reviewed
+background paintings are compiled from committed source PNGs, and the manifest
+carries a fixed ART_VERSION rather than a date. Rebuilds need no image service.
 """
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ SECTIONS = ["grubs", "portraits", "icons", "props", "terrain", "scenes", "previe
 
 # Bump by hand when the art changes.  Not derived from the clock, so that a
 # rebuild of unchanged sources is byte-for-byte identical (reproducible builds).
-ART_VERSION = "2026.10.09.1"
+ART_VERSION = "2026.10.09.3"
 
 
 def build_grubs():
@@ -45,7 +45,8 @@ def build_grubs():
             counts[state] = len(frames)
             for k, pose in enumerate(frames):
                 for mirrored in (False, True):
-                    s, ctx = surface(80, 80)
+                    s, ctx = surface(160, 160)
+                    ctx.scale(2, 2)
                     if mirrored:
                         ctx.translate(80, 0)
                         ctx.scale(-1, 1)
@@ -60,7 +61,10 @@ def build_grubs():
 
 def build_icons():
     from build_art_icons import build_all
-    return build_all()
+    from build_art_combat import build_all as build_combat
+    result = build_all()
+    build_combat()
+    return result
 
 
 def build_portraits():
@@ -137,7 +141,7 @@ def write_manifest(meta):
     m = {
         "name": "BURROW BRIGADE art",
         "version": ART_VERSION,
-        "generator": "tools/build_art.py (procedural cairo vector art, see docs/ART_DIRECTION.md)",
+        "generator": "tools/build_art.py (procedural Cairo foregrounds and compiled painted backgrounds; see docs/ART_DIRECTION.md)",
         "license": "Original artwork created for BURROW BRIGADE; see docs/ART_DIRECTION.md",
         "palette": {"ink": "#182d35", "paper": "#f7f2e6", "orange": "#f57c49", "teal": "#407d80", "gold": "#edc16d"},
         "teams": [{"id": i, "name": TEAM_NAMES[i], "color": TEAMS[i],
@@ -162,12 +166,13 @@ def write_manifest(meta):
         if st in notes:
             states[st]["note"] = notes[st]
     m["grubs"] = {
-        "frame_size": [80, 80],
-        "anchor": list(ANCHOR),
-        "anchor_note": "feet/ground contact point; place sprite at (x - 40, y - 68)",
+        "frame_size": [160, 160],
+        "logical_size": [80, 80],
+        "anchor": [value * 2 for value in ANCHOR],
+        "anchor_note": "Source pixels; logical foot anchor (40,68) on an 80x80 canvas. 2x raster for Retina displays.",
         "facing": "right",
         "left_facing": "grubs/left/{team}-{state}-{frame}.png (pre-mirrored, same anchor)",
-        "recommended_draw_size": [40, 40],
+        "recommended_draw_size": [64, 64],
         "teams": 6,
         "portraits": {"frame_size": [512, 512], "poses": ["idle-0", "victory-2"],
                       "pattern": "grubs/portraits/{team}-{state}-{frame}.png"},
@@ -175,10 +180,13 @@ def write_manifest(meta):
     }
 
     # Weapons
+    from build_art_combat import metadata as combat_metadata
+    m["combat"] = combat_metadata()
     wdir = ART / "weapons"
     if wdir.exists():
         m["weapons"] = {
-            "size": [64, 64],
+            "size": [128, 128],
+            "logical_size": [64, 64],
             "pattern": "weapons/{id}.png",
             "ids": sorted(p.stem for p in wdir.glob("*.png")),
         }
@@ -192,9 +200,15 @@ def write_manifest(meta):
         return out
 
     m["backgrounds"] = collect(["menu-bg", "sky-meadow", "sky-desert", "sky-glacier", "sky-volcano"], **{
-        "menu-bg": {"note": "x 0..540 solid warm ivory panel for ink/muted menu text, eased fade to clear by x 720; "
-                            "crew diorama on the right"},
+        "menu-bg": {"note": "Quiet warm ivory left column for menu text; painted original crew and island on the right"},
     })
+    from build_art_scenes import painting_manifest
+    for painting in painting_manifest()["assets"]:
+        m["backgrounds"][painting["name"]].update({
+            "origin": "Original AI-assisted painting; Codex built-in imagegen",
+            "source": f"source/paintings/{painting['source']}",
+            "source_sha256": painting["sha256"],
+        })
     m["props"] = collect(["app-icon", "crate", "crate-health", "crate-utility", "grave"]
                          + [f"grave-{t}" for t in range(6)]
                          + ["cloud", "cloud-small", "mine-prop", "mine-prop-lit", "barrel-prop"]

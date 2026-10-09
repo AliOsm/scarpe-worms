@@ -70,6 +70,90 @@ class PresentationTest < Minitest::Test
         end}}
   end
 
+  def test_camera_pointer_zoom_preserves_world_anchor_and_manual_control
+    camera = Burrow::Client::Camera.new(4800, 1600)
+    camera.follow
+    camera.update([2400, 850], dt: 1.0 / 60)
+    point = camera.world(1000, 280)
+    camera.zoom_by(1, anchor: [1000, 280])
+    assert_in_delta point[0], camera.world(1000, 280)[0], 0.001
+    assert_in_delta point[1], camera.world(1000, 280)[1], 0.001
+    refute camera.following
+    previous = [camera.x, camera.y]
+    camera.update([200, 400], dt: 1)
+    assert_equal previous, [camera.x, camera.y]
+    camera.follow
+    camera.update([200, 400], dt: 1.0 / 60)
+    assert camera.following
+    assert_operator camera.screen(200, 400)[0], :>=, 0
+  end
+
+  def test_camera_safe_area_absorbs_actor_jitter_and_tracks_fast_high_shots
+    camera = Burrow::Client::Camera.new(4800, 1600)
+    camera.update([2400, 800], dt: 1.0 / 60)
+    initial = [camera.x, camera.y]
+    60.times { |i| camera.update([2400 + Math.sin(i) * 30, 800 + Math.cos(i) * 20], dt: 1.0 / 60) }
+    assert_equal initial, [camera.x, camera.y], "minor movement should not drift the landscape"
+    camera.update([2800, 800], dt: 0.1, velocity: [800, -200], mode: :projectile)
+    assert_operator camera.x, :>, initial[0] + 200
+    camera.update([3000, -800], dt: 1, velocity: [0, -500], mode: :projectile)
+    sx, sy = camera.screen(3000, -800)
+    assert sx.between?(0, 1440), "high shot must remain horizontally visible"
+    assert sy.between?(0, 720), "high shot must remain vertically visible"
+  end
+
+  def test_camera_smoothing_is_independent_of_refresh_rate_and_recovers_after_delay
+    cameras = [30, 60, 120].map do |hz|
+      camera = Burrow::Client::Camera.new(4800, 1600)
+      camera.update([1800, 800], dt: 1.0 / hz)
+      hz.times { camera.update([2700, 900], dt: 1.0 / hz) }
+      camera
+    end
+    cameras.drop(1).each do |camera|
+      assert_in_delta cameras.first.x, camera.x, 0.4
+      assert_in_delta cameras.first.y, camera.y, 0.4
+    end
+    camera = cameras.first
+    camera.update([4000, 900], dt: 1.5)
+    assert_operator camera.screen(4000, 900)[0], :<, 850
+  end
+
+  def test_keyboard_zoom_to_minimum_is_a_deliberate_overview
+    camera = Burrow::Client::Camera.new(4800, 1600)
+    4.times { camera.zoom_by(-1) }
+    assert camera.overview?
+    refute camera.following, "a new turn must not undo a player-selected overview"
+    camera.update([4200, 900], dt: 1)
+    assert_in_delta camera.minimum, camera.zoom
+    camera.follow
+    refute camera.overview?
+    assert_equal 1.0, camera.zoom
+    small = Burrow::Client::Camera.new(1440, 720)
+    refute small.overview?, "a fitted small map is still initially following"
+    small.overview
+    assert small.overview?
+    small.follow
+    refute small.overview?
+  end
+
+  def test_camera_returns_from_high_arc_without_clamping_away_smoothing
+    camera = Burrow::Client::Camera.new(4800, 1600)
+    camera.update([2400, -2000], dt: 1, velocity: [0, 0], mode: :projectile)
+    high = camera.y
+    assert_operator high, :<, -2000
+    camera.update([2400, -1600], dt: 1.0 / 60, velocity: [0, 0], mode: :projectile)
+    assert_operator camera.y - high, :<, 100, "descending shot should ease, not pin to the target ceiling"
+    previous = camera.y
+    camera.update([2400, 800], dt: 1.0 / 60)
+    assert_operator camera.y - previous, :<, 500, "handoff should not snap to the old -500 ceiling"
+    point = camera.world(720, 360)
+    camera.zoom_by(1, anchor: [720, 360])
+    assert_in_delta point[1], camera.world(720, 360)[1], 0.001, "high-sky zoom must retain the cursor anchor"
+    previous = camera.y
+    camera.pan(10, 10)
+    assert_in_delta 8, camera.y - previous, 0.001
+  end
+
   def test_repeated_110ms_frames_do_not_accumulate_playback_delay
     timeline = Burrow::Client::Timeline.new
     timeline.accept(moving_state(30), now: 1)

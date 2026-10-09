@@ -1,0 +1,48 @@
+{
+  "ruby": "3.4.7",
+  "platform": "x86_64-linux",
+  "boot": true,
+  "teams": 3,
+  "version": "0.4.0",
+  "resumed": true,
+  "external_encoding": "UTF-8",
+  "unicode_terrain_path": true,
+  "mac_activity": {
+    "supported": false,
+    "active": false,
+    "activations": 0,
+    "error": null,
+    "allows_idle_sleep": true,
+    "precise_timers": true
+  },
+  "terrain": true,
+  "arsenal": true,
+  "resize": true,
+  "movement_input": true,
+  "activation_cancels_charge": true,
+  "process_host": true,
+  "process_terrain": true,
+  "bundled_interpreter": "<ruby-home>/3.4.7/bin/ruby",
+  "resize_reuses_terrain": true,
+  "resize_preserves_playback": true,
+  "headless": true,
+  "macos_execution": false,
+  "performance": {
+    "frames": 33,
+    "mean_ruby_scene_ms": 4.569805156665318,
+    "p95_ruby_scene_ms": 8.418791927397251,
+    "max_ruby_scene_ms": 25.507332757115364
+  },
+  "bounded_local_diagnostics": true,
+  "launch_locale": "unset",
+  "launches": 2,
+  "unicode_data_path": true,
+  "recovered_same_match": true,
+  "restored_same_player": true,
+  "unicode_installation_path": true,
+  "relocation_directory": "Brigade \u00c9quipe/Burrow Brigade.app",
+  "runtime_note": "Linux executables substituted; delivered Darwin binaries were not executed.",
+  "warnings": [
+    "Pinned Ruby 3.4 JSON emits a forward-compatibility warning for a UTF-8 string tagged BINARY; launches and recovery pass. JSON 3 is not the bundled runtime."
+  ]
+}

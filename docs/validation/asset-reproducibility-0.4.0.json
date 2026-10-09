@@ -1,0 +1,23 @@
+{
+  "version": "0.4.0",
+  "checked_at": "2026-10-09T17:54:06.236735+00:00",
+  "result": "passed",
+  "builds": [
+    {
+      "round": 1,
+      "seconds": 90.32,
+      "files": 618,
+      "aggregate_sha256": "32683f2fb103419ee41f77f6e58a50773cef18c57e2e444a6c2e6c5253c6bbda"
+    },
+    {
+      "round": 2,
+      "seconds": 90.543,
+      "files": 618,
+      "aggregate_sha256": "32683f2fb103419ee41f77f6e58a50773cef18c57e2e444a6c2e6c5253c6bbda"
+    }
+  ],
+  "byte_identical": true,
+  "first_build_without_preview_cache": true,
+  "changes_from_partial_build": [],
+  "scope": "Two full local art/audio builds, including Ruby-generated preview masks. PNG, SVG, WAV, JSON outputs and source masters are byte identical between runs; no image service or asset download."
+}

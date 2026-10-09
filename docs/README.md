@@ -11,6 +11,7 @@ Start with [current status](STATUS.md). Contributors and agents should also read
 | Navigate the processes and protocol | [Architecture](ARCHITECTURE.md) |
 | Change physics or input contracts | [Weapon audit and references](WEAPON_AUDIT.md) |
 | Edit art and regenerate assets | [Art direction](ART_DIRECTION.md) |
+| Review visual references and asset choices | [Presentation research](ART_RESEARCH.md) |
 | Assess what actually passed | [Validation](VALIDATION.md) and [report index](validation/README.md) |
 | Prepare a distributable release | [Release requirements](RELEASE.md) |
 | Change native Scarpe | [Independent patches](../patches/scarpe/README.md) |

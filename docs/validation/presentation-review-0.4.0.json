@@ -1,0 +1,46 @@
+{
+  "version": "0.4.0",
+  "model": "claude-opus-5-5",
+  "mode": "Claude CLI, tools disabled; read-only supplied-code reviews",
+  "access": "Initially blocked by provider rate/credit limits. User authorized the current-model implementation fallback; later Claude retries succeeded.",
+  "reviews": [
+    {
+      "scope": "Camera review",
+      "accepted": [
+        "Explicit overview state fixes minimum-zoom/turn behavior.",
+        "Retained sky ceiling avoids a hard clamp after a high shot."
+      ]
+    },
+    {
+      "scope": "Integrated presentation review",
+      "accepted": [
+        "Separate lobby and dialog chat fields.",
+        "Preserve and reposition live notices across navigation/dialog changes.",
+        "Initialize active actor bounds even when offscreen, including after resize."
+      ],
+      "decisions": [
+        "Manual exploration intentionally persists until Follow; documented and covered by native input checks.",
+        "Minimap navigation resets the sky ceiling, and manual panning resets it once back within normal sky bounds."
+      ],
+      "not_defects": [
+        "Seed coercion was already performed inside short_text."
+      ]
+    },
+    {
+      "scope": "Release camera, scenery and timing review",
+      "accepted": [
+        "Pending movement between paints must remain chargeable until the next presentation.",
+        "Add a combat GUI-update interval budget for idle-time responsiveness.",
+        "Describe empty evidence in record-only mode and reject it explicitly in budgeted runs.",
+        "Version and accurately label the motion analysis."
+      ],
+      "checked_without_concrete_findings": [
+        "Camera framing",
+        "Parallax coverage and reduced motion",
+        "Turn-cue deadlines and resize restoration"
+      ],
+      "qualification": "The reviewer incorrectly described the old benchmark as checking every idle presentation gap; it already filtered moving intervals. The genuine 61 ms outlier remains unresolved."
+    }
+  ],
+  "execution": "The reviewer did not run the game or tests. Implementation and validation were performed by the continuing coding agent; automated results are in the other versioned reports."
+}

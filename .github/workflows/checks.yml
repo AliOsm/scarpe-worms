@@ -27,6 +27,7 @@ jobs:
           key: native-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch') }}
       - run: ./setup.sh
       - run: bundle exec rake test
+      - run: python3 tools/test_rendering.py
       - run: ./bin/check-native
       - run: xvfb-run -a python3 tools/check_action.py
       - run: bundle exec ruby tools/check_audio.rb

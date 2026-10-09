@@ -131,6 +131,7 @@ module Burrow
       value = {
         tick: tick, world_width: world_width, world_height: world_height, phase: phase, turn: turn, round: round, active: active_id, team: team[:id],
         seconds: seconds_left.round(1), water: water.round(2), wind: wind.round(3), winner: winner,
+        retreat_seconds: (phase == "retreat" ? [(@retreat_until - tick).fdiv(TICK_RATE), 0].max : 0).round(1),
         config: config.to_h, teams: teams.map { |t| t.reject { |k, _| k == :cursor } },
         worms: worms.map { |w| w.reject { |k, _| %i[input input_until lift last_fall].include?(k) } },
         projectiles: projectiles.reject { |p| p[:delay].to_i > 0 }.map(&:dup), hazards: hazards.map(&:dup), events: events.map(&:dup),

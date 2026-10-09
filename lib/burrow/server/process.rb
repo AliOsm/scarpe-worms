@@ -13,7 +13,10 @@ module Burrow
         @host = options.fetch(:host)
         # Ruby's default_external setting does not survive exec. Finder need not
         # provide a UTF-8 locale; worker paths and JSON must not depend on it.
-        command = [ENV.fetch("BURROW_RUBY") { RbConfig.ruby }, "-EUTF-8", "-I", $LOAD_PATH.join(File::PATH_SEPARATOR), File.join(__dir__, "process_main.rb")]
+        # Startup RUBYLIB paths can be tagged US-ASCII despite containing UTF-8
+        # bytes. Pass filesystem bytes intact, including runtime-added paths.
+        load_path = $LOAD_PATH.map(&:b).join(File::PATH_SEPARATOR)
+        command = [ENV.fetch("BURROW_RUBY") { RbConfig.ruby }, "-EUTF-8", "-I", load_path, File.join(__dir__, "process_main.rb")]
         @io = IO.popen(command, "r+:UTF-8")
         @pid = @io.pid
         @io.sync = true

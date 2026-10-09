@@ -1,0 +1,12 @@
+{
+  "tests": 91,
+  "assertions": 5014,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "version": "0.4.0",
+  "ruby": "3.4.7",
+  "checked_at": "2026-10-09T19:28:39.710840+00:00",
+  "elapsed_seconds": 60.297099,
+  "includes_unicode_installation_path_regression": true
+}

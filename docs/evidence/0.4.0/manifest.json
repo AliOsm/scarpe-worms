@@ -1,0 +1,51 @@
+{
+  "version": "0.4.0",
+  "scope": "Unedited native Linux screenshots from the automated journeys. Captures may contain test notices.",
+  "images": [
+    {
+      "file": "menu.png",
+      "source": ".cache/native-checks/shots/menu.png",
+      "sha256": "b01e178acb9f0106904110b04da626fa7147f54d311446a971fb63e3513558a7"
+    },
+    {
+      "file": "battle.png",
+      "source": ".cache/native-checks/shots/biome-meadow.png",
+      "sha256": "d6a56645771afa86d544a726c147d9171754a5d95d82d1327ce7f9d81fec9e4c"
+    },
+    {
+      "file": "desert.png",
+      "source": ".cache/native-checks/shots/biome-desert.png",
+      "sha256": "ed2477e64e613835682768740b7f4356f5323d417dd2910fcefa7c78682f432c"
+    },
+    {
+      "file": "glacier.png",
+      "source": ".cache/native-checks/shots/biome-glacier.png",
+      "sha256": "a1189a2fa4a49bf5f274b1944f7b162b22b7dcb877475664ee741a4f248070ae"
+    },
+    {
+      "file": "volcano.png",
+      "source": ".cache/native-checks/shots/biome-volcano.png",
+      "sha256": "bd219db8ca96d4f92151b3af310c15d2373dfabfa198e52f978eff76db36499d"
+    },
+    {
+      "file": "overview.png",
+      "source": ".cache/native-checks/shots/biome-meadow-overview.png",
+      "sha256": "7b8c76a3c4bc465c76de19f1f2b7944c33e02bfbe23220f3b03c8a9c2fe8a30f"
+    },
+    {
+      "file": "arsenal.png",
+      "source": ".cache/native-checks/shots/arsenal-small.png",
+      "sha256": "088e0b1b3050c7782001681f08159ce578fd46339177a844392ec3822352d19d"
+    },
+    {
+      "file": "lobby.png",
+      "source": ".cache/polish/showcase/lobby.png",
+      "sha256": "83bcc3a75486a31aff5459f207477d37ff36736c80edf445533c851e34ac07aa"
+    },
+    {
+      "file": "results.png",
+      "source": ".cache/polish/showcase/results.png",
+      "sha256": "0443c7c0f3f14ace4c40048354c4c9b818b1a619e812b8ba697edb6f597d0025"
+    }
+  ]
+}

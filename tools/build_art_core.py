@@ -1,7 +1,7 @@
 """Shared drawing helpers for the BURROW BRIGADE art pipeline.
 
-Everything is drawn procedurally with cairo (via cairocffi) so the art is
-fully reproducible from source: no external images, fonts or downloads.
+Foreground vectors are drawn with cairo (via cairocffi). Painted backgrounds
+and materials compile from reviewed local masters; builds need no downloads.
 """
 from __future__ import annotations
 

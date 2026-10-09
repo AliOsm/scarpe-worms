@@ -37,15 +37,18 @@ FX_META = {
     "turn-marker": {"frames": 4, "size": [32, 32], "anchor": [16, 30], "fps": 8,
                     "pattern": "ui/turn-marker-{frame}.png", "note": "bobbing arrow above the active grub; tint-free"},
 }
+for spec in FX_META.values():
+    spec["raster_scale"] = 2
+    spec["source_size"] = [value * 2 for value in spec["size"]]
 
 
-def _shadow(path, alpha=0.26, off=(1, 2), blur=1.2):
+def _shadow(path, alpha=0.26, off=(1, 2), blur=1.2, density=1):
     im = Image.open(path).convert("RGBA")
     sh = Image.new("RGBA", im.size, (24, 45, 53, 0))
     sh.putalpha(im.getchannel("A").point(lambda v: int(v * alpha)))
-    sh = sh.filter(ImageFilter.GaussianBlur(blur))
+    sh = sh.filter(ImageFilter.GaussianBlur(blur * density))
     base = Image.new("RGBA", im.size, (0, 0, 0, 0))
-    base.alpha_composite(sh, off)
+    base.alpha_composite(sh, tuple(value * density for value in off))
     base.alpha_composite(im)
     base.save(path)
 
@@ -53,11 +56,15 @@ def _shadow(path, alpha=0.26, off=(1, 2), blur=1.2):
 def _render(name, w, h, fn, sub="", svg=True, shadow=True):
     path = ART / sub / f"{name}.png"
     path.parent.mkdir(parents=True, exist_ok=True)
-    s, ctx = surface(w, h)
+    # App-icon sizes are platform contracts; in-game props/effects use Retina
+    # rasters while their scene and animation metadata stays in logical pixels.
+    density = 1 if name.startswith("app-icon") else 2
+    s, ctx = surface(w * density, h * density)
+    ctx.scale(density, density)
     fn(ctx)
     s.write_to_png(str(path))
     if shadow:
-        _shadow(path)
+        _shadow(path, density=density)
     if svg:
         vs, vctx = svg_surface(ART / "src" / sub / f"{name}.svg", w, h)
         fn(vctx)

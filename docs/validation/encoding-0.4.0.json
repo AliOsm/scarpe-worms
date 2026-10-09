@@ -1,0 +1,19 @@
+{
+  "version": "0.4.0",
+  "checked_at": "2026-10-09T19:32:57.915311+00:00",
+  "regression": "Host and terrain worker launch from Unicode installation/data paths under an ASCII locale.",
+  "cause": "Startup RUBYLIB entries can carry US-ASCII tags on UTF-8 filesystem bytes; joining them with runtime-added UTF-8 paths raised Encoding::CompatibilityError.",
+  "fix": "Join filesystem bytes without transcoding when constructing each child interpreter load path.",
+  "fixture_correction": "Create Unicode subdirectories explicitly because Ruby mktmpdir strips non-ASCII prefixes; isolate package-style launches from Bundler startup injection.",
+  "before_fix": "Both worker tests reproduced the incompatible encoding failure.",
+  "after_fix": "Final complete suites pass on Ruby 3.4.7 and 4.0.7; relocated package fresh/resumed launches pass under unset and C locales.",
+  "core": [
+    "core-0.4.0-ruby-3.4.7.json",
+    "core-0.4.0-ruby-4.0.7.json"
+  ],
+  "package": [
+    "package-0.4.0-relocated-linux.json",
+    "package-0.4.0-relocated-linux-windowed-locale-c.json"
+  ],
+  "macos_execution": false
+}

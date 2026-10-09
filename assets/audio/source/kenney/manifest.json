@@ -1,0 +1,150 @@
+{
+  "format": "Mono signed 16-bit PCM, 22050 Hz. Original downloaded Ogg decoded once with ffmpeg; canonical PCM masters committed for dependency-free rebuilds. Normalized to peak 0.75; maximum duration 3 seconds.",
+  "license": "CC0-1.0",
+  "attribution": "Kenney (https://kenney.nl)",
+  "packs": {
+    "interface-sounds": {
+      "source": "https://kenney.nl/assets/interface-sounds",
+      "download": "https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip",
+      "sha256": "f2193d072726d6758a5f7871b2dcc54dcce0d5c35c6f0a62f92549b327c81232"
+    },
+    "rpg-audio": {
+      "source": "https://kenney.nl/assets/rpg-audio",
+      "download": "https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip",
+      "sha256": "6dbeaf8544da958d8f2adcb4a4a4b76c1ade34a05f8ab9edccd327da7375f38b"
+    },
+    "impact-sounds": {
+      "source": "https://kenney.nl/assets/impact-sounds",
+      "download": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+      "sha256": "029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8"
+    },
+    "sci-fi-sounds": {
+      "source": "https://kenney.nl/assets/sci-fi-sounds",
+      "download": "https://kenney.nl/media/pages/assets/sci-fi-sounds/6b296f9ecf-1677589334/kenney_sci-fi-sounds.zip",
+      "sha256": "119340f351a5098ad814f78719438c0da355a9ce8a4c8a3af6a8d48aa3d49e04"
+    }
+  },
+  "cues": [
+    {
+      "cue": "click",
+      "pack": "interface-sounds",
+      "original": "select_002.ogg",
+      "original_sha256": "4cc6ac5341b9b2c86fef80c347de028e9ab9f2e037586ac7d9fa59a403a1c012",
+      "master": "click.wav",
+      "master_sha256": "bed62d498ba2dfd64077f00f82950afa69f94d8af7ff7a151da791ba99ebfb1a",
+      "seconds": 0.04040816326530612,
+      "normalization_gain": 0.841754
+    },
+    {
+      "cue": "open",
+      "pack": "interface-sounds",
+      "original": "open_003.ogg",
+      "original_sha256": "bcdca6b5c9c33aa15ca3fb18a1fa8d98a01b528b85be08c5a610e57c75fc022d",
+      "master": "open.wav",
+      "master_sha256": "b5e46b03638651d53345cd6e3f2c8748f34058aab37315194d5b1bda18022e52",
+      "seconds": 0.31378684807256235,
+      "normalization_gain": 2.007597
+    },
+    {
+      "cue": "close",
+      "pack": "interface-sounds",
+      "original": "close_002.ogg",
+      "original_sha256": "bc4279d2bb2bf86592473eab6a8eab55e51b54a8619315000dbd780a83b102d8",
+      "master": "close.wav",
+      "master_sha256": "13512cbe2b3f3eb544a225e4a3e5575e135b3c0e3d7f82f98b1201e9e0eff00b",
+      "seconds": 0.31378684807256235,
+      "normalization_gain": 1.628454
+    },
+    {
+      "cue": "error",
+      "pack": "interface-sounds",
+      "original": "error_004.ogg",
+      "original_sha256": "0b574cea597d96507e782ae9764f88482ce49f46e931e57054bf7150047f2d69",
+      "master": "error.wav",
+      "master_sha256": "d4180df20c475e052eecd5d7eddcf2d607344d5ce41691cf37fb1ac934d77c0b",
+      "seconds": 0.10448979591836735,
+      "normalization_gain": 0.865043
+    },
+    {
+      "cue": "tick",
+      "pack": "interface-sounds",
+      "original": "tick_001.ogg",
+      "original_sha256": "9d057b918024c787bbe6c00beed13a7ef72a3fa0c259add3cef36582792f4230",
+      "master": "tick.wav",
+      "master_sha256": "15ac8a173175aa3d2b87e471411dd84fd14017a1c2d091e03e583de228716d5f",
+      "seconds": 0.04498866213151927,
+      "normalization_gain": 1.218756
+    },
+    {
+      "cue": "equip",
+      "pack": "rpg-audio",
+      "original": "metalLatch.ogg",
+      "original_sha256": "ba9ba60b172b3ebc131a940f25793cd2e207aca7af73dc80d637277f060f1708",
+      "master": "equip.wav",
+      "master_sha256": "d5cc7530abbf4446e7480a7f72f31a4bdaca8e25ada387a24257511fad4c9450",
+      "seconds": 0.26136054421768706,
+      "normalization_gain": 0.749992
+    },
+    {
+      "cue": "throw",
+      "pack": "rpg-audio",
+      "original": "knifeSlice2.ogg",
+      "original_sha256": "6c2064d0ef988d1ec3d56868e823ea8823a5cac00f2742560052633529407def",
+      "master": "throw.wav",
+      "master_sha256": "1ed16c43f897f5a1b38cc317ffdb84907bb9be1cd73b30b82af2a47153ebee73",
+      "seconds": 0.568798185941043,
+      "normalization_gain": 0.749992
+    },
+    {
+      "cue": "impact",
+      "pack": "impact-sounds",
+      "original": "impactPunch_medium_000.ogg",
+      "original_sha256": "486988aa2d6440ffc4c62a0e8ccf3c23673ba84424bd4723378d451b7255eb5c",
+      "master": "impact.wav",
+      "master_sha256": "0b6d4d502281c7df55c2749c94d5c1ed2584d566677b191ee1234c202b3bc7a8",
+      "seconds": 0.43056689342403626,
+      "normalization_gain": 0.852174
+    },
+    {
+      "cue": "explosion",
+      "pack": "sci-fi-sounds",
+      "original": "explosionCrunch_000.ogg",
+      "original_sha256": "4b597d658d0ae101f0a030fbeea5fc3a4292ab85f017470a8254a8e7959cbd69",
+      "master": "explosion.wav",
+      "master_sha256": "7201ada3cf33545c8d306653651f6605aaad3e541aff9d2ca54060b0212d42e1",
+      "seconds": 0.7774603174603174,
+      "normalization_gain": 0.837537
+    },
+    {
+      "cue": "explosion-heavy",
+      "pack": "sci-fi-sounds",
+      "original": "explosionCrunch_001.ogg",
+      "original_sha256": "fdd04d6f0032d4d57c134ad37f3587d2d00e58c9572715275bd8cf4f43593576",
+      "master": "explosion-heavy.wav",
+      "master_sha256": "d128c938dbbcb7481cfb83cecbc06c32c08952b95f7942c1f546d370e87a5c20",
+      "seconds": 1.356780045351474,
+      "normalization_gain": 0.857557
+    },
+    {
+      "cue": "beam",
+      "pack": "sci-fi-sounds",
+      "original": "laserSmall_000.ogg",
+      "original_sha256": "72b589eadd41781257ac859e4f4d030222e623390e4a1a83f6d05329a6e026f1",
+      "master": "beam.wav",
+      "master_sha256": "3b3887cfb8365ffabce0b58a0cb6ba2d802cfa9049d93a02229c99bd20bd8ecf",
+      "seconds": 0.2363265306122449,
+      "normalization_gain": 1.544529
+    },
+    {
+      "cue": "launch",
+      "pack": "sci-fi-sounds",
+      "original": "thrusterFire_000.ogg",
+      "original_sha256": "0fdc474d93f209debf1fc4ea77765a669dcb7676db31b4d8a0a509685bccf374",
+      "master": "launch.wav",
+      "master_sha256": "cf3630e026af62d5778758c2c614685d1b9d5f4b436c40f851fb094db25b2ed5",
+      "seconds": 0.6500226757369615,
+      "normalization_gain": 1.995048,
+      "treatment": "Trim to 0.65 seconds; 8 ms fade-in and 250 ms fade-out from 0.40 seconds, before PCM normalization."
+    }
+  ]
+}

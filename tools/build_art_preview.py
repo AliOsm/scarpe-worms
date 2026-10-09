@@ -4,8 +4,10 @@ from __future__ import annotations
 from PIL import Image, ImageDraw
 
 from pathlib import Path
+import functools
+import subprocess
 
-from build_art_core import ART, PAPER, TEAMS
+from build_art_core import ART, PAPER, ROOT, TEAMS
 
 OUT = Path(__file__).resolve().parent / "build_art_previews"
 
@@ -30,7 +32,7 @@ def grub_sheet(scale=2):
 
 
 def grub_small_check():
-    """All teams at the intended 40x40 in-game size, on a mid-tone background."""
+    """All teams at a compact 40px draw size, on a mid-tone background."""
     from build_art_grubs import STATE_ORDER, frames_for
     out = Image.new("RGBA", (6 * 44 * 8 + 8, len(STATE_ORDER) * 44 + 8), "#7aa7b0")
     for team in range(6):
@@ -72,7 +74,7 @@ def icon_sheet():
     for i, p in enumerate(icons):
         x, y = (i % cols) * cell, (i // cols) * cell
         d.rounded_rectangle((x + 6, y + 4, x + cell - 6, y + 70), 12, fill="#e9e0cc")
-        out.alpha_composite(Image.open(p), (x + 12, y + 5))
+        out.alpha_composite(Image.open(p).resize((64, 64), Image.LANCZOS), (x + 12, y + 5))
         d.text((x + cell / 2, y + 78), p.stem, fill="#182d35", anchor="mm")
     out.save(OUT / "weapons-sheet.png")
 
@@ -118,20 +120,23 @@ def scenes_sheet():
 BIOMES = ("meadow", "desert", "glacier", "volcano")
 
 
+@functools.cache
 def _mask(name):
-    """Sample battlefield cell masks exported from the game's own generator.
-
-    Stored as visible greys (material id x 80) so the PNG is legible; decoded here.
-    """
+    """Generate real collision data; never depend on an ignored previous build."""
     import numpy as np
-    im = Image.open(OUT / f"terrain-mask-{name}.png")
-    return (np.asarray(im) // 80).astype(np.uint8)
+    script = ('terrain = Burrow::Terrain.new(seed: 314159, shape: ARGV.fetch(0), '
+              'width: 4800, height: 1600); STDOUT.binmode; STDOUT.write(terrain.data)')
+    data = subprocess.check_output(["ruby", "-I", str(ROOT / "lib"), "-r", "burrow",
+                                    "-e", script, name], cwd=ROOT)
+    mask = np.frombuffer(data, dtype=np.uint8).reshape((800, 2400))
+    Image.fromarray(mask * 80).save(OUT / f"terrain-mask-{name}.png")
+    return mask
 
 
 def terrain_kit_sheet():
     from build_art_terrain import CR, T, TU
     cell = 3
-    out = _paper(4 * (T + 24) + 24, 640)
+    out = _paper(4 * (T + 24) + 24, T + 384)
     d = ImageDraw.Draw(out)
     for i, b in enumerate(BIOMES):
         x = 24 + i * (T + 24)
@@ -140,21 +145,21 @@ def terrain_kit_sheet():
         out.alpha_composite(fill, (x, 24))
         for j, k in enumerate(("deep", "shade", "edge")):
             sw = Image.open(ART / f"terrain/{b}-{k}.png").convert("RGBA").crop((0, 0, 80, 64))
-            out.alpha_composite(sw, (x + j * 88, 290))
-            d.text((x + j * 88, 356), k, fill="#5d6f72")
+            out.alpha_composite(sw, (x + j * 88, T + 34))
+            d.text((x + j * 88, T + 100), k, fill="#5d6f72")
         crust = Image.open(ART / f"terrain/{b}-crust.png").convert("RGBA").crop((0, 0, T // cell, CR))
         crust = crust.resize((T, CR * cell), Image.NEAREST)
         backing = Image.open(ART / f"terrain/{b}-fill.png").convert("RGBA").crop((0, 0, T, CR * cell))
         backing.alpha_composite(crust)
-        out.alpha_composite(backing, (x, 380))
+        out.alpha_composite(backing, (x, T + 124))
         tufts = Image.open(ART / f"terrain/{b}-tufts.png").convert("RGBA").crop((0, 0, T // cell, TU))
-        out.alpha_composite(tufts.resize((T, TU * cell), Image.NEAREST), (x, 450))
-        d.text((x, 490), "crust (x3) / optional tufts (x3)", fill="#5d6f72")
-        mas = Image.open(ART / f"terrain/{b}-masonry.png").convert("RGBA").resize((128, 64), Image.NEAREST)
-        out.alpha_composite(mas, (x, 512))
+        out.alpha_composite(tufts.resize((T, TU * cell), Image.NEAREST), (x, T + 194))
+        d.text((x, T + 234), "crust (x3) / optional tufts (x3)", fill="#5d6f72")
+        mas = Image.open(ART / f"terrain/{b}-masonry.png").convert("RGBA").resize((192, 96), Image.NEAREST)
+        out.alpha_composite(mas, (x, T + 256))
         out.alpha_composite(Image.open(ART / "terrain/girder.png").convert("RGBA").resize((128, 24), Image.NEAREST),
-                            (x + 128 + 8, 532))
-        d.text((x, 582), "masonry / girder (x2)", fill="#5d6f72")
+                            (x + 200, T + 276))
+        d.text((x, T + 362), "masonry (x1.5) / girder (x4)", fill="#5d6f72")
     out.save(OUT / "terrain-kit.png")
 
 
@@ -193,17 +198,20 @@ def combat_board(biome, mask_name="islands", cam=(420, 470)):
             continue
         team, (st, fr) = teams[k], states[k]
         left = "left/" if k % 2 else ""
-        put(f"grubs/{left}{team}-{st}-{fr}", wx - 26, sy - 44, 52, 52)
-        bx, by = wx - 42 - cx, sy - 68 - cy
+        put(f"grubs/{left}{team}-{st}-{fr}", wx - 32, sy - 54.4, 64, 64)
+        bx, by = wx - 42 - cx, sy - 83.4 - cy
         d.rounded_rectangle((bx, by, bx + 84, by + 20), 6, fill="#182d35")
-        d.text((bx + 42, by + 10), f"{names[k]}  {100 - k * 13}", fill=TEAMS[team], anchor="mm", font=font)
-    for name, wx in (("crate", cx + 560), ("mine-prop", cx + 1010), ("barrel-prop", cx + 1230)):
+        d.text((bx + 42, by + 10), f"{names[k]}  {100 - k * 13}", fill="#fffaf0", anchor="mm", font=font)
+        d.rectangle((bx + 1, by + 19, bx + 82, by + 20), fill=TEAMS[team])
+    for name, wx, width, height, ax, ay in (("crate", cx + 560, 34, 34, 17, 31.875),
+                                          ("mine-prop", cx + 1010, 34, 34, 17, 27.625),
+                                          ("barrel-prop", cx + 1230, 32, 38, 16, 36.8)):
         sy = surface(wx)
         if sy is not None and sy < cy + 680:
-            put(name, wx - 16, sy - 29, 32, 32)
+            put(name, wx - ax, sy - ay, width, height)
     # a shot in flight and an impact
-    put("weapons/rocket", cx + 610, cy + 120, 28, 28)
-    ex = Image.open(ART / "fx/explosion-3.png").convert("RGBA")
+    put("projectiles/rocket", cx + 610, cy + 120, 28, 28)
+    ex = Image.open(ART / "fx/explosion-3.png").convert("RGBA").resize((160, 160), Image.LANCZOS)
     view.alpha_composite(ex, (1050 - 80, 300 - 80))
     # the game's water layer (scene.rb box + waterline)
     wy = mask.shape[0] * 2 - 96 - cy

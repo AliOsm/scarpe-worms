@@ -1,0 +1,279 @@
+{
+  "version": "0.4.0",
+  "checked_at": "2026-10-09T18:36:04.346248+00:00",
+  "scope": "Preserved exploratory timing evidence and the correction to idle-frame classification. Raw per-frame arrays stay in the local ignored cache.",
+  "budgets_ms": {
+    "continuous_mean": 18.5,
+    "continuous_p95": 25,
+    "continuous_max": 60,
+    "combat_gui_update_interval_max": 60,
+    "zoom_paint_max": 55
+  },
+  "findings": [
+    {
+      "finding": "An earlier genuine combat presentation gap exceeded 60 ms.",
+      "maximum_ms": 61.22708320617676,
+      "scene_work_ms": 46.426341868937016,
+      "disposition": "Unresolved isolated outlier; later captures passed. It still fails the corrected v2 classifier. No root-cause or universal 60 FPS claim."
+    },
+    {
+      "finding": "An already-presented one-frame camera handoff was followed by skipped unchanged frames, producing an apparent 92 ms combat gap.",
+      "disposition": "Classify motion from completed app updates. Already-presented movement can end at explicit idle; new movement remains chargeable until the next paint. Emit at most one interval per native gap."
+    },
+    {
+      "finding": "The first classifier revision could hide a short movement that started and ended between paints.",
+      "disposition": "Fixed after Opus 5.5 review; new pending movement remains charged through the following paint. Eight regressions cover short bursts, missing updates, completed-update timing and empty evidence."
+    },
+    {
+      "finding": "Motion-only intervals do not establish responsiveness while actors and camera are idle.",
+      "disposition": "Also enforce a 60 ms maximum combat GUI-update interval. The prior benchmark already filtered for motion; it did not demand redundant paints for every idle update."
+    },
+    {
+      "finding": "A later capture marked stationary or subpixel collision/interpolation velocities as continuous movement, producing an 89.68 ms combat gap while GUI updates remained regular.",
+      "previous_capture_combat": {
+        "count": 689,
+        "mean_ms": 16.705792251276865,
+        "p95_ms": 20.24221420288086,
+        "p99_ms": 28.620243072509766,
+        "max_ms": 89.67804908752441,
+        "over_33ms": 3,
+        "over_50ms": 1
+      },
+      "previous_gui_update_max_ms": 21.298989187926054,
+      "disposition": "The native harness now compares rounded visible actor/projectile positions and camera origins actually sent to the renderer, while retaining the old velocity flag in raw observations. Continuous budgets and the v2 pending-movement rule are unchanged.",
+      "motion_detection_version": 2,
+      "followup_velocity_only_unchanged_draw_updates": 17,
+      "note": "This is separate from the genuine earlier 61.23 ms scene-work outlier. No game physics or renderer scheduling changed."
+    }
+  ],
+  "captures": [
+    {
+      "capture": "rendering-final",
+      "captured_at": "2026-10-09T17:57:42.602664+00:00",
+      "timer_slack_ms": 0,
+      "profiled": false,
+      "original_reported_combat": {
+        "count": 704,
+        "mean_ms": 16.764924535511366,
+        "p95_ms": 20.601102000000537,
+        "p99_ms": 25.59818699999994,
+        "max_ms": 61.22711999999986,
+        "over_33ms": 3,
+        "over_50ms": 1
+      },
+      "recomputed_with_motion_analysis_v2": {
+        "count": 712,
+        "mean_ms": 16.629170165972763,
+        "p95_ms": 20.601272583007812,
+        "p99_ms": 25.59828758239746,
+        "max_ms": 61.22708320617676,
+        "over_33ms": 3,
+        "over_50ms": 1
+      },
+      "maximum_gui_update_work_ms": 46.50240298360586,
+      "maximum_gui_update_interval_ms": 46.64227506145835,
+      "v2_combat_budgets_pass": false
+    },
+    {
+      "capture": "rendering-profile",
+      "captured_at": "2026-10-09T18:01:29.095798+00:00",
+      "timer_slack_ms": 0,
+      "profiled": true,
+      "original_reported_combat": {
+        "count": 812,
+        "mean_ms": 16.697890626847293,
+        "p95_ms": 19.99348399999956,
+        "p99_ms": 24.183464000000043,
+        "max_ms": 50.54813499999966,
+        "over_33ms": 3,
+        "over_50ms": 1
+      },
+      "recomputed_with_motion_analysis_v2": {
+        "count": 818,
+        "mean_ms": 16.58285975747703,
+        "p95_ms": 19.99354362487793,
+        "p99_ms": 24.18351173400879,
+        "max_ms": 40.29583930969238,
+        "over_33ms": 2,
+        "over_50ms": 0
+      },
+      "maximum_gui_update_work_ms": 16.074332408607006,
+      "maximum_gui_update_interval_ms": 18.453002907335758,
+      "v2_combat_budgets_pass": true
+    },
+    {
+      "capture": "rendering-accepted",
+      "captured_at": "2026-10-09T18:02:55.326129+00:00",
+      "timer_slack_ms": 0,
+      "profiled": false,
+      "original_reported_combat": {
+        "count": 704,
+        "mean_ms": 16.766142467329537,
+        "p95_ms": 20.732842999999335,
+        "p99_ms": 25.164124000001564,
+        "max_ms": 92.20585799999981,
+        "over_33ms": 1,
+        "over_50ms": 1
+      },
+      "recomputed_with_motion_analysis_v2": {
+        "count": 711,
+        "mean_ms": 16.48910069096776,
+        "p95_ms": 20.493507385253906,
+        "p99_ms": 25.011777877807617,
+        "max_ms": 28.630495071411133,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "maximum_gui_update_work_ms": 22.82971004024148,
+      "maximum_gui_update_interval_ms": 23.06891093030572,
+      "v2_combat_budgets_pass": true
+    },
+    {
+      "capture": "rendering-classified",
+      "captured_at": "2026-10-09T18:05:54.401973+00:00",
+      "timer_slack_ms": 0,
+      "profiled": false,
+      "original_reported_combat": {
+        "count": 538,
+        "mean_ms": 16.702544290336977,
+        "p95_ms": 20.93505859375,
+        "p99_ms": 31.437397003173828,
+        "max_ms": 40.56191444396973,
+        "over_33ms": 2,
+        "over_50ms": 0
+      },
+      "recomputed_with_motion_analysis_v2": {
+        "count": 538,
+        "mean_ms": 16.71837874061556,
+        "p95_ms": 20.941972732543945,
+        "p99_ms": 31.437397003173828,
+        "max_ms": 40.56191444396973,
+        "over_33ms": 2,
+        "over_50ms": 0
+      },
+      "maximum_gui_update_work_ms": 29.481643810868263,
+      "maximum_gui_update_interval_ms": 29.65098200365901,
+      "v2_combat_budgets_pass": true
+    },
+    {
+      "capture": "rendering-slack",
+      "captured_at": "2026-10-09T18:06:32.640588+00:00",
+      "timer_slack_ms": 100,
+      "profiled": false,
+      "original_reported_combat": {
+        "count": 824,
+        "mean_ms": 16.601326974850256,
+        "p95_ms": 20.56574821472168,
+        "p99_ms": 28.06878089904785,
+        "max_ms": 40.3592586517334,
+        "over_33ms": 2,
+        "over_50ms": 0
+      },
+      "recomputed_with_motion_analysis_v2": {
+        "count": 824,
+        "mean_ms": 16.601326974850256,
+        "p95_ms": 20.56574821472168,
+        "p99_ms": 28.06878089904785,
+        "max_ms": 40.3592586517334,
+        "over_33ms": 2,
+        "over_50ms": 0
+      },
+      "maximum_gui_update_work_ms": 16.457422636449337,
+      "maximum_gui_update_interval_ms": 21.12004766240716,
+      "v2_combat_budgets_pass": true
+    },
+    {
+      "capture": "rendering-release",
+      "captured_at": "2026-10-09T18:25:01.724612+00:00",
+      "timer_slack_ms": 0,
+      "profiled": false,
+      "original_reported_combat": {
+        "count": 710,
+        "mean_ms": 16.661570105754155,
+        "p95_ms": 20.801782608032227,
+        "p99_ms": 24.59239959716797,
+        "max_ms": 32.752275466918945,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "recomputed_with_motion_analysis_v2": {
+        "count": 710,
+        "mean_ms": 16.661570105754155,
+        "p95_ms": 20.801782608032227,
+        "p99_ms": 24.59239959716797,
+        "max_ms": 32.752275466918945,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "maximum_gui_update_work_ms": 24.233468808233738,
+      "maximum_gui_update_interval_ms": 24.590801913291216,
+      "v2_combat_budgets_pass": true
+    },
+    {
+      "capture": "rendering-release-slack",
+      "captured_at": "2026-10-09T18:26:06.383477+00:00",
+      "timer_slack_ms": 100,
+      "profiled": false,
+      "original_reported_combat": {
+        "count": 539,
+        "mean_ms": 16.698297631541518,
+        "p95_ms": 21.014928817749023,
+        "p99_ms": 32.27972984313965,
+        "max_ms": 45.43256759643555,
+        "over_33ms": 4,
+        "over_50ms": 0
+      },
+      "recomputed_with_motion_analysis_v2": {
+        "count": 539,
+        "mean_ms": 16.698297631541518,
+        "p95_ms": 21.014928817749023,
+        "p99_ms": 32.27972984313965,
+        "max_ms": 45.43256759643555,
+        "over_33ms": 4,
+        "over_50ms": 0
+      },
+      "maximum_gui_update_work_ms": 29.956021811813116,
+      "maximum_gui_update_interval_ms": 57.651891838759184,
+      "v2_combat_budgets_pass": true
+    },
+    {
+      "capture": "rendering-pixels",
+      "motion_analysis_version": 2,
+      "motion_detection_version": 2,
+      "timer_slack_ms": 0,
+      "combat": {
+        "count": 536,
+        "mean_ms": 16.099648689156147,
+        "p95_ms": 19.9124813079834,
+        "p99_ms": 24.327516555786133,
+        "max_ms": 32.00888633728027,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "maximum_gui_update_interval_ms": 19.950949121266603,
+      "budgets_pass": true
+    },
+    {
+      "capture": "rendering-pixels-slack",
+      "motion_analysis_version": 2,
+      "motion_detection_version": 2,
+      "timer_slack_ms": 100,
+      "combat": {
+        "count": 685,
+        "mean_ms": 16.32944893662947,
+        "p95_ms": 20.2486515045166,
+        "p99_ms": 23.8037109375,
+        "max_ms": 31.594514846801758,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "maximum_gui_update_interval_ms": 25.708163157105446,
+      "budgets_pass": true
+    }
+  ],
+  "latest_source_reports": [
+    "rendering-0.4.0-source-linux.json",
+    "rendering-0.4.0-source-slack-linux.json"
+  ],
+  "measurement_limits": "Linux Xvfb, simulated 2x density, OpenAL null output. Not native Mac execution or a statistical guarantee that isolated stalls are absent."
+}

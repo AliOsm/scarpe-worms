@@ -1,0 +1,65 @@
+{
+  "display": "native",
+  "updated_at": "2026-10-09T19:03:22Z",
+  "counts": {
+    "pass": 7,
+    "fail": 0,
+    "error": 0,
+    "skip": 0,
+    "expected_fail": 0,
+    "unexpected_pass": 0,
+    "not_applicable": 0,
+    "timeout": 0
+  },
+  "results": {
+    "checks/battle.sspec": {
+      "status": "pass",
+      "secs": 17.06,
+      "assertions": 25,
+      "scope": "native",
+      "run_at": "2026-10-09T19:03:22Z"
+    },
+    "checks/camera.sspec": {
+      "status": "pass",
+      "secs": 8.31,
+      "assertions": 28,
+      "scope": "native",
+      "run_at": "2026-10-09T19:03:22Z"
+    },
+    "checks/controls.sspec": {
+      "status": "pass",
+      "secs": 34.02,
+      "assertions": 31,
+      "scope": "native",
+      "run_at": "2026-10-09T19:03:22Z"
+    },
+    "checks/lifecycle.sspec": {
+      "status": "pass",
+      "secs": 7.48,
+      "assertions": 21,
+      "scope": "native",
+      "run_at": "2026-10-09T19:03:22Z"
+    },
+    "checks/menu.sspec": {
+      "status": "pass",
+      "secs": 4.66,
+      "assertions": 63,
+      "scope": "native",
+      "run_at": "2026-10-09T19:03:22Z"
+    },
+    "checks/online.sspec": {
+      "status": "pass",
+      "secs": 20.07,
+      "assertions": 19,
+      "scope": "native",
+      "run_at": "2026-10-09T19:03:22Z"
+    },
+    "checks/presentation.sspec": {
+      "status": "pass",
+      "secs": 42.68,
+      "assertions": 17,
+      "scope": "native",
+      "run_at": "2026-10-09T19:03:22Z"
+    }
+  }
+}

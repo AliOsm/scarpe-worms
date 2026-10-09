@@ -35,6 +35,7 @@ edits to that checkout. Re-running setup is supported.
 | Native UI or input | `./bin/check-native` |
 | One native journey | `./bin/check-native checks/controls.sspec` |
 | Audio | `bundle exec ruby tools/check_audio.rb` |
+| Art or audio assets | `uv run tools/check_assets.py` plus the relevant native journey |
 | Host/container | `python3 tools/check_container.py` (requires Docker) |
 | Scarpe patches | `python3 tools/verify_scarpe.py` and relevant upstream tests |
 | Documentation only | Check relative links and runnable command examples |
@@ -47,6 +48,7 @@ xvfb-run -a -s '-screen 0 3840x2400x24' \
 ```
 
 Add `--timer-slack-ms 100` to reproduce the old Mac timing failure on Linux.
+Run `python3 tools/test_rendering.py` when changing the timing analysis itself.
 See [validation](docs/VALIDATION.md) for scope and limits.
 
 ## Assets and framework patches

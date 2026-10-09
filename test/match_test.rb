@@ -174,4 +174,19 @@ class MatchTest < Minitest::Test
     end
     assert_raises(Burrow::RuleError) { game({}, players: 7) }
   end
+
+  def test_snapshot_reports_the_authoritative_retreat_countdown
+    match = game("retreat_seconds" => 4)
+    assert_equal 0, match.snapshot[:retreat_seconds]
+    match.command("p0", "fire", weapon: "grenade", angle: -75, power: 0.3, fuse: 5)
+    assert_equal "retreat", match.phase
+    assert_in_delta 4, match.snapshot[:retreat_seconds], 0.1
+    match.step(Burrow::TICK_RATE)
+    assert_in_delta 3, match.snapshot[:retreat_seconds], 0.1
+    restored = Burrow::Match.restore(JSON.parse(JSON.generate(match.checkpoint)))
+    assert_equal match.snapshot[:retreat_seconds], restored.snapshot[:retreat_seconds]
+    match.step(Burrow::TICK_RATE * 3)
+    refute_equal "retreat", match.phase
+    assert_equal 0, match.snapshot[:retreat_seconds]
+  end
 end

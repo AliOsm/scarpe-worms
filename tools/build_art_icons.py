@@ -1,4 +1,4 @@
-"""Weapon / utility icons: 64x64 transparent, chunky ink outlines, soft drop shadow."""
+"""Weapon / utility icons: 128x128 Retina PNGs, authored in 64x64 logical units."""
 from __future__ import annotations
 
 import math
@@ -1182,16 +1182,17 @@ def _with_shadow(path):
     a = im.getchannel("A")
     sh = Image.new("RGBA", im.size, (24, 45, 53, 0))
     sh.putalpha(a.point(lambda v: int(v * 0.28)))
-    sh = sh.filter(ImageFilter.GaussianBlur(1.1))
+    sh = sh.filter(ImageFilter.GaussianBlur(2.2))
     base = Image.new("RGBA", im.size, (0, 0, 0, 0))
-    base.alpha_composite(sh, (1, 2))
+    base.alpha_composite(sh, (2, 4))
     base.alpha_composite(im)
     base.save(path)
 
 
 def render_icon(name, path, svg=None):
     fn = ICONS[name]
-    s, ctx = surface(64, 64)
+    s, ctx = surface(128, 128)
+    ctx.scale(2, 2)
     fn(ctx)
     s.write_to_png(str(path))
     _with_shadow(path)

@@ -28,15 +28,22 @@ module Burrow
         state["teams"].each_with_index do |team, i|
           x = 32 + i * column
           marker = box(x - 9, 13, 3, 37, color: COLORS[team["color"]], radius: 1)
-          title = label(team["name"], x, 14, column - 25, size: 15, color: COLORS[team["color"]], font: Theme.display)
+          title = label(short_text(team["name"], count > 4 ? 15 : 28), x, 12, column - 110, size: 15, color: COLORS[team["color"]], font: Theme.display)
+          health = label("", x + column - 99, 14, 70, size: 12, color: Theme::WHITE, font: Theme.mono, align: "right")
+          members = label("", x, 32, column - 30, size: 10, color: "#acc5c5")
           box(x, 45, column - 30, 6, color: "#ffffff20", radius: 3)
           bar = box(x, 45, column - 30, 6, color: COLORS[team["color"]], radius: 3)
-          @team_hud[team["id"]] = {bar: bar, width: column - 30, marker: marker, title: title}
+          @team_hud[team["id"]] = {bar: bar, width: column - 30, marker: marker, title: title, health: health, members: members}
         end
-        @turn_label = label("", 34, 70, 624, size: 15, color: Theme::WHITE, font: Theme.display)
-        box(681, 59, 80, 39, color: "#ffffff12", radius: 9)
-        @clock_label = label("45", 678, 60, 86, size: 27, color: Theme::GOLD, font: Theme.mono, align: "center")
-        @wind_label = label("", 879, 74, 334, size: 12, color: "#b9d6d1", align: "right")
+        @turn_label = label("", 34, 72, 560, size: 15, color: Theme::WHITE, font: Theme.display)
+        box(616, 59, 158, 39, color: "#ffffff12", radius: 9)
+        @phase_label = label("TURN", 626, 75, 65, size: 10, color: "#b9d6d1", font: Theme.mono)
+        @clock_label = label("45", 690, 60, 78, size: 29, color: Theme::GOLD, font: Theme.mono, align: "center")
+        @wind_label = label("", 814, 63, 230, size: 11, color: "#b9d6d1", align: "center")
+        box(850, 87, 158, 5, color: "#ffffff20", radius: 2)
+        @wind_bar = box(929, 87, 1, 5, color: Theme::GOLD, radius: 2)
+        box(928, 85, 2, 9, color: "#ffffff88", radius: 0)
+        @round_label = label("", 1054, 74, 210, size: 11, color: "#b9d6d1", align: "right", font: Theme.mono)
         button("Menu", 1298, 62, 108, height: 32) { show_match_menu }
         box(0, 824, 1440, 76, color: Theme::PAPER, radius: 0)
         line(0, 824, 1440, 824)
@@ -45,8 +52,8 @@ module Burrow
         @weapon_ammo = label("", 86, 866, 220, size: 12, color: Theme::MUTED)
         button("Arsenal · E", 310, 845, 156) { show_arsenal }
         @aim_label = label("", 491, 837, 255, size: 13, color: Theme::MUTED)
-        @power_bg = box(490, 870, 225, 7, color: "#d9d4c7", radius: 3)
-        @power_bar = box(490, 870, 146, 7, color: Theme::ORANGE, radius: 3)
+        @power_bg = box(490, 867, 225, 11, color: "#d9d4c7", radius: 4)
+        @power_bar = box(490, 867, 146, 11, color: Theme::ORANGE, radius: 4)
         @power_minus = button("−", 731, 845, 44, height: 32) { @power = [@power - 0.05, 0.05].max; refresh_match_hud }
         @power_plus = button("+", 784, 845, 44, height: 32) { @power = [@power + 0.05, 1.0].min; refresh_match_hud }
         @fuse_button = button("Fuse: #{@fuse}s", 850, 845, 140) { @fuse = @fuse % 5 + 1; refresh_match_hud }
@@ -74,19 +81,35 @@ module Burrow
         title = if state["phase"] == "finished"
           "A well-earned breather"
         elsif my_turn?
-          state["phase"] == "aiming" ? "Your turn, #{active['name']}  ·  Move, aim, make trouble" : state["phase"] == "retreat" ? "Make yourself scarce! Retreat while you can." : "Let's see where that lands…"
+          state["phase"] == "aiming" ? "Your turn, #{active['name']}  ·  Make trouble" : state["phase"] == "retreat" ? "Retreat, #{active['name']}!  ·  Get clear of the blast" : "Let's see where that lands…"
         else
           team = state["teams"].find { |t| t["id"] == state["team"] }
           "#{team['name']}  ·  #{active['name']}'s turn"
         end
         set_text(@turn_label, title)
-        set_text(@clock_label, state["phase"] == "aiming" ? state["seconds"].ceil.to_s.rjust(2, "0") : "··")
-        @clock_label.style(stroke: state["seconds"] < 10 ? "#ef765e" : Theme::GOLD)
-        arrow = state["wind"] >= 0 ? "→" : "←"
-        set_text(@wind_label, "ROUND #{state['round']}  ·  WIND #{arrow} #{(state['wind'].abs * 10).round}  ·  #{@rtt} ms")
+        phase = state["phase"]
+        seconds = phase == "retreat" ? state.fetch("retreat_seconds", 0) : state["seconds"]
+        counting = %w[aiming retreat].include?(phase)
+        remaining = seconds.ceil
+        set_text(@clock_label, counting ? remaining.to_s.rjust(2, "0") : "··")
+        set_text(@phase_label, {"aiming" => "TURN", "retreat" => "RETREAT", "settling" => "ACTION", "finished" => "FINISH"}.fetch(phase, "ACTION"))
+        @clock_label.style(stroke: counting && (remaining <= 10 || phase == "retreat") ? "#ef765e" : Theme::GOLD)
+        cue = [state["turn"], phase, remaining]
+        if @timer_cue != cue
+          @audio&.play("tick", volume: 0.35) if counting && my_turn? && @window_active && remaining.between?(1, 5)
+          @timer_cue = cue
+        end
+        wind = state["wind"]
+        arrow = wind >= 0 ? "→" : "←"
+        set_text(@wind_label, wind.abs < 0.03 ? "WIND · CALM" : "WIND  #{arrow}  #{(wind.abs * 10).round}")
+        wind_width = (wind.abs.clamp(0, 2) * 39).round
+        @wind_bar.style(left: px(wind.negative? ? 929 - wind_width : 929), width: px([wind_width, 1].max))
+        set_text(@round_label, "ROUND #{state['round']}  ·  #{@rtt} ms")
         state["teams"].each do |team|
           members = state["worms"].select { |w| w["team"] == team["id"] }
           ratio = members.sum { |w| w["hp"] }.fdiv(members.sum { |w| w["max_hp"] })
+          set_text(@team_hud[team["id"]][:health], members.sum { |w| w["hp"] }.to_s)
+          set_text(@team_hud[team["id"]][:members], "#{members.count { |w| w['hp'] > 0 }} / #{members.length} grubs")
           @team_hud[team["id"]][:bar].style(width: px([@team_hud[team["id"]][:width] * ratio, 0.5].max))
           marker = @team_hud[team["id"]][:marker]
           team["id"] == state["team"] ? marker.show : marker.hide
@@ -159,6 +182,7 @@ module Burrow
         cancel_controls
         @locked_target = nil
         @selected_weapon = id
+        @audio&.play("equip", volume: 0.5)
         true
       end
 

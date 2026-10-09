@@ -24,10 +24,26 @@ click_on "Start the mischief"
 wait_real.call { client.scene && client.scene.terrain_revision >= 0 }
 assert_equal [4800, 1600], client.state.values_at("world_width", "world_height")
 assert_equal 36, client.scene.actors.size
+backdrop = client.scene.instance_variable_get(:@backdrop)
+initial_backdrop = layout_of(backdrop)
 press_key "g"
 advance 0.05
 assert client.scene.camera.overview?
+actor = client.scene.actors.fetch(client.state["active"])
+badge, bounds = layout_of(actor[:badge]), layout_of(actor[:slot])
+assert_operator badge.x, :>=, bounds.x
+assert_operator badge.x + badge.w, :<=, bounds.x + bounds.w
 snapshot "camera-overview"
+# Pickup names retain a readable font in overview. Their backing capsule must
+# also fit the native text layout, including the second word and descenders.
+client.scene.event({"kind" => "pickup", "text" => Burrow::Catalog.fetch("airstrike")[:name], "x" => 2400.0, "y" => 800.0})
+effect = client.scene.instance_variable_get(:@effects).reverse.find { |e| e[:kind] == :text }
+advance 0.025
+pickup = layout_of(effect[:node].children.find { |n| n.is_a?(Shoes::Para) })
+plate = layout_of(effect[:node])
+assert_operator pickup.y + pickup.h, :<=, plate.y + plate.h, "overview must show the entire pickup label"
+snapshot "pickup-overview"
+effect = pickup = plate = nil
 zoom = client.scene.camera.zoom
 auto.wheel(-120, x: 700, y: 400)
 advance 0.05
@@ -41,6 +57,23 @@ advance 0.05
 assert_operator client.scene.camera.x, :>, 1500
 refute client.scene.camera.following
 assert_empty client.state["projectiles"]
+scouted_backdrop = layout_of(backdrop)
+assert_operator scouted_backdrop.x, :<, initial_backdrop.x, "distant scenery should drift with camera exploration"
+assert_operator scouted_backdrop.x + scouted_backdrop.w, :>=, 1280, "parallax must never expose an empty edge"
+client.preferences["motion"] = false
+advance 0.05
+still_backdrop = layout_of(backdrop)
+client.scene.camera.pan(-120, 0)
+advance 0.05
+assert_equal still_backdrop.x, layout_of(backdrop).x, "reduced motion disables decorative parallax"
+client.preferences["motion"] = true
+# Rebuild the scene while the active grub is outside the explored view. Its
+# marker still needs valid bounds even though its body is culled from painting.
+resize_window 1080, 675
+wait_real.call { client.instance_variable_get(:@dimensions) == [1080, 675] && client.scene.frame_count > 2 }
+assert client.scene.actors.fetch(client.state["active"])[:offset_y]
+resize_window 1280, 800
+wait_real.call { client.instance_variable_get(:@dimensions) == [1280, 800] && client.scene.frame_count > 2 }
 # Middle-drag changes the camera, without charging a weapon.
 previous = client.scene.camera.x
 auto.mouse(:down, 500, 350, button: 2)

@@ -9,7 +9,7 @@ module Burrow
       # Baked material kit (tools/build_art_terrain.py, docs/ART_DIRECTION.md).
       # Every texture is authored at cell resolution, so painting is table lookups only.
       KIT = File.join(Burrow::ROOT, "assets/art/terrain")
-      T = 256      # fill texture size (cells)
+      T = 512      # fill texture size (cells); mirrored repeat prevents material seams
       CRUST = 20   # surface lip rows
       TUFT = 12    # fringe rows above the surface (optional, see TUFTS)
       DEEP = 24    # cells below the air above where the darker "deep" fill begins
@@ -24,14 +24,14 @@ module Burrow
       RIM_DOWN = TUFTS ? TUFT + 2 : SHADE + 2
       RIM_SIDE = 2
 
-      Kit = Struct.new(:fill, :deep, :shade, :edge, :crust, :tufts, :masonry, :girder)
+      Kit = Struct.new(:fill, :deep, :shade, :edge, :crust, :tufts, :masonry, :girder, :masonry_edge)
 
       def self.kit(biome)
         @kits ||= {}
         @kits[biome] ||= begin
           read = ->(name) { ChunkyPNG::Image.from_file(File.join(KIT, name)).pixels.freeze }
           Kit.new(*%w[fill deep shade edge crust tufts masonry].map { |k| read.call("#{biome}-#{k}.png") },
-            read.call("girder.png")).freeze
+            read.call("girder.png"), read.call("#{biome}-masonry-edge.png")).freeze
         end
       end
 
@@ -88,11 +88,16 @@ module Burrow
         png = ChunkyPNG::Image.new(width, height, 0)
         out = png.pixels
         cols, rows, data = terrain.cols, terrain.rows, terrain.data
-        fill, deep, shade, edge, crust, tufts, masonry, girder = kit.to_a
+        fill, deep, shade, edge, crust, tufts, masonry, girder, masonry_edge = kit.to_a
         last = cols - 1
+        texture_rows = Array.new(height) do |ly|
+          ty = (oy + ly) & (T * 2 - 1)
+          [ty, T * 2 - 1 - ty].min * T
+        end
         width.times do |lx|
           x = ox + lx
-          tx = x & 255
+          tx = x & (T * 2 - 1)
+          tx = T * 2 - 1 - tx if tx >= T
           # Cells since the air above, read upward only until the first air cell.
           up = 0
           cy = oy - 1
@@ -129,13 +134,13 @@ module Burrow
               air = rows + SHADE + 1 if air == rows # the world floor is not an underside
             end
             dn = air - y
-            t = ((y & 255) << 8) | tx
+            t = texture_rows[ly] + tx
             out[ly * width + lx] = if material == 2
               girder[(up > 6 ? 5 : up - 1) * 32 + (x & 31)]
             else
               rim = dn <= EDGE || x.zero? || x == last || data.getbyte(i - 1).zero? || data.getbyte(i + 1).zero?
               if material == 3
-                rim ? edge[t] : masonry[((y & 31) << 6) | (x & 63)]
+                (rim ? masonry_edge : masonry)[((y & 63) << 7) | (x & 127)]
               else
                 lip = up <= CRUST ? crust[(up - 1) * T + tx] : 0
                 alpha = lip & 255

@@ -10,6 +10,7 @@ module Burrow
       include Widgets
       Y = 104
       FX = JSON.parse(File.read(File.join(Theme::ART, "manifest.json"), encoding: Encoding::UTF_8)).fetch("extras").fetch("fx_animations").freeze
+      COMBAT = JSON.parse(File.read(File.join(Theme::ART, "manifest.json"), encoding: Encoding::UTF_8)).fetch("combat").freeze
       attr_reader :terrain_revision, :terrain_packet, :actors, :frame_count, :max_frame_ms, :last_frame_ms, :camera, :timeline, :positions
 
       # Inspection tools can request the full collision grid. Normal rendering
@@ -33,10 +34,14 @@ module Burrow
           @restored_terrain_result = presentation[:terrain_result]
           @last_turn, @finished_at = presentation.values_at(:last_turn, :finished_at)
           @hurt_until = presentation[:hurt_until]
+          @impact_focus = presentation[:impact_focus]
+          @tracked_projectile = presentation[:tracked_projectile]
+          @turn_notice_data = presentation[:turn_notice_data]
+          @turn_notice_pending = presentation[:turn_notice_pending]
         end
         @tiles = {}
         @slot = @shoes.stack(left: 0, top: px(Y), width: px(1440), height: px(720)) do
-          @backdrop = image("sky-meadow", 0, 0, 1440, 720)
+          @backdrop = image("sky-meadow", -48, -24, 1536, 768)
         end
       end
 
@@ -70,17 +75,33 @@ module Burrow
             @cache = @shoes.stack(left: 0, top: 0, width: 1, height: 1) {}
             @cache.hide
           end
+          box(12, 8, 332, 68, color: "#182d35dc", radius: 11)
           button("−", 20, 16, 36, height: 30) { camera.zoom_by(-1) }
           button("+", 62, 16, 36, height: 30) { camera.zoom_by(1) }
           button("Map · G", 104, 16, 112, height: 30) { toggle_map }
           button("Follow · F", 222, 16, 112, height: 30) { camera.follow }
-          @camera_caption = micro("", 20, 56, 470)
-          @map_y, @map_h = 572, 128
-          box(1112, @map_y - 12, 308, @map_h + 22, color: "#182d35df", radius: 12)
+          @camera_caption = label("", 22, 55, 316, size: 10, color: "#d1e0d9", font: Theme.mono)
+          map_scale = [286.0 / @width, 128.0 / @height].min
+          @map_w, @map_h = @width * map_scale, @height * map_scale
+          @map_x, @map_y = 1122 + (286 - @map_w) / 2, 572 + (128 - @map_h) / 2
+          box(1112, 540, 308, 170, color: "#182d35ed", radius: 12)
+          micro("TACTICAL MAP", 1126, 551, 180, color: "#c4d7ce")
+          label("Click to scout", 1282, 551, 124, size: 10, color: "#c4d7ce", align: "right")
           @minimap_layer = @shoes.stack(left: 0, top: 0, width: px(1440), height: px(720)) {}
           @minimap = nil
           @map_marks = {}
-          @map_frame = box(1122, @map_y, 286, @map_h, color: "#ffffff00", radius: 0, stroke: "#fffaf0")
+          @map_water = box(@map_x, @map_y + @map_h - 6, @map_w, 6, color: "#6dbac4aa", radius: 0)
+          @map_frame = box(@map_x, @map_y, @map_w, @map_h, color: "#ffffff00", radius: 0, stroke: "#fffaf0")
+          @map_shot = box(0, 0, 6, 6, color: Theme::ORANGE, radius: 3, stroke: Theme::WHITE)
+          @map_shot.hide
+          @turn_notice = @shoes.stack(left: px(438), top: px(12), width: px(580), height: px(76)) do
+            box(0, 0, 580, 76, color: "#182d35f2", radius: 12)
+            @turn_notice_accent = box(0, 14, 3, 48, color: Theme::ORANGE, radius: 1)
+            @turn_notice_portrait = image("grubs/0-idle-0", 9, 4, 64, 64)
+            @turn_notice_title = label("", 84, 12, 476, size: 23, color: Theme::WHITE, font: Theme.display)
+            @turn_notice_detail = label("", 85, 46, 472, size: 12, color: "#c4d7ce")
+          end
+          @turn_notice.hide
           @loading_label = label("Charting the battlefield…", 400, 310, 640, size: 24, font: Theme.display, align: "center")
         end
       end
@@ -108,11 +129,15 @@ module Burrow
         @scale = @ui_scale * camera.zoom
         if @last_turn != @state["turn"]
           @last_turn = @state["turn"]
-          camera.follow if @frame_count > 1 && !camera.overview?
+          @impact_focus = nil
+          @turn_notice_pending = true
+          # Exploring a distant island is an explicit player choice. A new turn
+          # must not steal the camera back until Follow is requested.
+          camera.follow if @frame_count > 1 && camera.following
         end
         active = @state["worms"].find { |w| w["id"] == @state["active"] }
-        focus = @state["projectiles"].first || active
-        camera.update(focus&.values_at("x", "y"), dt: started - (@last_render || started))
+        render_camera(active, started)
+        render_backdrop
         @last_render = started
         origin = [px(-camera.x), px(-camera.y)]
         @world.move(*origin) if origin != @origin
@@ -128,7 +153,7 @@ module Burrow
         reconcile_objects(@hazard_nodes, @state["hazards"], @props_layer, projectile: false)
         @timeline.events.each { |e| event(e); @controller.play_event(e) }
         @finished_at ||= started if @state["phase"] == "finished" && @timeline.tick >= @state["tick"]
-        dense = @state["worms"].count { |w| w["hp"] > 0 } > 18 || camera.zoom < 0.7
+        dense = camera.zoom < 0.7
         @positions = {}
         @state["worms"].each do |worm|
           node = @actors.fetch(worm["id"])
@@ -141,6 +166,9 @@ module Burrow
           end
           x, y = worm.values_at("x", "y")
           @positions[worm["id"]] = [x, y]
+          # Aim/turn markers use these bounds even when the actor is outside a
+          # manually explored viewport, including immediately after a resize.
+          resize_actor(node) if node[:scale] != @scale
           sx, sy = camera.screen(x, y)
           visible = sx.between?(-90, 1530) && sy.between?(-90, 810)
           if node[:visible] != visible
@@ -148,8 +176,7 @@ module Burrow
             node[:visible] = visible
           end
           next unless visible
-          resize_actor(node) if node[:scale] != @scale
-          position = [px(x - 42), px(y - 68)]
+          position = [px(x) - node[:offset_x], px(y) - node[:offset_y]]
           node[:slot].move(*position) if node[:position] != position
           node[:position] = position
           state = if worm["hp"] <= 0
@@ -180,30 +207,39 @@ module Burrow
           node[:image].path = File.join(Theme::ART, path + ".png") if node[:path] != path
           node[:path] = path
           tx, ty = @controller.target
-          compact = dense && worm["id"] != @state["active"] && Math.hypot(tx - x, ty - y + 15) > 24
-          if node[:compact] != compact
-            node[:badge].style(left: px(compact ? 26 : 0), top: px(compact ? 12 : 0), width: px(compact ? 32 : 84), height: px(compact ? 17 : 20))
-            node[:label].style(left: px(compact ? 27 : 1), top: px(compact ? 13 : 2), width: px(compact ? 30 : 82))
-            node[:compact] = compact
+          show_badge = worm["hp"] > 0 && (!dense || worm["id"] == @state["active"] || Math.hypot(tx - x, ty - y + 15) * camera.zoom < 22)
+          if node[:show_badge] != show_badge
+            [node[:badge], node[:label], node[:health]].each { |part| show_badge ? part.show : part.hide }
+            node[:show_badge] = show_badge
           end
-          set_text(node[:label], compact ? worm['hp'].to_s : "#{worm['name']}  #{worm['hp']}")
-          badge_color = worm["frozen"] ? "#d6eaf1" : worm["shield"] ? "#b9dcb6" : Theme::INK
+          set_text(node[:label], "#{worm['name']}  #{worm['hp']}") if show_badge
+          ratio = worm["hp"].fdiv(worm["max_hp"]).clamp(0, 1)
+          if node[:health_ratio] != ratio
+            node[:health].style(width: [((node[:badge_width] - 2) * ratio).round, 1].max)
+            node[:health_ratio] = ratio
+          end
+          badge_color = worm["frozen"] ? "#36536a" : worm["shield"] ? "#2e5947" : worm["poisoned"] ? "#536137" : Theme::INK
           node[:badge].style(fill: badge_color) if node[:badge_color] != badge_color
           node[:badge_color] = badge_color
-          if worm["hp"] <= 0 && !node[:health_hidden]
-            node[:label].hide
-            node[:badge].hide
-            node[:health_hidden] = true
-          end
         end
         @state["projectiles"].each do |p|
           node = @projectile_nodes[p["id"]]
           x, y = p.values_at("x", "y")
           node[:image].style(left: px(x - 14), top: px(y - 14), width: px(28), height: px(28))
-          node[:image].rotate((Math.atan2(p["vy"], p["vx"]) * 180 / Math::PI / 6).round * 6) unless p["walker"]
+          if !p["walker"] && Math.hypot(p["vx"], p["vy"]) > 25
+            rotation = COMBAT["projectiles"].include?(p["weapon"]) ? Math.atan2(p["vy"], p["vx"]) * 180 / Math::PI : @timeline.tick * 7
+            node[:image].rotate((rotation / 6).round * 6)
+          end
           if node[:fuse]
-            node[:fuse].style(left: px(x - 14), top: px(y - 35), width: px(28), size: [px(12), 8].max)
+            badge_scale = @ui_scale * [camera.zoom, 0.8].max
+            bw, bh = (34 * badge_scale).round, (22 * badge_scale).round
+            bx, by = px(x) - bw / 2, px(y - 19) - bh
+            node[:fuse_plate].style(left: bx, top: by, width: bw, height: bh)
+            node[:fuse].style(left: bx, top: by + (3 * badge_scale).round, width: bw, size: [(12 * badge_scale).round, 8].max)
             set_text(node[:fuse], p["life"] ? "#{(p['life'].fdiv(TICK_RATE)).ceil}s" : "")
+            color = p["life"].to_f <= TICK_RATE ? Theme::ORANGE : Theme::WHITE
+            node[:fuse].style(stroke: color) if node[:fuse_color] != color
+            node[:fuse_color] = color
           end
           if @controller.motion? && @frame_count % 4 == 0 && !p["walker"] && Math.hypot(p["vx"], p["vy"]) > 40
             add_particle(x, y, color: "#ffefc188", life: 0.35, size: 7, vx: 0, vy: -8)
@@ -215,7 +251,14 @@ module Burrow
             radius = h["radius"]
             node[:image].style(left: px(h["x"] - radius), top: px(h["y"] - radius), width: px(radius * 2), height: px(radius * 2))
           else
-            node[:image].style(left: px(h["x"] - 16), top: px(h["y"] - 29), width: px(32), height: px(32))
+            width, height, ax, ay = node[:bounds]
+            node[:image].style(left: px(h["x"] - ax), top: px(h["y"] - ay), width: px(width), height: px(height))
+            if h["kind"] == "mine"
+              blinking = @controller.motion? && @timeline.tick >= h.fetch("armed", 0)
+              lit = h["trigger"] || (blinking && (@timeline.tick / 15).floor.odd?)
+              path = File.join(Theme::ART, "#{lit ? 'mine-prop-lit' : 'mine-prop'}.png")
+              node[:image].path = path if node[:image].path != path
+            end
           end
         end
         render_aim(started)
@@ -226,6 +269,7 @@ module Burrow
           @water_level, @water_scale = @state["water"], @scale
         end
         render_navigation
+        render_turn_notice(started, active)
         elapsed = (Burrow.clock - started) * 1000
         @last_frame_ms = elapsed
         @frame_times << elapsed
@@ -244,12 +288,12 @@ module Burrow
         x, y = event.values_at("x", "y")
         if event["kind"] == "damage"
           @hurt_until[event["worm"]] = now + 0.35
-          float_text("−#{event['amount']}", x, y, "#a8462a")
+          float_text("−#{event['amount']}", x, y, "#ffb199")
         elsif event["kind"] == "heal"
-          float_text("+#{event['amount']}", x, y, "#2e745a")
+          float_text("+#{event['amount']}", x, y, "#9ad9b3")
           sprite_effect("sparkle", x, y, 1.3)
         elsif event["kind"] == "pickup"
-          float_text(event["text"], x, y - 15, Theme::TEAL)
+          float_text(event["text"], x, y - 15, Theme::GOLD)
           sprite_effect("sparkle", x, y - 15, 1.2)
         elsif event["kind"] == "jump"
           sprite_effect("dust", x, y, 0.8)
@@ -294,14 +338,14 @@ module Burrow
       end
 
       def navigation_hit?(x, y)
-        (x.between?(12, 340) && y.between?(10, 68)) ||
+        (x.between?(12, 344) && y.between?(8, 76)) ||
           (x.between?(16, 1066) && y.between?(686, 714)) ||
-          (x.between?(1112, 1420) && y.between?(@map_y - 12, @map_y + @map_h + 10))
+          (x.between?(1112, 1420) && y.between?(540, 710))
       end
 
       def navigate(x, y)
-        return false unless x.between?(1122, 1408) && y.between?(@map_y, @map_y + @map_h)
-        camera.navigate((x - 1122) / 286.0 * @width, (y - @map_y) / @map_h.to_f * @height)
+        return false unless x.between?(@map_x, @map_x + @map_w) && y.between?(@map_y, @map_y + @map_h)
+        camera.navigate((x - @map_x) / @map_w * @width, (y - @map_y) / @map_h * @height)
         true
       end
 
@@ -317,12 +361,71 @@ module Burrow
         saved = {terrain_art: @terrain_art, terrain_packet: @terrain_packet,
           terrain_result: @terrain_result || @restored_terrain_result,
           camera: camera, timeline: timeline, last_turn: @last_turn,
-          finished_at: @finished_at, hurt_until: @hurt_until}
+          finished_at: @finished_at, hurt_until: @hurt_until,
+          impact_focus: @impact_focus, tracked_projectile: @tracked_projectile,
+          turn_notice_data: @turn_notice_data, turn_notice_pending: @turn_notice_pending}
         @terrain_art = nil
         saved
       end
 
       private
+
+      def render_turn_notice(now, active)
+        if @turn_notice_pending && @terrain_revision >= 0 && active && @state["phase"] == "aiming"
+          team = @state["teams"].find { |entry| entry["id"] == active["team"] }
+          mine = @controller.my_turn?
+          @turn_notice_data = {turn: @state["turn"], until: now + (mine ? 2.4 : 1.6), color: team["color"],
+            title: mine ? "Your move, #{short_text(active['name'], 18)}" : "#{short_text(team['name'], 24)} takes aim",
+            detail: mine ? "Move · Aim · Fire · Get clear" : "#{active['name']} · Round #{@state['round']}"}
+          @turn_notice_pending = false
+        end
+        data = @turn_notice_data
+        visible = data && data[:turn] == @state["turn"] && now < data[:until] &&
+          @state["phase"] == "aiming" && !@controller.overlay?
+        unless visible
+          @turn_notice.hide unless @turn_notice.hidden
+          return
+        end
+        if @painted_notice_turn != data[:turn]
+          @turn_notice_portrait.path = File.join(Theme::ART, "grubs/#{data[:color]}-idle-0.png")
+          @turn_notice_accent.style(fill: COLORS[data[:color]])
+          set_text(@turn_notice_title, data[:title])
+          @painted_notice_turn = data[:turn]
+        end
+        detail = @controller.my_turn? && !camera.following ? "F follows your grub · E opens the arsenal" : data[:detail]
+        set_text(@turn_notice_detail, detail)
+        @turn_notice.show if @turn_notice.hidden
+      end
+
+      def render_backdrop
+        # A single oversized distant plate moves much less than the landscape.
+        # It never affects collision, aim coordinates or the camera's zoom.
+        cx, cy = camera.world(720, 360)
+        dx = @controller.motion? ? (cx.fdiv(@width) - 0.5).clamp(-0.5, 0.5) * 96 : 0
+        dy = @controller.motion? ? (cy.fdiv(@height) - 0.5).clamp(-0.5, 0.5) * 48 : 0
+        origin = [((-48 - dx) * @ui_scale).round, ((-24 - dy) * @ui_scale).round]
+        @backdrop.move(*origin) if origin != @backdrop_origin
+        @backdrop_origin = origin
+      end
+
+      def render_camera(active, now)
+        shots = @state["projectiles"]
+        # Keep a flight's identity through packet coalescing and cluster spawns.
+        # Timeline shots contain presentation data, not live control flags.
+        shot = shots.find { |p| p["id"] == @tracked_projectile } || shots.first
+        impact = @timeline.events.reverse.find { |e| %w[explosion splash].include?(e["kind"]) && e["x"] && e["y"] }
+        @impact_focus = {point: impact.values_at("x", "y"), until: now + 0.85} if impact
+        if shot
+          @tracked_projectile = shot["id"]
+          target, velocity, mode = shot.values_at("x", "y"), shot.values_at("vx", "vy"), :projectile
+        elsif @impact_focus && now < @impact_focus[:until]
+          target, mode = @impact_focus[:point], :impact
+        else
+          @tracked_projectile = nil
+          target, velocity, mode = active&.values_at("x", "y"), nil, :actor
+        end
+        camera.update(target, velocity: velocity, mode: mode, dt: now - (@last_render || now))
+      end
 
       def resize_world
         @world_scale = @scale
@@ -338,10 +441,22 @@ module Burrow
       end
 
       def resize_actor(node)
-        node[:scale], node[:compact] = @scale, nil
-        node[:slot].style(width: px(84), height: px(78))
-        node[:image].style(left: px(16), top: px(24), width: px(52), height: px(52))
-        node[:label].style(size: [px(11), 6].max)
+        node[:scale], node[:health_ratio] = @scale, nil
+        label_scale = @ui_scale * [camera.zoom, 0.75].max
+        bw, bh = (84 * label_scale).round, (22 * label_scale).round
+        # Native slots clip their children. Enclose the whole badge, including
+        # its minimum readable size in overview, while anchoring the sprite's
+        # source foot (80,136 of 160) to the authoritative world position.
+        width = [px(84), bw].max
+        sprite_top = bh + px(7)
+        node[:offset_x], node[:offset_y] = width / 2, sprite_top + px(54.4)
+        node[:slot].style(width: width, height: sprite_top + px(64))
+        node[:image].style(left: node[:offset_x] - px(32), top: sprite_top, width: px(64), height: px(64))
+        bx, by = (width - bw) / 2, 0
+        node[:badge_width] = bw
+        node[:badge].style(left: bx, top: by, width: bw, height: bh)
+        node[:label].style(left: bx + 1, top: by + (2 * label_scale).round, width: bw - 2, size: [(11 * label_scale).round, 8].max)
+        node[:health].style(left: bx + 1, top: by + bh - (3 * label_scale).round, width: bw - 2, height: [(2 * label_scale).round, 1].max)
       end
 
       def place_tile(tile)
@@ -371,7 +486,7 @@ module Burrow
           @minimap.path = result[:overview]
         else
           @minimap_layer.append do
-            @minimap = @shoes.image(result[:overview], left: px(1122), top: px(@map_y), width: px(286), height: px(@map_h))
+            @minimap = @shoes.image(result[:overview], left: px(@map_x), top: px(@map_y), width: px(@map_w), height: px(@map_h))
           end
         end
         @scale = saved
@@ -381,7 +496,9 @@ module Burrow
 
       def render_navigation
         saved, @scale = @scale, @ui_scale
-        set_text(@camera_caption, "#{(camera.zoom * 100).round}% · #{camera.following ? 'Following the action' : 'Free camera'} · Middle-drag to pan")
+        set_text(@camera_caption, "#{(camera.zoom * 100).round}%  #{camera.following ? 'FOLLOW' : 'FREE'}  ·  Wheel zoom / drag pan")
+        water_y = @state["water"].fdiv(@height).clamp(0, 1) * @map_h
+        @map_water.style(top: px(@map_y + water_y), height: px(@map_h - water_y))
         @state["worms"].each do |w|
           unless @map_marks[w["id"]]
             @slot.append { @map_marks[w["id"]] = box(0, 0, 5, 5, color: COLORS[@state["teams"].find { |t| t["id"] == w["team"] }["color"]], radius: 2) }
@@ -390,13 +507,24 @@ module Burrow
           if w["hp"] <= 0
             dot.hide unless dot.hidden
           else
-            dot.move(px(1122 + w["x"] / @width * 286 - 2), px(@map_y + w["y"] / @height * @map_h - 2))
+            dot.move(px(@map_x + w["x"] / @width * @map_w - 2), px(@map_y + w["y"] / @height * @map_h - 2))
           end
         end
         left, top = [camera.x, 0].max, [camera.y, 0].max
         right, bottom = [camera.x + 1440 / camera.zoom, @width].min, [camera.y + 720 / camera.zoom, @height].min
-        @map_frame.style(left: px(1122 + left / @width * 286), top: px(@map_y + top / @height * @map_h),
-          width: px((right - left) / @width * 286), height: px((bottom - top) / @height * @map_h))
+        if right > left && bottom > top
+          @map_frame.show if @map_frame.hidden
+          @map_frame.style(left: px(@map_x + left / @width * @map_w), top: px(@map_y + top / @height * @map_h),
+            width: px((right - left) / @width * @map_w), height: px((bottom - top) / @height * @map_h))
+        else
+          @map_frame.hide unless @map_frame.hidden
+        end
+        if (shot = @state["projectiles"].first) && shot["y"].between?(0, @height)
+          @map_shot.move(px(@map_x + shot["x"] / @width * @map_w - 3), px(@map_y + shot["y"] / @height * @map_h - 3))
+          @map_shot.show if @map_shot.hidden
+        else
+          @map_shot.hide unless @map_shot.hidden
+        end
         @scale = saved
       end
 
@@ -413,8 +541,9 @@ module Burrow
           @actor_layer.append do
             node[:slot] = @shoes.stack(left: 0, top: 0, width: px(84), height: px(78)) do
               node[:badge] = box(0, 0, 84, 20, color: Theme::INK, radius: 6)
-              node[:label] = label("#{w['name']}  #{w['hp']}", 1, 2, 82, size: 11, color: COLORS[color], align: "center")
-              node[:image] = image("grubs/#{color}-idle-0", 16, 24, 52, 52)
+              node[:label] = label("#{w['name']}  #{w['hp']}", 1, 2, 82, size: 11, color: Theme::WHITE, align: "center")
+              node[:health] = box(1, 18, 82, 2, color: COLORS[color], radius: 1)
+              node[:image] = image("grubs/#{color}-idle-0", 10, 13.6, 64, 64)
             end
           end
           @actors[w["id"]] = node
@@ -427,23 +556,34 @@ module Burrow
           node = nodes.delete(id)
           node[:image].remove
           node[:fuse]&.remove
+          node[:fuse_plate]&.remove
         end
         objects.each do |p|
           next if nodes[p["id"]]
           layer.append do
             kind = p["kind"]
+            bounds = {"mine" => [34, 34, 17, 27.625], "barrel" => [32, 38.4, 16, 36.8],
+                      "crate" => [34, 34, 17, 31.875]}.fetch(kind, [32, 32, 16, 29])
             picture = if projectile
-              image("weapons/#{p['weapon']}", p["x"] - 14, p["y"] - 14, 28, 28)
+              folder = COMBAT["projectiles"].include?(p["weapon"]) ? "projectiles" : "weapons"
+              image("#{folder}/#{p['weapon']}", p["x"] - 14, p["y"] - 14, 28, 28)
             elsif %w[fire gas].include?(kind)
               @shoes.oval(px(p["x"] - p["radius"]), px(p["y"] - p["radius"]), px(p["radius"] * 2),
                 fill: kind == "gas" ? "#a3b56366" : "#f57c4966", strokewidth: 0)
             else
-              art = {"crate" => "crate", "mine" => "mine-prop", "barrel" => "barrel-prop"}.fetch(kind, "weapons/#{kind}")
-              image(art, p["x"] - 16, p["y"] - 29, 32, 32)
+              art = if kind == "crate"
+                supply = Catalog::WEAPONS[p["supply"]]
+                p["supply"] == "health" ? "crate-health" : supply && Catalog::UTILITY.include?(supply[:kind]) ? "crate-utility" : "crate"
+              else
+                {"mine" => "mine-prop", "barrel" => "barrel-prop"}.fetch(kind, "weapons/#{kind}")
+              end
+              width, height, ax, ay = bounds
+              image(art, p["x"] - ax, p["y"] - ay, width, height)
             end
-            nodes[p["id"]] = {image: picture}
+            nodes[p["id"]] = {image: picture, bounds: bounds}
             if projectile && p["fused"]
-              nodes[p["id"]][:fuse] = label("", p["x"] - 14, p["y"] - 35, 28, size: 12, color: Theme::INK, font: Theme.mono, align: "center")
+              nodes[p["id"]][:fuse_plate] = box(0, 0, 34, 22, color: "#182d35eb", radius: 6)
+              nodes[p["id"]][:fuse] = label("", 0, 0, 34, size: 12, color: Theme::WHITE, font: Theme.mono, align: "center")
             end
           end
         end
@@ -462,7 +602,11 @@ module Burrow
           return
         end
         @aim_layer.show if @aim_layer.hidden
-        @active_arrow.move(px(x - 15), px(y - 101 + (@controller.motion? ? Math.sin(now * 5) * 3 : 0)))
+        marker_scale = @ui_scale * [camera.zoom, 0.75].max
+        marker_width = (30 * marker_scale).round
+        @active_arrow.style(left: px(x) - marker_width / 2,
+          top: px(y) - @actors.fetch(active["id"])[:offset_y] - (28 * marker_scale).round + px(@controller.motion? ? Math.sin(now * 5) * 3 : 0),
+          width: marker_width, size: (22 * marker_scale).round)
         can_aim = @controller.my_turn? && @state["phase"] == "aiming" && !@controller.overlay?
         weapon = Catalog.fetch(@controller.selected_weapon)
         aimed = can_aim && Catalog::AIMED.include?(weapon[:kind]) && !@controller.special_control
@@ -508,9 +652,15 @@ module Burrow
           @placement.hide unless @placement.hidden
         end
         if can_aim && !@controller.special_control
-          path = File.join(Theme::ART, "weapons/#{weapon[:id]}.png")
+          directional = COMBAT["held"].include?(weapon[:id])
+          left = Math.cos(angle).negative?
+          folder = directional ? "held/#{left ? 'left/' : ''}" : "weapons/"
+          path = File.join(Theme::ART, "#{folder}#{weapon[:id]}.png")
           @held_weapon.path = path if @held_weapon.path != path
-          @held_weapon.style(left: px(x + Math.cos(angle) * 13 - 15), top: px(y - 27 + Math.sin(angle) * 8), width: px(30), height: px(30))
+          size = directional ? 44 : 30
+          reach = directional ? 17 : 13
+          @held_weapon.style(left: px(x + Math.cos(angle) * reach - size / 2), top: px(y - 13 + Math.sin(angle) * reach - size / 2), width: px(size), height: px(size))
+          @held_weapon.rotate(directional ? (@controller.angle + (left ? 180 : 0)).round : 0)
           @held_weapon.show if @held_weapon.hidden
         else
           @held_weapon.hide unless @held_weapon.hidden
@@ -532,9 +682,20 @@ module Burrow
       end
 
       def float_text(text, x, y, color)
+        size = [px(19), (13 * @ui_scale).round].max
+        # The text stays readable in overview; its capsule must retain the same
+        # display-space padding and width instead of shrinking with the world.
+        width = [(text.length * size * 0.68 + 20 * @ui_scale).round, (250 * @ui_scale).round].min
+        padding = (3 * @ui_scale).round
+        height = (size * 1.4).ceil + padding * 2
+        left, top = x - width.fdiv(@scale * 2), y - 20 - height.fdiv(@scale)
         @effect_layer.append do
-          node = label(text, x - 85, y - 15, 170, size: 19, color: color, font: Theme.display, align: "center")
-          retain_effect(node: node, born: Burrow.clock, life: 1.1, kind: :text, x: x - 85, y: y - 15)
+          node = @shoes.stack(left: px(left), top: px(top), width: width, height: height) do
+            @shoes.rect(0, 0, width, height, (6 * @ui_scale).round, fill: "#182d35e8", strokewidth: 0)
+            @shoes.para(text, left: 0, top: padding, width: width, size: size,
+              stroke: color, font: Theme.display, align: "center", margin: 0)
+          end
+          retain_effect(node: node, born: Burrow.clock, life: 1.15, kind: :text, x: left, y: top)
         end
       end
 

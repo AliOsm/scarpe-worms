@@ -51,10 +51,12 @@ module Burrow
         @shoes.motion { |x, y| pointer(x, y) }
         @shoes.wheel do |delta, x, y|
           if @page == :match && !overlay? && Burrow.clock - (@zoom_at || 0) > 0.12
+            sx = (x - @offset_x) / @scale
             sy = (y - @offset_y) / @scale - Scene::Y
-            if sy.between?(0, 720) && delta != 0
-              @scene.camera.zoom_by(delta > 0 ? 1 : -1)
+            if sx.between?(0, 1440) && sy.between?(0, 720) && delta != 0 && !@scene.navigation_hit?(sx, sy)
+              @scene.camera.zoom_by(delta > 0 ? 1 : -1, anchor: [sx, sy])
               @zoom_at = Burrow.clock
+              pointer(x, y)
             end
           end
         end
@@ -73,7 +75,14 @@ module Burrow
         end
       end
 
-      def play_event(event) = @audio.event(event)
+      def play_event(event)
+        screen_x = if @scene && event["x"] && event["y"]
+          @scene.camera.screen(event["x"], event["y"]).first
+        else
+          WIDTH / 2
+        end
+        @audio.event(event, screen_x: screen_x)
+      end
       def motion? = preferences["motion"]
       def overlay? = !!@overlay
       def my_id = connection&.id
@@ -186,13 +195,30 @@ module Burrow
 
       def notify(text)
         @last_notice = text.to_s
+        @toast_until = Burrow.clock + 5
+        place_toast
+      end
+
+      def place_toast
         return unless @toast
+        unless @toast_until && Burrow.clock < @toast_until
+          @toast.hide
+          return
+        end
+        height = @last_notice.length > 90 ? 54 : 38
+        top = if @overlay && @dialog_y
+          [@dialog_y - height - 10, 4].max
+        elsif @page == :match
+          Scene::Y + 100
+        else
+          900 - height - 12
+        end
+        @toast.style(top: px(top), height: px(height))
         @toast.clear do
-          box(0, 0, 800, 42, color: Theme::INK, radius: 12)
-          label(@last_notice, 20, 11, 760, size: 14, color: Theme::WHITE, align: "center")
+          box(0, 0, 800, height, color: Theme::INK, radius: 10)
+          label(short_text(@last_notice, 180), 20, 9, 760, size: 13, color: Theme::WHITE, align: "center", tooltip: @last_notice)
         end
         @toast.show
-        @toast_until = Burrow.clock + 5
       end
 
       def close
@@ -260,6 +286,7 @@ module Burrow
           when :match then draw_match(presentation: presentation)
           end
         end
+        place_toast
       end
 
       def update_connection
@@ -277,6 +304,7 @@ module Burrow
           @pending_action = nil if @pending_action && packet.fetch("ack", 0) >= @pending_action
           old_room = @room
           @room, @state = packet.values_at("room", "match")
+          refresh_chat
           @rooms = packet["rooms"] if packet["rooms"]
           next_page = @state ? :match : @room ? :lobby : :browser
           new_match = @state && @room["match_id"] != old_room&.fetch("match_id", nil)
@@ -299,7 +327,7 @@ module Burrow
               @lobby_signature = Marshal.load(Marshal.dump(signature))
               draw_page
             end
-            set_text(@chat_history, @room["messages"].last(7).map { |m| "#{m['name']}: #{m['text']}" }.join("\n"))
+            set_text(@chat_history, lobby_chat_preview)
           elsif @page == :browser && @browser_signature != @rooms
             @browser_signature = @rooms
             draw_page

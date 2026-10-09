@@ -1,0 +1,48 @@
+{
+  "created_at": "2026-10-09",
+  "generator": "Codex built-in image_gen; no Team17 images or assets used as inputs",
+  "license": "Original AI-assisted artwork created for Burrow Brigade; see THIRD_PARTY.md",
+  "compilation": "Local RGB Lanczos reduction to cell-resolution materials; shade variants baked deterministically. Mirrored sampling avoids edge seams without painting beyond the collision mask.",
+  "assets": [
+    {
+      "name": "meadow",
+      "source": "meadow.png",
+      "sha256": "fe9b656f88696b888836480a67851fdc4fdcf6d19ecf51567d6467f55872d944",
+      "output_size": [
+        512,
+        512
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: final seamless square terrain fill texture for the ORIGINAL 2D artillery game Burrow Brigade. Create an exquisitely hand-painted cutaway earth and rock material for a temperate meadow battlefield. The image is entirely solid material, viewed straight-on orthographically as the vertical cross-section of soil; it will be clipped by a separate arbitrary collision mask. Rich chunky interlocking warm umber and ochre rock masses embedded in soil, broad natural broken strata, some slender roots, subtle small stones, convincing carved volume from warm upper-left facet highlights and cool deep creases. Painterly gouache brush marks and tasteful granulation, professional illustrated video game environment quality. Medium contrast readable masses, predominantly brown #906441 and #a67d53 with cool plum-brown crevices and sandy highlights. Rocks occupy roughly 30% of the surface, irregular sizes, no uniform brickwork. Small details subordinate to the large shapes. Uniform material density and lighting from edge to edge; seamlessly tileable horizontally AND vertically. Full-bleed opaque 1024x1024 square, no grass surface, no grass strip, no sky, no horizon, no objects, no characters, no symbols, no text, no watermark, no border, no vignette, no central focal point. Avoid flat vector art, comic black outlines, photorealism, pixel art, large black holes, excessive tiny speckles."
+    },
+    {
+      "name": "desert",
+      "source": "desert.png",
+      "sha256": "4d64bf9a5afb48e0d29d6266c690fae95ef5822b801b379a84e52f1ac14ecd64",
+      "output_size": [
+        512,
+        512
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: final seamless square terrain fill texture for the ORIGINAL 2D artillery game Burrow Brigade. Create a richly hand-painted vertical cross-section of desert sandstone bedrock. Entire image is solid material viewed straight-on orthographically, to be clipped by a separate arbitrary collision mask. Broad warm terracotta and burnt sienna sandstone plates, eroded golden edges, broken curving sedimentary layers, irregular cracks with muted burgundy shadows, a few embedded pale fossil shell fragments. Painterly gouache brush strokes, faceted volume, refined professional illustrated video game environment quality, more broad sculpted geological shapes than tiny pebbles. Medium contrast, warm sandy upper-left highlights, predominantly #be784f, #db9863, #9e573c, pale honey edges. Natural varied layer thickness, no uniform stripes. Uniform density and lighting edge to edge, seamlessly tileable horizontally AND vertically. Full-bleed opaque 1024x1024 square. No surface strip, no sky, no horizon, no grass, no plants, no standalone objects, no characters, no symbols, no text, no watermark, no border, no vignette, no central focal point. Avoid flat vector art, black comic outlines, photorealism, pixel art, regular brickwork, large black holes, excessive noisy speckles."
+    },
+    {
+      "name": "glacier",
+      "source": "glacier.png",
+      "sha256": "d20cde5fb53acaf6ca3724bf95e8052ea3282ba83984638a20c40b4add3d4589",
+      "output_size": [
+        512,
+        512
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: final seamless square terrain fill texture for the ORIGINAL 2D artillery game Burrow Brigade. Create a beautifully hand-painted cross-section of deep glacial ice and frozen blue rock. Entire image is solid material viewed straight-on orthographically, to be clipped by an arbitrary separate collision mask. Broad angular translucent icy masses, interlocking chunky blue ice plates, a few deep teal pressure cracks, subtle milky white layers and frozen bubbles within the ice. Cool cerulean, desaturated turquoise, slate blue shadows, frosty pale cyan facet highlights; predominantly #639eb9, #83bacb, #3e6a87. Painterly gouache brush marks with restrained granulation, polished illustrated video game environment quality. The depth should read as solid ice, NOT a sky or water. Medium contrast, consistent upper-left lighting, broad forms much more prominent than tiny speckles. Uniform density and lighting from edge to edge; seamlessly tileable horizontally AND vertically. Opaque full-bleed square 1024x1024. No snow surface strip, no skyline, no landscape, no clouds, no floating shards, no central focal object, no characters, no text, no logos, no border or vignette. Avoid photorealism, flat vector art, black comic outlines, pixel art, high contrast glowing cracks, excessive small details."
+    },
+    {
+      "name": "volcano",
+      "source": "volcano.png",
+      "sha256": "1ac5a7661a0739f0143d1d5f934db1b7ef5521371a053ec81f0e7c91b30ecf4c",
+      "output_size": [
+        512,
+        512
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: final seamless square terrain fill texture for the ORIGINAL 2D artillery game Burrow Brigade. Create richly hand-painted volcanic basalt as a vertical cross-section solid terrain material. Entire image is opaque rock, viewed straight-on orthographically, to be clipped by a separate arbitrary collision mask. Chunky interlocking charcoal-plum and slate-purple basalt masses, irregular angular layered fracture planes, desaturated mauve upper-left edge lighting, scattered rusty mineral patches, only a few extremely thin subdued amber-orange magma veins within the deeper cracks (under 3% of the area). Keep the rock readable and dark but not black. Painterly gouache brushwork, subtle mineral grain, broad sculpted shapes, polished illustrated video game environment quality. Palette predominantly #514958, #685c6b, #393442, muted #927e89 highlights, sparse #db733f veins. Moderate contrast, uniform material density and upper-left lighting edge to edge. Seamlessly tileable horizontally AND vertically. Full-bleed square 1024x1024. No terrain surface strip, no sky, no volcano silhouette, no eruption, no floating objects, no characters, no text, no logo, no border, no vignette, no central focal point. Avoid glowing neon lava web, overly black crevices, flat vector art, cartoon black outlines, photorealism, pixel art, regular hexagons or bricks, excessive speckles."
+    }
+  ]
+}

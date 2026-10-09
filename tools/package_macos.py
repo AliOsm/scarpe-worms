@@ -223,7 +223,7 @@ def main():
     plist = {
         'CFBundleExecutable': 'Burrow Brigade', 'CFBundleIdentifier': 'com.burrowbrigade.game',
         'CFBundleName': 'Burrow Brigade', 'CFBundleDisplayName': 'Burrow Brigade',
-        'CFBundleShortVersionString': VERSION, 'CFBundleVersion': '20261009.5',
+        'CFBundleShortVersionString': VERSION, 'CFBundleVersion': '20261009.6',
         'CFBundlePackageType': 'APPL', 'CFBundleIconFile': 'Burrow Brigade.icns',
         'LSMinimumSystemVersion': '13.0', 'LSArchitecturePriority': ['arm64'],
         'NSHighResolutionCapable': True,

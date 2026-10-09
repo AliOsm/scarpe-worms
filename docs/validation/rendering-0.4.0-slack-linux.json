@@ -1,0 +1,223 @@
+{
+  "version": "0.4.0",
+  "ruby": "3.4.7",
+  "platform": "x86_64-linux",
+  "window": [
+    1920,
+    1200
+  ],
+  "world": [
+    4800,
+    1600
+  ],
+  "grubs": 36,
+  "sample_columns": [
+    "at",
+    "phase",
+    "update_interval_ms",
+    "update_ms",
+    "moving",
+    "gc_ms",
+    "visible_speed",
+    "camera_speed",
+    "update_cpu_ms",
+    "velocity_motion",
+    "actor_pixel_changes",
+    "camera_pixel_changed"
+  ],
+  "motion_detection_version": 2,
+  "motion_detection": "Changed rounded visible actor/projectile positions and camera origin actually sent to the renderer; velocity-only gravity probes are not visible movement",
+  "profiled_slow_phases": [],
+  "audio": true,
+  "projectile_ids": [
+    "o8",
+    "o9",
+    "o10",
+    "o11",
+    "o12",
+    "o13",
+    "o14",
+    "o17",
+    "o18",
+    "o19",
+    "o20",
+    "o21"
+  ],
+  "terrain_revision": 11,
+  "surface": {
+    "surface_width": 3840,
+    "surface_height": 2400,
+    "surface_scale_milli": 2000,
+    "render_width": 1280,
+    "render_height": 800,
+    "render_scale_milli": 667,
+    "compositor_scaling": false
+  },
+  "scenarios": {
+    "combat": {
+      "presented_intervals": {
+        "count": 799,
+        "mean_ms": 16.4802089352184,
+        "p95_ms": 21.160364151000977,
+        "p99_ms": 24.488449096679688,
+        "max_ms": 38.141489028930664,
+        "over_33ms": 4,
+        "over_50ms": 0
+      },
+      "paint": {
+        "count": 1024,
+        "mean_ms": 2.4209963701171873,
+        "p95_ms": 5.602436,
+        "p99_ms": 6.876734,
+        "max_ms": 17.685993,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "present": {
+        "count": 1024,
+        "mean_ms": 3.4962307568359376,
+        "p95_ms": 5.441444,
+        "p99_ms": 6.959336,
+        "max_ms": 9.528801999999999,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "app_update": {
+        "count": 1084,
+        "mean_ms": 16.666534643730223,
+        "p95_ms": 16.785410698503256,
+        "p99_ms": 17.193058039993048,
+        "max_ms": 24.023031815886497,
+        "over_33ms": 0,
+        "over_50ms": 0
+      }
+    },
+    "pan": {
+      "presented_intervals": {
+        "count": 359,
+        "mean_ms": 16.675710852367683,
+        "p95_ms": 19.294647999998915,
+        "p99_ms": 20.48626999999925,
+        "max_ms": 26.275715999997118,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "paint": {
+        "count": 360,
+        "mean_ms": 4.902042444444445,
+        "p95_ms": 5.799915,
+        "p99_ms": 7.472139,
+        "max_ms": 19.014936,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "present": {
+        "count": 360,
+        "mean_ms": 3.01312845,
+        "p95_ms": 3.419171,
+        "p99_ms": 3.740418,
+        "max_ms": 4.684184,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "app_update": {
+        "count": 361,
+        "mean_ms": 16.66654897028183,
+        "p95_ms": 16.757492907345295,
+        "p99_ms": 17.10199099034071,
+        "max_ms": 18.984419759362936,
+        "over_33ms": 0,
+        "over_50ms": 0
+      }
+    },
+    "zoom": {
+      "presented_intervals": {
+        "count": 389,
+        "mean_ms": 18.779064539845763,
+        "p95_ms": 37.50295600000442,
+        "p99_ms": 57.45628100000033,
+        "max_ms": 81.50580900000293,
+        "over_33ms": 31,
+        "over_50ms": 7
+      },
+      "paint": {
+        "count": 390,
+        "mean_ms": 1.0912435487179488,
+        "p95_ms": 4.723465,
+        "p99_ms": 11.316521,
+        "max_ms": 12.524865,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "present": {
+        "count": 390,
+        "mean_ms": 3.590186369230769,
+        "p95_ms": 6.7961480000000005,
+        "p99_ms": 9.370424,
+        "max_ms": 9.562595,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "app_update": {
+        "count": 439,
+        "mean_ms": 16.742569464417958,
+        "p95_ms": 16.894105821847916,
+        "p99_ms": 22.382060065865517,
+        "max_ms": 37.38004295155406,
+        "over_33ms": 1,
+        "over_50ms": 0
+      }
+    }
+  },
+  "counters": {
+    "compositor_scaling": 0,
+    "exit_callback_flush": 1,
+    "images_resampled": 1146,
+    "max_layout_delivery_us": 19,
+    "max_window_redraw_us": 42415,
+    "render_height": 800,
+    "render_scale_milli": 667,
+    "render_width": 1280,
+    "repainted_pixels": 826471412,
+    "repaints_in_full": 782,
+    "repaints_in_part": 1115,
+    "repaints_of_nothing": 53,
+    "surface_height": 2400,
+    "surface_scale_milli": 2000,
+    "surface_width": 3840
+  },
+  "measurement": "Linux native X11 window",
+  "macos_execution": false,
+  "packaged": true,
+  "wait_backend": {
+    "name": "TimerFD",
+    "error": null
+  },
+  "wait_overshoot": {
+    "count": 3987,
+    "mean_ms": 0.07562360807819746,
+    "p95_ms": 0.17493264749646187,
+    "p99_ms": 0.33665308728814125,
+    "max_ms": 2.3753149434924126,
+    "over_33ms": 0,
+    "over_50ms": 0
+  },
+  "timer_slack_ms": 100,
+  "playback_backlog": {
+    "count": 2174,
+    "mean_ms": 7.315437375538544,
+    "p95_ms": 15.426576193422173,
+    "p99_ms": 15.426576193422173,
+    "max_ms": 53.36688183248042,
+    "over_33ms": 10,
+    "over_50ms": 2
+  },
+  "audio_output": "Linux OpenAL null driver",
+  "motion_analysis_version": 2,
+  "motion_interval_selection": "completed updates; already-presented motion may end at idle, new unpainted movement is charged until the next presentation; at most one sample per gap",
+  "linux_substitutions": {
+    "ruby": "<ruby-home>/3.4.7/bin/ruby",
+    "renderer": "<workspace>/vendor/scarpe/native/target/release/scarpe-native",
+    "ffi_extension": "<workspace>/vendor/bundle/ruby/3.4.0/gems/ffi-1.17.4-x86_64-linux-gnu/lib/3.4/ffi_c.so"
+  }
+}
