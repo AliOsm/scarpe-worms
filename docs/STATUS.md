@@ -44,5 +44,9 @@ a fixed three-critter herd, and original balance values are intentional contract
 The source is self-contained; `setup.sh` fetches upstream Scarpe and applies 12
 independent patches. No sibling repositories or local build caches are needed.
 Tests, generators, package recipes, and third-party notices are included.
+An independent clone built the renderer and passed all 80 core tests and six
+native journeys; see [bootstrap verification](validation/repository-bootstrap.json).
+CI installs native build dependencies explicitly, and the native runner declares
+its pinned Scarpe load path rather than depending on shell configuration.
 Repository organization does not change gameplay or rebuild the previous preview
 ZIP; rebuild from this checkout to include the updated documentation.
