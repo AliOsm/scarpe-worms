@@ -1,0 +1,8 @@
+{
+  "cues": 13,
+  "backend": "OpenAL Soft",
+  "output": "null",
+  "mute_resume": true,
+  "idempotent_shutdown": true,
+  "audible_output_tested": false
+}

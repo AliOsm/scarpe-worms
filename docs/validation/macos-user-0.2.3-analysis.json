@@ -1,0 +1,93 @@
+{
+  "source": "User supplied 0.2.3 macOS reports, 2026-10-09",
+  "platform": "arm64-darwin22",
+  "ruby": "3.4.7",
+  "reported_hardware": "M3 Pro",
+  "version": "0.2.3",
+  "display": {
+    "render_height": 800,
+    "render_scale_milli": 1000,
+    "render_width": 1280,
+    "surface_height": 800,
+    "surface_scale_milli": 1000,
+    "surface_width": 1280
+  },
+  "mac_activity": {
+    "supported": true,
+    "active": false,
+    "activations": 1,
+    "error": null,
+    "allows_idle_sleep": true,
+    "precise_timers": true
+  },
+  "native_exit_report_flushed": true,
+  "focused_loaded_gameplay": {
+    "samples": 646,
+    "seconds": 27.691750049591064,
+    "update_intervals": {
+      "n": 646,
+      "mean_ms": 43.051,
+      "p95_ms": 113.134,
+      "max_ms": 116.304,
+      "over_50ms": 216
+    },
+    "update_work": {
+      "n": 646,
+      "mean_ms": 2.48,
+      "p95_ms": 5.023,
+      "max_ms": 21.436,
+      "over_50ms": 0
+    },
+    "scene_work": {
+      "n": 646,
+      "mean_ms": 2.296,
+      "p95_ms": 4.855,
+      "max_ms": 21.379,
+      "over_50ms": 0
+    },
+    "host_advance_ticks": 831,
+    "playback_advance_ticks": 565.6976637840194,
+    "final_host_minus_playback_ms": 9276.494
+  },
+  "waits": {
+    "requested": {
+      "n": 1759,
+      "mean_ms": 7.558,
+      "p95_ms": 15.046,
+      "max_ms": 16.608,
+      "over_50ms": 0
+    },
+    "actual": {
+      "n": 1759,
+      "mean_ms": 26.666,
+      "p95_ms": 106.534,
+      "max_ms": 115.787,
+      "over_50ms": 367
+    },
+    "overshoot": {
+      "n": 1759,
+      "mean_ms": 21.126,
+      "p95_ms": 97.571,
+      "max_ms": 100.071,
+      "over_50ms": 352
+    }
+  },
+  "native_paint": {
+    "max_ms": 13.249,
+    "n": 553,
+    "total_ms": 724.111,
+    "mean_ms": 1.3094231464737793
+  },
+  "native_present": {
+    "max_ms": 3.054,
+    "n": 553,
+    "total_ms": 727.38,
+    "mean_ms": 1.3153345388788427
+  },
+  "conclusions": [
+    "Long UI waits dominate frame gaps, with repeated approximately 100 ms overshoots; painting is fast.",
+    "The macOS activity was active during gameplay and did not eliminate the stalls.",
+    "Discarding elapsed time beyond 50 ms per update caused cumulative playback drift.",
+    "Timer coalescing reproduces the wait pattern in a controlled Linux experiment; exact macOS kernel scheduling cause cannot be established from these logs alone."
+  ]
+}

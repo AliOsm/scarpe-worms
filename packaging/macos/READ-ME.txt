@@ -1,0 +1,28 @@
+Burrow Brigade 0.2.1 — macOS preview
+
+Apple silicon (M1 or later), macOS 13 or later.
+Extract the ZIP and move Burrow Brigade.app to Applications.
+Ruby and the native renderer are included. No development tools are needed.
+
+This preview is ad-hoc signed, not Developer ID signed or notarized. It was
+cross-built on Linux. A real Mac launch and Gatekeeper check are still required
+before a public release. macOS may refuse to open this preview; use a trusted
+local developer build until a signed release is available.
+
+Quick battle starts a game with two computer teams. Create a match opens a
+custom lobby. Play with friends can host a TLS server or connect to another host.
+Hosting needs TCP port 4388 forwarded, or a server on a reachable host.
+
+Move: A/D or arrows. Jump: W/Enter. Backflip: B. Aim: mouse.
+Charge: hold Space or left mouse; release to fire. Arsenal: E. Menu: Escape.
+Fuse: 1-5. Guided critter: point to steer, Fire to detonate. M mutes sound.
+
+Settings and local matches: ~/Library/Application Support/burrow-brigade
+Launch logs: ~/Library/Logs/Burrow Brigade/launcher.log
+Recent frame timings (written on quit): ~/Library/Logs/Burrow Brigade/performance
+
+This build bounds rendering work on Retina and large displays. It trades some
+Retina sharpness for animation speed; aiming and window layout keep their size.
+
+This is an original artillery game, not an official Worms product.
+Licenses and credits are inside Contents/Resources/app/THIRD_PARTY.md.

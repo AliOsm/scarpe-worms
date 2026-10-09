@@ -1,0 +1,94 @@
+---
+display: native
+timeout: 100
+----------- app code
+ENV["BURROW_DATA_DIR"] = File.join(Dir.pwd, "battle-data")
+load File.join(ENV.fetch("BURROW_ROOT"), "game.rb")
+----------- test code
+wait_real = lambda do |seconds = 14, &condition|
+  deadline = Burrow.clock + seconds
+  until condition.call
+    raise "Native battle condition timed out at #{caller_locations(1, 1).first}" if Burrow.clock > deadline
+    sleep 0.035
+    advance 0.04
+  end
+end
+client = Shoes.APPS.first.instance_variable_get(:@burrow)
+auto = Scarpe::Native::DisplayService.instance.automation
+click_on "Create a match"
+wait_real.call { client.page == :lobby }
+assert_equal 2, client.room["members"].size
+click_on "Match rules"
+click_on list_boxes.first
+click_on "2"
+click_on "World"
+seed = edit_lines.find { |field| field.text == client.room.dig("config", "seed") }
+click_on seed
+press_key "control_a"
+type_text "native-battle"
+click_on "Arsenal"
+assert_equal 49, list_boxes.length
+click_on "Apply rules"
+wait_real.call { client.room.dig("config", "seed") == "native-battle" }
+assert_equal 2, client.room.dig("config", "worms")
+snapshot "lobby"
+click_on "Copy invite"
+click_on "Start the mischief"
+wait_real.call { client.page == :match && client.scene.terrain_revision >= 0 }
+assert client.my_turn?
+assert_equal 4, client.scene.actors.size
+snapshot "battle"
+original_x = client.active_worm["x"]
+auto.key_down("right")
+wait_real.call { client.active_worm["x"] > original_x + 12 }
+auto.key_up("right")
+assert_operator client.active_worm["x"], :>, original_x
+released = Burrow.clock
+wait_real.call { Burrow.clock - released > 0.3 && client.active_worm["vy"].abs < 1 }
+press_key "w"
+wait_real.call { client.active_worm["vy"] < -30 }
+press_key "5"
+assert_equal 5, client.instance_variable_get(:@fuse)
+press_key "e"
+assert client.overlay?
+grenade = Burrow::Catalog.fetch("grenade")[:name]
+click_on buttons.find { |b| b.text.start_with?(grenade + " ") }
+click_on "Equip"
+assert_equal "grenade", client.selected_weapon
+refute client.overlay?
+# Mouse aim and a real held Space press must charge without auto-repeat.
+move_mouse 800, 240
+before = client.state["terrain_checksum"]
+auto.key_down(" ")
+started = Burrow.clock
+wait_real.call { Burrow.clock - started > 0.55 }
+assert_operator client.instance_variable_get(:@power), :>, 0.35
+auto.key_up(" ")
+wait_real.call { client.state["projectiles"].any? }
+assert_equal "grenade", client.state["projectiles"].first["weapon"]
+assert_equal "retreat", client.state["phase"]
+snapshot "projectile"
+wait_real.call { client.state["terrain_checksum"] != before }
+wait_real.call { client.scene.terrain_revision == client.state["terrain_revision"] }
+snapshot "crater"
+press_key "escape"
+assert client.overlay?
+click_on "Back to battle"
+resize_window 1440, 900
+wait_real.call { client.instance_variable_get(:@dimensions) == [1440, 900] && client.scene.terrain_revision >= 0 }
+assert_equal 1440, Shoes.APPS.first.width
+assert_operator layout_of(button("Arsenal · E")).x, :>=, 0
+snapshot "battle-large"
+assert_operator client.scene.frame_count, :>, 0
+File.write(File.join(ENV.fetch("BURROW_ROOT"), ".cache/native-checks/performance.json"), JSON.pretty_generate({frames: client.scene.frame_count, max_ruby_scene_ms: client.scene.max_frame_ms}))
+# A real surrender travels through the socket and produces the results UI.
+client.action("surrender")
+wait_real.call { client.state["phase"] == "finished" && client.overlay? }
+assert paras.any? { |p| p.text.include?("takes the island") }
+snapshot "results"
+click_on "Play another"
+wait_real.call { client.page == :lobby }
+click_on "Start the mischief"
+wait_real.call { client.page == :match && client.state["phase"] == "aiming" }
+assert_equal 1, client.state["turn"]
+assert_operator client.scene.max_frame_ms, :<, 100

@@ -1,0 +1,69 @@
+name: macOS preview and native smoke
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.7'
+          bundler: '4.0.16'
+      - run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libfontconfig1-dev libffi-dev
+      - run: ./setup.sh
+      - run: bundle exec rake test && ./bin/check-native
+      - uses: actions/cache@v4
+        with:
+          path: .cache/macos
+          key: macos-arm64-${{ hashFiles('packaging/macos/dependencies.json', 'rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch') }}
+      - run: python3 tools/package_macos.py
+      - run: python3 tools/check_distributable.py
+      - run: python3 tools/check_package.py 'dist/Burrow Brigade.app' --linux-ruby "$(command -v ruby)"
+      - run: python3 tools/check_package.py 'dist/Burrow Brigade.app' --linux-ruby "$(command -v ruby)" --locale c
+      - uses: actions/upload-artifact@v4
+        with:
+          name: burrow-brigade-macos-arm64-preview
+          path: |
+            dist/*.zip
+            dist/*.sha256
+            docs/validation/macos-arm64-package.json
+            docs/validation/package-relocated-linux*.json
+            docs/validation/distributable.json
+  mac-smoke:
+    needs: package
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: burrow-brigade-macos-arm64-preview
+          path: downloaded
+      - name: Require an Apple silicon runner
+        run: test "$(uname -m)" = arm64
+      - name: Extract and verify the delivered app
+        run: |
+          mkdir -p dist
+          ditto -x -k downloaded/dist/Burrow-Brigade-*-macos-arm64.zip dist
+          codesign --verify --deep --strict --verbose=2 'dist/Burrow Brigade.app'
+          python3 tools/verify_macos.py 'dist/Burrow Brigade.app'
+      - name: Packaged native renderer and real window
+        run: |
+          python3 tools/check_package.py 'dist/Burrow Brigade.app'
+          python3 tools/check_package.py 'dist/Burrow Brigade.app' --windowed --locale c
+      - name: Packaged macOS deadline timer
+        run: python3 tools/check_waits.py --app 'dist/Burrow Brigade.app' --output docs/validation/waits-macos.json
+      - name: Sustained packaged combat, camera and audio
+        run: python3 tools/check_rendering.py --app 'dist/Burrow Brigade.app' --audio --output docs/validation/rendering-macos.json --capture docs/validation/rendering-macos.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-execution-evidence
+          path: |
+            docs/validation/package-macos-native*
+            docs/validation/rendering-macos*
+            docs/validation/waits-macos.json

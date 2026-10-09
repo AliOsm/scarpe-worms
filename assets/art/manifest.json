@@ -1,0 +1,622 @@
+{
+  "name": "BURROW BRIGADE art",
+  "version": "2026.10.09.1",
+  "generator": "tools/build_art.py (procedural cairo vector art, see docs/ART_DIRECTION.md)",
+  "license": "Original artwork created for BURROW BRIGADE; see docs/ART_DIRECTION.md",
+  "palette": {
+    "ink": "#182d35",
+    "paper": "#f7f2e6",
+    "orange": "#f57c49",
+    "teal": "#407d80",
+    "gold": "#edc16d"
+  },
+  "teams": [
+    {
+      "id": 0,
+      "name": "coral",
+      "color": "#ef765e",
+      "headgear": "aviator goggles"
+    },
+    {
+      "id": 1,
+      "name": "lagoon",
+      "color": "#61bdba",
+      "headgear": "field helmet"
+    },
+    {
+      "id": 2,
+      "name": "mustard",
+      "color": "#edc56a",
+      "headgear": "headband"
+    },
+    {
+      "id": 3,
+      "name": "lilac",
+      "color": "#ac98cf",
+      "headgear": "pom-pom beanie"
+    },
+    {
+      "id": 4,
+      "name": "clover",
+      "color": "#82b67f",
+      "headgear": "propeller cap"
+    },
+    {
+      "id": 5,
+      "name": "sky",
+      "color": "#7faade",
+      "headgear": "backwards cap"
+    }
+  ],
+  "grubs": {
+    "frame_size": [
+      80,
+      80
+    ],
+    "anchor": [
+      40.0,
+      68.0
+    ],
+    "anchor_note": "feet/ground contact point; place sprite at (x - 40, y - 68)",
+    "facing": "right",
+    "left_facing": "grubs/left/{team}-{state}-{frame}.png (pre-mirrored, same anchor)",
+    "recommended_draw_size": [
+      40,
+      40
+    ],
+    "teams": 6,
+    "portraits": {
+      "frame_size": [
+        512,
+        512
+      ],
+      "poses": [
+        "idle-0",
+        "victory-2"
+      ],
+      "pattern": "grubs/portraits/{team}-{state}-{frame}.png"
+    },
+    "states": {
+      "idle": {
+        "frames": 4,
+        "fps": 6,
+        "loop": true,
+        "pattern": "grubs/{team}-idle-{frame}.png"
+      },
+      "walk": {
+        "frames": 8,
+        "fps": 12,
+        "loop": true,
+        "pattern": "grubs/{team}-walk-{frame}.png"
+      },
+      "jump": {
+        "frames": 4,
+        "fps": 10,
+        "loop": false,
+        "pattern": "grubs/{team}-jump-{frame}.png",
+        "note": "0 crouch (pre-jump), 1 launch (rising), 2 apex/tuck, 3 falling; pick by vertical velocity"
+      },
+      "hurt": {
+        "frames": 3,
+        "fps": 10,
+        "loop": false,
+        "pattern": "grubs/{team}-hurt-{frame}.png",
+        "note": "0 recoil, 1 squash, 2 dizzy; hold last frame while stunned"
+      },
+      "victory": {
+        "frames": 6,
+        "fps": 10,
+        "loop": true,
+        "pattern": "grubs/{team}-victory-{frame}.png"
+      },
+      "dead": {
+        "frames": 1,
+        "fps": 1,
+        "loop": false,
+        "pattern": "grubs/{team}-dead-{frame}.png",
+        "note": "knocked-out pose; swap to props grave.png after a beat if desired"
+      },
+      "blink": {
+        "frames": 2,
+        "fps": 12,
+        "loop": false,
+        "pattern": "grubs/{team}-blink-{frame}.png",
+        "note": "optional extra: overlay occasionally during idle (half, closed)"
+      }
+    }
+  },
+  "weapons": {
+    "size": [
+      64,
+      64
+    ],
+    "pattern": "weapons/{id}.png",
+    "ids": [
+      "airstrike",
+      "axe",
+      "banana",
+      "barrel",
+      "bat",
+      "blowtorch",
+      "cluster",
+      "cow",
+      "double_damage",
+      "dragon_punch",
+      "drill",
+      "dynamite",
+      "earthquake",
+      "fire_punch",
+      "flamethrower",
+      "freeze",
+      "girder",
+      "grenade",
+      "heal",
+      "holy_bomb",
+      "homing",
+      "jetpack",
+      "laser",
+      "low_gravity",
+      "mega_bomb",
+      "meteor",
+      "mine",
+      "mine_strike",
+      "minigun",
+      "mole",
+      "mortar",
+      "napalm",
+      "parachute",
+      "poison",
+      "prod",
+      "rifle",
+      "rocket",
+      "rope",
+      "sheep",
+      "shield",
+      "shotgun",
+      "skip",
+      "skunk",
+      "sticky",
+      "super_sheep",
+      "teleport",
+      "turret",
+      "wind_control"
+    ]
+  },
+  "backgrounds": {
+    "menu-bg": {
+      "path": "menu-bg.png",
+      "size": [
+        1440,
+        900
+      ],
+      "note": "x 0..540 solid warm ivory panel for ink/muted menu text, eased fade to clear by x 720; crew diorama on the right"
+    },
+    "sky-meadow": {
+      "path": "sky-meadow.png",
+      "size": [
+        1600,
+        800
+      ]
+    },
+    "sky-desert": {
+      "path": "sky-desert.png",
+      "size": [
+        1600,
+        800
+      ]
+    },
+    "sky-glacier": {
+      "path": "sky-glacier.png",
+      "size": [
+        1600,
+        800
+      ]
+    },
+    "sky-volcano": {
+      "path": "sky-volcano.png",
+      "size": [
+        1600,
+        800
+      ]
+    }
+  },
+  "props": {
+    "app-icon": {
+      "path": "app-icon.png",
+      "size": [
+        256,
+        256
+      ],
+      "note": "also app-icon-{16,32,48,64,128,512,1024}.png"
+    },
+    "crate": {
+      "path": "crate.png",
+      "size": [
+        64,
+        64
+      ],
+      "note": "weapon crate; crate-health.png and crate-utility.png variants"
+    },
+    "crate-health": {
+      "path": "crate-health.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "crate-utility": {
+      "path": "crate-utility.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "grave": {
+      "path": "grave.png",
+      "size": [
+        64,
+        64
+      ],
+      "anchor": [
+        32,
+        60
+      ],
+      "note": "neutral; grave-{team}.png carry team ribbons"
+    },
+    "grave-0": {
+      "path": "grave-0.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "grave-1": {
+      "path": "grave-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "grave-2": {
+      "path": "grave-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "grave-3": {
+      "path": "grave-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "grave-4": {
+      "path": "grave-4.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "grave-5": {
+      "path": "grave-5.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "cloud": {
+      "path": "cloud.png",
+      "size": [
+        256,
+        128
+      ],
+      "note": "transparent parallax cloud; cloud-small.png too"
+    },
+    "cloud-small": {
+      "path": "cloud-small.png",
+      "size": [
+        128,
+        64
+      ]
+    },
+    "mine-prop": {
+      "path": "mine-prop.png",
+      "size": [
+        32,
+        32
+      ],
+      "anchor": [
+        16,
+        26
+      ],
+      "note": "in-world land mine (blinking light frame: mine-prop-lit.png)"
+    },
+    "mine-prop-lit": {
+      "path": "mine-prop-lit.png",
+      "size": [
+        32,
+        32
+      ]
+    },
+    "barrel-prop": {
+      "path": "barrel-prop.png",
+      "size": [
+        40,
+        48
+      ],
+      "anchor": [
+        20,
+        46
+      ],
+      "note": "in-world explosive drum"
+    },
+    "app-icon-16": {
+      "path": "app-icon-16.png",
+      "size": [
+        16,
+        16
+      ]
+    },
+    "app-icon-32": {
+      "path": "app-icon-32.png",
+      "size": [
+        32,
+        32
+      ]
+    },
+    "app-icon-48": {
+      "path": "app-icon-48.png",
+      "size": [
+        48,
+        48
+      ]
+    },
+    "app-icon-64": {
+      "path": "app-icon-64.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    "app-icon-128": {
+      "path": "app-icon-128.png",
+      "size": [
+        128,
+        128
+      ]
+    },
+    "app-icon-512": {
+      "path": "app-icon-512.png",
+      "size": [
+        512,
+        512
+      ]
+    },
+    "app-icon-1024": {
+      "path": "app-icon-1024.png",
+      "size": [
+        1024,
+        1024
+      ]
+    }
+  },
+  "terrain": {
+    "cell": 2,
+    "fill_size": [
+      256,
+      256
+    ],
+    "crust_rows": 20,
+    "tuft_rows": 12,
+    "masonry_size": [
+      64,
+      32
+    ],
+    "girder": "terrain/girder.png",
+    "girder_size": [
+      32,
+      6
+    ],
+    "edge_cells": 2,
+    "shade_cells": 6,
+    "deep_cells": 24,
+    "contract": "crust alpha 255 = crust colour, 0 = fill texture, other = shade texture; tufts are written with their own alpha into empty cells above a material-1 surface (bottom row touches the ground); see docs/ART_DIRECTION.md 'Terrain material kit'",
+    "biomes": {
+      "meadow": {
+        "fill": "terrain/meadow-fill.png",
+        "deep": "terrain/meadow-deep.png",
+        "shade": "terrain/meadow-shade.png",
+        "edge": "terrain/meadow-edge.png",
+        "crust": "terrain/meadow-crust.png",
+        "tufts": "terrain/meadow-tufts.png",
+        "masonry": "terrain/meadow-masonry.png",
+        "minimap": "#986d4a",
+        "minimap_top": "#a9d865"
+      },
+      "desert": {
+        "fill": "terrain/desert-fill.png",
+        "deep": "terrain/desert-deep.png",
+        "shade": "terrain/desert-shade.png",
+        "edge": "terrain/desert-edge.png",
+        "crust": "terrain/desert-crust.png",
+        "tufts": "terrain/desert-tufts.png",
+        "masonry": "terrain/desert-masonry.png",
+        "minimap": "#c47a4a",
+        "minimap_top": "#f9dca3"
+      },
+      "glacier": {
+        "fill": "terrain/glacier-fill.png",
+        "deep": "terrain/glacier-deep.png",
+        "shade": "terrain/glacier-shade.png",
+        "edge": "terrain/glacier-edge.png",
+        "crust": "terrain/glacier-crust.png",
+        "tufts": "terrain/glacier-tufts.png",
+        "masonry": "terrain/glacier-masonry.png",
+        "minimap": "#7fb0cf",
+        "minimap_top": "#ffffff"
+      },
+      "volcano": {
+        "fill": "terrain/volcano-fill.png",
+        "deep": "terrain/volcano-deep.png",
+        "shade": "terrain/volcano-shade.png",
+        "edge": "terrain/volcano-edge.png",
+        "crust": "terrain/volcano-crust.png",
+        "tufts": "terrain/volcano-tufts.png",
+        "masonry": "terrain/volcano-masonry.png",
+        "minimap": "#4b4049",
+        "minimap_top": "#9a8590"
+      }
+    }
+  },
+  "extras": {
+    "fx": [
+      "fx/dust-0.png",
+      "fx/dust-1.png",
+      "fx/dust-2.png",
+      "fx/dust-3.png",
+      "fx/dust-4.png",
+      "fx/explosion-0.png",
+      "fx/explosion-1.png",
+      "fx/explosion-2.png",
+      "fx/explosion-3.png",
+      "fx/explosion-4.png",
+      "fx/explosion-5.png",
+      "fx/explosion-6.png",
+      "fx/explosion-7.png",
+      "fx/explosion-8.png",
+      "fx/smoke-0.png",
+      "fx/smoke-1.png",
+      "fx/smoke-2.png",
+      "fx/smoke-3.png",
+      "fx/smoke-4.png",
+      "fx/smoke-5.png",
+      "fx/sparkle-0.png",
+      "fx/sparkle-1.png",
+      "fx/sparkle-2.png",
+      "fx/sparkle-3.png",
+      "fx/splash-0.png",
+      "fx/splash-1.png",
+      "fx/splash-2.png",
+      "fx/splash-3.png",
+      "fx/splash-4.png",
+      "fx/splash-5.png"
+    ],
+    "ui": [
+      "ui/crosshair.png",
+      "ui/turn-marker-0.png",
+      "ui/turn-marker-1.png",
+      "ui/turn-marker-2.png",
+      "ui/turn-marker-3.png",
+      "ui/wind-arrow.png"
+    ],
+    "fx_animations": {
+      "explosion": {
+        "frames": 9,
+        "size": [
+          160,
+          160
+        ],
+        "anchor": [
+          80,
+          80
+        ],
+        "fps": 18,
+        "pattern": "fx/explosion-{frame}.png"
+      },
+      "smoke": {
+        "frames": 6,
+        "size": [
+          64,
+          64
+        ],
+        "anchor": [
+          32,
+          32
+        ],
+        "fps": 10,
+        "pattern": "fx/smoke-{frame}.png"
+      },
+      "dust": {
+        "frames": 5,
+        "size": [
+          64,
+          32
+        ],
+        "anchor": [
+          32,
+          28
+        ],
+        "fps": 14,
+        "pattern": "fx/dust-{frame}.png",
+        "note": "landing/walk puff"
+      },
+      "splash": {
+        "frames": 6,
+        "size": [
+          96,
+          96
+        ],
+        "anchor": [
+          48,
+          84
+        ],
+        "fps": 14,
+        "pattern": "fx/splash-{frame}.png",
+        "note": "falling into water"
+      },
+      "sparkle": {
+        "frames": 4,
+        "size": [
+          48,
+          48
+        ],
+        "anchor": [
+          24,
+          24
+        ],
+        "fps": 12,
+        "pattern": "fx/sparkle-{frame}.png"
+      },
+      "crosshair": {
+        "frames": 1,
+        "size": [
+          40,
+          40
+        ],
+        "anchor": [
+          20,
+          20
+        ],
+        "pattern": "ui/crosshair.png"
+      },
+      "wind-arrow": {
+        "frames": 1,
+        "size": [
+          64,
+          32
+        ],
+        "anchor": [
+          32,
+          16
+        ],
+        "pattern": "ui/wind-arrow.png",
+        "note": "points right; rotate/mirror for wind direction"
+      },
+      "turn-marker": {
+        "frames": 4,
+        "size": [
+          32,
+          32
+        ],
+        "anchor": [
+          16,
+          30
+        ],
+        "fps": 8,
+        "pattern": "ui/turn-marker-{frame}.png",
+        "note": "bobbing arrow above the active grub; tint-free"
+      }
+    }
+  }
+}

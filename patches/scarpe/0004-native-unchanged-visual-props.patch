@@ -1,0 +1,62 @@
+diff --git a/native/src/doc.rs b/native/src/doc.rs
+index 0338c83..ab0e829 100644
+--- a/native/src/doc.rs
++++ b/native/src/doc.rs
+@@ -330,6 +330,13 @@ impl Doc {
+     /// text_items before its create.
+     pub fn set_props(&mut self, id: Id, changes: Map<String, Value>) -> bool {
+         let Some(node) = self.nodes.get_mut(&id) else { return false };
++        // Repeated animation styles and show/hide calls are common. Retaining
++        // identical values must not invalidate layout or the slot's whole area.
++        let external = changes.keys().any(|key| matches!(key.as_str(), "url" | "icon" | "fill" | "stroke" | "draw_context"))
++            || (matches!(node.kind, Kind::EditLine | Kind::EditBox) && changes.contains_key("text"));
++        if !external && changes.iter().all(|(key, value)| node.props.0.get(key) == Some(value)) {
++            return false;
++        }
+         if changes.contains_key("text_items") {
+             let (old, new) = (node.props.text_items(), Props::new(changes.clone()).text_items());
+             self.spans.name(&new);
+diff --git a/native/tests/damage.rs b/native/tests/damage.rs
+index be01a07..b089d04 100644
+--- a/native/tests/damage.rs
++++ b/native/tests/damage.rs
+@@ -234,7 +234,7 @@ fn widgets_and_their_popup() {
+     h.value(json!({"op": "key", "key": "escape"}));
+     assert_eq!(window.repaint(&mut h), Repaint::Everything, "and once more as it goes");
+     let check = h.id_of_kind("Check");
+-    props(&mut h, check, json!({"checked": true}));
++    props(&mut h, check, json!({"checked": false}));
+     assert!(partial(&window.repaint(&mut h), &window, 0.2));
+ }
+ 
+diff --git a/native/tests/unchanged_props.rs b/native/tests/unchanged_props.rs
+new file mode 100644
+index 0000000..18e6375
+--- /dev/null
++++ b/native/tests/unchanged_props.rs
+@@ -0,0 +1,25 @@
++mod common;
++use common::{app, create, Harness};
++use scarpe_native::paint::damage::{FrameMemory, Repaint};
++use serde_json::json;
++
++#[test]
++fn unchanged_props_keep_layout_and_pixels() {
++    let mut h = Harness::new();
++    h.feed(&app(480, 320, &[
++        create(3, "Stack", 2, json!({"left": 0, "top": 0, "width": 480, "height": 300, "hidden": false})),
++        create(4, "Para", 3, json!({"text_items": ["Hello"], "left": 12, "top": 12})),
++    ]));
++    let mut frame = h.rt.picture(1, 1.0).unwrap();
++    let mut memory = FrameMemory::default();
++    h.rt.repaint(1, &mut frame, 1.0, &mut memory);
++    let revision = h.rt.revisions.now();
++    for _ in 0..5 {
++        h.feed("{\"t\":\"props\",\"id\":3,\"props\":{\"hidden\":false,\"width\":480}}\n{\"t\":\"props\",\"id\":4,\"props\":{\"text_items\":[\"Hello\"],\"left\":12}}\n{\"t\":\"flush\"}\n");
++        assert_eq!(h.rt.revisions.now(), revision);
++        assert_eq!(h.rt.repaint(1, &mut frame, 1.0, &mut memory), Repaint::Nothing);
++    }
++    h.feed("{\"t\":\"props\",\"id\":4,\"props\":{\"text_items\":[\"Changed\"]}}\n{\"t\":\"flush\"}\n");
++    assert!(h.rt.revisions.now() > revision);
++    assert!(matches!(h.rt.repaint(1, &mut frame, 1.0, &mut memory), Repaint::Rects(_)));
++}

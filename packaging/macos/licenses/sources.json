@@ -1,0 +1,15 @@
+{
+  "Ruby-COPYING": "https://raw.githubusercontent.com/ruby/ruby/v3_4_7/COPYING",
+  "Ruby-BSDL": "https://raw.githubusercontent.com/ruby/ruby/v3_4_7/BSDL",
+  "Ruby-LEGAL": "https://raw.githubusercontent.com/ruby/ruby/v3_4_7/LEGAL",
+  "OpenSSL-LICENSE": "https://raw.githubusercontent.com/openssl/openssl/openssl-3.6.0/LICENSE.txt",
+  "libffi-LICENSE": "https://raw.githubusercontent.com/libffi/libffi/v3.5.2/LICENSE",
+  "libyaml-LICENSE": "https://raw.githubusercontent.com/yaml/libyaml/0.2.5/License",
+  "ncurses-COPYING": "https://raw.githubusercontent.com/mirror/ncurses/master/COPYING",
+  "libedit-COPYING": "https://thrysoee.dk/editline/libedit-20251016-3.1.tar.gz",
+  "xz-COPYING": "https://raw.githubusercontent.com/tukaani-project/xz/v5.8.1/COPYING",
+  "GMP-LGPLv3": "https://raw.githubusercontent.com/gmp-mirror/gmp/master/COPYING.LESSERv3",
+  "GMP-GPLv3": "https://raw.githubusercontent.com/gmp-mirror/gmp/master/COPYINGv3",
+  "Traveling-Ruby-LICENSE": "https://raw.githubusercontent.com/trubygems/traveling-ruby/rel-20251122/LICENSE.md",
+  "xz-0BSD": "https://raw.githubusercontent.com/tukaani-project/xz/v5.8.1/COPYING.0BSD"
+}

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="64" height="64" viewBox="0 0 64 64">
+<defs>
+<clipPath id="clip-0">
+<path clip-rule="nonzero" d="M 20 27 L 45 27 L 45 56 L 20 56 Z M 20 27 "/>
+</clipPath>
+<clipPath id="clip-1">
+<path clip-rule="nonzero" d="M 45 38 C 45 47.941406 38.285156 56 30 56 C 21.714844 56 15 47.941406 15 38 C 15 28.058594 21.714844 20 30 20 C 38.285156 20 45 28.058594 45 38 "/>
+</clipPath>
+<clipPath id="clip-2">
+<path clip-rule="nonzero" d="M 15 23 L 45 23 L 45 25 L 15 25 Z M 15 23 "/>
+</clipPath>
+<clipPath id="clip-3">
+<path clip-rule="nonzero" d="M 45 38 C 45 47.941406 38.285156 56 30 56 C 21.714844 56 15 47.941406 15 38 C 15 28.058594 21.714844 20 30 20 C 38.285156 20 45 28.058594 45 38 "/>
+</clipPath>
+<clipPath id="clip-4">
+<path clip-rule="nonzero" d="M 15 30 L 45 30 L 45 32 L 15 32 Z M 15 30 "/>
+</clipPath>
+<clipPath id="clip-5">
+<path clip-rule="nonzero" d="M 45 38 C 45 47.941406 38.285156 56 30 56 C 21.714844 56 15 47.941406 15 38 C 15 28.058594 21.714844 20 30 20 C 38.285156 20 45 28.058594 45 38 "/>
+</clipPath>
+<clipPath id="clip-6">
+<path clip-rule="nonzero" d="M 15 37 L 45 37 L 45 39 L 15 39 Z M 15 37 "/>
+</clipPath>
+<clipPath id="clip-7">
+<path clip-rule="nonzero" d="M 45 38 C 45 47.941406 38.285156 56 30 56 C 21.714844 56 15 47.941406 15 38 C 15 28.058594 21.714844 20 30 20 C 38.285156 20 45 28.058594 45 38 "/>
+</clipPath>
+<clipPath id="clip-8">
+<path clip-rule="nonzero" d="M 15 44 L 45 44 L 45 46 L 15 46 Z M 15 44 "/>
+</clipPath>
+<clipPath id="clip-9">
+<path clip-rule="nonzero" d="M 45 38 C 45 47.941406 38.285156 56 30 56 C 21.714844 56 15 47.941406 15 38 C 15 28.058594 21.714844 20 30 20 C 38.285156 20 45 28.058594 45 38 "/>
+</clipPath>
+<clipPath id="clip-10">
+<path clip-rule="nonzero" d="M 15 51 L 45 51 L 45 53 L 15 53 Z M 15 51 "/>
+</clipPath>
+<clipPath id="clip-11">
+<path clip-rule="nonzero" d="M 45 38 C 45 47.941406 38.285156 56 30 56 C 21.714844 56 15 47.941406 15 38 C 15 28.058594 21.714844 20 30 20 C 38.285156 20 45 28.058594 45 38 "/>
+</clipPath>
+<clipPath id="clip-12">
+<path clip-rule="nonzero" d="M 20 20 L 23 20 L 23 56 L 20 56 Z M 20 20 "/>
+</clipPath>
+<clipPath id="clip-13">
+<path clip-rule="nonzero" d="M 45 38 C 45 47.941406 38.285156 56 30 56 C 21.714844 56 15 47.941406 15 38 C 15 28.058594 21.714844 20 30 20 C 38.285156 20 45 28.058594 45 38 "/>
+</clipPath>
+<clipPath id="clip-14">
+<path clip-rule="nonzero" d="M 29 20 L 31 20 L 31 56 L 29 56 Z M 29 20 "/>
+</clipPath>
+<clipPath id="clip-15">
+<path clip-rule="nonzero" d="M 45 38 C 45 47.941406 38.285156 56 30 56 C 21.714844 56 15 47.941406 15 38 C 15 28.058594 21.714844 20 30 20 C 38.285156 20 45 28.058594 45 38 "/>
+</clipPath>
+<clipPath id="clip-16">
+<path clip-rule="nonzero" d="M 37 20 L 40 20 L 40 56 L 37 56 Z M 37 20 "/>
+</clipPath>
+<clipPath id="clip-17">
+<path clip-rule="nonzero" d="M 45 38 C 45 47.941406 38.285156 56 30 56 C 21.714844 56 15 47.941406 15 38 C 15 28.058594 21.714844 20 30 20 C 38.285156 20 45 28.058594 45 38 "/>
+</clipPath>
+</defs>
+<path fill-rule="nonzero" fill="rgb(43.529412%, 61.960784%, 32.156863%)" fill-opacity="1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="1" stroke-miterlimit="10" d="M 45 38 C 45 47.941406 38.285156 56 30 56 C 21.714844 56 15 47.941406 15 38 C 15 28.058594 21.714844 20 30 20 C 38.285156 20 45 28.058594 45 38 "/>
+<g clip-path="url(#clip-0)">
+<g clip-path="url(#clip-1)">
+<path fill-rule="nonzero" fill="rgb(33.333333%, 48.627451%, 28.627451%)" fill-opacity="0.7" d="M 50 44 C 50 53.390625 43.285156 61 35 61 C 26.714844 61 20 53.390625 20 44 C 20 34.609375 26.714844 27 35 27 C 43.285156 27 50 34.609375 50 44 "/>
+</g>
+</g>
+<g clip-path="url(#clip-2)">
+<g clip-path="url(#clip-3)">
+<path fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="0.75" stroke-miterlimit="10" d="M 10 24 L 50 24 "/>
+</g>
+</g>
+<g clip-path="url(#clip-4)">
+<g clip-path="url(#clip-5)">
+<path fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="0.75" stroke-miterlimit="10" d="M 10 31 L 50 31 "/>
+</g>
+</g>
+<g clip-path="url(#clip-6)">
+<g clip-path="url(#clip-7)">
+<path fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="0.75" stroke-miterlimit="10" d="M 10 38 L 50 38 "/>
+</g>
+</g>
+<g clip-path="url(#clip-8)">
+<g clip-path="url(#clip-9)">
+<path fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="0.75" stroke-miterlimit="10" d="M 10 45 L 50 45 "/>
+</g>
+</g>
+<g clip-path="url(#clip-10)">
+<g clip-path="url(#clip-11)">
+<path fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="0.75" stroke-miterlimit="10" d="M 10 52 L 50 52 "/>
+</g>
+</g>
+<g clip-path="url(#clip-12)">
+<g clip-path="url(#clip-13)">
+<path fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="0.75" stroke-miterlimit="10" d="M 22 18 C 20.5 38 20.5 38 22 58 "/>
+</g>
+</g>
+<g clip-path="url(#clip-14)">
+<g clip-path="url(#clip-15)">
+<path fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="0.75" stroke-miterlimit="10" d="M 30 18 C 30 38 30 38 30 58 "/>
+</g>
+</g>
+<g clip-path="url(#clip-16)">
+<g clip-path="url(#clip-17)">
+<path fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="0.75" stroke-miterlimit="10" d="M 38 18 C 39.5 38 39.5 38 38 58 "/>
+</g>
+</g>
+<path fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="1" stroke-miterlimit="10" d="M 45 38 C 45 47.941406 38.285156 56 30 56 C 21.714844 56 15 47.941406 15 38 C 15 28.058594 21.714844 20 30 20 C 38.285156 20 45 28.058594 45 38 "/>
+<path fill-rule="nonzero" fill="rgb(100%, 99.215686%, 96.862745%)" fill-opacity="0.85" d="M 24.410156 25.75 C 24.992188 25.015625 26.0625 24.890625 26.796875 25.476562 C 27.53125 26.058594 27.65625 27.128906 27.070312 27.863281 L 23.589844 32.25 C 23.007812 32.984375 21.9375 33.109375 21.203125 32.523438 C 20.46875 31.941406 20.34375 30.871094 20.929688 30.136719 Z M 24.410156 25.75 "/>
+<path fill-rule="nonzero" fill="rgb(56.078431%, 63.921569%, 67.058824%)" fill-opacity="1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="1" stroke-miterlimit="10" d="M 33 20 C 44 17 48 24 47 36 L 44 36 C 44 27 40 24 33 25 Z M 33 20 "/>
+<path fill-rule="nonzero" fill="rgb(83.529412%, 87.843137%, 88.627451%)" fill-opacity="1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="1" stroke-miterlimit="10" d="M 36 14 C 37.105469 14 38 14.894531 38 16 L 38 20 C 38 21.105469 37.105469 22 36 22 L 24 22 C 22.894531 22 22 21.105469 22 20 L 22 16 C 22 14.894531 22.894531 14 24 14 Z M 36 14 "/>
+<path fill="none" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(9.411765%, 17.647059%, 20.784314%)" stroke-opacity="1" stroke-miterlimit="10" d="M 24 14 C 24 17.3125 21.3125 20 18 20 C 14.6875 20 12 17.3125 12 14 C 12 10.6875 14.6875 8 18 8 C 21.3125 8 24 10.6875 24 14 "/>
+<path fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(92.941176%, 75.686275%, 42.745098%)" stroke-opacity="1" stroke-miterlimit="10" d="M 24 14 C 24 17.3125 21.3125 20 18 20 C 14.6875 20 12 17.3125 12 14 C 12 10.6875 14.6875 8 18 8 C 21.3125 8 24 10.6875 24 14 "/>
+</svg>

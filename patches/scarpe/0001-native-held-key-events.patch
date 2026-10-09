@@ -1,0 +1,280 @@
+diff --git a/lacci/lib/shoes/app.rb b/lacci/lib/shoes/app.rb
+index 279d1db..ca23b0f 100644
+--- a/lacci/lib/shoes/app.rb
++++ b/lacci/lib/shoes/app.rb
+@@ -466,7 +466,7 @@ end
+ end
+ 
+ # A slot keeps one handler per event, so giving it another replaces the first (ledger H6).
+-%i[motion hover leave click release keypress wheel].each do |event|
++%i[motion hover leave click release keypress keydown keyup wheel].each do |event|
+   [Shoes::App, Shoes::Slot].each do |owner|
+     owner.define_method(event) do |*args, &block|
+       subscription_item(args:, shoes_api_name: event.to_s, &block).replace_earlier_handlers
+diff --git a/lacci/lib/shoes/drawables/subscription_item.rb b/lacci/lib/shoes/drawables/subscription_item.rb
+index 40d9ddf..0d8796d 100644
+--- a/lacci/lib/shoes/drawables/subscription_item.rb
++++ b/lacci/lib/shoes/drawables/subscription_item.rb
+@@ -14,7 +14,7 @@
+ # start is first draw, finish is drawable destroyed
+ class Shoes::SubscriptionItem < Shoes::Drawable
+   shoes_styles :shoes_api_name, :args, :stopped
+-  shoes_events :animate, :every, :timer, :hover, :leave, :motion, :click, :release, :keypress, :wheel
++  shoes_events :animate, :every, :timer, :hover, :leave, :motion, :click, :release, :keypress, :keydown, :keyup, :wheel
+ 
+   # animate, every and timer make a Shoes::Animation, Shoes::Every or Shoes::Timer
+   # (manual 1877, 1989, 2111). Displays still see each as a SubscriptionItem.
+@@ -81,12 +81,12 @@ class Shoes::SubscriptionItem < Shoes::Drawable
+       @unsub_id = bind_self_event("release") do |button, x, y, **_kwargs|
+         @callback&.call(button, x, y)
+       end
+-    when "keypress"
++    when "keypress", "keydown", "keyup"
+       # Keypress passes the key string or symbol to the handler.
+       # The display service sends special keys prefixed with ":" (e.g. ":left"),
+       # which we convert to Ruby symbols (:left). Regular characters stay as strings,
+       # the colon key's own ":" among them.
+-      @unsub_id = bind_self_event("keypress") do |key|
++      @unsub_id = bind_self_event(shoes_api_name) do |key|
+         if key.is_a?(String) && key.start_with?(":") && key.length > 1
+           @callback&.call(key[1..].to_sym)
+         else
+diff --git a/lib/scarpe/native/automation.rb b/lib/scarpe/native/automation.rb
+index b0dd442..9f60eac 100644
+--- a/lib/scarpe/native/automation.rb
++++ b/lib/scarpe/native/automation.rb
+@@ -64,6 +64,14 @@ module Scarpe::Native
+       request(:key, key: name.to_s, app: @app)
+     end
+ 
++    def key_down(name)
++      request(:key_down, key: name.to_s, app: @app)
++    end
++
++    def key_up(name)
++      request(:key_up, key: name.to_s, app: @app)
++    end
++
+     # dy in logical pixels, positive scrolls down; at (x, y), or where the pointer is.
+     def wheel(dy, x: nil, y: nil)
+       request(:wheel, dy: dy, x: x, y: y, app: @app)
+diff --git a/native/src/automation.rs b/native/src/automation.rs
+index f6fcf69..7fa9d2b 100644
+--- a/native/src/automation.rs
++++ b/native/src/automation.rs
+@@ -88,11 +88,24 @@ impl Runtime {
+                 Ok(Some(Value::Null))
+             }
+             Op::Key { key, app } => {
++                let app = self.app_for(app).ok_or_else(no_app)?;
++                let input = KeyInput::parse(&key).ok_or_else(|| (format!("unknown key name `{key}`"), Value::Null))?;
++                self.key_input(app, input.clone());
++                self.key_release(app, &input);
++                Ok(Some(Value::Null))
++            }
++            Op::KeyDown { key, app } => {
+                 let app = self.app_for(app).ok_or_else(no_app)?;
+                 let input = KeyInput::parse(&key).ok_or_else(|| (format!("unknown key name `{key}`"), Value::Null))?;
+                 self.key_input(app, input);
+                 Ok(Some(Value::Null))
+             }
++            Op::KeyUp { key, app } => {
++                let app = self.app_for(app).ok_or_else(no_app)?;
++                let input = KeyInput::parse(&key).ok_or_else(|| (format!("unknown key name `{key}`"), Value::Null))?;
++                self.key_release(app, &input);
++                Ok(Some(Value::Null))
++            }
+             Op::Wheel { dy, x, y, app } => {
+                 let app = self.app_for(app).ok_or_else(no_app)?;
+                 let at = match (x, y) {
+diff --git a/native/src/input.rs b/native/src/input.rs
+index 429cb36..e8f70c7 100644
+--- a/native/src/input.rs
++++ b/native/src/input.rs
+@@ -309,6 +309,9 @@ pub struct Modifiers {
+ /// Per-app interaction state.
+ #[derive(Default)]
+ pub struct ViewState {
++    /// Physical identities map to the Shoes name captured on the initial press.
++    /// Holding Shift while releasing a key must still release its original name.
++    pub held_keys: HashMap<String, String>,
+     pub pointer: Option<(f32, f32)>,
+     pub buttons: u8,
+     pub modifiers: Modifiers,
+@@ -1018,6 +1021,11 @@ impl Runtime {
+     }
+ 
+     pub fn key_input(&mut self, app: Id, key: KeyInput) {
++        let identity = format!("{:?}", key.key).to_lowercase();
++        self.key_input_named(app, key, identity);
++    }
++
++    pub fn key_input_named(&mut self, app: Id, key: KeyInput, identity: String) {
+         if !self.views.contains_key(&app) {
+             return;
+         }
+@@ -1098,6 +1106,13 @@ impl Runtime {
+         }
+         if send_keypress {
+             if let Some(name) = key.shoes_name() {
++                let fresh = !self.views[&app].ui.held_keys.contains_key(&identity);
++                if fresh {
++                    self.views.get_mut(&app).expect("view").ui.held_keys.insert(identity, name.clone());
++                    for (item, _) in self.subscriptions(app, "keydown") {
++                        self.out.event("keydown", Some(item), vec![Value::String(name.clone())]);
++                    }
++                }
+                 for (item, _) in self.subscriptions(app, "keypress") {
+                     self.out.event("keypress", Some(item), vec![Value::String(name.clone())]);
+                 }
+@@ -1105,6 +1120,27 @@ impl Runtime {
+         }
+     }
+ 
++    pub fn key_release(&mut self, app: Id, key: &KeyInput) {
++        self.key_release_named(app, &format!("{:?}", key.key).to_lowercase());
++    }
++
++    pub fn key_release_named(&mut self, app: Id, identity: &str) {
++        let name = self.views.get_mut(&app).and_then(|view| view.ui.held_keys.remove(identity));
++        if let Some(name) = name {
++            for (item, _) in self.subscriptions(app, "keyup") {
++                self.out.event("keyup", Some(item), vec![Value::String(name.clone())]);
++            }
++        }
++    }
++
++    /// Losing window focus releases every held key, avoiding stuck movement.
++    pub fn release_keys(&mut self, app: Id) {
++        let keys: Vec<String> = self.views.get(&app).map(|v| v.ui.held_keys.keys().cloned().collect()).unwrap_or_default();
++        for key in keys {
++            self.key_release_named(app, &key);
++        }
++    }
++
+     fn popup_key(&mut self, app: Id, key: &KeyInput) -> bool {
+         let view = self.views.get_mut(&app).expect("view");
+         let Some(popup) = view.ui.popup.as_mut() else { return false };
+diff --git a/native/src/protocol.rs b/native/src/protocol.rs
+index dee92bc..94325b6 100644
+--- a/native/src/protocol.rs
++++ b/native/src/protocol.rs
+@@ -80,6 +80,8 @@ pub enum Op {
+     Mouse { action: MouseAction, x: f32, y: f32, button: u8, app: Option<Id> },
+     Type { text: String, app: Option<Id> },
+     Key { key: String, app: Option<Id> },
++    KeyDown { key: String, app: Option<Id> },
++    KeyUp { key: String, app: Option<Id> },
+     Wheel { dy: f32, x: Option<f32>, y: Option<f32>, app: Option<Id> },
+     Resize { app: Option<Id>, w: f32, h: f32 },
+     Pixel { x: f32, y: f32, app: Option<Id> },
+@@ -241,6 +243,8 @@ fn op_fields(obj: &Map<String, Value>) -> Result<Op, ParseError> {
+         },
+         "type" => Op::Type { text: required(s(obj, "text"), "text")?, app },
+         "key" => Op::Key { key: required(s(obj, "key"), "key")?, app },
++        "key_down" => Op::KeyDown { key: required(s(obj, "key"), "key")?, app },
++        "key_up" => Op::KeyUp { key: required(s(obj, "key"), "key")?, app },
+         "wheel" => Op::Wheel { dy: required(f(obj, "dy"), "dy")?, x: f(obj, "x"), y: f(obj, "y"), app },
+         "resize" => Op::Resize { app, w: required(f(obj, "w"), "w")?, h: required(f(obj, "h"), "h")? },
+         "pixel" => Op::Pixel { x: required(f(obj, "x"), "x")?, y: required(f(obj, "y"), "y")?, app },
+diff --git a/native/src/runtime.rs b/native/src/runtime.rs
+index b7cd4d7..c495089 100644
+--- a/native/src/runtime.rs
++++ b/native/src/runtime.rs
+@@ -677,7 +677,7 @@ fn changes_only_looks(kind: &Kind, key: &str) -> bool {
+ 
+ /// Requests that act like a person at the keyboard or mouse.
+ fn is_input(op: &Op) -> bool {
+-    matches!(op, Op::Click { .. } | Op::Mouse { .. } | Op::Type { .. } | Op::Key { .. } | Op::Wheel { .. } | Op::A11yAction { .. })
++    matches!(op, Op::Click { .. } | Op::Mouse { .. } | Op::Type { .. } | Op::Key { .. } | Op::KeyDown { .. } | Op::KeyUp { .. } | Op::Wheel { .. } | Op::A11yAction { .. })
+ }
+ 
+ /// The App's `width` and `height`, each finite, positive and at most limits::MAX_SIDE.
+diff --git a/native/src/window.rs b/native/src/window.rs
+index 32453c9..d3ef18a 100644
+--- a/native/src/window.rs
++++ b/native/src/window.rs
+@@ -513,6 +513,7 @@ impl ApplicationHandler<UserEvent> for Shell {
+             }
+             WindowEvent::ScaleFactorChanged { .. } => self.rt.request_redraw(app),
+             WindowEvent::Focused(true) => self.rt.active_app = Some(app),
++            WindowEvent::Focused(false) => self.rt.release_keys(app),
+             WindowEvent::CursorMoved { position, .. } => {
+                 let p = position.to_logical::<f64>(scale);
+                 self.rt.pointer_move(app, p.x as f32, p.y as f32);
+@@ -552,11 +553,14 @@ impl ApplicationHandler<UserEvent> for Shell {
+                     self.rt.ime_commit(app, text);
+                 }
+             }
+-            WindowEvent::KeyboardInput { event, .. } if event.state == ElementState::Pressed => {
++            WindowEvent::KeyboardInput { event, .. } => {
+                 self.rt.stats.input();
++                let identity = format!("{:?}", event.physical_key);
+                 let mods = self.windows.get(&id).map(|w| w.modifiers).unwrap_or_default();
+-                if let Some(key) = key_input(&event, mods) {
+-                    self.rt.key_input(app, key);
++                if event.state == ElementState::Released {
++                    self.rt.key_release_named(app, &identity);
++                } else if let Some(key) = key_input(&event, mods) {
++                    self.rt.key_input_named(app, key, identity);
+                 }
+             }
+             _ => {}
+diff --git a/native/tests/held_keys.rs b/native/tests/held_keys.rs
+new file mode 100644
+index 0000000..3114f95
+--- /dev/null
++++ b/native/tests/held_keys.rs
+@@ -0,0 +1,52 @@
++mod common;
++use common::{app, create, events, named, Harness};
++use scarpe_native::input::KeyInput;
++use serde_json::json;
++
++fn scene() -> Harness {
++    let mut h = Harness::new();
++    h.feed(&app(300, 200, &[
++        create(3, "SubscriptionItem", 2, json!({"shoes_api_name":"keydown","args":[]})),
++        create(4, "SubscriptionItem", 2, json!({"shoes_api_name":"keyup","args":[]})),
++        create(5, "SubscriptionItem", 2, json!({"shoes_api_name":"keypress","args":[]})),
++    ]));
++    h
++}
++
++#[test]
++fn repeat_does_not_repeat_down_and_release_is_paired() {
++    let mut h = scene();
++    let (evs, _) = h.req(json!({"op":"key_down","key":"left"}));
++    assert_eq!(named(&events(&evs), "keydown").len(), 1);
++    let (evs, _) = h.req(json!({"op":"key_down","key":"left"}));
++    assert!(named(&events(&evs), "keydown").is_empty());
++    assert_eq!(named(&events(&evs), "keypress").len(), 1);
++    let (evs, _) = h.req(json!({"op":"key_up","key":"left"}));
++    assert_eq!(named(&events(&evs), "keyup")[0].2, json!([":left"]));
++    let (evs, _) = h.req(json!({"op":"key_up","key":"left"}));
++    assert!(named(&events(&evs), "keyup").is_empty());
++}
++
++#[test]
++fn focus_loss_releases_every_key_and_captured_name_survives_modifier_changes() {
++    let mut h = scene();
++    h.rt.key_input_named(1, KeyInput::parse("A").unwrap(), "physical-a".into());
++    h.rt.key_input_named(1, KeyInput::parse("left").unwrap(), "physical-left".into());
++    h.rt.out.take_captured();
++    h.rt.key_release_named(1, "physical-a");
++    let evs = events(&h.rt.out.take_captured());
++    assert_eq!(named(&evs, "keyup")[0].2, json!(["A"]));
++    h.rt.release_keys(1);
++    let evs = events(&h.rt.out.take_captured());
++    assert_eq!(named(&evs, "keyup")[0].2, json!([":left"]));
++    assert!(h.rt.views[&1].ui.held_keys.is_empty());
++}
++
++#[test]
++fn typing_does_not_start_game_movement() {
++    let mut h = scene();
++    h.feed(&create(6, "EditLine", 2, json!({"text":"","width":200,"height":30})).to_string());
++    h.value(json!({"op":"click","target":{"id":6}}));
++    let (evs, _) = h.req(json!({"op":"key_down","key":"a"}));
++    assert!(named(&events(&evs), "keydown").is_empty());
++}

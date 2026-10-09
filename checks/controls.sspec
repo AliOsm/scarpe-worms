@@ -1,0 +1,190 @@
+---
+display: native
+timeout: 160
+----------- app code
+ENV["BURROW_DATA_DIR"] = File.join(Dir.pwd, "controls-data")
+require File.join(ENV.fetch("BURROW_ROOT"), "lib/burrow/server/reactor")
+require File.join(ENV.fetch("BURROW_ROOT"), "lib/burrow/server/certificate")
+require "stringio"
+# A repeatable obstacle course; controls still travel through the real TLS host.
+module ControlsCourse
+  def initialize(**args)
+    super
+    ground = 900
+    data = "\0".b * terrain.cols * terrain.rows
+    data[(ground / 2) * terrain.cols..] = "\1" * ((terrain.rows - ground / 2) * terrain.cols)
+    @terrain = Burrow::Terrain.new(seed: config.seed_number, width: world_width, height: world_height, data: data)
+    @terrain.bridge(400, 690, width: 170)
+    worms.each_with_index { |w, i| w.merge!(x: 300.0 + i * 550, y: ground.to_f, vx: 0.0, vy: 0.0) }
+    @motion_frames.clear
+    record_motion
+  end
+end
+Burrow::Match.prepend(ControlsCourse)
+$controls_dir = File.join(Dir.pwd, "controls-server")
+cert, key = Burrow::Server::Certificate.ensure_pair(File.join($controls_dir, "tls"))
+$controls_server = Burrow::Server::Reactor.new(port: 0, data_dir: $controls_dir, certificate: cert, key: key, logger: Logger.new(StringIO.new))
+$controls_thread = Thread.new { $controls_server.run }
+ENV["BURROW_CONNECT"] = "tls://127.0.0.1:#{$controls_server.port}"
+ENV["BURROW_FINGERPRINT"] = $controls_server.fingerprint
+at_exit do
+  $controls_friend&.close
+  $controls_server.stop
+  $controls_thread.join(5)
+end
+load File.join(ENV.fetch("BURROW_ROOT"), "game.rb")
+----------- test code
+client = Shoes.APPS.first.instance_variable_get(:@burrow)
+auto = Scarpe::Native::DisplayService.instance.automation
+wait_real = lambda do |seconds = 15, &condition|
+  deadline = Burrow.clock + seconds
+  until condition.call
+    raise "Controls journey timed out at #{caller_locations(1, 1).first}; notice=#{client.instance_variable_get(:@last_notice)}" if Burrow.clock > deadline
+    sleep 0.025
+    advance 0.03
+  end
+end
+pause = lambda do |seconds|
+  until_at = Burrow.clock + seconds
+  wait_real.call { Burrow.clock >= until_at }
+end
+wait_real.call { client.connection.status == "online" }
+client.action("create", name: "Controls course", config: {"worms" => 2, "health" => 200, "scheme" => "sandbox", "mines" => 0, "barrels" => 0, "crates" => false, "retreat_seconds" => 0, "turn_seconds" => 90, "fall_damage" => false, "ammo" => {"shotgun" => 1}})
+wait_real.call { client.page == :lobby }
+$controls_friend = Burrow::Client::Connection.new(endpoint: ENV["BURROW_CONNECT"], name: "Observer", fingerprint: $controls_server.fingerprint).connect
+wait_real.call { $controls_friend.status == "online" }
+$controls_friend.send_action("join", code: client.room["code"])
+wait_real.call { client.room["members"].size == 2 }
+start = lambda do
+  $controls_friend.send_action("ready", ready: true)
+  wait_real.call { client.room["members"].last["ready"] }
+  click_on "Start the mischief"
+  wait_real.call { client.page == :match && client.scene.terrain_revision >= 0 && client.my_turn? }
+  pause.call(0.3)
+end
+reset = lambda do
+  $controls_friend.send_action("surrender")
+  wait_real.call { client.state["phase"] == "finished" }
+  client.action("rematch")
+  wait_real.call { client.page == :lobby }
+  start.call
+end
+equip = lambda do |id|
+  press_key "e"
+  name = Burrow::Catalog.fetch(id)[:name]
+  click_on buttons.find { |b| b.text.start_with?(name + " ") }
+  click_on "Equip"
+  assert_equal id, client.selected_weapon
+  refute client.overlay?
+end
+acknowledged = lambda { wait_real.call { !client.instance_variable_get(:@pending_action) } }
+world_point = lambda do |x, y|
+  sx, sy = client.scene.camera.screen(x, y)
+  scale = client.instance_variable_get(:@scale)
+  [client.instance_variable_get(:@offset_x) + sx * scale,
+   client.instance_variable_get(:@offset_y) + (sy + Burrow::Client::Scene::Y) * scale]
+end
+start.call
+# Separate homing target and launch aim, through actual pointer and key events.
+equip.call("homing")
+x, y = world_point.call(780, 895)
+auto.mouse(:move, x, y)
+auto.mouse(:down, x, y)
+auto.mouse(:up, x, y)
+assert client.locked_target
+locked = client.locked_target.dup
+refute client.instance_variable_get(:@charge_started)
+assert_empty client.state["projectiles"]
+x, y = world_point.call(100, 700)
+auto.mouse(:move, x, y)
+assert_equal locked, client.locked_target
+snapshot "homing-target-locked"
+auto.key_down(" ")
+pause.call(0.4)
+auto.key_up(" ")
+wait_real.call { client.state["projectiles"].any? }
+p = client.state["projectiles"].first
+assert_equal "homing", p["weapon"]
+assert_equal locked, p.values_at("target_x", "target_y")
+reset.call
+# One cartridge, two independent presses, with no power charging for a gun.
+equip.call("shotgun")
+press_key " "
+wait_real.call { client.state["shots_left"] == 1 }
+assert_equal 0, client.my_inventory["shotgun"]
+assert_nil client.instance_variable_get(:@charge_started)
+acknowledged.call
+press_key "e"
+click_on buttons.find { |b| b.text.start_with?(Burrow::Catalog.fetch("rocket")[:name] + " ") }
+assert_equal "disabled", button("Equip").state
+click_on "Close"
+press_key " "
+wait_real.call { client.state["phase"] != "aiming" }
+assert_equal 2, $controls_server.rooms.values.first.match.events.count { |e| e[:kind] == "beam" }
+reset.call
+# Launch, steering, focus cancellation, and dropping the flying critter.
+equip.call("super_sheep")
+press_key " "
+wait_real.call { client.remote_critter }
+assert_equal "walking", client.remote_critter["stage"]
+acknowledged.call
+press_key " "
+wait_real.call { client.remote_critter && client.remote_critter["stage"] == "flying" }
+auto.key_down("left")
+wait_real.call { client.remote_critter && client.remote_critter["vx"] < -70 }
+auto.key_up("left")
+auto.window_focus(false)
+wait_real.call { $controls_server.rooms.values.first.match.projectiles.first[:steer] == 0 }
+auto.window_focus(true)
+acknowledged.call
+snapshot "captain-wool-flight"
+press_key " "
+wait_real.call { client.state["projectiles"].any? { |shot| shot["stage"] == "falling" } }
+reset.call
+# Reeling and detaching do not consume a second rope.
+equip.call("rope")
+x, y = world_point.call(400, 695)
+auto.mouse(:move, x, y)
+auto.mouse(:down, x, y)
+auto.mouse(:up, x, y)
+wait_real.call { client.active_worm["rope"] }
+length = client.active_worm["rope"]["length"]
+auto.key_down("up")
+wait_real.call { client.active_worm["rope"]["length"] < length - 15 }
+auto.key_up("up")
+acknowledged.call
+press_key " "
+wait_real.call { !client.active_worm["rope"] }
+assert_equal "aiming", client.state["phase"]
+# The jetpack responds to arrows and shows fuel; focus loss releases thrust.
+equip.call("jetpack")
+press_key " "
+wait_real.call { client.active_worm["jetpack"] }
+auto.key_down("up")
+auto.key_down("right")
+wait_real.call { client.active_worm["fuel"] < 110 && client.active_worm["vy"] < -30 }
+auto.key_up("up")
+auto.key_up("right")
+acknowledged.call
+press_key " "
+wait_real.call { !client.active_worm["jetpack"] && client.active_worm["parachute"] }
+reset.call
+# Mole and skunk stage buttons must stay available during settlement.
+%w[mole skunk].each do |id|
+  equip.call(id)
+  press_key " "
+  wait_real.call { client.remote_critter }
+  acknowledged.call
+  press_key " "
+  desired = id == "mole" ? "diving" : "spraying"
+  wait_real.call { client.state["projectiles"].any? { |shot| shot["stage"] == desired } }
+  reset.call
+end
+# Drilling can be stopped without waiting for its timer.
+equip.call("drill")
+press_key " "
+wait_real.call { client.state["tool"] }
+acknowledged.call
+press_key " "
+wait_real.call { !client.state["tool"] }
+assert_empty $controls_server.rooms.values.first.match.inputs.select { |i| i[:type] == "fire" && i[:values]["weapon"] != "drill" }

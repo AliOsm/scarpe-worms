@@ -1,0 +1,363 @@
+Subject: Optional bounded software rendering, Mac compositor scaling, and recent frame diagnostics
+
+diff --git a/native/src/runtime/stats.rs b/native/src/runtime/stats.rs
+index de85a80..fb17285 100644
+--- a/native/src/runtime/stats.rs
++++ b/native/src/runtime/stats.rs
+@@ -3,6 +3,7 @@
+ //! `<dir>/rust.json` when the process ends, if SCARPE_NATIVE_STATS names a directory.
+ 
+ use serde_json::{json, Map, Value};
++use std::collections::VecDeque;
+ use std::path::PathBuf;
+ use std::sync::OnceLock;
+ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+@@ -63,11 +64,11 @@ pub struct Stats {
+     /// Milestones (first layout, first present...), seconds since start, first time only.
+     marks: Vec<(&'static str, f64)>,
+     /// One row per frame shown: seconds since start, then ms per phase since the frame before.
+-    frames: Vec<[f64; 7]>,
++    frames: VecDeque<[f64; 7]>,
+     /// Input that has not been drawn yet.
+     input_at: Option<Instant>,
+     /// Input -> the frame that showed it, in ms.
+-    input_latency: Vec<f64>,
++    input_latency: VecDeque<f64>,
+     counters: std::collections::BTreeMap<&'static str, u64>,
+ }
+ 
+@@ -88,9 +89,9 @@ impl Stats {
+             tallies: [Tally::default(); 6],
+             since_frame: [Duration::ZERO; 6],
+             marks: vec![("main", 0.0)],
+-            frames: Vec::new(),
++            frames: VecDeque::new(),
+             input_at: None,
+-            input_latency: Vec::new(),
++            input_latency: VecDeque::new(),
+             counters: Default::default(),
+         }
+     }
+@@ -121,6 +122,11 @@ impl Stats {
+         self.counters.get(name).copied().unwrap_or(0)
+     }
+ 
++    /// Current dimensions/context, without accumulating once per frame.
++    pub fn set(&mut self, name: &'static str, value: u64) {
++        self.counters.insert(name, value);
++    }
++
+     /// Records a milestone the first time it happens.
+     pub fn mark(&mut self, name: &'static str) {
+         self.mark_at(name, Instant::now());
+@@ -143,17 +149,15 @@ impl Stats {
+     pub fn frame_shown(&mut self) {
+         let now = Instant::now();
+         let work = std::mem::take(&mut self.since_frame);
+-        if self.frames.len() < MAX_SAMPLES {
+-            let mut row = [self.since_start(now), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+-            for (cell, took) in row[1..].iter_mut().zip(work) {
+-                *cell = took.as_secs_f64() * 1000.0;
+-            }
+-            self.frames.push(row);
++        let mut row = [self.since_start(now), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
++        for (cell, took) in row[1..].iter_mut().zip(work) {
++            *cell = took.as_secs_f64() * 1000.0;
+         }
++        if self.frames.len() == MAX_SAMPLES { self.frames.pop_front(); }
++        self.frames.push_back(row);
+         if let Some(at) = self.input_at.take() {
+-            if self.input_latency.len() < MAX_SAMPLES {
+-                self.input_latency.push(now.duration_since(at).as_secs_f64() * 1000.0);
+-            }
++            if self.input_latency.len() == MAX_SAMPLES { self.input_latency.pop_front(); }
++            self.input_latency.push_back(now.duration_since(at).as_secs_f64() * 1000.0);
+         }
+     }
+ 
+@@ -175,6 +179,8 @@ impl Stats {
+             "phases": phases,
+             "frame_columns": ["at", "parse", "apply", "layout", "paint", "present", "req"],
+             "frames": self.frames,
++            "sample_policy": "most_recent",
++            "sample_limit": MAX_SAMPLES,
+             "input_latency_ms": self.input_latency,
+             "counters": self.counters,
+         })
+@@ -202,6 +208,22 @@ impl Drop for Stats {
+ mod tests {
+     use super::*;
+ 
++    #[test]
++    fn bounded_log_retains_recent_frames_instead_of_only_startup() {
++        let mut stats = Stats::new(None);
++        for i in 0..MAX_SAMPLES + 3 {
++            stats.add(Phase::Paint, Duration::from_millis(i as u64));
++            stats.input();
++            stats.frame_shown();
++        }
++        let json = stats.to_json();
++        let frames = json["frames"].as_array().unwrap();
++        assert_eq!(frames.len(), MAX_SAMPLES);
++        assert_eq!(frames[0][4], 3.0);
++        assert_eq!(frames.last().unwrap()[4], (MAX_SAMPLES + 2) as f64);
++        assert_eq!(json["input_latency_ms"].as_array().unwrap().len(), MAX_SAMPLES);
++    }
++
+     #[test]
+     fn tallies_phases_and_marks_milestones_once() {
+         let mut stats = Stats::new(None);
+diff --git a/native/src/window.rs b/native/src/window.rs
+index d65f5e6..1e0f200 100644
+--- a/native/src/window.rs
++++ b/native/src/window.rs
+@@ -5,6 +5,7 @@
+ 
+ mod ghost;
+ mod pacing;
++mod resolution;
+ mod voiceover;
+ 
+ use crate::a11y::Mirror;
+@@ -96,6 +97,7 @@ struct Win {
+     surface: softbuffer::Surface<Rc<Window>, Rc<Window>>,
+     _context: softbuffer::Context<Rc<Window>>,
+     surface_size: (u32, u32),
++    compositor_scaling: bool,
+     /// The last frame, kept so the next one repaints only what changed.
+     pixmap: Option<Pixmap>,
+     memory: FrameMemory,
+@@ -239,6 +241,7 @@ impl Shell {
+         if match_frame_colour_space(&window) {
+             self.rt.stats.mark("colour_space_matched");
+         }
++        let compositor_scaling = configure_surface_scaling(&window);
+         let pacing = Pacing::new(window.current_monitor().and_then(|m| m.refresh_rate_millihertz()));
+         window.request_redraw();
+         let id = window.id();
+@@ -252,6 +255,7 @@ impl Shell {
+                 surface,
+                 _context: context,
+                 surface_size: (0, 0),
++                compositor_scaling,
+                 pixmap: None,
+                 memory: FrameMemory::default(),
+                 pacing,
+@@ -374,25 +378,39 @@ impl Shell {
+     }
+ 
+     fn redraw(&mut self, id: WindowId) {
++        let redraw_started = Instant::now();
+         let Some(win) = self.windows.get_mut(&id) else { return };
+         win.pacing.drawing(Instant::now());
+         let size = win.window.inner_size();
+         let (w, h) = (size.width.max(1), size.height.max(1));
+         let scale = win.window.scale_factor() as f32;
++        let render = resolution::Resolution::from_env(w, h, scale);
++        self.rt.stats.set("surface_width", w as u64);
++        self.rt.stats.set("surface_height", h as u64);
++        self.rt.stats.set("surface_scale_milli", (scale * 1000.0).round() as u64);
++        self.rt.stats.set("render_width", render.width as u64);
++        self.rt.stats.set("render_height", render.height as u64);
++        self.rt.stats.set("render_scale_milli", (render.scale * 1000.0).round() as u64);
++        self.rt.stats.set("compositor_scaling", u64::from(win.compositor_scaling));
+         let pm = match &mut win.pixmap {
+-            Some(pm) if pm.width() == w && pm.height() == h => pm,
+-            slot => slot.insert(match Pixmap::new(w, h) {
++            Some(pm) if pm.width() == render.width && pm.height() == render.height => pm,
++            slot => slot.insert(match Pixmap::new(render.width, render.height) {
+                 Some(pm) => pm,
+                 None => return,
+             }),
+         };
+         if let Some(view) = self.rt.views.get_mut(&win.app) {
+-            view.scale = scale;
++            view.scale = render.scale;
+         }
+-        self.rt.repaint(win.app, pm, scale, &mut win.memory);
++        self.rt.repaint(win.app, pm, render.scale, &mut win.memory);
+         // A layout done for this frame has told Ruby where things are: say it before showing it.
++        let delivering = Instant::now();
+         self.rt.out.flush();
++        self.rt.stats.set("max_layout_delivery_us", self.rt.stats.counter("max_layout_delivery_us").max(delivering.elapsed().as_micros() as u64));
+         let presenting = Instant::now();
++        let (w, h, divisor) = if win.compositor_scaling {
++            (render.width, render.height, 1)
++        } else { (w, h, render.divisor) };
+         if win.surface_size != (w, h) {
+             if win.surface.resize(NonZeroU32::new(w).expect("w"), NonZeroU32::new(h).expect("h")).is_err() {
+                 return;
+@@ -400,15 +418,14 @@ impl Shell {
+             win.surface_size = (w, h);
+         }
+         let Ok(mut buffer) = win.surface.buffer_mut() else { return };
+-        for (dst, px) in buffer.iter_mut().zip(pm.data().chunks_exact(4)) {
+-            *dst = ((px[0] as u32) << 16) | ((px[1] as u32) << 8) | (px[2] as u32);
+-        }
++        resolution::write_pixels(pm, &mut buffer, w, divisor);
+         let _ = buffer.present();
+         self.rt.stats.since(Phase::Present, presenting);
+         let app = win.app;
+         self.rt.frame_presented(app);
+         // A new frame shows a change, and a screen reader that is listening hears of it too.
+         tell_screen_reader(&mut self.rt, win);
++        self.rt.stats.set("max_window_redraw_us", self.rt.stats.counter("max_window_redraw_us").max(redraw_started.elapsed().as_micros() as u64));
+     }
+ 
+     /// A screen reader wants the window's whole tree (the Mirror already knows it owes it), or
+@@ -657,6 +674,39 @@ fn match_frame_colour_space(_window: &Window) -> bool {
+     false
+ }
+ 
++/// softbuffer 0.4 installs its own last sublayer and pins its image to the
++/// top-left. Explicitly stretch that layer's contents when we render fewer
++/// pixels. Leave bounds/contentsScale under softbuffer's display-change observer.
++/// If the layer cannot be found, use the portable full-size buffer instead.
++#[cfg(target_os = "macos")]
++fn configure_surface_scaling(window: &Window) -> bool {
++    use objc2::runtime::AnyObject;
++    use objc2::{class, msg_send};
++    use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
++    let Ok(handle) = window.window_handle() else { return false };
++    let RawWindowHandle::AppKit(appkit) = handle.as_raw() else { return false };
++    // SAFETY: called on winit's main thread, after softbuffer has installed its
++    // CALayer on this live NSView. All methods have object arguments/results;
++    // CALayer retains the autoreleased NSString used for its gravity property.
++    unsafe {
++        let view: &AnyObject = appkit.ns_view.cast().as_ref();
++        let root: Option<&AnyObject> = msg_send![view, layer];
++        let Some(root) = root else { return false };
++        let layers: Option<&AnyObject> = msg_send![root, sublayers];
++        let Some(layers) = layers else { return false };
++        let layer: Option<&AnyObject> = msg_send![layers, lastObject];
++        let Some(layer) = layer else { return false };
++        let gravity: &AnyObject = msg_send![class!(NSString), stringWithUTF8String: c"resize".as_ptr()];
++        let _: () = msg_send![layer, setContentsGravity: gravity];
++        let current: &AnyObject = msg_send![layer, contentsGravity];
++        let matches: bool = msg_send![current, isEqual: gravity];
++        matches
++    }
++}
++
++#[cfg(not(target_os = "macos"))]
++fn configure_surface_scaling(_window: &Window) -> bool { false }
++
+ /// The text an input method committed. Preedit (text still being composed) is not shown in
+ /// the field; the input method's own panel shows it until it commits.
+ fn committed(ime: &Ime) -> Option<&str> {
+diff --git a/native/src/window/resolution.rs b/native/src/window/resolution.rs
+new file mode 100644
+index 0000000..a29a825
+--- /dev/null
++++ b/native/src/window/resolution.rs
+@@ -0,0 +1,110 @@
++//! Optional pixel budget for animation-heavy applications using the software
++//! renderer. Logical layout/input coordinates never change. On macOS the
++//! existing CoreAnimation surface scales the smaller image on the compositor;
++//! other backends receive a full-size, expanded buffer.
++use tiny_skia::Pixmap;
++
++#[derive(Clone, Copy, Debug)]
++pub(super) struct Resolution {
++    pub width: u32,
++    pub height: u32,
++    pub scale: f32,
++    pub divisor: u32,
++}
++
++impl Resolution {
++    pub fn new(width: u32, height: u32, scale: f32, budget: Option<u64>) -> Self {
++        let mut divisor = 1;
++        if let Some(budget) = budget.filter(|n| *n >= 65_536) {
++            divisor = ((width as f64 * height as f64 / budget as f64).sqrt().ceil() as u32).max(1);
++            while width.div_ceil(divisor) as u64 * height.div_ceil(divisor) as u64 > budget {
++                divisor += 1;
++            }
++        }
++        Self { width: width.div_ceil(divisor), height: height.div_ceil(divisor), scale: scale / divisor as f32, divisor }
++    }
++
++    pub fn from_env(width: u32, height: u32, scale: f32) -> Self {
++        let budget = std::env::var("SCARPE_NATIVE_MAX_RENDER_PIXELS").ok().and_then(|s| s.parse().ok());
++        Self::new(width, height, scale, budget)
++    }
++}
++
++/// RGBA -> softbuffer's 0RGB, also expanding integer-resolution pixels on
++/// platforms without compositor scaling. Repeated scanlines are copied whole.
++pub(super) fn write_pixels(pm: &Pixmap, buffer: &mut [u32], width: u32, divisor: u32) {
++    if divisor == 1 {
++        for (dest, pixel) in buffer.iter_mut().zip(pm.data().chunks_exact(4)) {
++            *dest = ((pixel[0] as u32) << 16) | ((pixel[1] as u32) << 8) | pixel[2] as u32;
++        }
++        return;
++    }
++    let width = width as usize;
++    let source_width = pm.width() as usize;
++    let divisor = divisor as usize;
++    for y in 0..buffer.len() / width {
++        let start = y * width;
++        if y % divisor != 0 {
++            buffer.copy_within(start - width..start, start);
++            continue;
++        }
++        let source = &pm.data()[(y / divisor) * source_width * 4..][..source_width * 4];
++        let dest = &mut buffer[start..start + width];
++        match divisor {
++            2 => expand_row::<2>(source, dest),
++            3 => expand_row::<3>(source, dest),
++            4 => expand_row::<4>(source, dest),
++            _ => for (dest, pixel) in dest.chunks_mut(divisor).zip(source.chunks_exact(4)) {
++                let rgb = ((pixel[0] as u32) << 16) | ((pixel[1] as u32) << 8) | pixel[2] as u32;
++                dest.fill(rgb);
++            }
++        }
++    }
++}
++
++fn expand_row<const N: usize>(source: &[u8], dest: &mut [u32]) {
++    let mut chunks = dest.chunks_exact_mut(N);
++    for (dest, pixel) in chunks.by_ref().zip(source.chunks_exact(4)) {
++        dest.fill(((pixel[0] as u32) << 16) | ((pixel[1] as u32) << 8) | pixel[2] as u32);
++    }
++    let tail = chunks.into_remainder();
++    if !tail.is_empty() {
++        let pixel = &source[source.len()-4..];
++        tail.fill(((pixel[0] as u32) << 16) | ((pixel[1] as u32) << 8) | pixel[2] as u32);
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn budget_keeps_logical_geometry_and_bounds_work_across_display_sizes() {
++        for (w, h, scale) in [(2560, 1600, 2.0), (3840, 2400, 2.0), (5120, 2880, 2.0), (1081, 675, 1.0)] {
++            let r = Resolution::new(w, h, scale, Some(2_304_000));
++            assert!(r.width as u64 * r.height as u64 <= 2_304_000);
++            assert!((r.width as f32 / r.scale - w as f32 / scale).abs() < 1.0 / r.scale);
++            assert!((r.height as f32 / r.scale - h as f32 / scale).abs() < 1.0 / r.scale);
++        }
++        let r = Resolution::new(3840, 2400, 2.0, None);
++        assert_eq!((r.width, r.height, r.scale, r.divisor), (3840, 2400, 2.0, 1));
++    }
++
++    #[test]
++    fn expansion_converts_channels_and_clips_odd_window_edges() {
++        let mut pm = Pixmap::new(3, 2).unwrap();
++        for (i, pixel) in pm.data_mut().chunks_exact_mut(4).enumerate() {
++            pixel.copy_from_slice(&[i as u8, 20, 70, 255]);
++        }
++        for (w, h, divisor) in [(3, 2, 1), (6, 4, 2), (5, 3, 2), (7, 5, 3)] {
++            let mut buffer = vec![0; w * h];
++            write_pixels(&pm, &mut buffer, w as u32, divisor as u32);
++            for y in 0..h {
++                for x in 0..w {
++                    let i = (y / divisor) * 3 + x / divisor;
++                    assert_eq!(buffer[y*w+x], ((i as u32) << 16) | (20 << 8) | 70);
++                }
++            }
++        }
++    }
++}

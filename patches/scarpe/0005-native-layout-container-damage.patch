@@ -1,0 +1,45 @@
+diff --git a/native/src/paint/damage.rs b/native/src/paint/damage.rs
+index 176dfa3..77ba92a 100644
+--- a/native/src/paint/damage.rs
++++ b/native/src/paint/damage.rs
+@@ -351,6 +351,13 @@ fn look_at(doc: &Doc, layout: &Layout, view: &ViewState, hovered: &HashSet<Id>,
+     let mut nodes = HashMap::with_capacity(layout.order.len());
+     for &id in &layout.order {
+         let (Some(node), Some(lbox)) = (doc.get(id), layout.boxes.get(&id)) else { continue };
++        // These nodes arrange/clip their descendants but emit no pixels. Their
++        // auto-height changes when a child moves; counting that empty area made
++        // one moving sprite invalidate an entire full-width animation layer.
++        // Descendant boxes, clips, appearance and disappearance are tracked below.
++        if matches!(node.kind, Kind::Stack | Kind::Flow | Kind::App | Kind::DocumentRoot) {
++            continue;
++        }
+         let text = layout.texts.get(&id);
+         nodes.insert(
+             id,
+diff --git a/native/tests/damage.rs b/native/tests/damage.rs
+index b089d04..44c8396 100644
+--- a/native/tests/damage.rs
++++ b/native/tests/damage.rs
+@@ -546,3 +546,22 @@ fn text_kerned_tight_repaints_all_of_itself() {
+     props(&mut h, 3, json!({"stroke": {"rgba": [0, 0, 255, 255]}}));
+     window.repaint(&mut h);
+ }
++
++#[test]
++fn an_auto_height_layout_layer_does_not_expand_sprite_damage() {
++    let mut h = Harness::new();
++    h.feed(&app(800, 600, &[
++        create(3, "Stack", 2, json!({"left": 0, "top": 0, "width": 800, "height": 600})),
++        create(4, "Stack", 3, json!({"left": 0, "top": 0, "width": 800})),
++        create(5, "Oval", 4, json!({"left": 240, "top": 250, "width": 16, "height": 16, "fill": {"rgba": [220, 80, 30, 255]}})),
++    ]));
++    let mut window = Window::open(&mut h, 2.0);
++    for y in [253, 260, 267, 278, 295] {
++        props(&mut h, 5, json!({"top": y}));
++        assert!(partial(&window.repaint(&mut h), &window, 0.04), "an empty ancestor's changing height is not damage");
++    }
++    props(&mut h, 4, json!({"left": 20, "top": 20}));
++    assert!(partial(&window.repaint(&mut h), &window, 0.06), "moving the parent still repaints its children");
++    props(&mut h, 4, json!({"hidden": true}));
++    assert!(partial(&window.repaint(&mut h), &window, 0.04));
++}

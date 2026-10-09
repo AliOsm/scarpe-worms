@@ -1,0 +1,91 @@
+---
+display: native
+timeout: 100
+----------- app code
+ENV["BURROW_DATA_DIR"] = File.join(Dir.pwd, "camera-data")
+load File.join(ENV.fetch("BURROW_ROOT"), "game.rb")
+----------- test code
+client = Shoes.APPS.first.instance_variable_get(:@burrow)
+auto = Scarpe::Native::DisplayService.instance.automation
+wait_real = lambda do |seconds = 18, &condition|
+  deadline = Burrow.clock + seconds
+  until condition.call
+    raise "Camera journey timed out at #{caller_locations(1, 1).first}" if Burrow.clock > deadline
+    sleep 0.025
+    advance 0.03
+  end
+end
+click_on "Create a match"
+wait_real.call { client.page == :lobby }
+client.action("configure", config: client.room["config"].merge("worms" => 6, "seed" => "camera-world", "turn_seconds" => 90))
+4.times { client.action("add_bot") }
+wait_real.call { client.room["members"].size == 6 }
+click_on "Start the mischief"
+wait_real.call { client.scene && client.scene.terrain_revision >= 0 }
+assert_equal [4800, 1600], client.state.values_at("world_width", "world_height")
+assert_equal 36, client.scene.actors.size
+press_key "g"
+advance 0.05
+assert client.scene.camera.overview?
+snapshot "camera-overview"
+zoom = client.scene.camera.zoom
+auto.wheel(-120, x: 700, y: 400)
+advance 0.05
+assert_operator client.scene.camera.zoom, :>, zoom
+# Explore the rightmost island via the actual minimap hit area.
+scale = 1280.0 / 1440
+x, y = 1385 * scale, (Burrow::Client::Scene::Y + 650) * scale
+auto.mouse(:down, x, y)
+auto.mouse(:up, x, y)
+advance 0.05
+assert_operator client.scene.camera.x, :>, 1500
+refute client.scene.camera.following
+assert_empty client.state["projectiles"]
+# Middle-drag changes the camera, without charging a weapon.
+previous = client.scene.camera.x
+auto.mouse(:down, 500, 350, button: 2)
+auto.mouse(:move, 650, 350)
+auto.mouse(:up, 650, 350, button: 2)
+advance 0.05
+assert_operator client.scene.camera.x, :<, previous
+refute client.instance_variable_get(:@charge_started)
+# Teleport to real safe ground past the old 1440px boundary, using screen input.
+terrain = client.scene.terrain
+wx = (4020..4500).step(12).find do |at|
+  feet = terrain.landing(at, 0, water: client.state["water"])
+  feet && client.state["worms"].none? { |w| Math.hypot(w["x"] - at, w["y"] - feet) < 50 }
+end
+wy = terrain.landing(wx, 0, water: client.state["water"]) - 20
+client.scene.camera.navigate(wx, wy)
+press_key "e"
+name = Burrow::Catalog.fetch("teleport")[:name]
+click_on buttons.find { |button| button.text.start_with?(name + " ") }
+click_on "Equip"
+sx, sy = client.scene.camera.screen(wx, wy)
+auto.mouse(:move, sx * scale, (sy + Burrow::Client::Scene::Y) * scale)
+assert_in_delta wx, client.target[0], 2
+auto.mouse(:down, sx * scale, (sy + Burrow::Client::Scene::Y) * scale)
+auto.mouse(:up, sx * scale, (sy + Burrow::Client::Scene::Y) * scale)
+wait_real.call { (client.state["worms"].first["x"] - wx).abs < 2 }
+assert_operator client.state["worms"].first["x"], :>, 4000
+press_key "f"
+advance 0.08
+assert client.scene.camera.following
+snapshot "camera-far-island"
+# Resizing preserves the authoritative large mask and correct pointer mapping.
+press_key "g"
+advance 0.05
+worker = client.scene.instance_variable_get(:@terrain_art)
+timeline = client.scene.timeline
+revision = client.scene.terrain_revision
+resize_window 1080, 675
+wait_real.call(2) { client.instance_variable_get(:@dimensions) == [1080, 675] }
+assert_equal revision, client.scene.terrain_revision, "resize must not blank the existing landscape"
+assert_same worker, client.scene.instance_variable_get(:@terrain_art)
+assert_same timeline, client.scene.timeline
+assert client.scene.camera.overview?, "resize must preserve the explored camera view"
+assert_equal 4800, client.scene.terrain.width
+assert_equal client.state["terrain_checksum"], client.scene.terrain.checksum
+assert_nil client.scene.instance_variable_get(:@terrain_art).error
+GC.start
+assert_equal 1, ObjectSpace.each_object(Burrow::Client::Scene).count, "resize must retire the old scene"

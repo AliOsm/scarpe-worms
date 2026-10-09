@@ -1,0 +1,11 @@
+* text=auto eol=lf
+*.png binary
+*.gif binary
+*.wav binary
+*.ttf binary
+*.zip binary
+
+# Preserve upstream patches and license notices verbatim.
+*.patch -whitespace
+assets/fonts/*-LICENSE -text -whitespace
+packaging/macos/licenses/** -text -whitespace

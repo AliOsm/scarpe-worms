@@ -1,0 +1,212 @@
+{
+  "version": "0.2.4",
+  "ruby": "3.4.7",
+  "platform": "x86_64-linux",
+  "window": [
+    1920,
+    1200
+  ],
+  "world": [
+    4800,
+    1600
+  ],
+  "grubs": 36,
+  "sample_columns": [
+    "at",
+    "phase",
+    "update_interval_ms",
+    "update_ms",
+    "moving",
+    "gc_ms",
+    "visible_speed",
+    "camera_speed"
+  ],
+  "audio": true,
+  "projectile_ids": [
+    "o8",
+    "o9",
+    "o10",
+    "o11",
+    "o12",
+    "o13",
+    "o14",
+    "o16",
+    "o17"
+  ],
+  "terrain_revision": 7,
+  "surface": {
+    "surface_width": 3840,
+    "surface_height": 2400,
+    "surface_scale_milli": 2000,
+    "render_width": 1280,
+    "render_height": 800,
+    "render_scale_milli": 667,
+    "compositor_scaling": false
+  },
+  "scenarios": {
+    "combat": {
+      "presented_intervals": {
+        "count": 610,
+        "mean_ms": 16.747416260655744,
+        "p95_ms": 20.579075000000557,
+        "p99_ms": 30.412180999999094,
+        "max_ms": 46.29038100000216,
+        "over_33ms": 4,
+        "over_50ms": 0
+      },
+      "paint": {
+        "count": 896,
+        "mean_ms": 2.3326745223214287,
+        "p95_ms": 4.556348,
+        "p99_ms": 5.379107,
+        "max_ms": 24.897855,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "present": {
+        "count": 896,
+        "mean_ms": 3.8500635558035716,
+        "p95_ms": 8.560906,
+        "p99_ms": 9.470398999999999,
+        "max_ms": 9.726443,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "app_update": {
+        "count": 1083,
+        "mean_ms": 16.6667525450994,
+        "p95_ms": 16.83548279106617,
+        "p99_ms": 17.756705172359943,
+        "max_ms": 23.20763422176242,
+        "over_33ms": 0,
+        "over_50ms": 0
+      }
+    },
+    "pan": {
+      "presented_intervals": {
+        "count": 360,
+        "mean_ms": 16.647627077777777,
+        "p95_ms": 18.754586000000018,
+        "p99_ms": 21.01544699999991,
+        "max_ms": 41.43168999999958,
+        "over_33ms": 1,
+        "over_50ms": 0
+      },
+      "paint": {
+        "count": 361,
+        "mean_ms": 3.9793479030470915,
+        "p95_ms": 5.3864860000000006,
+        "p99_ms": 7.5242260000000005,
+        "max_ms": 12.736217,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "present": {
+        "count": 361,
+        "mean_ms": 3.0569569058171746,
+        "p95_ms": 3.4177869999999997,
+        "p99_ms": 3.709016,
+        "max_ms": 7.438980000000001,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "app_update": {
+        "count": 361,
+        "mean_ms": 16.66667956698923,
+        "p95_ms": 16.761525999754667,
+        "p99_ms": 17.02726725488901,
+        "max_ms": 18.469897098839283,
+        "over_33ms": 0,
+        "over_50ms": 0
+      }
+    },
+    "zoom": {
+      "presented_intervals": {
+        "count": 397,
+        "mean_ms": 18.408320549118393,
+        "p95_ms": 34.13507899999857,
+        "p99_ms": 44.82262000000148,
+        "max_ms": 49.20539999999818,
+        "over_33ms": 25,
+        "over_50ms": 0
+      },
+      "paint": {
+        "count": 398,
+        "mean_ms": 2.293971989949749,
+        "p95_ms": 6.614651,
+        "p99_ms": 11.405597,
+        "max_ms": 15.556202,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "present": {
+        "count": 398,
+        "mean_ms": 3.547156281407035,
+        "p95_ms": 6.748408,
+        "p99_ms": 9.359841000000001,
+        "max_ms": 10.070803999999999,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "app_update": {
+        "count": 441,
+        "mean_ms": 16.66662361274332,
+        "p95_ms": 16.776127740740776,
+        "p99_ms": 17.00315671041608,
+        "max_ms": 17.182521987706423,
+        "over_33ms": 0,
+        "over_50ms": 0
+      }
+    }
+  },
+  "counters": {
+    "compositor_scaling": 0,
+    "exit_callback_flush": 1,
+    "images_resampled": 912,
+    "max_layout_delivery_us": 8,
+    "max_window_redraw_us": 41642,
+    "render_height": 800,
+    "render_scale_milli": 667,
+    "render_width": 1280,
+    "repainted_pixels": 1011214686,
+    "repaints_in_full": 972,
+    "repaints_in_part": 797,
+    "repaints_of_nothing": 31,
+    "surface_height": 2400,
+    "surface_scale_milli": 2000,
+    "surface_width": 3840
+  },
+  "measurement": "Linux native X11 window",
+  "macos_execution": false,
+  "packaged": true,
+  "wait_backend": {
+    "name": "TimerFD",
+    "error": null
+  },
+  "wait_overshoot": {
+    "count": 3755,
+    "mean_ms": 0.09009920025911534,
+    "p95_ms": 0.21430524066090584,
+    "p99_ms": 0.45007234439253807,
+    "max_ms": 6.834840402007103,
+    "over_33ms": 0,
+    "over_50ms": 0
+  },
+  "timer_slack_ms": 0,
+  "playback_backlog": {
+    "count": 2106,
+    "mean_ms": 14.300853411461391,
+    "p95_ms": 16.06985180948944,
+    "p99_ms": 38.09330935900258,
+    "max_ms": 55.508072450757034,
+    "over_33ms": 35,
+    "over_50ms": 5
+  },
+  "audio_output": "Linux OpenAL null driver",
+  "motion_interval_selection": "latest completed app sample at the starting presentation; includes stalled updates while motion remains active",
+  "linux_substitutions": {
+    "ruby": "<ruby-home>/3.4.7/bin/ruby",
+    "renderer": "<workspace>/vendor/scarpe/native/target/release/scarpe-native",
+    "ffi_extension": "<workspace>/vendor/bundle/ruby/4.0.0/gems/ffi-1.17.4-x86_64-linux-gnu/lib/3.4/ffi_c.so"
+  }
+}

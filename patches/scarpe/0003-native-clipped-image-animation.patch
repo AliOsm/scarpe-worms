@@ -1,0 +1,130 @@
+diff --git a/native/src/elements/image.rs b/native/src/elements/image.rs
+index da24d59..09d79ab 100644
+--- a/native/src/elements/image.rs
++++ b/native/src/elements/image.rs
+@@ -229,20 +229,7 @@ pub fn paint(canvas: &mut Canvas, node: &Node, lbox: &LBox, images: &mut ImageCa
+         let (cx, cy) = if node.props.str("transform_origin") == Some("center") { r.center() } else { (r.x, r.y) };
+         transform = Transform::from_rotate_at(deg, cx, cy).pre_concat(transform);
+     }
+-    let paint = PixmapPaint { quality: FilterQuality::Bicubic, ..PixmapPaint::default() };
+-    let mask_clip = lbox.clip;
+-    // draw_pixmap has no clip rect of its own: clip by drawing through a pattern-filled rect.
+-    if mask_clip.is_some() {
+-        let shader = tiny_skia::Pattern::new(img.as_ref().as_ref(), tiny_skia::SpreadMode::Pad, FilterQuality::Bicubic, 1.0, transform);
+-        if let Some(path) = canvas.rect_path(r, 0.0, 0.0) {
+-            canvas.fill_path(&path, shader, tiny_skia::FillRule::Winding, Transform::identity(), mask_clip);
+-        }
+-        return;
+-    }
+-    let whole = tiny_skia::Rect::from_xywh(0.0, 0.0, img.width() as f32, img.height() as f32);
+-    if whole.is_some_and(|b| crate::paint::within_reach(b, base.pre_concat(transform), 0.0)) {
+-        canvas.pm.draw_pixmap(0, 0, img.as_ref().as_ref(), &paint, base.pre_concat(transform), None);
+-    }
++    canvas.image(img.as_ref().as_ref(), transform, lbox.clip);
+ }
+ 
+ /// Draws `img` as large as fits in `r`, keeping its shape, centred (a button's icon).
+diff --git a/native/src/paint/damage.rs b/native/src/paint/damage.rs
+index 2c1a014..176dfa3 100644
+--- a/native/src/paint/damage.rs
++++ b/native/src/paint/damage.rs
+@@ -446,7 +446,21 @@ pub fn paint_bounds(node: &Node, lbox: &LBox, text: Option<&TextBox>) -> Option<
+             let t = super::shapes::art_transform(node, lbox.rect);
+             (reach * (t.sx.abs() + t.kx.abs()), reach * (t.ky.abs() + t.sy.abs()))
+         }
+-        Kind::Image if p.f32("rotate_angle").is_some_and(|deg| deg != 0.0) => return None,
++        Kind::Image if p.f32("rotate_angle").is_some_and(|deg| deg != 0.0) => {
++            let r = lbox.rect;
++            let (cx, cy) = if p.str("transform_origin") == Some("center") { r.center() } else { (r.x, r.y) };
++            let turn = tiny_skia::Transform::from_rotate_at(p.f32("rotate_angle").unwrap(), cx, cy);
++            let mut corners = [tiny_skia::Point::from_xy(r.x, r.y), tiny_skia::Point::from_xy(r.right(), r.y),
++                tiny_skia::Point::from_xy(r.right(), r.bottom()), tiny_skia::Point::from_xy(r.x, r.bottom())];
++            turn.map_points(&mut corners);
++            if corners.iter().any(|p| !p.x.is_finite() || !p.y.is_finite()) { return None; }
++            let x = corners.iter().map(|p| p.x).fold(f32::INFINITY, f32::min);
++            let y = corners.iter().map(|p| p.y).fold(f32::INFINITY, f32::min);
++            let right = corners.iter().map(|p| p.x).fold(f32::NEG_INFINITY, f32::max);
++            let bottom = corners.iter().map(|p| p.y).fold(f32::NEG_INFINITY, f32::max);
++            let bounds = grow(Rect::new(x, y, right - x, bottom - y), 2.0, 2.0);
++            return Some(lbox.clip.map_or(bounds, |clip| bounds.intersect(&clip).unwrap_or(Rect::new(clip.x, clip.y, 0.0, 0.0))));
++        },
+         Kind::Background | Kind::Border => (2.0, 2.0),
+         _ => (10.0, 10.0),
+     };
+diff --git a/native/src/paint/mod.rs b/native/src/paint/mod.rs
+index 4475a3c..55ca9c2 100644
+--- a/native/src/paint/mod.rs
++++ b/native/src/paint/mod.rs
+@@ -226,6 +226,25 @@ impl<'a> Canvas<'a> {
+         self.clip_mask = held;
+     }
+ 
++    /// Blit a picture through the slot clip. Fully contained pictures need no mask;
++    /// transformed pictures are clipped in their transformed bounds, not their old box.
++    pub fn image(&mut self, image: tiny_skia::PixmapRef<'_>, local: Transform, clip: Option<Rect>) {
++        let transform = self.base().pre_concat(local);
++        let Some(bounds) = tiny_skia::Rect::from_xywh(0.0, 0.0, image.width() as f32, image.height() as f32) else { return };
++        if !within_reach(bounds, transform, 0.0) { return; }
++        let quality = if transform.sx == 1.0 && transform.sy == 1.0 && transform.kx == 0.0 && transform.ky == 0.0 {
++            FilterQuality::Nearest
++        } else { FilterQuality::Bicubic };
++        let paint = PixmapPaint { quality, ..PixmapPaint::default() };
++        let mut held = self.clip_mask.take();
++        match self.clipping(&mut held, clip, Canvas::reach(bounds, transform, 0.0)) {
++            Clipping::Nothing => {},
++            Clipping::Whole => self.pm.draw_pixmap(0, 0, image, &paint, transform, None),
++            Clipping::Through(mask) => self.pm.draw_pixmap(0, 0, image, &paint, transform, Some(mask)),
++        }
++        self.clip_mask = held;
++    }
++
+     pub fn stroke_path(&mut self, path: &Path, shader: Shader, stroke: &Stroke, local: Transform, clip: Option<Rect>) {
+         let transform = self.base().pre_concat(local);
+         if !within_reach(path.bounds(), transform, stroke.width) {
+diff --git a/native/tests/image_animation.rs b/native/tests/image_animation.rs
+new file mode 100644
+index 0000000..c022d1b
+--- /dev/null
++++ b/native/tests/image_animation.rs
+@@ -0,0 +1,41 @@
++//! Animated pictures must retain their rotated silhouette inside clipped slots,
++//! and moving one small sprite must not invalidate a whole window.
++mod common;
++use common::{app, create, Harness};
++use scarpe_native::paint::damage::{FrameMemory, Repaint};
++use serde_json::json;
++use tiny_skia::{Color, Pixmap};
++
++#[test]
++fn rotating_a_clipped_picture_repaints_its_transformed_bounds() {
++    let path = std::env::temp_dir().join(format!("scarpe-rotated-{}.png", std::process::id()));
++    let mut sprite = Pixmap::new(40, 12).unwrap();
++    sprite.fill(Color::from_rgba8(18, 80, 210, 255));
++    sprite.save_png(&path).unwrap();
++    for scale in [1.0, 2.0] {
++        let mut h = Harness::new();
++        h.feed(&app(480, 320, &[
++            create(3, "Stack", 2, json!({"left": 30, "top": 30, "width": 380, "height": 250})),
++            create(4, "Image", 3, json!({"url": path, "left": 100, "top": 90, "width": 40, "height": 12,
++                "rotate_angle": 90, "transform_origin": "center"})),
++        ]));
++        let mut frame = h.rt.picture(1, scale).unwrap();
++        let mut memory = FrameMemory::default();
++        h.rt.repaint(1, &mut frame, scale, &mut memory);
++        // The vertical silhouette extends past the old 12px-high layout box.
++        let px = frame.pixel((150.0 * scale) as u32, (112.0 * scale) as u32).unwrap();
++        assert!(px.blue() > 180 && px.red() < 30, "rotation was clipped to the unrotated rectangle");
++        let mut before = h.rt.picture(1, scale).unwrap();
++        for angle in [12, 35, 80, 120, 179, 235, 310] {
++            h.feed(&format!("{}\n{{\"t\":\"flush\"}}\n", json!({"t": "props", "id": 4,
++                "props": {"rotate_angle": angle, "left": 102 + angle / 20}})));
++            let plan = h.rt.repaint(1, &mut frame, scale, &mut memory);
++            assert!(matches!(plan, Repaint::Rects(_)), "one rotating sprite repainted the whole window");
++            assert!(plan.pixels((frame.width(), frame.height())) < (frame.width() * frame.height() / 8) as u64);
++            let full = h.rt.picture(1, scale).unwrap();
++            h.rt.verify_repaint(1, &plan, &frame, scale, &full, &before).unwrap();
++            before = full;
++        }
++    }
++    std::fs::remove_file(path).unwrap();
++}

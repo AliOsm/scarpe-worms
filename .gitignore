@@ -1,0 +1,30 @@
+# Dependencies and local builds; setup.sh recreates them.
+/vendor/
+/.bundle/
+.cache/
+/dist/
+/tools/build_art_previews/
+__pycache__/
+*.pyc
+
+# Player state, host certificates, and local credentials.
+/var/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Keep summary reports and curated versioned screenshots, not every capture.
+/docs/validation/*.raw.json
+/docs/validation/*.png
+/docs/evidence/*.png
+
+# Editor and runtime noise.
+*.log
+*.core
+.DS_Store
+*.swp
+*.swo

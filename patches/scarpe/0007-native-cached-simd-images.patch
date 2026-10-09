@@ -1,0 +1,511 @@
+Subject: Cache bounded alpha spans and use premultiplied SIMD image resampling. Preserve fractional clipping and test pixel equivalence.
+
+diff --git a/native/Cargo.lock b/native/Cargo.lock
+index 3088de4..ee55292 100644
+--- a/native/Cargo.lock
++++ b/native/Cargo.lock
+@@ -685,6 +685,15 @@ dependencies = [
+  "libloading",
+ ]
+ 
++[[package]]
++name = "document-features"
++version = "0.2.12"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "d4b8a88685455ed29a21542a33abd9cb6510b6b129abadabdcef0f4c55bc8f61"
++dependencies = [
++ "litrs",
++]
++
+ [[package]]
+ name = "downcast-rs"
+ version = "1.2.1"
+@@ -812,6 +821,18 @@ dependencies = [
+  "pin-project-lite",
+ ]
+ 
++[[package]]
++name = "fast_image_resize"
++version = "6.1.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "e9c50201dc184ba6553da1695aac20a042efffbe2d84542cee31917c86c3ab1e"
++dependencies = [
++ "cfg-if",
++ "document-features",
++ "num-traits",
++ "thiserror 2.0.21",
++]
++
+ [[package]]
+ name = "fastrand"
+ version = "2.5.0"
+@@ -1226,6 +1247,12 @@ version = "0.12.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
+ 
++[[package]]
++name = "litrs"
++version = "1.0.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "11d3d7f243d5c5a8b9bb5d6dd2b1602c0cb0b9db1621bafc7ed66e35ff9fe092"
++
+ [[package]]
+ name = "lock_api"
+ version = "0.4.14"
+@@ -2047,6 +2074,7 @@ dependencies = [
+  "accesskit_winit",
+  "arboard",
+  "cosmic-text",
++ "fast_image_resize",
+  "image",
+  "objc2 0.6.4",
+  "rfd",
+diff --git a/native/Cargo.toml b/native/Cargo.toml
+index 3ebdd15..33b55d8 100644
+--- a/native/Cargo.toml
++++ b/native/Cargo.toml
+@@ -22,6 +22,7 @@ swash = "0.2"
+ winit = "0.30"
+ softbuffer = "0.4"
+ image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "bmp"] }
++fast_image_resize = { version = "6.1.0", features = ["only_u8x4"] }
+ serde = { version = "1", features = ["derive"] }
+ serde_json = "1"
+ rfd = "0.17"
+diff --git a/native/src/elements/image.rs b/native/src/elements/image.rs
+index 09d79ab..e1147de 100644
+--- a/native/src/elements/image.rs
++++ b/native/src/elements/image.rs
+@@ -3,13 +3,14 @@
+ 
+ use crate::doc::Node;
+ use crate::layout::{LBox, Rect};
+-use crate::paint::Canvas;
++use crate::paint::{Canvas, ImageRuns};
+ use crate::style::{Color, Paint};
+ use std::collections::HashMap;
+ use std::path::{Path, PathBuf};
+ use std::rc::Rc;
+ use std::time::SystemTime;
+-use tiny_skia::{FilterQuality, IntSize, Pixmap, PixmapPaint, Transform};
++use tiny_skia::{FilterQuality, IntSize, Pixmap, Transform};
++use fast_image_resize::{images::{Image, ImageRef}, FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer};
+ 
+ /// Decoded pictures by path. Each is read again when its file changes (its modification time
+ /// or its length), so an app that rewrites a picture and shows it again sees the new one, and
+@@ -26,16 +27,20 @@ pub struct ImageCache {
+     batch: u64,
+     /// Copies made at a new size since the runtime last asked (`take_resampled`).
+     resampled: u64,
++    resizer: Resizer,
+ }
+ 
+ struct Entry {
+     /// The file as it was when read; None when there was none.
+     file: Option<FileStamp>,
+     image: Option<Rc<Pixmap>>,
++    opaque: bool,
++    transparent: bool,
++    runs: Option<Rc<ImageRuns>>,
+     /// The batch the file was last looked at in.
+     looked: u64,
+     /// The picture resampled to the device sizes it is drawn at, the last used first.
+-    sized: Vec<Rc<Pixmap>>,
++    sized: Vec<(Rc<Pixmap>, Option<Rc<ImageRuns>>)>,
+ }
+ 
+ /// How many sizes of one picture are kept, for a picture shown at several sizes at once.
+@@ -68,10 +73,29 @@ impl ImageCache {
+             return entry.image.clone();
+         }
+         let image = file.and_then(|_| decode(path)).map(Rc::new);
+-        self.entries.insert(path.to_path_buf(), Entry { file, image: image.clone(), looked: batch, sized: Vec::new() });
++        let opaque = image.as_ref().is_some_and(|image| image.pixels().iter().all(|p| p.alpha() == 255));
++        let transparent = image.as_ref().is_some_and(|image| image.pixels().iter().all(|p| p.alpha() == 0));
++        let runs = image.as_ref().and_then(|pm| ImageRuns::new(pm.as_ref().as_ref())).map(Rc::new);
++        self.entries.insert(path.to_path_buf(), Entry { file, image: image.clone(), opaque, transparent, runs, looked: batch, sized: Vec::new() });
+         image
+     }
+ 
++    pub fn is_opaque(&self, path: &Path) -> bool {
++        self.entries.get(path).is_some_and(|entry| entry.opaque)
++    }
++
++    pub fn is_transparent(&self, path: &Path) -> bool {
++        self.entries.get(path).is_some_and(|entry| entry.transparent)
++    }
++
++    fn runs(&self, path: &Path, width: u32, height: u32) -> Option<Rc<ImageRuns>> {
++        let entry = self.entries.get(path)?;
++        if entry.image.as_ref().is_some_and(|pm| pm.width() == width && pm.height() == height) {
++            return entry.runs.clone();
++        }
++        entry.sized.iter().find(|(pm, _)| pm.width() == width && pm.height() == height).and_then(|(_, runs)| runs.clone())
++    }
++
+     /// The picture at `path` resampled to exactly `w` x `h` pixels, made the first time and kept
+     /// after. None for a size too big to keep, or a picture not read.
+     pub fn at_size(&mut self, path: &Path, w: u32, h: u32) -> Option<Rc<Pixmap>> {
+@@ -80,17 +104,30 @@ impl ImageCache {
+         }
+         let entry = self.entries.get_mut(path)?;
+         let image = entry.image.clone()?;
+-        if let Some(i) = entry.sized.iter().position(|copy| copy.width() == w && copy.height() == h) {
++        if let Some(i) = entry.sized.iter().position(|(copy, _)| copy.width() == w && copy.height() == h) {
+             let copy = entry.sized.remove(i);
+-            entry.sized.insert(0, copy.clone());
+-            return Some(copy);
++            let image = copy.0.clone();
++            entry.sized.insert(0, copy);
++            return Some(image);
+         }
+         let mut copy = Pixmap::new(w, h)?;
+-        let (sx, sy) = (w as f32 / image.width() as f32, h as f32 / image.height() as f32);
+-        let paint = PixmapPaint { quality: FilterQuality::Bicubic, ..PixmapPaint::default() };
+-        copy.draw_pixmap(0, 0, image.as_ref().as_ref(), &paint, Transform::from_scale(sx, sy), None);
++        // A separable SIMD convolution (NEON on Apple silicon) avoids running a
++        // bicubic shader for every output pixel on a cold Retina texture. Skia
++        // pixels are already premultiplied; multiplying alpha again makes dark
++        // fringes. Keep premultiplication valid through cubic ringing as well.
++        let src = ImageRef::new(image.width(), image.height(), image.data(), PixelType::U8x4).ok()?;
++        let mut dst = Image::from_slice_u8(w, h, copy.data_mut(), PixelType::U8x4).ok()?;
++        let options = ResizeOptions::new().resize_alg(ResizeAlg::Convolution(FilterType::CatmullRom)).use_alpha(false);
++        self.resizer.resize(&src, &mut dst, &options).ok()?;
++        if !entry.opaque {
++            for pixel in copy.data_mut().chunks_exact_mut(4) {
++                let alpha = pixel[3];
++                for c in &mut pixel[..3] { *c = (*c).min(alpha); }
++            }
++        }
+         let copy = Rc::new(copy);
+-        entry.sized.insert(0, copy.clone());
++        let runs = ImageRuns::new(copy.as_ref().as_ref()).map(Rc::new);
++        entry.sized.insert(0, (copy.clone(), runs));
+         entry.sized.truncate(SIZES_KEPT);
+         self.resampled += 1;
+         Some(copy)
+@@ -207,6 +244,7 @@ pub fn paint(canvas: &mut Canvas, node: &Node, lbox: &LBox, images: &mut ImageCa
+         }
+         return;
+     };
++    if path.as_ref().is_some_and(|path| images.is_transparent(path)) { return; }
+     let base = canvas.base();
+     let turned = node.props.f32("rotate_angle").filter(|d| *d != 0.0);
+     // Unturned, it lands on whole device pixels; a picture of another size is drawn from its
+@@ -229,7 +267,8 @@ pub fn paint(canvas: &mut Canvas, node: &Node, lbox: &LBox, images: &mut ImageCa
+         let (cx, cy) = if node.props.str("transform_origin") == Some("center") { r.center() } else { (r.x, r.y) };
+         transform = Transform::from_rotate_at(deg, cx, cy).pre_concat(transform);
+     }
+-    canvas.image(img.as_ref().as_ref(), transform, lbox.clip);
++    let runs = path.as_ref().and_then(|path| images.runs(path, img.width(), img.height()));
++    canvas.image_with_runs(img.as_ref().as_ref(), transform, lbox.clip, runs.as_deref());
+ }
+ 
+ /// Draws `img` as large as fits in `r`, keeping its shape, centred (a button's icon).
+diff --git a/native/src/paint/image_runs.rs b/native/src/paint/image_runs.rs
+new file mode 100644
+index 0000000..74686a7
+--- /dev/null
++++ b/native/src/paint/image_runs.rs
+@@ -0,0 +1,56 @@
++//! Alpha runs computed once per decoded/resized picture. Large opaque terrain
++//! and backgrounds copy scanlines; empty spans do no work. Only soft edges blend.
++use tiny_skia::PixmapRef;
++
++pub struct ImageRuns {
++    width: u32,
++    rows: Vec<usize>,
++    spans: Vec<Run>,
++}
++
++pub(super) struct Run {
++    pub left: usize,
++    pub right: usize,
++    pub opaque: bool,
++}
++
++impl ImageRuns {
++    /// Returns None when fragmented alpha would make the index expensive. The
++    /// caller then blends normally. Metadata is bounded by the pixel buffer's
++    /// size (apart from tiny images), and never exceeds 262,144 spans.
++    pub fn new(image: PixmapRef<'_>) -> Option<Self> {
++        let limit = (image.data().len() / std::mem::size_of::<Run>()).clamp(64, 262_144);
++        let mut rows = Vec::with_capacity(image.height() as usize + 1);
++        let mut spans = Vec::new();
++        for row in image.data().chunks_exact(image.width() as usize * 4) {
++            rows.push(spans.len());
++            let mut x = 0;
++            while x < image.width() as usize {
++                let alpha = row[x * 4 + 3];
++                let class = if alpha == 0 { 0 } else if alpha == 255 { 2 } else { 1 };
++                let left = x;
++                x += 1;
++                while x < image.width() as usize {
++                    let a = row[x * 4 + 3];
++                    let next = if a == 0 { 0 } else if a == 255 { 2 } else { 1 };
++                    if next != class { break; }
++                    x += 1;
++                }
++                if class != 0 {
++                    if spans.len() == limit { return None; }
++                    spans.push(Run {left, right: x, opaque: class == 2});
++                }
++            }
++        }
++        rows.push(spans.len());
++        Some(Self { width: image.width(), rows, spans })
++    }
++
++    pub(super) fn fits(&self, image: PixmapRef<'_>) -> bool {
++        self.width == image.width() && self.rows.len() == image.height() as usize + 1
++    }
++
++    pub(super) fn row(&self, y: usize) -> &[Run] {
++        &self.spans[self.rows[y]..self.rows[y + 1]]
++    }
++}
+diff --git a/native/src/paint/mod.rs b/native/src/paint/mod.rs
+index ce30a3f..88bea36 100644
+--- a/native/src/paint/mod.rs
++++ b/native/src/paint/mod.rs
+@@ -6,6 +6,8 @@ pub mod damage;
+ pub mod decor;
+ pub mod shapes;
+ pub mod text;
++mod image_runs;
++pub use image_runs::ImageRuns;
+ 
+ use crate::doc::{Doc, Kind};
+ use crate::props::Id;
+@@ -23,6 +25,19 @@ use tiny_skia::{
+ 
+ pub const BACKGROUND: Color = Color::WHITE;
+ 
++fn blend_row(source: &[u8], dest: &mut [u8]) {
++    for (s, d) in source.chunks_exact(4).zip(dest.chunks_exact_mut(4)) {
++        match s[3] {
++            0 => {},
++            255 => d.copy_from_slice(s),
++            alpha => {
++                let inv = 255 - alpha as u32;
++                for c in 0..4 { d[c] = (s[c] as u32 + (d[c] as u32 * inv + 127) / 255).min(255) as u8; }
++            }
++        }
++    }
++}
++
+ /// How far from the canvas, in device pixels, a path may reach and still be drawn. tiny-skia
+ /// rasterises in fixed point and panics past its range (a stroke 2^31 px wide did); nothing
+ /// that reaches a million pixels out is a drawing anyone can see in a 10,000 px window.
+@@ -229,8 +244,14 @@ impl<'a> Canvas<'a> {
+     /// Blit a picture through the slot clip. Fully contained pictures need no mask;
+     /// transformed pictures are clipped in their transformed bounds, not their old box.
+     pub fn image(&mut self, image: tiny_skia::PixmapRef<'_>, local: Transform, clip: Option<Rect>) {
++        self.image_with_runs(image, local, clip, None);
++    }
++
++    /// Alpha runs are cached with the exact decoded/resized image.
++    pub fn image_with_runs(&mut self, image: tiny_skia::PixmapRef<'_>, local: Transform, clip: Option<Rect>, runs: Option<&ImageRuns>) {
++        let runs = runs.filter(|runs| runs.fits(image));
+         let transform = self.base().pre_concat(local);
+-        if self.blit_aligned_image(image, transform, clip) { return; }
++        if self.blit_aligned_image(image, transform, clip, runs) { return; }
+         let Some(bounds) = tiny_skia::Rect::from_xywh(0.0, 0.0, image.width() as f32, image.height() as f32) else { return };
+         if !within_reach(bounds, transform, 0.0) { return; }
+         let quality = if transform.sx == 1.0 && transform.sy == 1.0 && transform.kx == 0.0 && transform.ky == 0.0 {
+@@ -248,7 +269,7 @@ impl<'a> Canvas<'a> {
+ 
+     /// Already-resampled pictures at integer pixels need no rasterizer or sampling
+     /// shader. This is also the common case for images clipped by fixed-size slots.
+-    fn blit_aligned_image(&mut self, image: tiny_skia::PixmapRef<'_>, t: Transform, clip: Option<Rect>) -> bool {
++    fn blit_aligned_image(&mut self, image: tiny_skia::PixmapRef<'_>, t: Transform, clip: Option<Rect>, runs: Option<&ImageRuns>) -> bool {
+         if t.sx != 1.0 || t.sy != 1.0 || t.kx != 0.0 || t.ky != 0.0 ||
+             !t.tx.is_finite() || !t.ty.is_finite() || t.tx != t.tx.round() || t.ty != t.ty.round() ||
+             t.tx.abs() > MAX_DEVICE_REACH || t.ty.abs() > MAX_DEVICE_REACH { return false; }
+@@ -256,12 +277,17 @@ impl<'a> Canvas<'a> {
+         let (mut x0, mut y0) = (dx.max(0), dy.max(0));
+         let (mut x1, mut y1) = ((dx + image.width() as i32).min(self.pm.width() as i32), (dy + image.height() as i32).min(self.pm.height() as i32));
+         if let Some(c) = clip {
++            let Some(c) = c.intersect(&self.visible()) else { return true };
+             let base = self.base();
+             let edges = [c.x * base.sx + base.tx, c.y * base.sy + base.ty,
+                 c.right() * base.sx + base.tx, c.bottom() * base.sy + base.ty];
+-            if edges.iter().any(|e| !e.is_finite() || *e != e.round() || e.abs() > MAX_DEVICE_REACH) { return false; }
+-            x0 = x0.max(edges[0] as i32); y0 = y0.max(edges[1] as i32);
+-            x1 = x1.min(edges[2] as i32); y1 = y1.min(edges[3] as i32);
++            if edges.iter().any(|e| !e.is_finite() || e.abs() > MAX_DEVICE_REACH) { return false; }
++            // Non-antialiased rectangular masks use Skia's 26.6 edge rounding.
++            // Fractional display scales must not send an otherwise aligned
++            // Retina image back through a per-pixel sampling shader.
++            let edge = |value: f32| (((value * 64.0) as i32) + 32) >> 6;
++            x0 = x0.max(edge(edges[0])); y0 = y0.max(edge(edges[1]));
++            x1 = x1.min(edge(edges[2])); y1 = y1.min(edge(edges[3]));
+         }
+         if x1 <= x0 || y1 <= y0 { return true; }
+         let sw = image.width() as usize * 4;
+@@ -272,16 +298,20 @@ impl<'a> Canvas<'a> {
+         for y in y0..y1 {
+             let from = (y - dy) as usize * sw + (x0 - dx) as usize * 4;
+             let to = y as usize * dw + x0 as usize * 4;
+-            for (s, d) in source[from..from + len].chunks_exact(4).zip(dest[to..to + len].chunks_exact_mut(4)) {
+-                match s[3] {
+-                    0 => {},
+-                    255 => d.copy_from_slice(s),
+-                    alpha => {
+-                        let inv = 255 - alpha as u32;
+-                        for c in 0..4 { d[c] = (s[c] as u32 + (d[c] as u32 * inv + 127) / 255).min(255) as u8; }
+-                    }
++            if let Some(runs) = runs {
++                for run in runs.row((y - dy) as usize) {
++                    let left = run.left.max((x0 - dx) as usize);
++                    let right = run.right.min((x1 - dx) as usize);
++                    if right <= left { continue; }
++                    let offset = (left - (x0 - dx) as usize) * 4;
++                    let bytes = (right - left) * 4;
++                    let src = &source[from + offset..from + offset + bytes];
++                    let dst = &mut dest[to + offset..to + offset + bytes];
++                    if run.opaque { dst.copy_from_slice(src); } else { blend_row(src, dst); }
+                 }
++                continue;
+             }
++            blend_row(&source[from..from + len], &mut dest[to..to + len]);
+         }
+         true
+     }
+diff --git a/native/tests/image_blit.rs b/native/tests/image_blit.rs
+index d61df63..bb0eaaa 100644
+--- a/native/tests/image_blit.rs
++++ b/native/tests/image_blit.rs
+@@ -1,4 +1,4 @@
+-use scarpe_native::{layout::Rect, paint::Canvas};
++use scarpe_native::{layout::Rect, paint::{Canvas, ImageRuns}};
+ use tiny_skia::{Color, FillRule, FilterQuality, Mask, PathBuilder, Pixmap, PixmapPaint, Transform};
+ 
+ #[test]
+@@ -12,7 +12,8 @@ fn aligned_image_blit_matches_the_sampling_pipeline_with_alpha_and_clips() {
+                 actual.fill(Color::from_rgba8(62, 127, 222, 190));
+                 let mut expected = actual.clone();
+                 let transform = Transform::from_translate(x as f32, y as f32);
+-                Canvas::new(&mut actual, 1.0).image(source.as_ref(), transform, clip);
++                let runs = ImageRuns::new(source.as_ref()).unwrap();
++                Canvas::new(&mut actual, 1.0).image_with_runs(source.as_ref(), transform, clip, Some(&runs));
+                 let mask = clip.map(|r| {
+                     let mut mask = Mask::new(48, 48).unwrap();
+                     let rect = tiny_skia::Rect::from_xywh(r.x, r.y, r.w, r.h).unwrap();
+@@ -25,3 +26,63 @@ fn aligned_image_blit_matches_the_sampling_pipeline_with_alpha_and_clips() {
+         }
+     }
+ }
++
++#[test]
++fn fractional_slot_clips_match_skia_at_display_scales_and_damage_origins() {
++    let mut source = Pixmap::new(45, 35).unwrap();
++    source.fill(Color::from_rgba8(170, 83, 211, 193));
++    let runs = ImageRuns::new(source.as_ref());
++    for scale in [0.5, 2.0/3.0, 1.0, 1.25, 1.5, 2.0] {
++        for origin in [(0, 0), (7, 13)] {
++            for step in 0..130 {
++                let mut actual = Pixmap::new(64, 64).unwrap();
++                actual.fill(Color::from_rgba8(62, 127, 222, 190));
++                let mut expected = actual.clone();
++                let f = step as f32 / 128.0;
++                let clip = Rect::new(5.0 + f, 8.0 - f, 21.0 + f, 16.0 - f);
++                let local = Transform::from_translate(4.0/scale, 7.0/scale).pre_scale(1.0/scale, 1.0/scale);
++                let mut canvas = Canvas::at(&mut actual, scale, origin);
++                let base = canvas.base();
++                let visible = canvas.visible();
++                canvas.image_with_runs(source.as_ref(), local, Some(clip), runs.as_ref());
++                let clip = clip.intersect(&visible).unwrap_or_default();
++                let mut mask = Mask::new(64, 64).unwrap();
++                if let Some(rect) = tiny_skia::Rect::from_xywh(clip.x, clip.y, clip.w, clip.h) {
++                    mask.fill_path(&PathBuilder::from_rect(rect), FillRule::Winding, false, base);
++                }
++                expected.draw_pixmap(0, 0, source.as_ref(), &PixmapPaint {quality: FilterQuality::Nearest, ..Default::default()},
++                    base.pre_concat(local), Some(&mask));
++                assert_eq!(actual.data(), expected.data(), "scale {scale}, origin {origin:?}, step {step}");
++            }
++        }
++    }
++}
++
++#[test]
++fn mixed_alpha_spans_and_bounded_fallback_match_the_rasterizer() {
++    for fragmented in [false, true] {
++        let mut source = Pixmap::new(128, 90).unwrap();
++        for (i, pixel) in source.pixels_mut().iter_mut().enumerate() {
++            let alpha = if fragmented { [255, 0, 128][i % 3] } else { [0, 255, 37, 0, 255][(i / 19) % 5] };
++            *pixel = Color::from_rgba8((i % 256) as u8, 83, 211, alpha).premultiply().to_color_u8();
++        }
++        let runs = ImageRuns::new(source.as_ref());
++        assert_eq!(runs.is_none(), fragmented, "fragmented alpha uses the bounded fallback");
++        for scale in [1.0, 2.0] {
++            for at in [(-29.0, -14.0), (5.0, 8.0)] {
++                let mut actual = Pixmap::new(96, 96).unwrap();
++                actual.fill(Color::from_rgba8(62, 127, 222, 190));
++                let mut expected = actual.clone();
++                let clip = Rect::new(11.0, 9.0, 33.0, 28.0);
++                let local = Transform::from_translate(at.0, at.1).pre_scale(1.0 / scale, 1.0 / scale);
++                Canvas::new(&mut actual, scale).image_with_runs(source.as_ref(), local, Some(clip), runs.as_ref());
++                let mut mask = Mask::new(96, 96).unwrap();
++                mask.fill_path(&PathBuilder::from_rect(tiny_skia::Rect::from_xywh(clip.x, clip.y, clip.w, clip.h).unwrap()),
++                    FillRule::Winding, false, Transform::from_scale(scale, scale));
++                expected.draw_pixmap(0, 0, source.as_ref(), &PixmapPaint {quality: FilterQuality::Nearest, ..Default::default()},
++                    Transform::from_scale(scale, scale).pre_concat(local), Some(&mask));
++                assert_eq!(actual.data(), expected.data(), "fragmented {fragmented}, scale {scale}, at {at:?}");
++            }
++        }
++    }
++}
+diff --git a/native/tests/images.rs b/native/tests/images.rs
+index 9562ab6..97ea803 100644
+--- a/native/tests/images.rs
++++ b/native/tests/images.rs
+@@ -5,6 +5,48 @@ mod common;
+ use common::{app, create, Harness};
+ use serde_json::{json, Value};
+ use tiny_skia::{Color, Pixmap};
++use scarpe_native::elements::image::ImageCache;
++
++#[test]
++fn resized_transparency_stays_premultiplied_without_dark_fringes() {
++    let path = scratch("premultiplied").join("sprite.png");
++    let mut pm = Pixmap::new(24, 16).unwrap();
++    for (i, pixel) in pm.pixels_mut().iter_mut().enumerate() {
++        let alpha = ((i % 24) * 255 / 23) as u8;
++        *pixel = Color::from_rgba8(255, 0, 0, alpha).premultiply().to_color_u8();
++    }
++    pm.save_png(&path).unwrap();
++    let mut cache = ImageCache::default();
++    cache.get(&path).unwrap();
++    assert!(!cache.is_opaque(&path));
++    for (w, h) in [(7, 5), (96, 64), (768, 384)] {
++        let image = cache.at_size(&path, w, h).unwrap();
++        assert_eq!((image.width(), image.height()), (w, h));
++        for p in image.pixels() {
++            assert_eq!(p.red(), p.alpha(), "a pure red edge stays red when composited");
++            assert_eq!((p.green(), p.blue()), (0, 0));
++        }
++    }
++}
++
++#[test]
++fn resized_opaque_images_keep_solid_edges_and_invalidate_the_opacity_hint() {
++    let path = scratch("opacity").join("opaque.png");
++    png(&path, 20, [70, 127, 244]);
++    let mut cache = ImageCache::default();
++    cache.get(&path).unwrap();
++    assert!(cache.is_opaque(&path));
++    for (w, h) in [(7, 13), (640, 480)] {
++        let resized = cache.at_size(&path, w, h).unwrap();
++        assert!(resized.pixels().iter().all(|p| p.alpha() == 255 && p.red() == 70 && p.green() == 127 && p.blue() == 244));
++    }
++    let pm = Pixmap::new(21, 21).unwrap();
++    pm.save_png(&path).unwrap();
++    cache.next_batch();
++    cache.get(&path).unwrap();
++    assert!(!cache.is_opaque(&path));
++    assert!(cache.at_size(&path, 70, 50).unwrap().data().iter().all(|n| *n == 0));
++}
+ 
+ /// A scratch directory of this test's own.
+ fn scratch(name: &str) -> std::path::PathBuf {

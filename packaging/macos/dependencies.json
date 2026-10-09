@@ -1,0 +1,45 @@
+[
+  {
+    "name": "MacOSX26.1.sdk.tar.xz",
+    "url": "https://github.com/joseluisq/macosx-sdks/releases/download/26.1/MacOSX26.1.sdk.tar.xz",
+    "digest": "sha256:beee7212d265a6d2867d0236cc069314b38d5fb3486a6515734e76fa210c784c",
+    "bytes": 87569052
+  },
+  {
+    "name": "traveling-ruby-20251122-3.4.7-macos-arm64-full.tar.gz",
+    "url": "https://github.com/trubygems/traveling-ruby/releases/download/rel-20251122/traveling-ruby-20251122-3.4.7-macos-arm64-full.tar.gz",
+    "digest": "sha256:cc49a89cd40b85d0bc2af967e13a7fadf02110282528889ce512e0ad7c9a8049",
+    "bytes": 58812886
+  },
+  {
+    "name": "apple-codesign-0.29.0-x86_64-unknown-linux-musl.tar.gz",
+    "url": "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign/0.29.0/apple-codesign-0.29.0-x86_64-unknown-linux-musl.tar.gz",
+    "digest": "sha256:dbe85cedd8ee4217b64e9a0e4c2aef92ab8bcaaa41f20bde99781ff02e600002",
+    "bytes": 10704555
+  },
+  {
+    "name": "base64-0.3.0.gem",
+    "url": "https://rubygems.org/downloads/base64-0.3.0.gem",
+    "digest": "sha256:27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b"
+  },
+  {
+    "name": "logger-1.7.0.gem",
+    "url": "https://rubygems.org/downloads/logger-1.7.0.gem",
+    "digest": "sha256:196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203"
+  },
+  {
+    "name": "fastimage-2.4.1.gem",
+    "url": "https://rubygems.org/downloads/fastimage-2.4.1.gem",
+    "digest": "sha256:c64bebd46b6fd8943ab70c1e6e85ff728f970f2e48f92ecd249b6bc3a540ad20"
+  },
+  {
+    "name": "ffi-1.17.4-arm64-darwin.gem",
+    "url": "https://rubygems.org/downloads/ffi-1.17.4-arm64-darwin.gem",
+    "digest": "sha256:19071aaf1419251b0a46852abf960e77330a3b334d13a4ab51d58b31a937001b"
+  },
+  {
+    "name": "chunky_png-1.4.0.gem",
+    "url": "https://rubygems.org/downloads/chunky_png-1.4.0.gem",
+    "digest": "sha256:89d5b31b55c0cf4da3cf89a2b4ebc3178d8abe8cbaf116a1dba95668502fdcfe"
+  }
+]

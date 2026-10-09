@@ -1,0 +1,126 @@
+diff --git a/lib/scarpe/native/child.rb b/lib/scarpe/native/child.rb
+index c2e1581..e474aa7 100644
+--- a/lib/scarpe/native/child.rb
++++ b/lib/scarpe/native/child.rb
+@@ -14,6 +14,7 @@ module Scarpe::Native
+   # directory; the pump then writes <dir>/ruby.json when it stops (Rust writes rust.json beside it).
+   module Stats
+     extend self
++    MAX_WAIT_SAMPLES = 10_000
+ 
+     def enabled?
+       return @enabled if defined?(@enabled)
+@@ -41,6 +42,25 @@ module Scarpe::Native
+       tally["max_ms"] = ms if ms > tally["max_ms"]
+     end
+ 
++    # Separate requested sleep from scheduler/GVL wake-up delays. Aggregate
++    # wait time alone mostly measures ordinary idle time, not missed frames.
++    def wait(requested)
++      return yield unless enabled?
++
++      started = monotonic
++      wall = Process.clock_gettime(Process::CLOCK_REALTIME)
++      begin
++        yield
++      ensure
++        elapsed = monotonic - started
++        add(:wait, elapsed)
++        @wait_samples ||= []
++        @wait_count ||= 0
++        @wait_samples[@wait_count % MAX_WAIT_SAMPLES] = [wall, requested * 1000.0, elapsed * 1000.0, [elapsed - requested, 0].max * 1000.0]
++        @wait_count += 1
++      end
++    end
++
+     def count(name, by = 1)
+       counters[name] = counters.fetch(name, 0) + by if enabled?
+     end
+@@ -61,7 +81,7 @@ module Scarpe::Native
+     # Forgets everything, and whether it is on (tests flip SCARPE_NATIVE_STATS).
+     def reset!
+       remove_instance_variable(:@enabled) if defined?(@enabled)
+-      @phases = @counters = @marks = nil
++      @phases = @counters = @marks = @wait_samples = @wait_count = nil
+     end
+ 
+     def report
+@@ -69,6 +89,9 @@ module Scarpe::Native
+       {
+         "pid" => Process.pid, "ruby" => RUBY_VERSION, "yjit" => yjit?,
+         "marks" => marks, "phases" => phases, "counters" => counters,
++        "wait_columns" => %w[at requested_ms elapsed_ms overshoot_ms],
++        "wait_samples" => wait_samples, "wait_sample_limit" => MAX_WAIT_SAMPLES,
++        "wait_sample_policy" => "most_recent",
+         "cpu" => { "ruby" => times.utime + times.stime, "children" => times.cutime + times.cstime },
+       }
+     end
+@@ -83,6 +106,14 @@ module Scarpe::Native
+     def counters = (@counters ||= {})
+     def marks = (@marks ||= {})
+ 
++    def wait_samples
++      return [] unless @wait_samples
++      return @wait_samples if @wait_count < MAX_WAIT_SAMPLES
++
++      first = @wait_count % MAX_WAIT_SAMPLES
++      @wait_samples.drop(first) + @wait_samples.take(first)
++    end
++
+     def monotonic
+       Process.clock_gettime(Process::CLOCK_MONOTONIC)
+     end
+diff --git a/lib/scarpe/native/pump.rb b/lib/scarpe/native/pump.rb
+index edeb9ef..a4f3188 100644
+--- a/lib/scarpe/native/pump.rb
++++ b/lib/scarpe/native/pump.rb
+@@ -51,7 +51,8 @@ module Scarpe::Native
+     # deadline of their own (Automation#advance) keep the default.
+     def step(longest = LONGEST_WAIT)
+       @service.child.check_started!
+-      Stats.time(:wait) { @service.child.wait_for_input(wait_time(longest)) }
++      timeout = wait_time(longest)
++      Stats.wait(timeout) { @service.child.wait_for_input(timeout) }
+       Stats.time(:drain) { drain }
+       Stats.time(:programs) { @service.dispatch_programs }
+       Stats.time(:timers) { @service.fire_timers }
+diff --git a/test/native/stats_test.rb b/test/native/stats_test.rb
+index 08a6fbb..3ae6cc7 100644
+--- a/test/native/stats_test.rb
++++ b/test/native/stats_test.rb
+@@ -41,6 +41,35 @@ class StatsTest < Minitest::Test
+     end
+   end
+ 
++  def test_wait_samples_preserve_early_wakes_and_scheduler_overshoot
++    with_stats("unused") do
++      times = [1.0, 1.010, 2.0, 2.080]
++      Stats.stub(:monotonic, -> { times.shift }) do
++        assert_equal :input, Stats.wait(0.020) { :input }
++        assert_raises(IOError) { Stats.wait(0.016) { raise IOError } }
++      end
++      samples = Stats.report["wait_samples"]
++      assert_equal 2, samples.size
++      assert_in_delta 20, samples[0][1], 0.001
++      assert_in_delta 10, samples[0][2], 0.001
++      assert_equal 0, samples[0][3]
++      assert_in_delta 64, samples[1][3], 0.001
++      assert_equal 2, Stats.report["phases"][:wait]["n"]
++    end
++  end
++
++  def test_wait_samples_are_bounded_and_returned_in_chronological_order
++    with_stats("unused") do
++      (Stats::MAX_WAIT_SAMPLES + 3).times { |i| Stats.wait(i.to_f) {} }
++      samples = Stats.report["wait_samples"]
++      assert_equal Stats::MAX_WAIT_SAMPLES, samples.size
++      assert_equal 3000, samples.first[1]
++      assert_equal (Stats::MAX_WAIT_SAMPLES + 2) * 1000, samples.last[1]
++      Stats.reset!
++      assert_empty Stats.report["wait_samples"]
++    end
++  end
++
+   def test_a_real_run_leaves_both_reports_behind
+     skip_without_real_binary
+     Dir.mktmpdir do |stats|

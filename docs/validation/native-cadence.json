@@ -1,0 +1,20 @@
+{
+  "ruby": "4.0.6",
+  "platform": "x86_64-linux",
+  "headless": false,
+  "scenario": "20 seconds of idle animations with 36 grubs, network snapshots, and an uninterrupted event loop",
+  "app_update_intervals": {
+    "count": 1198,
+    "mean_ms": 16.722325187017876,
+    "p95_ms": 16.744975931942463,
+    "max_ms": 90.17922589555383
+  },
+  "ruby_scene_preparation": {
+    "count": 1198,
+    "mean_ms": 1.9637627098771537,
+    "p95_ms": 3.211025148630142,
+    "max_ms": 6.944352760910988
+  },
+  "game_version": "0.1.0",
+  "historical": true
+}

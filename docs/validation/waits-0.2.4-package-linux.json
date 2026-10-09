@@ -1,0 +1,21 @@
+{
+  "ruby": "3.4.7",
+  "platform": "x86_64-linux",
+  "backend": "TimerFD",
+  "requested_ms": 10,
+  "macos_execution": false,
+  "timer_slack_ms": 100,
+  "ordinary_timeout": {
+    "samples": 60,
+    "mean_ms": 107.63004955369979,
+    "p95_ms": 110.07771966978908,
+    "max_ms": 110.49421317875385
+  },
+  "deadline_descriptor": {
+    "samples": 60,
+    "mean_ms": 10.178648998650411,
+    "p95_ms": 10.252277832478285,
+    "max_ms": 11.958462186157703
+  },
+  "packaged": true
+}

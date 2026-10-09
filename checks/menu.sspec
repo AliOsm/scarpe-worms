@@ -1,0 +1,42 @@
+---
+display: native
+timeout: 60
+----------- app code
+ENV["BURROW_DATA_DIR"] = File.join(Dir.pwd, "menu-data")
+load File.join(ENV.fetch("BURROW_ROOT"), "game.rb")
+----------- test code
+client = Shoes.APPS.first.instance_variable_get(:@burrow)
+assert_equal :menu, client.page
+assert images.any? { |image| image.path.end_with?("menu-bg.png") }
+assert_operator layout_of(button("Quick battle")).w, :>=, 260
+snapshot "menu"
+click_on "Settings"
+assert client.overlay?
+name = edit_lines.first
+click_on name
+press_key "control_a"
+type_text "River crew"
+click_on "Save settings"
+assert_equal "River crew", client.preferences["name"]
+assert_equal "River crew", Burrow::Client::Preferences.new["name"]
+refute client.overlay?
+click_on "The arsenal"
+assert_equal 48, buttons.count { |b| b.text.match?(/(?:∞|\d+)\z/) }
+assert images.any? { |image| image.path.end_with?("weapons/rocket.png") }
+snapshot "arsenal-catalog"
+Burrow::Catalog::WEAPONS.each_value do |weapon|
+  click_on buttons.find { |b| b.text.start_with?(weapon[:name] + " ") }
+  assert paras.any? { |p| p.text == weapon[:description] }, weapon[:name]
+end
+click_on "Close"
+click_on "How to play"
+assert paras.any? { |p| p.text.include?("Be the last team") }
+click_on "Got it"
+resize_window 1080, 675
+advance 0.04
+sleep 0.2
+advance 0.04
+assert_operator layout_of(button("Quick battle")).x, :>=, 0
+assert_operator layout_of(button("Settings")).x + layout_of(button("Settings")).w, :<=, 1080
+snapshot "menu-small"
+assert client.instance_variable_get(:@audio).muted?

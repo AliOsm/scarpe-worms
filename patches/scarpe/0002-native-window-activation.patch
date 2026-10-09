@@ -1,0 +1,198 @@
+diff --git a/lacci/lib/shoes/app.rb b/lacci/lib/shoes/app.rb
+index ca23b0f..0563c2b 100644
+--- a/lacci/lib/shoes/app.rb
++++ b/lacci/lib/shoes/app.rb
+@@ -466,7 +466,7 @@ end
+ end
+ 
+ # A slot keeps one handler per event, so giving it another replaces the first (ledger H6).
+-%i[motion hover leave click release keypress keydown keyup wheel].each do |event|
++%i[motion hover leave click release keypress keydown keyup wheel activation].each do |event|
+   [Shoes::App, Shoes::Slot].each do |owner|
+     owner.define_method(event) do |*args, &block|
+       subscription_item(args:, shoes_api_name: event.to_s, &block).replace_earlier_handlers
+diff --git a/lacci/lib/shoes/drawables/subscription_item.rb b/lacci/lib/shoes/drawables/subscription_item.rb
+index 0d8796d..cef3003 100644
+--- a/lacci/lib/shoes/drawables/subscription_item.rb
++++ b/lacci/lib/shoes/drawables/subscription_item.rb
+@@ -14,7 +14,7 @@
+ # start is first draw, finish is drawable destroyed
+ class Shoes::SubscriptionItem < Shoes::Drawable
+   shoes_styles :shoes_api_name, :args, :stopped
+-  shoes_events :animate, :every, :timer, :hover, :leave, :motion, :click, :release, :keypress, :keydown, :keyup, :wheel
++  shoes_events :animate, :every, :timer, :hover, :leave, :motion, :click, :release, :keypress, :keydown, :keyup, :wheel, :activation
+ 
+   # animate, every and timer make a Shoes::Animation, Shoes::Every or Shoes::Timer
+   # (manual 1877, 1989, 2111). Displays still see each as a SubscriptionItem.
+@@ -93,6 +93,9 @@ class Shoes::SubscriptionItem < Shoes::Drawable
+           @callback&.call(key)
+         end
+       end
++    when "activation"
++      # Native window focus, distinct from focus moving between text controls.
++      @unsub_id = bind_self_event("activation") { |active| @callback&.call(active) }
+     when "wheel"
+       # Wheel event fires on mouse wheel/trackpad scroll.
+       # Block params: delta (positive = up/away, negative = down/toward)
+diff --git a/lib/scarpe/native/automation.rb b/lib/scarpe/native/automation.rb
+index 9f60eac..b361b9f 100644
+--- a/lib/scarpe/native/automation.rb
++++ b/lib/scarpe/native/automation.rb
+@@ -72,6 +72,11 @@ module Scarpe::Native
+       request(:key_up, key: name.to_s, app: @app)
+     end
+ 
++    # Inject the same activation transition as an OS window-focus event.
++    def window_focus(active)
++      request(:window_focus, active: active, app: @app)
++    end
++
+     # dy in logical pixels, positive scrolls down; at (x, y), or where the pointer is.
+     def wheel(dy, x: nil, y: nil)
+       request(:wheel, dy: dy, x: x, y: y, app: @app)
+diff --git a/native/src/automation.rs b/native/src/automation.rs
+index 7fa9d2b..92f778c 100644
+--- a/native/src/automation.rs
++++ b/native/src/automation.rs
+@@ -106,6 +106,11 @@ impl Runtime {
+                 self.key_release(app, &input);
+                 Ok(Some(Value::Null))
+             }
++            Op::WindowFocus { active, app } => {
++                let app = self.app_for(app).ok_or_else(no_app)?;
++                self.window_focus(app, active);
++                Ok(Some(Value::Null))
++            }
+             Op::Wheel { dy, x, y, app } => {
+                 let app = self.app_for(app).ok_or_else(no_app)?;
+                 let at = match (x, y) {
+diff --git a/native/src/input.rs b/native/src/input.rs
+index e8f70c7..4fdaabc 100644
+--- a/native/src/input.rs
++++ b/native/src/input.rs
+@@ -312,6 +312,7 @@ pub struct ViewState {
+     /// Physical identities map to the Shoes name captured on the initial press.
+     /// Holding Shift while releasing a key must still release its original name.
+     pub held_keys: HashMap<String, String>,
++    pub window_active: Option<bool>,
+     pub pointer: Option<(f32, f32)>,
+     pub buttons: u8,
+     pub modifiers: Modifiers,
+@@ -1141,6 +1142,31 @@ impl Runtime {
+         }
+     }
+ 
++    /// Notify applications before synthetic releases so a charged action can be
++    /// cancelled. A lost mouse press must not activate a button after returning.
++    pub fn window_focus(&mut self, app: Id, active: bool) {
++        let Some(view) = self.views.get_mut(&app) else { return };
++        if view.ui.window_active == Some(active) {
++            return;
++        }
++        view.ui.window_active = Some(active);
++        if active {
++            self.active_app = Some(app);
++        }
++        for (item, _) in self.subscriptions(app, "activation") {
++            self.out.event("activation", Some(item), vec![json!(active)]);
++        }
++        if !active {
++            self.release_keys(app);
++            let view = self.views.get_mut(&app).expect("view");
++            view.ui.pressed = None;
++            view.ui.buttons = 0;
++            view.ui.modifiers = Modifiers::default();
++            self.send_mouse_state(app);
++            self.request_redraw(app);
++        }
++    }
++
+     fn popup_key(&mut self, app: Id, key: &KeyInput) -> bool {
+         let view = self.views.get_mut(&app).expect("view");
+         let Some(popup) = view.ui.popup.as_mut() else { return false };
+diff --git a/native/src/protocol.rs b/native/src/protocol.rs
+index 94325b6..cbbbad6 100644
+--- a/native/src/protocol.rs
++++ b/native/src/protocol.rs
+@@ -82,6 +82,7 @@ pub enum Op {
+     Key { key: String, app: Option<Id> },
+     KeyDown { key: String, app: Option<Id> },
+     KeyUp { key: String, app: Option<Id> },
++    WindowFocus { active: bool, app: Option<Id> },
+     Wheel { dy: f32, x: Option<f32>, y: Option<f32>, app: Option<Id> },
+     Resize { app: Option<Id>, w: f32, h: f32 },
+     Pixel { x: f32, y: f32, app: Option<Id> },
+@@ -245,6 +246,7 @@ fn op_fields(obj: &Map<String, Value>) -> Result<Op, ParseError> {
+         "key" => Op::Key { key: required(s(obj, "key"), "key")?, app },
+         "key_down" => Op::KeyDown { key: required(s(obj, "key"), "key")?, app },
+         "key_up" => Op::KeyUp { key: required(s(obj, "key"), "key")?, app },
++        "window_focus" => Op::WindowFocus { active: required(obj.get("active").and_then(Value::as_bool), "active")?, app },
+         "wheel" => Op::Wheel { dy: required(f(obj, "dy"), "dy")?, x: f(obj, "x"), y: f(obj, "y"), app },
+         "resize" => Op::Resize { app, w: required(f(obj, "w"), "w")?, h: required(f(obj, "h"), "h")? },
+         "pixel" => Op::Pixel { x: required(f(obj, "x"), "x")?, y: required(f(obj, "y"), "y")?, app },
+diff --git a/native/src/window.rs b/native/src/window.rs
+index d3ef18a..d65f5e6 100644
+--- a/native/src/window.rs
++++ b/native/src/window.rs
+@@ -512,8 +512,7 @@ impl ApplicationHandler<UserEvent> for Shell {
+                 self.rt.resize_view(app, logical.width as f32, logical.height as f32, true);
+             }
+             WindowEvent::ScaleFactorChanged { .. } => self.rt.request_redraw(app),
+-            WindowEvent::Focused(true) => self.rt.active_app = Some(app),
+-            WindowEvent::Focused(false) => self.rt.release_keys(app),
++            WindowEvent::Focused(active) => self.rt.window_focus(app, active),
+             WindowEvent::CursorMoved { position, .. } => {
+                 let p = position.to_logical::<f64>(scale);
+                 self.rt.pointer_move(app, p.x as f32, p.y as f32);
+diff --git a/native/tests/window_activation.rs b/native/tests/window_activation.rs
+new file mode 100644
+index 0000000..4020d72
+--- /dev/null
++++ b/native/tests/window_activation.rs
+@@ -0,0 +1,46 @@
++mod common;
++use common::{app, create, events, named, Harness};
++use serde_json::json;
++
++fn scene() -> Harness {
++    let mut h = Harness::new();
++    h.feed(&app(300, 200, &[
++        create(3, "SubscriptionItem", 2, json!({"shoes_api_name":"activation","args":[]})),
++        create(4, "SubscriptionItem", 2, json!({"shoes_api_name":"keyup","args":[]})),
++        create(5, "Button", 2, json!({"text":"Fire","width":100,"height":40})),
++    ]));
++    h
++}
++
++#[test]
++fn deactivation_precedes_releases_and_duplicate_transitions_are_silent() {
++    let mut h = scene();
++    h.value(json!({"op":"key_down","key":" "}));
++    let (evs, _) = h.req(json!({"op":"window_focus","active":false}));
++    let evs = events(&evs);
++    let relevant: Vec<_> = evs.iter().filter(|e| e.0 == "activation" || e.0 == "keyup").collect();
++    assert_eq!(relevant[0].0, "activation");
++    assert_eq!(relevant[0].2, json!([false]));
++    assert_eq!(relevant[1].0, "keyup");
++    assert_eq!(relevant[1].2, json!([" "]));
++    assert!(h.rt.views[&1].ui.held_keys.is_empty());
++    let (evs, _) = h.req(json!({"op":"window_focus","active":false}));
++    assert!(named(&events(&evs), "activation").is_empty());
++    let (evs, _) = h.req(json!({"op":"window_focus","active":true}));
++    assert_eq!(named(&events(&evs), "activation")[0].2, json!([true]));
++}
++
++#[test]
++fn interrupted_mouse_press_cannot_click_a_button_on_return() {
++    let mut h = scene();
++    h.value(json!({"op":"mouse","action":"down","x":30,"y":20}));
++    assert!(h.rt.views[&1].ui.pressed.is_some());
++    h.value(json!({"op":"window_focus","active":false}));
++    assert!(h.rt.views[&1].ui.pressed.is_none());
++    assert_eq!(h.rt.views[&1].ui.buttons, 0);
++    h.value(json!({"op":"window_focus","active":true}));
++    let (evs, _) = h.req(json!({"op":"mouse","action":"up","x":30,"y":20}));
++    assert!(named(&events(&evs), "click").is_empty());
++    let (evs, _) = h.req(json!({"op":"click","target":{"id":5}}));
++    assert_eq!(named(&events(&evs), "click").len(), 1);
++}

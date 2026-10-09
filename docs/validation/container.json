@@ -1,0 +1,9 @@
+{
+  "tls": true,
+  "teams": 6,
+  "grubs": 36,
+  "container_restart_recovered": true,
+  "session_preserved": true,
+  "certificate_preserved": true,
+  "healthcheck": true
+}

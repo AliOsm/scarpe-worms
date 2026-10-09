@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+root = File.expand_path("..", __dir__)
+ENV["BUNDLE_GEMFILE"] = File.join(root, "Gemfile")
+require "bundler/setup"
+scarpe = File.join(root, "vendor/scarpe")
+%w[lib lacci/lib scarpe-components/lib].each { |path| $LOAD_PATH.unshift(File.join(scarpe, path)) }
+ENV["SCARPE_NATIVE_BIN"] ||= File.join(scarpe, "native/target/release/scarpe-native")
+ENV["SCARPE_NATIVE_CACHE"] ||= File.join(root, ".cache/native")
+if ARGV.first == "peek" || ENV["SCARPE_NATIVE_HEADLESS"] == "1"
+  ENV["PATH"] = File.join(scarpe, "spec/support/fakebin") + File::PATH_SEPARATOR + ENV.fetch("PATH")
+  ENV["BURROW_MUTE"] = "1"
+end
+load File.join(scarpe, "exe/scarpe")

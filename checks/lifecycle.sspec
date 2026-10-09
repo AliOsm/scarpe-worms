@@ -1,0 +1,109 @@
+---
+display: native
+timeout: 100
+----------- app code
+ENV["BURROW_DATA_DIR"] = File.join(Dir.pwd, "lifecycle-data")
+load File.join(ENV.fetch("BURROW_ROOT"), "game.rb")
+----------- test code
+client = Shoes.APPS.first.instance_variable_get(:@burrow)
+auto = Scarpe::Native::DisplayService.instance.automation
+# Exercise activity ownership on Linux too; the package smoke invokes the real
+# Cocoa bridge on a Mac. Normal gameplay must not renew a token every frame.
+activity_backend = Object.new
+activity_backend.define_singleton_method(:begin_activity) { |*_args| Object.new }
+activity_backend.define_singleton_method(:end_activity) { |_token| }
+client.instance_variable_get(:@activity).close
+activity = Burrow::MacActivity.new("Lifecycle test", backend: activity_backend)
+client.instance_variable_set(:@activity, activity)
+wait_real = lambda do |seconds = 15, &condition|
+  deadline = Burrow.clock + seconds
+  until condition.call
+    raise "Lifecycle condition timed out at #{caller_locations(1, 1).first}" if Burrow.clock > deadline
+    sleep 0.025
+    advance 0.03
+  end
+end
+click_on "Play with friends"
+click_on "Host for friends"
+wait_real.call { client.page == :lobby }
+hosted = client.instance_variable_get(:@local_server)
+assert_equal "0.0.0.0", hosted.host
+hosted_id = client.my_id
+friend = Burrow::Client::Connection.new(endpoint: client.connection.endpoint, name: "Still hosting", fingerprint: hosted.fingerprint).connect
+begin
+  wait_real.call { friend.status == "online" }
+  friend.send_action("join", code: client.room["code"])
+  wait_real.call { client.room["members"].size == 3 }
+  click_on "Leave room"
+  wait_real.call { client.page == :browser && client.room.nil? }
+  click_on "Main menu"
+  click_on "Quick battle"
+  wait_real.call { client.page == :match && client.scene.terrain_revision >= 0 }
+  assert activity.active?, "A focused match needs an interactive activity"
+  private_host = client.instance_variable_get(:@local_server)
+  assert_equal "127.0.0.1", private_host.host
+  refute_equal hosted.port, private_host.port
+  refute_equal hosted_id, client.my_id
+  assert hosted.running?, "Friends must retain their host during a local battle"
+  assert friend.send_action("chat", text: "Our room is still here")
+  wait_real.call { friend.poll.dig(:state, "room", "messages")&.any? { |m| m["text"] == "Our room is still here" } }
+  # OS focus loss cancels both physical keys and mouse charging. No fire is sent.
+  initial_shots = client.state.dig("motion", "shots").map { |shot| shot["id"] }
+  auto.key_down("right")
+  wait_real.call { client.instance_variable_get(:@last_input) == [1, 0] }
+  auto.key_down(" ")
+  wait_real.call { client.instance_variable_get(:@charge_started) }
+  auto.window_focus(false)
+  refute activity.active?, "Switching away must release the interactive activity"
+  wait_real.call { !client.instance_variable_get(:@charge_started) && client.active_worm["vx"].abs < 1 }
+  assert_equal initial_shots, client.state.dig("motion", "shots").map { |shot| shot["id"] }
+  assert_empty client.instance_variable_get(:@keys)
+  auto.window_focus(true)
+  assert activity.active?, "Returning to the match must restore its activity"
+  auto.key_up(" ")
+  auto.mouse(:down, 800, 250)
+  wait_real.call { client.instance_variable_get(:@mouse_charge) }
+  auto.window_focus(false)
+  advance 0.05
+  refute client.instance_variable_get(:@mouse_charge)
+  auto.window_focus(true)
+  auto.mouse(:up, 800, 250)
+  advance 0.05
+  assert_equal initial_shots, client.state.dig("motion", "shots").map { |shot| shot["id"] }
+  # A new deliberate press still fires, after the cancelled input is released.
+  auto.key_down(" ")
+  started = Burrow.clock
+  wait_real.call { Burrow.clock - started > 0.3 }
+  auto.key_up(" ")
+  wait_real.call { client.state.dig("motion", "shots").any? { |shot| !initial_shots.include?(shot["id"]) } }
+  snapshot "focus-recovered"
+  # Return through the actual UI, then reopen the hosted server with its identity.
+  press_key "escape"
+  click_on "Leave match"
+  click_on buttons.select { |b| b.text == "Leave match" }.last
+  wait_real.call { client.page == :browser && client.room.nil? }
+  wait_real.call { !activity.active? }
+  refute activity.active?, "Leaving the match must release its activity"
+  click_on "Main menu"
+  click_on "Play with friends"
+  click_on "Host for friends"
+  wait_real.call { client.page == :lobby }
+  assert_same hosted, client.instance_variable_get(:@local_server)
+  assert_equal hosted_id, client.my_id
+  assert private_host.running?
+  assert_equal 2, client.instance_variable_get(:@local_servers).size
+  # An expired stable local token must be replaced for subsequent launches too.
+  click_on "Leave room"
+  wait_real.call { client.page == :browser && client.room.nil? }
+  click_on "Main menu"
+  client.preferences["sessions"]["local"] = "0" * 64
+  client.preferences.save
+  click_on "Quick battle"
+  wait_real.call { client.instance_variable_get(:@connection_status) == "rejected" }
+  click_on "Connect as a new player"
+  wait_real.call { client.page == :match }
+  assert_equal client.connection.token, client.preferences["sessions"]["local"]
+  refute_equal "0" * 64, client.connection.token
+ensure
+  friend.close
+end

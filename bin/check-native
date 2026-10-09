@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../Gemfile", __dir__)
+require "bundler/setup"
+require "fileutils"
+BURROW_CHECK_ROOT = File.expand_path("..", __dir__)
+require File.join(BURROW_CHECK_ROOT, "vendor/scarpe/spec/support/suite")
+
+# Configure the upstream test runner without modifying its source.
+module BurrowCheckSandbox
+  private
+
+  def base_env
+    super.merge("BUNDLE_GEMFILE" => File.join(BURROW_CHECK_ROOT, "Gemfile"),
+      "BUNDLE_PATH" => File.join(BURROW_CHECK_ROOT, "vendor/bundle"),
+      "BURROW_ROOT" => BURROW_CHECK_ROOT, "BURROW_MUTE" => "1",
+      "SCARPE_NATIVE_SNAPSHOT_DIR" => File.join(BURROW_CHECK_ROOT, ".cache/native-checks/shots"))
+  end
+end
+SpecSuite::Sandbox.prepend(BurrowCheckSandbox)
+
+module BurrowCheckPaths
+  def relative(path)
+    absolute = File.expand_path(path)
+    absolute.start_with?(BURROW_CHECK_ROOT + "/") ? absolute.delete_prefix(BURROW_CHECK_ROOT + "/") : super
+  end
+end
+SpecSuite.singleton_class.prepend(BurrowCheckPaths)
+
+module BurrowCheckResults
+  def initialize(name, source_root:)
+    super(name, source_root: BURROW_CHECK_ROOT)
+    @path = File.join(BURROW_CHECK_ROOT, ".cache/native-checks", "#{name}.json")
+    FileUtils.mkdir_p(File.dirname(@path))
+  end
+end
+SpecSuite::ResultsFile.prepend(BurrowCheckResults)
+
+ENV["SCARPE_NATIVE_BIN"] = File.join(BURROW_CHECK_ROOT, "vendor/scarpe/native/target/release/scarpe-native")
+FileUtils.mkdir_p(File.join(BURROW_CHECK_ROOT, ".cache/native-checks/tmp"))
+ENV["TMPDIR"] = File.join(BURROW_CHECK_ROOT, ".cache/native-checks/tmp")
+# These journeys include frame budgets. Concurrent renderer processes measure
+# contention from the test runner rather than one running game.
+args = ["--jobs", "1", *ARGV]
+args << File.join(BURROW_CHECK_ROOT, "checks") unless args.any? { |arg| File.exist?(arg) }
+SpecSuite::CLI.start(["--display", "native", *args])

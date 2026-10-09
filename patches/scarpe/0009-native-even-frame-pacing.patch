@@ -1,0 +1,97 @@
+Subject: Space animated frames evenly at the display refresh interval
+
+diff --git a/native/src/window/pacing.rs b/native/src/window/pacing.rs
+index db3e2fb..3f54b29 100644
+--- a/native/src/window/pacing.rs
++++ b/native/src/window/pacing.rs
+@@ -1,7 +1,7 @@
+-//! No more frames than the display can show (native/PERF.md). An app that flushed 240 times a
+-//! second on a 120 Hz screen painted and presented twice what anyone could see. A frame that
+-//! would make three within two refreshes now waits, and whatever changes arrive meanwhile go
+-//! into it. A lone frame (a keystroke, a click) never waits: pacing only reins in a flood.
++//! Space frames by the display's refresh interval. Allowing two frames in a
++//! burst followed by a pause gives the right average FPS but uneven animation.
++//! Changes arriving before the next refresh are coalesced into its frame. An
++//! input after an idle interval is still shown immediately.
+ 
+ use std::time::{Duration, Instant};
+ 
+@@ -9,8 +9,8 @@ use std::time::{Duration, Instant};
+ #[derive(Clone, Debug)]
+ pub struct Pacing {
+     interval: Duration,
+-    /// When the last two frames started, newest first.
+-    started: [Option<Instant>; 2],
++    /// When the last frame started.
++    started: Option<Instant>,
+     /// A frame is wanted but waits until then.
+     due: Option<Instant>,
+ }
+@@ -22,15 +22,15 @@ impl Pacing {
+     /// `refresh_millihertz` as winit's MonitorHandle reports it.
+     pub fn new(refresh_millihertz: Option<u32>) -> Self {
+         let hz = refresh_millihertz.filter(|m| *m > 0).map_or(UNKNOWN_REFRESH_HZ, |m| m as f64 / 1000.0);
+-        Pacing { interval: Duration::from_secs_f64(1.0 / hz), started: [None, None], due: None }
++        Pacing { interval: Duration::from_secs_f64(1.0 / hz), started: None, due: None }
+     }
+ 
+     /// A frame is wanted at `now`: true when it may be drawn at once; otherwise it is `due`
+     /// later and the event loop should wake then.
+     pub fn want_frame(&mut self, now: Instant) -> bool {
+-        match self.started[1] {
+-            Some(before_last) if now < before_last + 2 * self.interval => {
+-                self.due.get_or_insert(before_last + 2 * self.interval);
++        match self.started {
++            Some(last) if now < last + self.interval => {
++                self.due.get_or_insert(last + self.interval);
+                 false
+             }
+             _ => true,
+@@ -52,7 +52,7 @@ impl Pacing {
+ 
+     /// A frame started drawing.
+     pub fn drawing(&mut self, now: Instant) {
+-        self.started = [Some(now), self.started[0]];
++        self.started = Some(now);
+         self.due = None;
+     }
+ }
+@@ -71,13 +71,12 @@ mod tests {
+         let t0 = Instant::now();
+         assert!(pacing.want_frame(t0));
+         pacing.drawing(t0);
+-        assert!(pacing.want_frame(ms(t0, 4)), "a second frame soon after is fine");
+-        pacing.drawing(ms(t0, 4));
+-        assert!(!pacing.want_frame(ms(t0, 8)), "a third within two refreshes waits");
++        assert!(!pacing.want_frame(ms(t0, 4)), "a burst must wait for the next refresh");
++        assert!(!pacing.want_frame(ms(t0, 8)));
+         assert!(!pacing.want_frame(ms(t0, 9)), "asking again changes nothing");
+         let due = pacing.due().expect("the frame is due later");
+-        assert!(due > ms(t0, 33) && due <= ms(t0, 34), "two refreshes after the first");
+-        assert!(!pacing.take_due(ms(t0, 20)));
++        assert!(due > ms(t0, 16) && due <= ms(t0, 17), "one refresh after the first");
++        assert!(!pacing.take_due(ms(t0, 15)));
+         assert!(pacing.take_due(due));
+         assert!(pacing.due().is_none());
+     }
+@@ -88,7 +87,9 @@ mod tests {
+         let t0 = Instant::now();
+         pacing.drawing(t0);
+         pacing.drawing(ms(t0, 17));
+-        assert!(pacing.want_frame(ms(t0, 19)), "a keystroke just after a 60 fps frame");
++        assert!(!pacing.want_frame(ms(t0, 19)), "a keystroke within a refresh is coalesced");
++        pacing.drawing(ms(t0, 26));
++        assert!(pacing.want_frame(ms(t0, 45)), "an input after an idle interval is immediate");
+         assert!(pacing.due().is_none());
+     }
+ 
+@@ -98,7 +99,7 @@ mod tests {
+         let t0 = Instant::now();
+         pacing.drawing(t0);
+         pacing.drawing(ms(t0, 1));
+-        assert!(!pacing.want_frame(ms(t0, 16)));
+-        assert!(pacing.want_frame(ms(t0, 17)));
++        assert!(!pacing.want_frame(ms(t0, 9)));
++        assert!(pacing.want_frame(ms(t0, 10)));
+     }
+ }

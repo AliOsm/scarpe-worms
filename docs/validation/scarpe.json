@@ -1,0 +1,18 @@
+{
+  "library": 125,
+  "held_keys": 3,
+  "window_activation": 2,
+  "protocol": 59,
+  "damage": 24,
+  "image_animation": 1,
+  "unchanged_props": 1,
+  "image_blit": 3,
+  "images": 6,
+  "failures": 0,
+  "total_tests": 224,
+  "revision": "eb883bc1778839735a6d8d1921911c656409bb2c",
+  "patch_count": 9,
+  "independent_patches_verified": true,
+  "game_version": "0.2.1",
+  "validated_on": "2026-10-09"
+}

@@ -1,0 +1,15 @@
+diff --git a/native/src/window.rs b/native/src/window.rs
+index 1e0f200..d30eaa2 100644
+--- a/native/src/window.rs
++++ b/native/src/window.rs
+@@ -591,6 +591,10 @@ impl ApplicationHandler<UserEvent> for Shell {
+             self.rt.window_closed(win.app);
+         }
+         self.rt.out.flush();
++        // AppKit's Quit terminates the process after this callback, without
++        // unwinding the Rust stack. Do not rely on Stats::drop on that path.
++        self.rt.stats.set("exit_callback_flush", 1);
++        self.rt.stats.write();
+     }
+ 
+     fn about_to_wait(&mut self, el: &ActiveEventLoop) {

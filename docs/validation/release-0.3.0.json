@@ -1,0 +1,621 @@
+{
+  "version": "0.3.0",
+  "protocol": 3,
+  "build": "20261009.5",
+  "validated_at": "2026-10-09T12:01:04.896921+00:00",
+  "validation_platform": "Linux x86_64; packaged Ruby code uses compatible Linux Ruby, ffi extension, and native renderer",
+  "macos_execution_of_this_build": false,
+  "prior_user_confirmation": {
+    "version": "0.2.4",
+    "hardware": "M3 Pro",
+    "result": "Very smooth; art, physics, and controls requested for next sweep"
+  },
+  "core": [
+    {
+      "ruby": "4.0.7",
+      "tests": 80,
+      "assertions": 4902,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "elapsed_seconds": 52.62652,
+      "report": "core-0.3.0-ruby-4.0.7.json"
+    },
+    {
+      "ruby": "3.4.7",
+      "tests": 80,
+      "assertions": 4902,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "elapsed_seconds": 54.31585,
+      "report": "core-0.3.0-ruby-3.4.7.json"
+    }
+  ],
+  "native_journeys": {
+    "passed": 6,
+    "assertions": 172,
+    "failures": 0,
+    "report": "native-0.3.0.json",
+    "scope": "Native keyboard, pointer, focus and window dispatch; TLS staged weapon controls; six-player recovery; rematches; camera; menu; input lifecycle"
+  },
+  "physics_and_controls": {
+    "catalog_entries": 48,
+    "audit": "../WEAPON_AUDIT.md",
+    "research": "Team17 manual, archived Wormopedia, and WMD visual references linked in the audit",
+    "intentional_differences": "Original balance and weapon identities; single-anchor rope without corner wrapping; fixed three-critter herd"
+  },
+  "art": {
+    "version": "2026.10.09.1",
+    "collaboration": "Claude Opus 5.5, high effort",
+    "generator": "tools/build_art.py (procedural cairo vector art, see docs/ART_DIRECTION.md)",
+    "terrain_images": 29,
+    "biomes": [
+      "meadow",
+      "desert",
+      "glacier",
+      "volcano"
+    ],
+    "validation": "Biome opacity matches collision geometry; tiled and whole painting agree; crater cache invalidation; sprite anchor/dimension contract preserved",
+    "provenance": "../ART_DIRECTION.md"
+  },
+  "audio": {
+    "cues": 13,
+    "backend": "OpenAL Soft",
+    "output": "null",
+    "mute_resume": true,
+    "idempotent_shutdown": true,
+    "audible_output_tested": false
+  },
+  "scarpe": {
+    "new_patches": 0,
+    "prior_patches_retained": true,
+    "pinned_source_and_patches_verified": true,
+    "preserved": "0.2.4 precise deadline waits, frame pacing, and playback catch-up"
+  },
+  "package": {
+    "architecture": "arm64",
+    "minimum_macos": "13.0",
+    "macho_binaries": 106,
+    "resource_hashes_checked": 3420,
+    "adhoc_code_hashes_verified": true,
+    "macos_launch_tested": false,
+    "notarized": false,
+    "relocated_runtime_launches": [
+      {
+        "report": "package-0.3.0-relocated-linux.json",
+        "launches": 2,
+        "launch_locale": "unset",
+        "headless": true,
+        "macos_execution": false,
+        "unicode_data_path": true,
+        "unicode_terrain_path": true,
+        "recovered_same_match": true,
+        "restored_same_player": true,
+        "bounded_local_diagnostics": true,
+        "activation_cancels_charge": true,
+        "resize_reuses_terrain": true,
+        "resize_preserves_playback": true
+      },
+      {
+        "report": "package-0.3.0-relocated-linux-windowed-locale-c.json",
+        "launches": 2,
+        "launch_locale": "c",
+        "headless": false,
+        "macos_execution": false,
+        "unicode_data_path": true,
+        "unicode_terrain_path": true,
+        "recovered_same_match": true,
+        "restored_same_player": true,
+        "bounded_local_diagnostics": true,
+        "activation_cancels_charge": true,
+        "resize_reuses_terrain": true,
+        "resize_preserves_playback": true
+      }
+    ],
+    "integrity": {
+      "version": "0.3.0",
+      "current_launcher_files": 2,
+      "current_game_source_and_asset_files": 554,
+      "current_scarpe_runtime_files": 176,
+      "zip_entries_matched": 3439,
+      "zip_crc": true,
+      "zip_executable_permissions": true,
+      "symlinks_preserved": true,
+      "sha256": "c5c4a217ca89fd1bf27d7c390ae9ded43ad7b30d4cc2d6b1e26d0f844ecd6bad",
+      "zip_bytes": 32387587
+    },
+    "archive": "../../dist/Burrow-Brigade-0.3.0-macos-arm64.zip"
+  },
+  "rendering": {
+    "source": {
+      "report": "rendering-0.3.0-source-linux.json",
+      "ruby": "4.0.7",
+      "platform": "x86_64-linux",
+      "packaged": false,
+      "macos_execution": false,
+      "window": [
+        1920,
+        1200
+      ],
+      "surface": {
+        "surface_width": 3840,
+        "surface_height": 2400,
+        "surface_scale_milli": 2000,
+        "render_width": 1280,
+        "render_height": 800,
+        "render_scale_milli": 667,
+        "compositor_scaling": false
+      },
+      "audio_output": "Linux OpenAL null driver",
+      "timer_slack_ms": 0,
+      "wait_backend": {
+        "name": "TimerFD",
+        "error": null
+      },
+      "wait_overshoot": {
+        "count": 3768,
+        "mean_ms": 0.08449999671409622,
+        "p95_ms": 0.1718602143228054,
+        "p99_ms": 0.5455240607261658,
+        "max_ms": 35.79100500792265,
+        "over_33ms": 1,
+        "over_50ms": 0
+      },
+      "playback_backlog": {
+        "count": 2128,
+        "mean_ms": 10.714973812028557,
+        "p95_ms": 15.348613634705544,
+        "p99_ms": 29.377310965211716,
+        "max_ms": 48.01060697063804,
+        "over_33ms": 14,
+        "over_50ms": 0
+      },
+      "scenarios": {
+        "combat": {
+          "presented_intervals": {
+            "count": 610,
+            "mean_ms": 16.809777636065565,
+            "p95_ms": 20.297018000000833,
+            "p99_ms": 27.223218999999688,
+            "max_ms": 53.5185370000022,
+            "over_33ms": 3,
+            "over_50ms": 1
+          },
+          "paint": {
+            "count": 873,
+            "mean_ms": 2.4807362817869416,
+            "p95_ms": 4.978197,
+            "p99_ms": 6.651415,
+            "max_ms": 11.375883,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 873,
+            "mean_ms": 3.431671439862543,
+            "p95_ms": 5.951606,
+            "p99_ms": 9.44945,
+            "max_ms": 10.040961,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 1080,
+            "mean_ms": 16.697729855810326,
+            "p95_ms": 16.813041642308235,
+            "p99_ms": 17.65295770019293,
+            "max_ms": 52.39721713587642,
+            "over_33ms": 1,
+            "over_50ms": 1
+          }
+        },
+        "pan": {
+          "presented_intervals": {
+            "count": 360,
+            "mean_ms": 16.606432269444454,
+            "p95_ms": 18.56607099999863,
+            "p99_ms": 21.324460000002432,
+            "max_ms": 22.052021000000366,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "paint": {
+            "count": 361,
+            "mean_ms": 4.265521722991689,
+            "p95_ms": 5.23714,
+            "p99_ms": 6.923628,
+            "max_ms": 21.878982,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 361,
+            "mean_ms": 2.996006761772853,
+            "p95_ms": 3.273015,
+            "p99_ms": 3.629064,
+            "max_ms": 3.666008,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 361,
+            "mean_ms": 16.66638523035804,
+            "p95_ms": 16.764555126428604,
+            "p99_ms": 16.9246019795537,
+            "max_ms": 17.613703850656748,
+            "over_33ms": 0,
+            "over_50ms": 0
+          }
+        },
+        "zoom": {
+          "presented_intervals": {
+            "count": 400,
+            "mean_ms": 18.282043535000003,
+            "p95_ms": 35.7555689999991,
+            "p99_ms": 46.31847899999997,
+            "max_ms": 52.55626599999985,
+            "over_33ms": 25,
+            "over_50ms": 2
+          },
+          "paint": {
+            "count": 401,
+            "mean_ms": 1.8350863142144638,
+            "p95_ms": 6.251717999999999,
+            "p99_ms": 10.413388000000001,
+            "max_ms": 16.717277,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 401,
+            "mean_ms": 3.5437451546134664,
+            "p95_ms": 5.687550000000001,
+            "p99_ms": 9.16305,
+            "max_ms": 9.512837999999999,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 441,
+            "mean_ms": 16.666514620548135,
+            "p95_ms": 16.84135291725397,
+            "p99_ms": 17.450056970119476,
+            "max_ms": 18.555606715381145,
+            "over_33ms": 0,
+            "over_50ms": 0
+          }
+        }
+      }
+    },
+    "packaged": {
+      "report": "rendering-0.3.0-linux.json",
+      "ruby": "3.4.7",
+      "platform": "x86_64-linux",
+      "packaged": true,
+      "macos_execution": false,
+      "window": [
+        1920,
+        1200
+      ],
+      "surface": {
+        "surface_width": 3840,
+        "surface_height": 2400,
+        "surface_scale_milli": 2000,
+        "render_width": 1280,
+        "render_height": 800,
+        "render_scale_milli": 667,
+        "compositor_scaling": false
+      },
+      "audio_output": "Linux OpenAL null driver",
+      "timer_slack_ms": 0,
+      "wait_backend": {
+        "name": "TimerFD",
+        "error": null
+      },
+      "wait_overshoot": {
+        "count": 3783,
+        "mean_ms": 0.07896671813161575,
+        "p95_ms": 0.20453566685318947,
+        "p99_ms": 0.3536227159202099,
+        "max_ms": 3.615251276642084,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "playback_backlog": {
+        "count": 2137,
+        "mean_ms": 8.557691991241116,
+        "p95_ms": 15.569521579893339,
+        "p99_ms": 25.263051390647878,
+        "max_ms": 44.55048136413099,
+        "over_33ms": 8,
+        "over_50ms": 0
+      },
+      "scenarios": {
+        "combat": {
+          "presented_intervals": {
+            "count": 614,
+            "mean_ms": 16.811876991856675,
+            "p95_ms": 21.139755000000093,
+            "p99_ms": 31.400649000001835,
+            "max_ms": 47.83168199999999,
+            "over_33ms": 5,
+            "over_50ms": 0
+          },
+          "paint": {
+            "count": 886,
+            "mean_ms": 2.518853072234763,
+            "p95_ms": 4.916458,
+            "p99_ms": 6.844086,
+            "max_ms": 12.829408,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 886,
+            "mean_ms": 3.70340719751693,
+            "p95_ms": 6.915031,
+            "p99_ms": 9.438761,
+            "max_ms": 9.646365000000001,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 1083,
+            "mean_ms": 16.681889613397207,
+            "p95_ms": 16.820637974888086,
+            "p99_ms": 17.54666306078434,
+            "max_ms": 37.0374103076756,
+            "over_33ms": 1,
+            "over_50ms": 0
+          }
+        },
+        "pan": {
+          "presented_intervals": {
+            "count": 359,
+            "mean_ms": 16.6885448718663,
+            "p95_ms": 18.98327199999983,
+            "p99_ms": 25.201015000000382,
+            "max_ms": 39.56941299999883,
+            "over_33ms": 3,
+            "over_50ms": 0
+          },
+          "paint": {
+            "count": 360,
+            "mean_ms": 4.357439072222222,
+            "p95_ms": 5.759358,
+            "p99_ms": 13.191845,
+            "max_ms": 14.078063,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 360,
+            "mean_ms": 3.030541988888889,
+            "p95_ms": 3.3898040000000003,
+            "p99_ms": 4.83225,
+            "max_ms": 8.109922000000001,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 360,
+            "mean_ms": 16.712983327710795,
+            "p95_ms": 16.783760394901037,
+            "p99_ms": 17.88920583203435,
+            "max_ms": 40.174880996346474,
+            "over_33ms": 1,
+            "over_50ms": 0
+          }
+        },
+        "zoom": {
+          "presented_intervals": {
+            "count": 396,
+            "mean_ms": 18.49641325,
+            "p95_ms": 34.54074900000137,
+            "p99_ms": 49.02487300000047,
+            "max_ms": 63.7115659999985,
+            "over_33ms": 25,
+            "over_50ms": 3
+          },
+          "paint": {
+            "count": 397,
+            "mean_ms": 1.7826097783375314,
+            "p95_ms": 5.640612,
+            "p99_ms": 12.43726,
+            "max_ms": 14.118706999999999,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 397,
+            "mean_ms": 3.495023435768262,
+            "p95_ms": 5.349069,
+            "p99_ms": 9.243386,
+            "max_ms": 9.499174,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 440,
+            "mean_ms": 16.742388388692316,
+            "p95_ms": 16.86520827934146,
+            "p99_ms": 19.495236687362194,
+            "max_ms": 42.466954328119755,
+            "over_33ms": 1,
+            "over_50ms": 0
+          }
+        }
+      }
+    },
+    "packaged_100ms_timer_slack": {
+      "report": "rendering-0.3.0-slack-linux.json",
+      "ruby": "3.4.7",
+      "platform": "x86_64-linux",
+      "packaged": true,
+      "macos_execution": false,
+      "window": [
+        1920,
+        1200
+      ],
+      "surface": {
+        "surface_width": 3840,
+        "surface_height": 2400,
+        "surface_scale_milli": 2000,
+        "render_width": 1280,
+        "render_height": 800,
+        "render_scale_milli": 667,
+        "compositor_scaling": false
+      },
+      "audio_output": "Linux OpenAL null driver",
+      "timer_slack_ms": 100,
+      "wait_backend": {
+        "name": "TimerFD",
+        "error": null
+      },
+      "wait_overshoot": {
+        "count": 3786,
+        "mean_ms": 0.08529456941400075,
+        "p95_ms": 0.19408436492085457,
+        "p99_ms": 0.46537816524505615,
+        "max_ms": 5.449765827506781,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "playback_backlog": {
+        "count": 2140,
+        "mean_ms": 12.159742356284898,
+        "p95_ms": 15.425547895339756,
+        "p99_ms": 36.0776538153497,
+        "max_ms": 62.79383143410084,
+        "over_33ms": 28,
+        "over_50ms": 8
+      },
+      "scenarios": {
+        "combat": {
+          "presented_intervals": {
+            "count": 612,
+            "mean_ms": 16.847098336601313,
+            "p95_ms": 20.89717099999966,
+            "p99_ms": 28.74052599999999,
+            "max_ms": 45.14634900000125,
+            "over_33ms": 6,
+            "over_50ms": 0
+          },
+          "paint": {
+            "count": 891,
+            "mean_ms": 2.508200830527497,
+            "p95_ms": 4.890891,
+            "p99_ms": 6.760108,
+            "max_ms": 19.059317,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 891,
+            "mean_ms": 3.7149745555555556,
+            "p95_ms": 6.917471,
+            "p99_ms": 9.427703000000001,
+            "max_ms": 10.231,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 1084,
+            "mean_ms": 16.666454727833617,
+            "p95_ms": 16.813304740935564,
+            "p99_ms": 17.64443702995777,
+            "max_ms": 27.77558797970414,
+            "over_33ms": 0,
+            "over_50ms": 0
+          }
+        },
+        "pan": {
+          "presented_intervals": {
+            "count": 360,
+            "mean_ms": 16.631878191666665,
+            "p95_ms": 18.57149800000002,
+            "p99_ms": 22.639524999998883,
+            "max_ms": 30.629022999999478,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "paint": {
+            "count": 361,
+            "mean_ms": 4.366036991689751,
+            "p95_ms": 5.72749,
+            "p99_ms": 8.898191,
+            "max_ms": 15.78941,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 361,
+            "mean_ms": 3.090267426592798,
+            "p95_ms": 3.531898,
+            "p99_ms": 3.964082,
+            "max_ms": 6.779616,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 361,
+            "mean_ms": 16.666561313530746,
+            "p95_ms": 16.75285818055272,
+            "p99_ms": 17.423007171601057,
+            "max_ms": 18.793196883052588,
+            "over_33ms": 0,
+            "over_50ms": 0
+          }
+        },
+        "zoom": {
+          "presented_intervals": {
+            "count": 398,
+            "mean_ms": 18.364864547738694,
+            "p95_ms": 35.32398600000164,
+            "p99_ms": 44.80490999999631,
+            "max_ms": 48.42266100000003,
+            "over_33ms": 26,
+            "over_50ms": 0
+          },
+          "paint": {
+            "count": 399,
+            "mean_ms": 1.8854901453634085,
+            "p95_ms": 6.403195999999999,
+            "p99_ms": 12.464516,
+            "max_ms": 15.402402,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 399,
+            "mean_ms": 3.650604298245614,
+            "p95_ms": 6.698136000000001,
+            "p99_ms": 9.156269,
+            "max_ms": 9.504013,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 440,
+            "mean_ms": 16.666811140550468,
+            "p95_ms": 16.81444887071848,
+            "p99_ms": 17.58243516087532,
+            "max_ms": 19.687029998749495,
+            "over_33ms": 0,
+            "over_50ms": 0
+          }
+        }
+      }
+    }
+  },
+  "six_player_scene": {
+    "frames": 284,
+    "mean_ruby_scene_ms": 3.6586404017264575,
+    "p95_ruby_scene_ms": 9.291939903050661,
+    "max_ruby_scene_ms": 49.30698871612549,
+    "server_max_tick_ms": 3.810589201748371
+  },
+  "remaining": "Run the 0.3.0 Darwin app on Apple silicon Macs and complete human/network/audio acceptance. Developer ID signing, notarization and clean-machine Gatekeeper validation remain required before sales. The 0.2.4 user confirmation is not a native Mac test of 0.3.0.",
+  "measurement_limits": "Linux native windows use Xvfb with simulated 2x density and OpenAL null output. Rendering measures the packaged Ruby application with Linux executable substitutions, not the shipped Darwin binaries. Discrete zoom frames are recorded separately from continuous combat/pan budgets; normal packaged zoom included three presentation intervals above 50 ms (maximum 63.71 ms)."
+}

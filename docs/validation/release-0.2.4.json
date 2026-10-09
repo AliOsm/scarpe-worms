@@ -1,0 +1,169 @@
+{
+  "version": "0.2.4",
+  "macos_execution_of_this_build": false,
+  "reported_hardware": "M3 Pro; supplied macOS evidence is from 0.2.3",
+  "core": {
+    "rubies": [
+      "4.0.6",
+      "3.4.7"
+    ],
+    "tests": 43,
+    "assertions": 4583,
+    "failures": 0,
+    "scope": "Full suite after timer/playback fixes, followed by the expanded presentation regression below"
+  },
+  "presentation_final": {
+    "rubies": [
+      "4.0.6",
+      "3.4.7"
+    ],
+    "tests": 8,
+    "assertions": 1531,
+    "failures": 0,
+    "includes": "Actual anonymous Mac cadence, repeated 110 ms frames, short flight before impact, long UI pause, host-tick jump beyond retained history"
+  },
+  "scarpe_ruby": {
+    "ruby": "4.0.6",
+    "tests": 53,
+    "assertions": 176,
+    "failures": 0,
+    "mac_only_skips": 2
+  },
+  "native_journeys": {
+    "passed": 5,
+    "assertions": 141,
+    "includes": "Six-player TLS recovery, menu/catalog, battle, camera, focus/input lifecycle"
+  },
+  "packaged_launch_and_resume": {
+    "launches": 4,
+    "unset_locale": true,
+    "ascii_locale_native_window": true,
+    "unicode_paths": true,
+    "restored_same_match_and_player": true,
+    "bounded_diagnostics": true,
+    "precise_timer_backend_verified": true,
+    "native_exit_callback_flush": true
+  },
+  "rendering": {
+    "normal": {
+      "ruby": "3.4.7",
+      "platform": "x86_64-linux",
+      "packaged": true,
+      "macos_execution": false,
+      "window": [
+        1920,
+        1200
+      ],
+      "surface": {
+        "surface_width": 3840,
+        "surface_height": 2400,
+        "surface_scale_milli": 2000,
+        "render_width": 1280,
+        "render_height": 800,
+        "render_scale_milli": 667,
+        "compositor_scaling": false
+      },
+      "audio_output": "Linux OpenAL null driver",
+      "combat": {
+        "count": 610,
+        "mean_ms": 16.747416260655744,
+        "p95_ms": 20.579075000000557,
+        "p99_ms": 30.412180999999094,
+        "max_ms": 46.29038100000216,
+        "over_33ms": 4,
+        "over_50ms": 0
+      },
+      "pan": {
+        "count": 360,
+        "mean_ms": 16.647627077777777,
+        "p95_ms": 18.754586000000018,
+        "p99_ms": 21.01544699999991,
+        "max_ms": 41.43168999999958,
+        "over_33ms": 1,
+        "over_50ms": 0
+      },
+      "wait_overshoot": {
+        "count": 3755,
+        "mean_ms": 0.09009920025911534,
+        "p95_ms": 0.21430524066090584,
+        "p99_ms": 0.45007234439253807,
+        "max_ms": 6.834840402007103,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "playback_backlog": {
+        "count": 2106,
+        "mean_ms": 14.300853411461391,
+        "p95_ms": 16.06985180948944,
+        "p99_ms": 38.09330935900258,
+        "max_ms": 55.508072450757034,
+        "over_33ms": 35,
+        "over_50ms": 5
+      }
+    },
+    "100ms_timer_slack": {
+      "ruby": "3.4.7",
+      "platform": "x86_64-linux",
+      "packaged": true,
+      "macos_execution": false,
+      "window": [
+        1920,
+        1200
+      ],
+      "surface": {
+        "surface_width": 3840,
+        "surface_height": 2400,
+        "surface_scale_milli": 2000,
+        "render_width": 1280,
+        "render_height": 800,
+        "render_scale_milli": 667,
+        "compositor_scaling": false
+      },
+      "audio_output": "Linux OpenAL null driver",
+      "combat": {
+        "count": 614,
+        "mean_ms": 16.603189755700324,
+        "p95_ms": 20.358049000000378,
+        "p99_ms": 23.880391999998807,
+        "max_ms": 27.447918999998322,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "pan": {
+        "count": 361,
+        "mean_ms": 16.61229350969529,
+        "p95_ms": 18.754322999999573,
+        "p99_ms": 22.294041000002096,
+        "max_ms": 24.264923000000493,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "wait_overshoot": {
+        "count": 3765,
+        "mean_ms": 0.11514097459584594,
+        "p95_ms": 0.40843989700078964,
+        "p99_ms": 1.0553421452641487,
+        "max_ms": 3.3584171906113625,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "playback_backlog": {
+        "count": 2106,
+        "mean_ms": 11.691981642246665,
+        "p95_ms": 15.129924652474832,
+        "p99_ms": 29.071317669004237,
+        "max_ms": 56.75337439402937,
+        "over_33ms": 12,
+        "over_50ms": 4
+      }
+    }
+  },
+  "wait_comparison": "waits-0.2.4-package-linux.json",
+  "playback_replay": "playback-0.2.4-trace-replay.json",
+  "macos_user_analysis": "macos-user-0.2.3-analysis.json",
+  "scarpe_patch": "0012-native-precise-deadline-waits.patch",
+  "source_and_zip_integrity_verified": true,
+  "sha256": "83d70cef108b6912f0cd5d443e6444fabf221f92bce6143a5b34a29fd2aef7e2",
+  "zip_bytes": 31009014,
+  "remaining": "Execute the 0.2.4 Darwin kqueue backend and gameplay on the affected M3 Pro. Linux reproduces the timer-coalescing failure mode but cannot prove the original kernel policy or Mac smoothness. The preview is not a certified sales release."
+}

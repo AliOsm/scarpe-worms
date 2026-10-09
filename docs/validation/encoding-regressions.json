@@ -1,0 +1,50 @@
+{
+  "version": "0.2.2",
+  "checked_utc": "2026-10-09T07:49:57.034196+00:00",
+  "macos_execution": false,
+  "reproduction": {
+    "baseline": "0.2.1",
+    "ruby": "3.4.7",
+    "platform": "x86_64-linux",
+    "locale": "LC_ALL=C",
+    "startup_unicode_path_error": "Could not start the host: \"\\xC2\" on US-ASCII",
+    "unicode_checkpoint_in_ascii_path_also_failed": true,
+    "reproduced_in_packaged_boot": true
+  },
+  "regressions": {
+    "ruby_4_0_6": {
+      "tests": 3,
+      "failures": 0
+    },
+    "ruby_3_4_7": {
+      "tests": 3,
+      "failures": 0
+    },
+    "coverage": [
+      "fresh and restored TCP/TLS host subprocesses",
+      "Unicode data/certificate paths",
+      "Unicode names and room names",
+      "same player and match after restart",
+      "UTF-8 preferences and checkpoints with ASCII default encoding",
+      "terrain worker PNGs in Unicode temporary paths"
+    ]
+  },
+  "core_suite": {
+    "ruby": "4.0.6",
+    "tests": 36,
+    "assertions": 3346,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0
+  },
+  "native_journeys": {
+    "cases": 5,
+    "assertions": 137,
+    "failures": 0
+  },
+  "package_reports": [
+    "package-relocated-linux.json",
+    "package-relocated-linux-windowed-locale-c.json"
+  ],
+  "scarpe_revision_and_patches_verified": true
+}

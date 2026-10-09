@@ -1,0 +1,92 @@
+diff --git a/native/src/paint/mod.rs b/native/src/paint/mod.rs
+index 55ca9c2..ce30a3f 100644
+--- a/native/src/paint/mod.rs
++++ b/native/src/paint/mod.rs
+@@ -230,6 +230,7 @@ impl<'a> Canvas<'a> {
+     /// transformed pictures are clipped in their transformed bounds, not their old box.
+     pub fn image(&mut self, image: tiny_skia::PixmapRef<'_>, local: Transform, clip: Option<Rect>) {
+         let transform = self.base().pre_concat(local);
++        if self.blit_aligned_image(image, transform, clip) { return; }
+         let Some(bounds) = tiny_skia::Rect::from_xywh(0.0, 0.0, image.width() as f32, image.height() as f32) else { return };
+         if !within_reach(bounds, transform, 0.0) { return; }
+         let quality = if transform.sx == 1.0 && transform.sy == 1.0 && transform.kx == 0.0 && transform.ky == 0.0 {
+@@ -245,6 +246,46 @@ impl<'a> Canvas<'a> {
+         self.clip_mask = held;
+     }
+ 
++    /// Already-resampled pictures at integer pixels need no rasterizer or sampling
++    /// shader. This is also the common case for images clipped by fixed-size slots.
++    fn blit_aligned_image(&mut self, image: tiny_skia::PixmapRef<'_>, t: Transform, clip: Option<Rect>) -> bool {
++        if t.sx != 1.0 || t.sy != 1.0 || t.kx != 0.0 || t.ky != 0.0 ||
++            !t.tx.is_finite() || !t.ty.is_finite() || t.tx != t.tx.round() || t.ty != t.ty.round() ||
++            t.tx.abs() > MAX_DEVICE_REACH || t.ty.abs() > MAX_DEVICE_REACH { return false; }
++        let (dx, dy) = (t.tx as i32, t.ty as i32);
++        let (mut x0, mut y0) = (dx.max(0), dy.max(0));
++        let (mut x1, mut y1) = ((dx + image.width() as i32).min(self.pm.width() as i32), (dy + image.height() as i32).min(self.pm.height() as i32));
++        if let Some(c) = clip {
++            let base = self.base();
++            let edges = [c.x * base.sx + base.tx, c.y * base.sy + base.ty,
++                c.right() * base.sx + base.tx, c.bottom() * base.sy + base.ty];
++            if edges.iter().any(|e| !e.is_finite() || *e != e.round() || e.abs() > MAX_DEVICE_REACH) { return false; }
++            x0 = x0.max(edges[0] as i32); y0 = y0.max(edges[1] as i32);
++            x1 = x1.min(edges[2] as i32); y1 = y1.min(edges[3] as i32);
++        }
++        if x1 <= x0 || y1 <= y0 { return true; }
++        let sw = image.width() as usize * 4;
++        let dw = self.pm.width() as usize * 4;
++        let len = (x1 - x0) as usize * 4;
++        let source = image.data();
++        let dest = self.pm.data_mut();
++        for y in y0..y1 {
++            let from = (y - dy) as usize * sw + (x0 - dx) as usize * 4;
++            let to = y as usize * dw + x0 as usize * 4;
++            for (s, d) in source[from..from + len].chunks_exact(4).zip(dest[to..to + len].chunks_exact_mut(4)) {
++                match s[3] {
++                    0 => {},
++                    255 => d.copy_from_slice(s),
++                    alpha => {
++                        let inv = 255 - alpha as u32;
++                        for c in 0..4 { d[c] = (s[c] as u32 + (d[c] as u32 * inv + 127) / 255).min(255) as u8; }
++                    }
++                }
++            }
++        }
++        true
++    }
++
+     pub fn stroke_path(&mut self, path: &Path, shader: Shader, stroke: &Stroke, local: Transform, clip: Option<Rect>) {
+         let transform = self.base().pre_concat(local);
+         if !within_reach(path.bounds(), transform, stroke.width) {
+diff --git a/native/tests/image_blit.rs b/native/tests/image_blit.rs
+new file mode 100644
+index 0000000..d61df63
+--- /dev/null
++++ b/native/tests/image_blit.rs
+@@ -0,0 +1,27 @@
++use scarpe_native::{layout::Rect, paint::Canvas};
++use tiny_skia::{Color, FillRule, FilterQuality, Mask, PathBuilder, Pixmap, PixmapPaint, Transform};
++
++#[test]
++fn aligned_image_blit_matches_the_sampling_pipeline_with_alpha_and_clips() {
++    for alpha in [0, 1, 37, 128, 231, 255] {
++        let mut source = Pixmap::new(30, 25).unwrap();
++        source.fill(Color::from_rgba8(190, 83, 211, alpha));
++        for (x, y) in [(-7, -4), (0, 0), (7, 12), (40, 40)] {
++            for clip in [None, Some(Rect::new(11.0, 9.0, 26.0, 24.0))] {
++                let mut actual = Pixmap::new(48, 48).unwrap();
++                actual.fill(Color::from_rgba8(62, 127, 222, 190));
++                let mut expected = actual.clone();
++                let transform = Transform::from_translate(x as f32, y as f32);
++                Canvas::new(&mut actual, 1.0).image(source.as_ref(), transform, clip);
++                let mask = clip.map(|r| {
++                    let mut mask = Mask::new(48, 48).unwrap();
++                    let rect = tiny_skia::Rect::from_xywh(r.x, r.y, r.w, r.h).unwrap();
++                    mask.fill_path(&PathBuilder::from_rect(rect), FillRule::Winding, false, Transform::identity());
++                    mask
++                });
++                expected.draw_pixmap(0, 0, source.as_ref(), &PixmapPaint {quality: FilterQuality::Nearest, ..Default::default()}, transform, mask.as_ref());
++                assert_eq!(actual.data(), expected.data(), "alpha {alpha}, at {x},{y}, clip {clip:?}");
++            }
++        }
++    }
++}

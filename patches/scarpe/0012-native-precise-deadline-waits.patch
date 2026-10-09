@@ -1,0 +1,356 @@
+diff --git a/lib/scarpe/native/child.rb b/lib/scarpe/native/child.rb
+index e474aa7..ddd7551 100644
+--- a/lib/scarpe/native/child.rb
++++ b/lib/scarpe/native/child.rb
+@@ -4,6 +4,7 @@ require "fileutils"
+ require "monitor"
+ require "open3"
+ require "shellwords"
++require_relative "deadline_wait"
+ 
+ module Scarpe::Native
+   class ChildDied < Scarpe::Error; end
+@@ -65,6 +66,10 @@ module Scarpe::Native
+       counters[name] = counters.fetch(name, 0) + by if enabled?
+     end
+ 
++    def wait_backend(waiter)
++      @wait_backend = {"name" => waiter.backend, "error" => waiter.error} if enabled?
++    end
++
+     # A milestone, in Unix seconds so it lines up with Rust's rust.json. First time only.
+     def mark(name)
+       marks[name] ||= Process.clock_gettime(Process::CLOCK_REALTIME) if enabled?
+@@ -81,7 +86,7 @@ module Scarpe::Native
+     # Forgets everything, and whether it is on (tests flip SCARPE_NATIVE_STATS).
+     def reset!
+       remove_instance_variable(:@enabled) if defined?(@enabled)
+-      @phases = @counters = @marks = @wait_samples = @wait_count = nil
++      @phases = @counters = @marks = @wait_samples = @wait_count = @wait_backend = nil
+     end
+ 
+     def report
+@@ -92,6 +97,7 @@ module Scarpe::Native
+         "wait_columns" => %w[at requested_ms elapsed_ms overshoot_ms],
+         "wait_samples" => wait_samples, "wait_sample_limit" => MAX_WAIT_SAMPLES,
+         "wait_sample_policy" => "most_recent",
++        "wait_backend" => @wait_backend,
+         "cpu" => { "ruby" => times.utime + times.stime, "children" => times.cutime + times.cstime },
+       }
+     end
+@@ -229,6 +235,7 @@ module Scarpe::Native
+       @stderr_lock = Mutex.new
+       @stderr_thread = Thread.new { drain_stderr }
+       @wake_reader, @wake_writer = IO.pipe
++      @input_wait = DeadlineWait.new([@stdout, @wake_reader])
+ 
+       say_hello
+     end
+@@ -337,6 +344,9 @@ module Scarpe::Native
+         signal("KILL") unless @wait_thread.join(1)
+       end
+       forget_pid_file
++      @input_wait.close
++      @wake_reader.close
++      @wake_writer.close
+     end
+ 
+     # Ends the child, and anything it started, at once: for when Ruby itself is being stopped and
+@@ -416,7 +426,8 @@ module Scarpe::Native
+     def read_some(timeout)
+       return if @eof
+ 
+-      readable, = IO.select([@stdout, @wake_reader], nil, nil, timeout)
++      readable = @input_wait.wait(timeout)
++      Stats.wait_backend(@input_wait)
+       return unless readable
+ 
+       @wake_reader.read_nonblock(4096, exception: false) if readable.include?(@wake_reader)
+diff --git a/lib/scarpe/native/deadline_wait.rb b/lib/scarpe/native/deadline_wait.rb
+new file mode 100644
+index 0000000..3b3494b
+--- /dev/null
++++ b/lib/scarpe/native/deadline_wait.rb
+@@ -0,0 +1,144 @@
++# frozen_string_literal: true
++
++module Scarpe::Native
++  # A select timeout is an ordinary, coalescible OS sleep. On macOS it can
++  # overshoot an animation deadline even when the process holds an activity
++  # assertion. Wait for a timer descriptor instead: pipes still wake immediately,
++  # and only the one pending deadline requests precise delivery. No polling or
++  # helper thread is needed. Other platforms retain the portable select path.
++  class DeadlineWait
++    attr_reader :error
++
++    def initialize(readers, timer: self.class.platform_timer)
++      @readers, @timer = readers, timer
++    end
++
++    def self.platform_timer
++      if RUBY_PLATFORM.include?("darwin")
++        KqueueTimer.new
++      elsif RUBY_PLATFORM.include?("linux") && [0].pack("l!").bytesize == 8
++        TimerFD.new
++      end
++    rescue LoadError, StandardError => error
++      warn "scarpe-native: precise timer unavailable: #{error.message}"
++      nil
++    end
++
++    def backend = @timer ? @timer.class.name.split("::").last : "select_timeout"
++
++    def wait(timeout)
++      timer = @timer
++      return IO.select(@readers, nil, nil, timeout)&.first unless timer && timeout.positive?
++
++      begin
++        timer.arm(timeout)
++      rescue SystemCallError => error
++        @error = error.message
++        warn "scarpe-native: precise timer disabled: #{@error}"
++        close
++        return IO.select(@readers, nil, nil, timeout)&.first
++      end
++      begin
++        ready = IO.select([*@readers, timer.io])&.first
++        ready&.reject { |io| io.equal?(timer.io) }
++      ensure
++        # An input event may win the race. Disarm its deadline so an idle app
++        # does not keep waking, and the next wait cannot consume a stale timer.
++        timer.cancel unless timer.io.closed?
++      end
++    end
++
++    def close
++      @timer&.close
++      @timer = nil
++    end
++
++    class NativeTimer
++      attr_reader :io
++
++      def initialize
++        require "fiddle"
++        @libc = Fiddle::Handle::DEFAULT
++        setup
++      rescue Exception
++        close
++        raise
++      end
++
++      def close = (@io.close if @io && !@io.closed?)
++
++      private
++
++      def function(name, arguments)
++        Fiddle::Function.new(@libc[name], arguments, Fiddle::TYPE_INT)
++      end
++
++      def check(result, operation)
++        raise SystemCallError.new(operation, Fiddle.last_error) if result < 0
++        result
++      end
++
++      def descriptor(fd)
++        @io = IO.for_fd(fd, autoclose: true)
++        @io.close_on_exec = true
++      end
++    end
++
++    class KqueueTimer < NativeTimer
++      # Darwin kevent64_s: ident, filter, flags, fflags, data, udata, ext[2].
++      # Use kevent64 (not kevent) for the documented NOTE_CRITICAL timer flag.
++      FORMAT = "Q s S L q Q Q Q"
++      EVFILT_TIMER = -7
++      EV_ADD_ONESHOT = 0x0001 | 0x0010
++      EV_DELETE = 0x0002
++      NOTE_NSECONDS_CRITICAL = 0x00000004 | 0x00000020
++      IMMEDIATE = 1
++
++      def arm(seconds)
++        change(EV_ADD_ONESHOT, [(seconds * 1_000_000_000).ceil, 1].max)
++      end
++
++      def cancel
++        change(EV_DELETE, 0)
++      rescue Errno::ENOENT
++        # An expired one-shot may already have been removed by the kernel.
++        nil
++      end
++
++      private
++
++      def setup
++        pointer, int = Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT
++        @kevent = function("kevent64", [int, pointer, int, pointer, int, int, pointer])
++        descriptor(check(function("kqueue", []).call, "kqueue"))
++      end
++
++      def change(flags, nanos)
++        event = [1, EVFILT_TIMER, flags, NOTE_NSECONDS_CRITICAL, nanos, 0, 0, 0].pack(FORMAT)
++        check(@kevent.call(io.fileno, event, 1, nil, 0, IMMEDIATE, nil), "kevent64")
++      end
++    end
++
++    class TimerFD < NativeTimer
++      def arm(seconds)
++        nanos = [(seconds * 1_000_000_000).ceil, 1].max
++        set(nanos.div(1_000_000_000), nanos % 1_000_000_000)
++      end
++
++      def cancel = set(0, 0)
++
++      private
++
++      def setup
++        int, pointer = Fiddle::TYPE_INT, Fiddle::TYPE_VOIDP
++        @settime = function("timerfd_settime", [int, int, pointer, pointer])
++        descriptor(check(function("timerfd_create", [int, int]).call(1, 0), "timerfd_create")) # CLOCK_MONOTONIC
++      end
++
++      def set(seconds, nanos)
++        # Two timespecs: a zero repeat interval, then the one-shot deadline.
++        check(@settime.call(io.fileno, 0, [0, 0, seconds, nanos].pack("q4"), nil), "timerfd_settime")
++      end
++    end
++  end
++end
+diff --git a/scarpe.gemspec b/scarpe.gemspec
+index 6f33ff6..ad65655 100644
+--- a/scarpe.gemspec
++++ b/scarpe.gemspec
+@@ -48,6 +48,8 @@ Gem::Specification.new do |spec|
+   spec.add_dependency 'bigdecimal'
+   spec.add_dependency 'csv'
+   spec.add_dependency 'observer'
++  # Ruby 4 extracted Fiddle; native deadline timers use its small libc bridge.
++  spec.add_dependency 'fiddle', '>= 1.1'
+ 
+   # For more information and examples about making a new gem, check out our
+   # guide at: https://bundler.io/guides/creating_gem.html
+diff --git a/test/native/deadline_wait_test.rb b/test/native/deadline_wait_test.rb
+new file mode 100644
+index 0000000..890d0d4
+--- /dev/null
++++ b/test/native/deadline_wait_test.rb
+@@ -0,0 +1,119 @@
++# frozen_string_literal: true
++
++require_relative "helper"
++require "minitest/mock"
++
++class DeadlineWaitTest < Minitest::Test
++  Wait = Scarpe::Native::DeadlineWait
++
++  def setup
++    @reader, @writer = IO.pipe
++    @wait = Wait.new([@reader])
++  end
++
++  def teardown
++    @wait.close
++    [@reader, @writer].each { |io| io.close unless io.closed? }
++  end
++
++  def test_timeout_does_not_report_the_timer_as_application_input
++    skip "precise timer unavailable" if @wait.backend == "select_timeout"
++    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
++    assert_empty @wait.wait(0.005)
++    assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - started, :>=, 0.004
++  end
++
++  def test_input_wakes_a_long_deadline_and_rearming_does_not_see_a_stale_timer
++    @writer.write("wake")
++    assert_equal [@reader], @wait.wait(5)
++    assert_equal "wake", @reader.read(4)
++    assert_empty Array(@wait.wait(0.001))
++    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
++    assert_empty Array(@wait.wait(0.015))
++    assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - started, :>=, 0.013
++    assert_nil @wait.wait(0)
++  end
++
++  def test_input_from_another_thread_interrupts_the_descriptor_wait
++    sender = Thread.new { sleep(0.01); @writer.write("input") }
++    assert_equal [@reader], @wait.wait(5)
++    assert_equal "input", @reader.read(5)
++  ensure
++    sender&.join
++  end
++
++  def test_close_is_idempotent_and_descriptor_is_not_inherited_by_exec
++    timer = @wait.instance_variable_get(:@timer)
++    skip "precise timer unavailable" unless timer
++    assert timer.io.close_on_exec?
++    @wait.close
++    @wait.close
++    assert timer.io.closed?
++  end
++
++  def test_portable_fallback_and_poll
++    @wait.close
++    @wait = Wait.new([@reader], timer: nil)
++    assert_equal "select_timeout", @wait.backend
++    assert_nil @wait.wait(0.001)
++    @writer.write("ready")
++    assert_equal [@reader], @wait.wait(0)
++  end
++
++  def test_linux_timer_slack_does_not_defer_animation_deadlines
++    skip "Linux timer-slack regression" unless RUBY_PLATFORM.include?("linux")
++    assert_equal "TimerFD", @wait.backend
++    require "fiddle"
++    prctl = Fiddle::Function.new(Fiddle::Handle::DEFAULT["prctl"],
++      [Fiddle::TYPE_INT, *Array.new(4, Fiddle::TYPE_LONG)], Fiddle::TYPE_INT)
++    original = prctl.call(30, 0, 0, 0, 0) # PR_GET_TIMERSLACK
++    assert_equal 0, prctl.call(29, 100_000_000, 0, 0, 0) # PR_SET_TIMERSLACK, 100 ms
++    samples = 12.times.map do
++      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
++      assert_empty @wait.wait(0.010)
++      Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
++    end
++    assert_operator samples.sum / samples.size, :<, 0.025, "coalescing delayed the UI timer"
++    assert_operator samples.max, :<, 0.070, "animation deadline stalled"
++  ensure
++    prctl.call(29, original, 0, 0, 0) if original && original >= 0
++  end
++
++  def test_timer_failure_keeps_input_working_and_reports_the_fallback
++    @wait.close
++    timer = Struct.new(:closed) do
++      def arm(_) = raise Errno::EINVAL, "timer registration"
++      def close = self.closed = true
++    end.new(false)
++    @wait = Wait.new([@reader], timer: timer)
++    @writer.write("input")
++    _, warning = capture_io { assert_equal [@reader], @wait.wait(0.01) }
++    assert timer.closed
++    assert_equal "select_timeout", @wait.backend
++    assert_match(/timer registration/, @wait.error)
++    assert_match(/precise timer disabled/, warning)
++    assert_equal [@reader], @wait.wait(0)
++  end
++
++  def test_darwin_requests_a_critical_one_shot_with_the_kevent64_abi
++    # Exercise the actual encoder on every platform; the real syscall path is
++    # also covered by the wait/input/cleanup tests when run on macOS.
++    timer = Wait::KqueueTimer.allocate
++    calls = []
++    timer.instance_variable_set(:@io, @reader)
++    timer.instance_variable_set(:@kevent, ->(*args) { calls << args; 0 })
++    timer.arm(0.016)
++    timer.cancel
++    fd, event, count, output, capacity, flags, timeout = calls.first
++    assert_equal @reader.fileno, fd
++    assert_equal 48, event.bytesize
++    assert_equal [1, -7, 0x11, 0x24, 16_000_000, 0, 0, 0], event.unpack(Wait::KqueueTimer::FORMAT)
++    assert_equal [1, nil, 0, 1, nil], [count, output, capacity, flags, timeout]
++    assert_equal 0x02, calls.last[1].unpack(Wait::KqueueTimer::FORMAT)[2]
++  end
++
++  def test_mac_uses_kqueue_instead_of_a_coalescible_select_timeout
++    skip "macOS syscall backend" unless RUBY_PLATFORM.include?("darwin")
++    assert_equal "KqueueTimer", @wait.backend
++  end
++end

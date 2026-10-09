@@ -1,0 +1,9 @@
+{
+  "ticks": 3000,
+  "turns": 16,
+  "elapsed": 1.3424141900613904,
+  "max_step_ms": 13.412436004728079,
+  "p99_ms": 4.475646186619997,
+  "game_version": "0.1.0",
+  "historical": true
+}

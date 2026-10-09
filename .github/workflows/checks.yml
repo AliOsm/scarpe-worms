@@ -1,0 +1,44 @@
+name: Game and native checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        ruby: ['3.4.7', '4.0.7']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler: '4.0.16'
+      - run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libfontconfig1-dev libopenal1 xvfb xauth
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            vendor/scarpe/native/target
+          key: native-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch') }}
+      - run: ./setup.sh
+      - run: bundle exec rake test
+      - run: ./bin/check-native
+      - run: xvfb-run -a python3 tools/check_action.py
+      - run: bundle exec ruby tools/check_audio.rb
+      - run: cargo test --release --locked --manifest-path vendor/scarpe/native/Cargo.toml --test held_keys --test window_activation --test protocol --test damage --test image_animation --test unchanged_props --test image_blit
+      - if: matrix.ruby == '3.4.7'
+        run: python3 tools/check_container.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: validation-ruby-${{ matrix.ruby }}
+          path: |
+            .cache/native-checks/*.json
+            .cache/native-checks/shots/
+            docs/validation/container.json
+            docs/validation/native-action.json

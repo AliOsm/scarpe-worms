@@ -1,0 +1,7 @@
+{
+  "frames": 281,
+  "mean_ruby_scene_ms": 2.627531227281191,
+  "p95_ruby_scene_ms": 5.432401318103075,
+  "max_ruby_scene_ms": 57.93142784386873,
+  "server_max_tick_ms": 2.258503809571266
+}

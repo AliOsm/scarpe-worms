@@ -1,0 +1,555 @@
+{
+  "platform": "x86_64-linux",
+  "ruby": "4.0.6",
+  "seconds": 300.06,
+  "headless": true,
+  "clock": "real monotonic",
+  "teams": 6,
+  "grubs": 36,
+  "computer_teams": 4,
+  "matches": 3,
+  "completed_matches": 2,
+  "turns": 96,
+  "human_socket_shots": 30,
+  "terrain_changes": 79,
+  "resizes": 9,
+  "rejected_late_inputs": {},
+  "retained_after_gc": [
+    {
+      "match": 2,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 95869
+    },
+    {
+      "match": 3,
+      "scenes": 1,
+      "terrain_workers": 1,
+      "live_heap_slots": 95900
+    }
+  ],
+  "app_update_intervals": {
+    "count": 17477,
+    "mean_ms": 17.404995082442795,
+    "p95_ms": 23.520780261605978,
+    "max_ms": 836.3604042679071
+  },
+  "ruby_scene_preparation": {
+    "count": 17324,
+    "mean_ms": 3.3264456984677975,
+    "p95_ms": 6.9496966898441315,
+    "max_ms": 50.225136801600456
+  },
+  "samples": [
+    {
+      "seconds": 0.07,
+      "match": 1,
+      "turn": 1,
+      "ruby_rss_kib": 44108,
+      "native_rss_kib": 50524,
+      "scene_ms": {
+        "frames": 139,
+        "mean_ruby_scene_ms": 2.448529611415357,
+        "p95_ruby_scene_ms": 3.7809181958436966,
+        "max_ruby_scene_ms": 50.2191879786551
+      },
+      "nodes": 235,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 66
+    },
+    {
+      "seconds": 10.13,
+      "match": 1,
+      "turn": 4,
+      "ruby_rss_kib": 44624,
+      "native_rss_kib": 52304,
+      "scene_ms": {
+        "frames": 737,
+        "mean_ruby_scene_ms": 2.221621854696423,
+        "p95_ruby_scene_ms": 4.090139176696539,
+        "max_ruby_scene_ms": 50.2191879786551
+      },
+      "nodes": 213,
+      "threads": 6,
+      "effects": 1,
+      "terrain_files": 68
+    },
+    {
+      "seconds": 20.18,
+      "match": 1,
+      "turn": 6,
+      "ruby_rss_kib": 46672,
+      "native_rss_kib": 55420,
+      "scene_ms": {
+        "frames": 1336,
+        "mean_ruby_scene_ms": 2.691426770761609,
+        "p95_ruby_scene_ms": 5.178901832550764,
+        "max_ruby_scene_ms": 50.2191879786551
+      },
+      "nodes": 219,
+      "threads": 6,
+      "effects": 23,
+      "terrain_files": 78
+    },
+    {
+      "seconds": 33.71,
+      "match": 1,
+      "turn": 10,
+      "ruby_rss_kib": 49136,
+      "native_rss_kib": 67256,
+      "scene_ms": {
+        "frames": 147,
+        "mean_ruby_scene_ms": 5.703044494575992,
+        "p95_ruby_scene_ms": 10.330102872103453,
+        "max_ruby_scene_ms": 49.55387394875288
+      },
+      "nodes": 204,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 69
+    },
+    {
+      "seconds": 43.77,
+      "match": 1,
+      "turn": 12,
+      "ruby_rss_kib": 49576,
+      "native_rss_kib": 72140,
+      "scene_ms": {
+        "frames": 721,
+        "mean_ruby_scene_ms": 3.5667316180964312,
+        "p95_ruby_scene_ms": 8.475956041365862,
+        "max_ruby_scene_ms": 49.55387394875288
+      },
+      "nodes": 196,
+      "threads": 6,
+      "effects": 10,
+      "terrain_files": 75
+    },
+    {
+      "seconds": 53.88,
+      "match": 1,
+      "turn": 14,
+      "ruby_rss_kib": 49916,
+      "native_rss_kib": 72744,
+      "scene_ms": {
+        "frames": 1300,
+        "mean_ruby_scene_ms": 3.8732915301807225,
+        "p95_ruby_scene_ms": 8.27067019417882,
+        "max_ruby_scene_ms": 49.55387394875288
+      },
+      "nodes": 202,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 77
+    },
+    {
+      "seconds": 63.92,
+      "match": 1,
+      "turn": 15,
+      "ruby_rss_kib": 51388,
+      "native_rss_kib": 64704,
+      "scene_ms": {
+        "frames": 194,
+        "mean_ruby_scene_ms": 3.133303245779165,
+        "p95_ruby_scene_ms": 5.6778499856591225,
+        "max_ruby_scene_ms": 45.2192616648972
+      },
+      "nodes": 195,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 69
+    },
+    {
+      "seconds": 73.97,
+      "match": 1,
+      "turn": 17,
+      "ruby_rss_kib": 51712,
+      "native_rss_kib": 64712,
+      "scene_ms": {
+        "frames": 797,
+        "mean_ruby_scene_ms": 2.0705842110328376,
+        "p95_ruby_scene_ms": 3.29198082908988,
+        "max_ruby_scene_ms": 45.2192616648972
+      },
+      "nodes": 180,
+      "threads": 6,
+      "effects": 6,
+      "terrain_files": 72
+    },
+    {
+      "seconds": 83.97,
+      "match": 1,
+      "turn": 20,
+      "ruby_rss_kib": 52132,
+      "native_rss_kib": 64712,
+      "scene_ms": {
+        "frames": 1394,
+        "mean_ruby_scene_ms": 3.4444439744887254,
+        "p95_ruby_scene_ms": 7.578238844871521,
+        "max_ruby_scene_ms": 45.2192616648972
+      },
+      "nodes": 179,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 76
+    },
+    {
+      "seconds": 94.02,
+      "match": 1,
+      "turn": 24,
+      "ruby_rss_kib": 53632,
+      "native_rss_kib": 69700,
+      "scene_ms": {
+        "frames": 185,
+        "mean_ruby_scene_ms": 2.1055292816379585,
+        "p95_ruby_scene_ms": 3.0502406880259514,
+        "max_ruby_scene_ms": 47.496357932686806
+      },
+      "nodes": 180,
+      "threads": 6,
+      "effects": 1,
+      "terrain_files": 72
+    },
+    {
+      "seconds": 104.04,
+      "match": 1,
+      "turn": 30,
+      "ruby_rss_kib": 53776,
+      "native_rss_kib": 78460,
+      "scene_ms": {
+        "frames": 764,
+        "mean_ruby_scene_ms": 3.8385558508646986,
+        "p95_ruby_scene_ms": 6.813582964241505,
+        "max_ruby_scene_ms": 47.496357932686806
+      },
+      "nodes": 191,
+      "threads": 6,
+      "effects": 9,
+      "terrain_files": 72
+    },
+    {
+      "seconds": 114.05,
+      "match": 1,
+      "turn": 36,
+      "ruby_rss_kib": 53952,
+      "native_rss_kib": 78464,
+      "scene_ms": {
+        "frames": 1343,
+        "mean_ruby_scene_ms": 3.612950712752839,
+        "p95_ruby_scene_ms": 6.719529163092375,
+        "max_ruby_scene_ms": 47.496357932686806
+      },
+      "nodes": 161,
+      "threads": 6,
+      "effects": 1,
+      "terrain_files": 74
+    },
+    {
+      "seconds": 124.05,
+      "match": 1,
+      "turn": 42,
+      "ruby_rss_kib": 54836,
+      "native_rss_kib": 64780,
+      "scene_ms": {
+        "frames": 200,
+        "mean_ruby_scene_ms": 2.210257926490158,
+        "p95_ruby_scene_ms": 5.614370573312044,
+        "max_ruby_scene_ms": 45.80177180469036
+      },
+      "nodes": 138,
+      "threads": 6,
+      "effects": 2,
+      "terrain_files": 66
+    },
+    {
+      "seconds": 134.1,
+      "match": 2,
+      "turn": 2,
+      "ruby_rss_kib": 60972,
+      "native_rss_kib": 64788,
+      "scene_ms": {
+        "frames": 305,
+        "mean_ruby_scene_ms": 3.004757053844753,
+        "p95_ruby_scene_ms": 6.526251323521137,
+        "max_ruby_scene_ms": 46.62409843876958
+      },
+      "nodes": 220,
+      "threads": 6,
+      "effects": 1,
+      "terrain_files": 69
+    },
+    {
+      "seconds": 144.13,
+      "match": 2,
+      "turn": 5,
+      "ruby_rss_kib": 61108,
+      "native_rss_kib": 64876,
+      "scene_ms": {
+        "frames": 902,
+        "mean_ruby_scene_ms": 4.13044324144721,
+        "p95_ruby_scene_ms": 7.138009183108807,
+        "max_ruby_scene_ms": 46.62409843876958
+      },
+      "nodes": 200,
+      "threads": 6,
+      "effects": 25,
+      "terrain_files": 71
+    },
+    {
+      "seconds": 154.2,
+      "match": 2,
+      "turn": 7,
+      "ruby_rss_kib": 57120,
+      "native_rss_kib": 70932,
+      "scene_ms": {
+        "frames": 188,
+        "mean_ruby_scene_ms": 4.296773093494963,
+        "p95_ruby_scene_ms": 8.865779265761375,
+        "max_ruby_scene_ms": 47.4942889995873
+      },
+      "nodes": 195,
+      "threads": 6,
+      "effects": 7,
+      "terrain_files": 75
+    },
+    {
+      "seconds": 164.25,
+      "match": 2,
+      "turn": 10,
+      "ruby_rss_kib": 57416,
+      "native_rss_kib": 72364,
+      "scene_ms": {
+        "frames": 775,
+        "mean_ruby_scene_ms": 4.091958793190618,
+        "p95_ruby_scene_ms": 8.216571994125843,
+        "max_ruby_scene_ms": 47.4942889995873
+      },
+      "nodes": 295,
+      "threads": 6,
+      "effects": 93,
+      "terrain_files": 78
+    },
+    {
+      "seconds": 174.26,
+      "match": 2,
+      "turn": 12,
+      "ruby_rss_kib": 57816,
+      "native_rss_kib": 77844,
+      "scene_ms": {
+        "frames": 1367,
+        "mean_ruby_scene_ms": 3.9133901762155197,
+        "p95_ruby_scene_ms": 7.17697711661458,
+        "max_ruby_scene_ms": 47.4942889995873
+      },
+      "nodes": 305,
+      "threads": 6,
+      "effects": 100,
+      "terrain_files": 86
+    },
+    {
+      "seconds": 184.3,
+      "match": 2,
+      "turn": 14,
+      "ruby_rss_kib": 58452,
+      "native_rss_kib": 64904,
+      "scene_ms": {
+        "frames": 207,
+        "mean_ruby_scene_ms": 2.5965771187942672,
+        "p95_ruby_scene_ms": 5.936704110354185,
+        "max_ruby_scene_ms": 48.146992921829224
+      },
+      "nodes": 183,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 66
+    },
+    {
+      "seconds": 194.35,
+      "match": 2,
+      "turn": 16,
+      "ruby_rss_kib": 58912,
+      "native_rss_kib": 64912,
+      "scene_ms": {
+        "frames": 807,
+        "mean_ruby_scene_ms": 4.316514624127497,
+        "p95_ruby_scene_ms": 7.988221012055874,
+        "max_ruby_scene_ms": 48.146992921829224
+      },
+      "nodes": 189,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 77
+    },
+    {
+      "seconds": 204.37,
+      "match": 2,
+      "turn": 18,
+      "ruby_rss_kib": 59048,
+      "native_rss_kib": 64920,
+      "scene_ms": {
+        "frames": 1408,
+        "mean_ruby_scene_ms": 4.435435040698697,
+        "p95_ruby_scene_ms": 8.637515362352133,
+        "max_ruby_scene_ms": 48.146992921829224
+      },
+      "nodes": 201,
+      "threads": 6,
+      "effects": 14,
+      "terrain_files": 79
+    },
+    {
+      "seconds": 214.4,
+      "match": 2,
+      "turn": 25,
+      "ruby_rss_kib": 59900,
+      "native_rss_kib": 71252,
+      "scene_ms": {
+        "frames": 185,
+        "mean_ruby_scene_ms": 2.033713605959673,
+        "p95_ruby_scene_ms": 2.7464390732347965,
+        "max_ruby_scene_ms": 48.254193272441626
+      },
+      "nodes": 190,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 72
+    },
+    {
+      "seconds": 224.44,
+      "match": 2,
+      "turn": 30,
+      "ruby_rss_kib": 59968,
+      "native_rss_kib": 79324,
+      "scene_ms": {
+        "frames": 782,
+        "mean_ruby_scene_ms": 1.9489865315457184,
+        "p95_ruby_scene_ms": 3.0683097429573536,
+        "max_ruby_scene_ms": 48.254193272441626
+      },
+      "nodes": 188,
+      "threads": 6,
+      "effects": 5,
+      "terrain_files": 72
+    },
+    {
+      "seconds": 234.49,
+      "match": 2,
+      "turn": 35,
+      "ruby_rss_kib": 60004,
+      "native_rss_kib": 79908,
+      "scene_ms": {
+        "frames": 1384,
+        "mean_ruby_scene_ms": 1.866561946614335,
+        "p95_ruby_scene_ms": 2.603922039270401,
+        "max_ruby_scene_ms": 48.254193272441626
+      },
+      "nodes": 170,
+      "threads": 6,
+      "effects": 1,
+      "terrain_files": 72
+    },
+    {
+      "seconds": 244.53,
+      "match": 2,
+      "turn": 39,
+      "ruby_rss_kib": 60416,
+      "native_rss_kib": 64952,
+      "scene_ms": {
+        "frames": 219,
+        "mean_ruby_scene_ms": 1.7744572407918977,
+        "p95_ruby_scene_ms": 2.5575938634574413,
+        "max_ruby_scene_ms": 46.398425940424204
+      },
+      "nodes": 141,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 66
+    },
+    {
+      "seconds": 254.58,
+      "match": 3,
+      "turn": 2,
+      "ruby_rss_kib": 66424,
+      "native_rss_kib": 64960,
+      "scene_ms": {
+        "frames": 400,
+        "mean_ruby_scene_ms": 3.2006909884512424,
+        "p95_ruby_scene_ms": 7.040734868496656,
+        "max_ruby_scene_ms": 43.88361377641559
+      },
+      "nodes": 214,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 69
+    },
+    {
+      "seconds": 264.62,
+      "match": 3,
+      "turn": 3,
+      "ruby_rss_kib": 66652,
+      "native_rss_kib": 64968,
+      "scene_ms": {
+        "frames": 1000,
+        "mean_ruby_scene_ms": 3.767488000448793,
+        "p95_ruby_scene_ms": 7.340888027101755,
+        "max_ruby_scene_ms": 43.88361377641559
+      },
+      "nodes": 209,
+      "threads": 6,
+      "effects": 6,
+      "terrain_files": 71
+    },
+    {
+      "seconds": 274.65,
+      "match": 3,
+      "turn": 5,
+      "ruby_rss_kib": 67408,
+      "native_rss_kib": 69912,
+      "scene_ms": {
+        "frames": 208,
+        "mean_ruby_scene_ms": 2.5922154936079798,
+        "p95_ruby_scene_ms": 5.134838167577982,
+        "max_ruby_scene_ms": 41.250890120863914
+      },
+      "nodes": 205,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 69
+    },
+    {
+      "seconds": 284.67,
+      "match": 3,
+      "turn": 7,
+      "ruby_rss_kib": 67952,
+      "native_rss_kib": 70152,
+      "scene_ms": {
+        "frames": 792,
+        "mean_ruby_scene_ms": 4.231353857709716,
+        "p95_ruby_scene_ms": 8.300780784338713,
+        "max_ruby_scene_ms": 41.250890120863914
+      },
+      "nodes": 221,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 83
+    },
+    {
+      "seconds": 294.76,
+      "match": 3,
+      "turn": 10,
+      "ruby_rss_kib": 68176,
+      "native_rss_kib": 70164,
+      "scene_ms": {
+        "frames": 1392,
+        "mean_ruby_scene_ms": 3.782445248992493,
+        "p95_ruby_scene_ms": 6.966285407543182,
+        "max_ruby_scene_ms": 41.250890120863914
+      },
+      "nodes": 202,
+      "threads": 6,
+      "effects": 0,
+      "terrain_files": 84
+    }
+  ]
+}

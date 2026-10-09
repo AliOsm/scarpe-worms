@@ -1,0 +1,9 @@
+{
+  "ruby": "4.0.7",
+  "tests": 80,
+  "assertions": 4902,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "elapsed_seconds": 52.62652
+}

@@ -1,0 +1,123 @@
+---
+display: native
+timeout: 120
+----------- app code
+ENV["BURROW_DATA_DIR"] = File.join(Dir.pwd, "online-data")
+require File.join(ENV.fetch("BURROW_ROOT"), "lib/burrow/server/reactor")
+require File.join(ENV.fetch("BURROW_ROOT"), "lib/burrow/server/certificate")
+require "stringio"
+$online_dir = File.join(Dir.pwd, "online-server")
+$online_cert, $online_key = Burrow::Server::Certificate.ensure_pair(File.join($online_dir, "tls"))
+$online_server = Burrow::Server::Reactor.new(port: 0, data_dir: $online_dir, certificate: $online_cert, key: $online_key, logger: Logger.new(StringIO.new))
+$online_port = $online_server.port
+$online_thread = Thread.new { $online_server.run }
+$online_friends = []
+ENV["BURROW_CONNECT"] = "tls://127.0.0.1:#{$online_port}"
+ENV["BURROW_FINGERPRINT"] = $online_server.fingerprint
+at_exit do
+  $online_friends.each(&:close)
+  $online_server.stop
+  $online_thread.join(5)
+end
+load File.join(ENV.fetch("BURROW_ROOT"), "game.rb")
+----------- test code
+client = Shoes.APPS.first.instance_variable_get(:@burrow)
+auto = Scarpe::Native::DisplayService.instance.automation
+wait_real = lambda do |seconds = 18, &condition|
+  deadline = Burrow.clock + seconds
+  until condition.call
+    raise "Online UI timed out at #{caller_locations(1, 1).first}" if Burrow.clock > deadline
+    sleep 0.025
+    advance 0.03
+  end
+end
+wait_real.call { client.connection.status == "online" }
+click_on "Create room"
+click_on list_boxes.first
+click_on "0"
+click_on buttons.select { |b| b.text == "Create room" }.last
+wait_real.call { client.page == :lobby }
+5.times do |i|
+  friend = Burrow::Client::Connection.new(endpoint: ENV["BURROW_CONNECT"], name: "Friend #{i + 1}", fingerprint: $online_server.fingerprint).connect
+  $online_friends << friend
+  wait_real.call { friend.status == "online" }
+  friend.send_action("join", code: client.room["code"])
+end
+wait_real.call { client.room["members"].size == 6 }
+click_on "Match rules"
+click_on list_boxes.first
+click_on "6"
+click_on "Apply rules"
+wait_real.call { client.room.dig("config", "worms") == 6 }
+$online_friends.each { |friend| friend.send_action("ready", ready: true) }
+wait_real.call { client.room["members"].drop(1).all? { |m| m["ready"] } }
+snapshot "six-player-lobby"
+click_on "Start the mischief"
+wait_real.call { client.state && client.scene&.terrain_revision.to_i >= 0 }
+assert_equal 36, client.scene.actors.length
+assert_equal 6, client.state["teams"].length
+snapshot "six-player-battle"
+press_key "t"
+chat = edit_lines.last
+click_on chat
+type_text "Ready for a little mayhem?"
+click_on "Send"
+wait_real.call { client.room["messages"].any? { |m| m["text"] == "Ready for a little mayhem?" } }
+click_on "Close"
+assert client.my_turn?
+worm = client.active_worm
+x, y = (worm["x"] + 145) * (1280.0 / 1440), (worm["y"] - 100 + Burrow::Client::Scene::Y) * (1280.0 / 1440)
+auto.mouse(:move, x, y)
+auto.mouse(:down, x, y)
+pressed = Burrow.clock
+wait_real.call { Burrow.clock - pressed > 0.45 }
+assert client.instance_variable_get(:@charge_started)
+auto.mouse(:up, x, y)
+wait_real.call { client.state["phase"] != "aiming" }
+assert_equal "rocket", $online_server.rooms.values.first.match.inputs.find { |i| i[:type] == "fire" }[:values]["weapon"]
+id = client.my_id
+code = client.room["code"]
+$online_server.stop
+$online_thread.join(5)
+wait_real.call { client.connection.status == "reconnecting" }
+snapshot "reconnecting"
+$online_server = Burrow::Server::Reactor.new(port: $online_port, data_dir: $online_dir, certificate: $online_cert, key: $online_key, logger: Logger.new(StringIO.new))
+$online_thread = Thread.new { $online_server.run }
+wait_real.call { client.connection.status == "online" && client.room["members"].all? { |m| m["connected"] } }
+assert_equal id, client.my_id
+assert_equal code, client.room["code"]
+assert_equal 36, client.state["worms"].length
+wait_real.call { client.scene.terrain_revision == client.state["terrain_revision"] }
+assert_equal client.state["terrain_checksum"], client.scene.terrain.checksum
+sample_start = Burrow.clock
+wait_real.call { Burrow.clock - sample_start > 2 }
+scene = client.scene
+assert_operator scene.frame_count, :>, 30
+assert_operator scene.max_frame_ms, :<, 120
+assert_operator scene.performance[:p95_ruby_scene_ms], :<, 16.7
+File.write(File.join(ENV.fetch("BURROW_ROOT"), ".cache/native-checks/six-player-performance.json"), JSON.pretty_generate(scene.performance.merge(server_max_tick_ms: $online_server.metrics[:max_tick_ms])))
+snapshot "six-player-recovered"
+# Simulate a busy UI missing the lobby between results and a rapid rematch.
+# Snapshots coalesce, so the explicit match identity must recreate the scene.
+$online_friends.each { |friend| friend.send_action("surrender") }
+wait_real.call { client.state["phase"] == "finished" }
+previous_scene = client.scene
+previous_match_id = client.room["match_id"]
+client.action("rematch")
+deadline = Burrow.clock + 10
+sleep 0.02 while $online_server.rooms.values.first.match && Burrow.clock < deadline
+client.action("configure", config: client.room["config"].merge("seed" => "coalesced-rematch", "biome" => "glacier"))
+sleep 0.02 until $online_server.rooms.values.first.config["seed"] == "coalesced-rematch" || Burrow.clock > deadline
+$online_friends.each { |friend| friend.send_action("ready", ready: true) }
+sleep 0.02 until $online_server.rooms.values.first.members.drop(1).all? { |m| m[:ready] } || Burrow.clock > deadline
+client.action("start")
+sleep 0.02 until $online_server.rooms.values.first.match || Burrow.clock > deadline
+sleep 0.25
+wait_real.call { client.room["match_id"] != previous_match_id && client.state && client.scene.terrain_revision >= 0 }
+refute_same previous_scene, client.scene
+refute client.overlay?
+assert_equal "coalesced-rematch", client.state.dig("config", "seed")
+assert_equal client.state["terrain_checksum"], client.scene.terrain.checksum
+assert_equal 36, client.scene.actors.length
+assert client.scene.actors.values.none? { |actor| actor[:dead_since] }
+snapshot "glacier-rematch"

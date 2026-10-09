@@ -1,0 +1,67 @@
+{
+  "source": "user-supplied 0.2.2 Mac Ruby timing report",
+  "machine": "M3 Pro (user reported)",
+  "quit_method": "Command-Q / Quit menu (user reported)",
+  "macos_execution": true,
+  "ruby": "3.4.7",
+  "phases": {
+    "encode": {
+      "n": 37522,
+      "total_ms": 123.40806238353252,
+      "max_ms": 3.0089998617768288
+    },
+    "write": {
+      "n": 1283,
+      "total_ms": 78.46800237894058,
+      "max_ms": 3.3820001408457756
+    },
+    "wait": {
+      "n": 2266,
+      "total_ms": 55283.04899763316,
+      "max_ms": 138.7390000745654
+    },
+    "drain": {
+      "n": 2266,
+      "total_ms": 506.97897002100945,
+      "max_ms": 156.80699981749058
+    },
+    "programs": {
+      "n": 2266,
+      "total_ms": 55.73198478668928,
+      "max_ms": 2.7949996292591095
+    },
+    "timers": {
+      "n": 2266,
+      "total_ms": 3480.7899948209524,
+      "max_ms": 79.48100008070469
+    },
+    "heartbeat": {
+      "n": 2266,
+      "total_ms": 61.38001196086407,
+      "max_ms": 46.80600017309189
+    },
+    "flush": {
+      "n": 2266,
+      "total_ms": 95.67700233310461,
+      "max_ms": 3.398999571800232
+    },
+    "parse": {
+      "n": 2305,
+      "total_ms": 45.69796659052372,
+      "max_ms": 3.2489998266100883
+    }
+  },
+  "counters": {
+    "lines": 38804,
+    "bytes": 2713968,
+    "flushes": 1282
+  },
+  "native_report_received": false,
+  "gameplay_fps_known": false,
+  "findings": [
+    "AppKit termination can skip Stats::drop; flush timings in the exit callback.",
+    "Aggregate waits do not distinguish idle time from wake-up delays.",
+    "Windowless Ruby processes lacked explicit activity scopes; background throttling remains a candidate cause."
+  ],
+  "fix_validation": "New macOS behavior requires execution on the affected Mac."
+}

@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "optparse"
+require_relative "../lib/burrow/server/reactor"
+require_relative "../lib/burrow/server/certificate"
+$stdout.sync = true
+
+options = {host: "0.0.0.0", port: 4388, data_dir: ENV.fetch("BURROW_SERVER_DATA", File.expand_path("../var/server", __dir__))}
+local = false
+parser = OptionParser.new do |opts|
+  opts.banner = "Usage: bin/server [options] — persistent Burrow Brigade host (TLS by default)"
+  opts.on("--host HOST", "Bind address (default 0.0.0.0)") { |v| options[:host] = v }
+  opts.on("--port PORT", Integer, "Listen port (default 4388)") { |v| options[:port] = v }
+  opts.on("--data DIR", "State, certificate, and replay directory") { |v| options[:data_dir] = File.expand_path(v) }
+  opts.on("--cert FILE", "Use an existing certificate") { |v| options[:certificate] = v }
+  opts.on("--key FILE", "Certificate private key") { |v| options[:key] = v }
+  opts.on("--local", "Unencrypted loopback listener for testing") { local = true; options[:host] = "127.0.0.1" }
+  opts.on("--help") { puts opts; exit }
+end
+parser.parse!
+unless local || options[:certificate]
+  options[:certificate], options[:key] = Burrow::Server::Certificate.ensure_pair(File.join(options[:data_dir], "tls"))
+end
+server = Burrow::Server::Reactor.new(**options)
+puts "Burrow Brigade #{Burrow::VERSION} · protocol #{Burrow::PROTOCOL}"
+puts "Address: #{server.fingerprint ? 'tls' : 'tcp'}://YOUR-HOST:#{server.port}"
+puts "Fingerprint: #{server.fingerprint}" if server.fingerprint
+puts "Up to 6 teams per room, 16 rooms. Ctrl-C saves and stops."
+%w[INT TERM].each { |signal| Signal.trap(signal) { server.stop } }
+server.run

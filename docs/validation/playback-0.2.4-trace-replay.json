@@ -1,0 +1,12 @@
+{
+  "test": "Synthetic moving actor with 646 anonymized Mac update/host-tick samples",
+  "macos_execution": false,
+  "0.2.3": {
+    "final_host_minus_playback_ms": 9207.018959999956,
+    "max_host_minus_playback_ms": 9309.268719999951
+  },
+  "0.2.4": {
+    "final_host_minus_playback_ms": 73.77500000000434,
+    "max_host_minus_playback_ms": 218.1552800000001
+  }
+}

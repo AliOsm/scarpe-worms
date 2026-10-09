@@ -1,0 +1,21 @@
+[Unit]
+Description=Burrow Brigade multiplayer server
+After=network.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+WorkingDirectory=/opt/burrow-brigade
+StateDirectory=burrow-brigade
+ExecStart=/usr/bin/ruby /opt/burrow-brigade/bin/server --data /var/lib/burrow-brigade
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

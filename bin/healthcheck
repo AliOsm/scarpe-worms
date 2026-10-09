@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+require "socket"
+require "openssl"
+require "json"
+require "timeout"
+Timeout.timeout(4) do
+  socket = TCPSocket.new("127.0.0.1", Integer(ENV.fetch("BURROW_PORT", "4388")))
+  context = OpenSSL::SSL::SSLContext.new
+  # Local liveness probe sends no credentials or game actions.
+  context.verify_mode = OpenSSL::SSL::VERIFY_NONE
+  ssl = OpenSSL::SSL::SSLSocket.new(socket, context)
+  ssl.sync_close = true
+  ssl.connect
+  ssl.puts(JSON.generate(type: "ping", at: 1))
+  raise "Unexpected reply" unless JSON.parse(ssl.gets)["type"] == "pong"
+ensure
+  ssl&.close
+end

@@ -1,0 +1,41 @@
+{
+  "version": "0.2.3",
+  "macos_execution_of_this_build": false,
+  "core": {
+    "ruby": "4.0.6",
+    "tests": 40,
+    "assertions": 3374,
+    "failures": 0
+  },
+  "ruby_3_4_7_targeted": {
+    "tests": 7,
+    "assertions": 31,
+    "failures": 0
+  },
+  "scarpe_ruby": {
+    "tests": 28,
+    "assertions": 79,
+    "failures": 0,
+    "mac_only_skips": 1
+  },
+  "scarpe_rust": {
+    "passed": 129,
+    "failed": 0
+  },
+  "native_journeys": {
+    "passed": 5,
+    "assertions": 141
+  },
+  "packaged_launch_and_resume": {
+    "unset_locale": true,
+    "ascii_locale_native_window": true,
+    "unicode_paths": true,
+    "scheduler_samples_written": true,
+    "gameplay_samples_written": true,
+    "native_exit_callback_flush": true
+  },
+  "rendering_report": "rendering-0.2.3-linux.json",
+  "source_and_zip_integrity_verified": true,
+  "sha256": "cd626bb5317e76c607444f1e939f4ff7ab046aa0c86bce1d9d91669a730604ab",
+  "remaining": "Validate Cocoa activity requests, Command-Q logs and actual gameplay smoothness on the affected M3 Pro."
+}
