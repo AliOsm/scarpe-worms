@@ -13,7 +13,7 @@ Ubuntu 24.04 dependencies:
 
 ```sh
 sudo apt-get install build-essential pkg-config libffi-dev libxkbcommon-dev \
-  libfontconfig1-dev libopenal1 xvfb xauth
+  libxkbcommon-x11-0 libfontconfig1-dev libopenal1 xvfb xauth
 ./setup.sh
 ./run.sh
 ```
