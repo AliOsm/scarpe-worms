@@ -12,8 +12,14 @@ module BurrowCheckSandbox
   private
 
   def base_env
+    # The upstream CLI activates Bundler after adding its development load path.
+    # Declare our pinned runtime explicitly so isolated children retain that path.
+    libraries = %w[lib lacci/lib scarpe-components/lib].map do |path|
+      File.join(BURROW_CHECK_ROOT, "vendor/scarpe", path)
+    end
     super.merge("BUNDLE_GEMFILE" => File.join(BURROW_CHECK_ROOT, "Gemfile"),
       "BUNDLE_PATH" => File.join(BURROW_CHECK_ROOT, "vendor/bundle"),
+      "RUBYLIB" => libraries.join(File::PATH_SEPARATOR),
       "BURROW_ROOT" => BURROW_CHECK_ROOT, "BURROW_MUTE" => "1",
       "SCARPE_NATIVE_SNAPSHOT_DIR" => File.join(BURROW_CHECK_ROOT, ".cache/native-checks/shots"))
   end
