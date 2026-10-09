@@ -17,7 +17,7 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: '4.0.16'
-      - run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libfontconfig1-dev libopenal1 xvfb xauth
+      - run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libffi-dev libxkbcommon-dev libfontconfig1-dev libopenal1 xvfb xauth
       - uses: actions/cache@v4
         with:
           path: |

@@ -14,7 +14,7 @@ jobs:
         with:
           ruby-version: '3.4.7'
           bundler: '4.0.16'
-      - run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libfontconfig1-dev libffi-dev
+      - run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libxkbcommon-dev libfontconfig1-dev libffi-dev
       - run: ./setup.sh
       - run: bundle exec rake test && ./bin/check-native
       - uses: actions/cache@v4
