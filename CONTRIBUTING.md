@@ -51,6 +51,12 @@ Add `--timer-slack-ms 100` to reproduce the old Mac timing failure on Linux.
 Run `python3 tools/test_rendering.py` when changing the timing analysis itself.
 See [validation](docs/VALIDATION.md) for scope and limits.
 
+For input latency and snapshot costs, run `nice -n 10 flock /tmp/burrow-bench.lock
+bundle exec ruby tools/check_latency.rb --output /tmp/burrow-latency.json`.
+It exercises real TCP/TLS host subprocesses, App input, Timeline playback and
+OpenAL submission, plus a 36-grub snapshot workload. Linux uses the null mixer;
+these timings do not measure acoustic output or display latency.
+
 ## Assets and framework patches
 
 Assets are committed so a clone runs without regeneration. Change the generator

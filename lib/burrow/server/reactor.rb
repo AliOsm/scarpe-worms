@@ -3,6 +3,7 @@
 require "socket"
 require "openssl"
 require "logger"
+require "ipaddr"
 require_relative "../../burrow"
 require_relative "../protocol"
 require_relative "../mac_activity"
@@ -12,10 +13,12 @@ module Burrow
   module Server
     class Peer
       attr_accessor :io, :input, :output, :session, :handshake, :last_read, :last_seq,
-        :terrain_revision, :match_id, :closing, :tokens, :token_at, :chat_at, :last_snapshot, :write_chunk
-      attr_reader :address, :created
+        :terrain_revision, :match_id, :closing, :tokens, :token_at, :chat_at, :last_snapshot, :write_chunk, :motion_tick
+      attr_reader :address, :created, :loopback
       def initialize(io, address, tls: false)
         @io, @address, @created = io, address, Burrow.clock
+        ip = IPAddr.new(address) rescue nil
+        @loopback = ip && (ip.ipv4_mapped? ? ip.native : ip).loopback?
         @input, @output = +"".b, +"".b
         @handshake = tls ? :read : false
         @last_read = @token_at = created
@@ -79,7 +82,7 @@ module Burrow
             @metrics[:max_tick_ms] = [@metrics[:max_tick_ms], (Burrow.clock - started) * 1000].max
             next_tick += steps * DT
             next_tick = now + DT if next_tick < now - 4 * DT
-            broadcast if @metrics[:ticks] % 3 < steps
+            broadcast
             expire(now)
           end
           if now >= next_save
@@ -303,7 +306,17 @@ module Burrow
           match = room.match
           new_match = match && peer.match_id != match.object_id
           with_terrain = match && (full || new_match || peer.terrain_revision != match.terrain.revision)
-          enqueue(peer, type: "state", ack: peer.last_seq, room: room.snapshot, match: match&.snapshot(terrain: with_terrain))
+          snapshot = room.match_snapshot(terrain: with_terrain)
+          if snapshot
+            # TCP is ordered. Retain an overlap frame and let the connection
+            # rebuild the bounded history before it coalesces UI updates.
+            # Full/reconnect packets remain independently usable.
+            if !full && !new_match && peer.motion_tick
+              snapshot[:motion] = snapshot[:motion].merge(frames: snapshot[:motion][:frames].select { |frame| frame["tick"] >= peer.motion_tick })
+            end
+            peer.motion_tick = match.tick
+          end
+          enqueue(peer, type: "state", ack: peer.last_seq, room: room.snapshot, match: snapshot)
           if match
             peer.terrain_revision = match.terrain.revision
             peer.match_id = match.object_id
@@ -319,11 +332,16 @@ module Burrow
           # Never discard a partially written frame; bounded backlog triggers reconnect.
           next if peer.output.bytesize > 128 * 1024
           room = room_for(peer)
-          frequency = room&.match && !room.match.finished? ? 0.095 : 0.35
+          frequency = snapshot_interval(peer, room)
           next if Burrow.clock - peer.last_snapshot < frequency
           peer.last_snapshot = Burrow.clock
           send_state(peer)
         end
+      end
+
+      def snapshot_interval(peer, room)
+        return 0.35 unless room&.match && !room.match.finished?
+        peer.loopback ? DT * 0.95 : 0.095
       end
 
       def enqueue(peer, value)

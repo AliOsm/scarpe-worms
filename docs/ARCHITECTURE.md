@@ -4,10 +4,19 @@
 
 The native Scarpe window paints images, text, geometry, and controls through its
 Rust renderer. Ruby owns the presentation, with a 60 Hz animation timer and
-150 ms of buffered, tick-based motion playback. Snapshots include 18 ticks of
-worm/hazard positions and projectile tracks with explicit birth/end samples.
+50–150 ms of buffered, tick-based motion playback. The buffer starts at 150 ms,
+then uses the last 60 socket-arrival intervals and their p95 jitter, with a
+half-tick margin. It grows immediately and shrinks at most two ticks per second.
+The connection retains 18 ticks of worm/hazard positions; incremental snapshots
+carry new frames plus an overlap, and full/reconnect snapshots carry all 18.
+Projectile tracks retain explicit birth/end samples.
 This preserves short flights across packet coalescing. Events and audio follow
 the same timeline; late packets catch up gradually instead of skipping motion.
+Accepted local fire, jump and activation inputs submit their own sound immediately.
+Host events carry match/player/sequence receipts to suppress the matching reports
+when they reach playback. Receipts are bounded and saved with room metadata;
+they never change deterministic simulation or ammunition. Rejected intents may
+already have sounded, but never predict a projectile, damage or a turn change.
 Terrain decompression, checksum validation and rasterization run in a separate
 Ruby process; the GUI forwards compressed packets without expanding the mask.
 The worker caches 384-world-pixel tiles. Only changed tiles and their bevel neighbors are rerendered. Initial
@@ -21,14 +30,18 @@ parent pipe saves and stops its host. The Mac launcher supplies the packaged Rub
 executable explicitly to both subprocesses; they inherit the parent's load paths.
 A dedicated connection thread owns socket I/O and reconnect backoff. It coalesces
 snapshots, retaining the most recent terrain payload until the UI consumes it.
-The UI never blocks on a network receive. Resizing reuses the terrain worker and
+Enqueuing intent wakes the connection's socket wait through a pipe. The UI never
+blocks on a network receive. Resizing reuses the terrain worker and
 its rendered tiles, camera and playback timeline while rebuilding UI nodes, so
 it neither blanks the landscape nor replays old shots/sounds. Crowded battles show compact health labels, with
 full names for the active or hovered grub.
 
 The server reactor has one owner for socket I/O, room mutation, simulation, and
 checkpoint writes. Simulation runs at 30 fixed steps per second; snapshots are
-normally sent at 10 Hz during play. A bounded catch-up avoids unlimited lag
+sent at 30 Hz to loopback peers during play and 10 Hz to remote peers. TLS uses
+the same address-based cadence. Unchanged history is omitted on the wire and
+rebuilt before UI snapshot coalescing; socket queues retain their existing limits.
+A bounded catch-up avoids unlimited lag
 accumulation. Bot ballistic planning is limited to four traces per tick and is
 part of the checkpoint, so no full search blocks a single turn update.
 

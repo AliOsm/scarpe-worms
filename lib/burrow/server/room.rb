@@ -66,6 +66,7 @@ module Burrow
           raise RuleError, "Every player must be connected and ready." unless members.all? { |m| m[:connected] && (m[:ready] || m[:id] == host_id) }
           @match = Match.new(players: members, config: config)
           @match_id = SecureRandom.hex(12)
+          @input_events = {}
         when "rematch"
           require_host(id)
           raise RuleError, "Finish the current match first." unless stage == "finished"
@@ -84,7 +85,17 @@ module Burrow
           match.surrender(id)
         else
           raise RuleError, "Start a match first." unless match
+          previous_event = match.events.last&.fetch(:id, 0) || 0
           match.command(id, type, values)
+          if %w[fire jump activate detonate].include?(type) && values["seq"].is_a?(Integer)
+            @input_events ||= {}
+            match.events.each do |event|
+              next if event[:id] <= previous_event
+              @input_events[event[:id]] = {player: id, seq: values["seq"], match: match_id}
+            end
+            oldest = match.events.first&.fetch(:id, 0) || 0
+            @input_events.delete_if { |event_id, _| event_id < oldest }
+          end
         end
         touch
         nil
@@ -109,11 +120,22 @@ module Burrow
       def summary = {code: code, name: name, stage: stage, count: members.length, locked: !!password_hash, biome: config["biome"], host: members.find { |m| m[:id] == host_id }&.fetch(:name)}
       def snapshot = summary.merge(host_id: host_id, match_id: match_id, members: members, config: config.to_h, messages: messages)
 
+      # Transport receipts stay separate from deterministic simulation state.
+      def match_snapshot(terrain: false)
+        return unless match
+        match.snapshot(terrain: terrain).tap do |value|
+          value[:events].each do |event|
+            receipt = @input_events && @input_events[event[:id]]
+            event[:input] = receipt if receipt
+          end
+        end
+      end
+
       def checkpoint
         {"code" => code, "name" => name, "host_id" => host_id, "members" => members,
           "config" => config.to_h, "password_hash" => password_hash, "messages" => messages,
           "created_at" => created_at, "updated_at" => updated_at, "saved_result" => saved_result,
-          "match" => match&.checkpoint, "match_id" => match_id}
+          "match" => match&.checkpoint, "match_id" => match_id, "input_events" => @input_events || {}}
       end
 
       def self.restore(value)
@@ -124,6 +146,7 @@ module Burrow
         room.instance_variable_set(:@members, value.fetch("members").map { |m| m.transform_keys(&:to_sym).merge(connected: !!m["bot"]) })
         room.instance_variable_set(:@messages, value.fetch("messages").map { |m| m.transform_keys(&:to_sym) })
         room.instance_variable_set(:@match, value["match"] && Match.restore(value["match"]))
+        room.instance_variable_set(:@input_events, value.fetch("input_events", {}).transform_keys(&:to_i))
         room
       end
 

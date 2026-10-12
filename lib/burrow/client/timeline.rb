@@ -8,26 +8,39 @@ module Burrow
     # Coordinates use authoritative ticks, never a fixed fraction per packet.
     class Timeline
       DELAY = 4.5 # 150 ms: one 10 Hz snapshot plus a jitter cushion.
+      MIN_DELAY = 1.5
       MAX_BACKLOG = 12.0 # Recover within retained history after a long UI pause.
-      attr_reader :tick, :events, :seen_shots, :underruns, :backlog_ms, :resyncs
+      attr_reader :tick, :events, :seen_shots, :underruns, :backlog_ms, :resyncs, :delay
 
       def initialize
         @offsets, @frames, @shots, @pending, @seen_shots = [], {}, {}, {}, Set.new
         @last_event, @underruns, @resyncs = 0, 0, 0
+        @delay = DELAY
       end
 
       def accept(state, now: Burrow.clock)
         @state = state
         @latest = state.fetch("tick")
+        timing = state[:presentation_timing]
+        arrival = timing ? timing.fetch(:received_at) : now
         if @received && now - @received > 0.6
           @offsets.clear
           @tick = nil
           @frames.clear
           @shots.clear
           @pending.clear
+          @delay = DELAY
+        end
+        if timing && timing[:samples] >= 12
+          cushion = [timing[:p95], timing[:interval] + timing[:jitter]].max * TICK_RATE + 0.5
+          target = cushion.clamp(MIN_DELAY, DELAY)
+          # Grow immediately under jitter; shed the cushion slowly enough for
+          # ordinary elapsed-time catch-up, without jumping over short flights.
+          elapsed = @received ? [now - @received, 0].max : 0
+          @delay = [target, @delay - elapsed * 2].max
         end
         @received = now
-        @offsets << now - @latest.fdiv(TICK_RATE)
+        @offsets << arrival - @latest.fdiv(TICK_RATE)
         @offsets.shift while @offsets.length > 30
         motion = state["motion"] || {}
         Array(motion["frames"]).each { |frame| @frames[frame["tick"]] = frame }
@@ -36,6 +49,7 @@ module Burrow
         Array(motion["shots"]).each { |shot| @shots[shot["id"]] = shot }
         @frames.delete_if { |t, _| t < @latest - 30 }
         @shots.delete_if { |_, shot| shot["to"] && shot["to"] < @latest - 30 }
+        @seen_shots.keep_if { |id| @shots.key?(id) }
         state["events"].each do |event|
           next if event["id"] <= @last_event
           @pending[event["id"]] = event if event["tick"] >= @latest - 18
@@ -45,7 +59,7 @@ module Burrow
 
       def sample(now: Burrow.clock)
         return unless @state
-        desired = (now - @offsets.min) * TICK_RATE - DELAY
+        desired = (now - @offsets.min) * TICK_RATE - @delay
         @underruns += 1 if desired > @latest + 1
         if @tick
           # Account for ALL elapsed time. Clamping each interval to 50 ms loses

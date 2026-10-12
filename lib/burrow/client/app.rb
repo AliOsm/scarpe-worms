@@ -133,6 +133,10 @@ module Burrow
 
       def action(type, **values)
         sent = connection&.send_action(type, **values)
+        if sent && %w[fire jump activate detonate].include?(type)
+          @audio.local_action(type, values: values, state: state, player: my_id,
+            sequence: connection.sequence, match_id: room && room["match_id"])
+        end
         notify("Reconnecting. Your place in the room is saved.") unless sent
         sent
       end
