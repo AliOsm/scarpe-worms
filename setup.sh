@@ -6,9 +6,13 @@ command -v ruby >/dev/null || { echo 'Install Ruby 3.4 or newer.' >&2; exit 1; }
 command -v cargo >/dev/null || { echo 'Install Rust with rustup and put cargo on PATH.' >&2; exit 1; }
 command -v python3 >/dev/null || { echo 'Install Python 3.' >&2; exit 1; }
 if [ ! -d vendor/scarpe/.git ]; then
-  mkdir -p vendor
-  git clone https://github.com/scarpe-team/scarpe.git vendor/scarpe
-  git -C vendor/scarpe checkout --detach "$(cat SCARPE_REVISION)"
+  # A restored build cache (vendor/scarpe/native/target) may already occupy the
+  # directory, which `git clone` refuses; fetch into it instead.
+  mkdir -p vendor/scarpe
+  git -C vendor/scarpe init -q
+  git -C vendor/scarpe remote add origin https://github.com/scarpe-team/scarpe.git
+  git -C vendor/scarpe fetch -q origin
+  git -C vendor/scarpe checkout -q --detach "$(cat SCARPE_REVISION)"
 fi
 python3 tools/verify_scarpe.py --apply
 bundle config set --local path vendor/bundle
