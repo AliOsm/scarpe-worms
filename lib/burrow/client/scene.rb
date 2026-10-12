@@ -179,7 +179,7 @@ module Burrow
           if worm["hp"] <= 0
             node[:dead_since] ||= started
             if started - node[:dead_since] > 0.8
-              node[:slot].hide
+              node[:slot].hide unless node[:slot].hidden
               next
             end
           end
@@ -248,17 +248,18 @@ module Burrow
         @state["projectiles"].each do |p|
           node = @projectile_nodes[p["id"]]
           x, y = p.values_at("x", "y")
-          node[:image].style(left: px(x - 14), top: px(y - 14), width: px(28), height: px(28))
+          restyle(node[:image], left: px(x - 14), top: px(y - 14), width: px(28), height: px(28))
           if !p["walker"] && Math.hypot(p["vx"], p["vy"]) > 25
             rotation = COMBAT["projectiles"].include?(p["weapon"]) ? Math.atan2(p["vy"], p["vx"]) * 180 / Math::PI : @timeline.tick * 7
-            node[:image].rotate((rotation / 6).round * 6)
+            rotation = (rotation / 6).round * 6
+            node[:image].rotate(rotation) if node[:image].rotate_angle != rotation
           end
           if node[:fuse]
             badge_scale = @ui_scale * [camera.zoom, 0.8].max
             bw, bh = (34 * badge_scale).round, (22 * badge_scale).round
             bx, by = px(x) - bw / 2, px(y - 19) - bh
-            node[:fuse_plate].style(left: bx, top: by, width: bw, height: bh)
-            node[:fuse].style(left: bx, top: by + (3 * badge_scale).round, width: bw, size: [(12 * badge_scale).round, 8].max)
+            restyle(node[:fuse_plate], left: bx, top: by, width: bw, height: bh)
+            restyle(node[:fuse], left: bx, top: by + (3 * badge_scale).round, width: bw, size: [(12 * badge_scale).round, 8].max)
             set_text(node[:fuse], p["life"] ? "#{(p['life'].fdiv(TICK_RATE)).ceil}s" : "")
             color = p["life"].to_f <= TICK_RATE ? Theme::ORANGE : Theme::WHITE
             node[:fuse].style(stroke: color) if node[:fuse_color] != color
@@ -500,7 +501,7 @@ module Burrow
       def restyle_label(node)
         m = actor_metrics
         node[:label].layers.zip(BADGE_OUTLINE + [[0, 0]]).each do |layer, (dx, dy)|
-          layer.style(left: m[:bx] + dx * m[:edge], top: m[:edge] + dy * m[:edge], width: m[:bw], size: m[:size])
+          restyle(layer, left: m[:bx] + dx * m[:edge], top: m[:edge] + dy * m[:edge], width: m[:bw], size: m[:size])
         end
         node[:label_scale] = @scale
       end
@@ -556,7 +557,7 @@ module Burrow
         saved, @scale = @scale, @ui_scale
         set_text(@camera_caption, "#{(camera.zoom * 100).round}%  #{camera.following ? 'FOLLOW' : 'FREE'}  ·  Wheel zoom / drag pan")
         water_y = @state["water"].fdiv(@height).clamp(0, 1) * @map_h
-        @map_water.style(top: px(@map_y + water_y), height: px(@map_h - water_y))
+        restyle(@map_water, top: px(@map_y + water_y), height: px(@map_h - water_y))
         @state["worms"].each do |w|
           unless @map_marks[w["id"]]
             @slot.append { @map_marks[w["id"]] = box(0, 0, 5, 5, color: COLORS[@state["teams"].find { |t| t["id"] == w["team"] }["color"]], radius: 2) }
@@ -565,20 +566,20 @@ module Burrow
           if w["hp"] <= 0
             dot.hide unless dot.hidden
           else
-            dot.move(px(@map_x + w["x"] / @width * @map_w - 2), px(@map_y + w["y"] / @height * @map_h - 2))
+            move_to(dot, px(@map_x + w["x"] / @width * @map_w - 2), px(@map_y + w["y"] / @height * @map_h - 2))
           end
         end
         left, top = [camera.x, 0].max, [camera.y, 0].max
         right, bottom = [camera.x + 1440 / camera.zoom, @width].min, [camera.y + 720 / camera.zoom, @height].min
         if right > left && bottom > top
           @map_frame.show if @map_frame.hidden
-          @map_frame.style(left: px(@map_x + left / @width * @map_w), top: px(@map_y + top / @height * @map_h),
+          restyle(@map_frame, left: px(@map_x + left / @width * @map_w), top: px(@map_y + top / @height * @map_h),
             width: px((right - left) / @width * @map_w), height: px((bottom - top) / @height * @map_h))
         else
           @map_frame.hide unless @map_frame.hidden
         end
         if (shot = @state["projectiles"].first) && shot["y"].between?(0, @height)
-          @map_shot.move(px(@map_x + shot["x"] / @width * @map_w - 3), px(@map_y + shot["y"] / @height * @map_h - 3))
+          move_to(@map_shot, px(@map_x + shot["x"] / @width * @map_w - 3), px(@map_y + shot["y"] / @height * @map_h - 3))
           @map_shot.show if @map_shot.hidden
         else
           @map_shot.hide unless @map_shot.hidden
@@ -666,7 +667,7 @@ module Burrow
         @aim_layer.show if @aim_layer.hidden
         marker_scale = @ui_scale * [camera.zoom, 0.75].max
         marker_width = (30 * marker_scale).round
-        @active_arrow.style(left: px(x) - marker_width / 2,
+        restyle(@active_arrow, left: px(x) - marker_width / 2,
           top: px(y) - @actors.fetch(active["id"])[:offset_y] - (28 * marker_scale).round + px(@controller.motion? ? Math.sin(now * 5) * 3 : 0),
           width: marker_width, size: (22 * marker_scale).round)
         can_aim = @controller.my_turn? && @state["phase"] == "aiming" && !@controller.overlay?
@@ -682,7 +683,7 @@ module Burrow
             gravity = 285 * @state.dig("config", "gravity") * (@state.dig("effects", "low_gravity") ? 0.45 : 1)
             drift = ballistic && %w[rocket homing].include?(weapon[:id]) ? @state["wind"] * 21 * t * t : 0
             fall = ballistic ? 0.5 * gravity * t * t : 0
-            dot.move(px(x + Math.cos(angle) * distance + drift - 2), px(y - 13 + Math.sin(angle) * distance + fall - 2))
+            move_to(dot, px(x + Math.cos(angle) * distance + drift - 2), px(y - 13 + Math.sin(angle) * distance + fall - 2))
             dot.show if dot.hidden
           else
             dot.hide unless dot.hidden
@@ -691,7 +692,7 @@ module Burrow
         targeted = can_aim && Catalog::TARGETED.include?(weapon[:kind]) && !@controller.special_control
         if targeted
           tx, ty = @controller.target
-          @reticle.move(px(tx - 12), px(ty - 12))
+          move_to(@reticle, px(tx - 12), px(ty - 12))
           @reticle.show if @reticle.hidden
         else
           @reticle.hide unless @reticle.hidden
@@ -702,7 +703,7 @@ module Burrow
         if locked
           tx, ty = locked
           size = (48 * marker_scale * (@controller.motion? ? 1 + Math.sin(now * 6) * 0.06 : 1)).round
-          @lock_marker.style(left: px(tx) - size / 2, top: px(ty) - size / 2, width: size, height: size)
+          restyle(@lock_marker, left: px(tx) - size / 2, top: px(ty) - size / 2, width: size, height: size)
           @lock_marker.show if @lock_marker.hidden
           caption = [px(tx) - (45 * marker_scale).round, px(ty) + (26 * marker_scale).round, (90 * marker_scale).round, (12 * marker_scale).round]
           if @lock_caption_at != caption
@@ -719,9 +720,10 @@ module Burrow
           tx, ty = @controller.target
           side = @controller.strike_direction
           width, height = (64 * marker_scale).round, (32 * marker_scale).round
-          @strike_arrow.style(left: px(tx) - width / 2 - side * (52 * marker_scale).round, top: px(ty) - (64 * marker_scale).round,
+          restyle(@strike_arrow, left: px(tx) - width / 2 - side * (52 * marker_scale).round, top: px(ty) - (64 * marker_scale).round,
             width: width, height: height)
-          @strike_arrow.rotate(side.negative? ? 180 : 0)
+          rotation = side.negative? ? 180 : 0
+          @strike_arrow.rotate(rotation) if @strike_arrow.rotate_angle != rotation
           @strike_arrow.show if @strike_arrow.hidden
         else
           @strike_arrow.hide unless @strike_arrow.hidden
@@ -730,7 +732,7 @@ module Burrow
           tx, ty = @controller.target
           tilt = @controller.girder_rotation * Math::PI / 180
           dx, dy = Math.cos(tilt) * 70, Math.sin(tilt) * 70
-          @placement.style(left: px(tx - dx), top: px(ty + 6 - dy), x2: px(tx + dx), y2: px(ty + 6 + dy))
+          restyle(@placement, left: px(tx - dx), top: px(ty + 6 - dy), x2: px(tx + dx), y2: px(ty + 6 + dy))
           @placement.show if @placement.hidden
         else
           @placement.hide unless @placement.hidden
@@ -743,14 +745,15 @@ module Burrow
           @held_weapon.path = path if @held_weapon.path != path
           size = directional ? 44 : 30
           reach = directional ? 17 : 13
-          @held_weapon.style(left: px(x + Math.cos(angle) * reach - size / 2), top: px(y - 13 + Math.sin(angle) * reach - size / 2), width: px(size), height: px(size))
-          @held_weapon.rotate(directional ? (@controller.angle + (left ? 180 : 0)).round : 0)
+          restyle(@held_weapon, left: px(x + Math.cos(angle) * reach - size / 2), top: px(y - 13 + Math.sin(angle) * reach - size / 2), width: px(size), height: px(size))
+          rotation = directional ? (@controller.angle + (left ? 180 : 0)).round : 0
+          @held_weapon.rotate(rotation) if @held_weapon.rotate_angle != rotation
           @held_weapon.show if @held_weapon.hidden
         else
           @held_weapon.hide unless @held_weapon.hidden
         end
         if (rope = active["rope"])
-          @rope_line.style(left: px(x), top: px(y - 12), x2: px(rope['x']), y2: px(rope['y']))
+          restyle(@rope_line, left: px(x), top: px(y - 12), x2: px(rope['x']), y2: px(rope['y']))
           @rope_line.show if @rope_line.hidden
         else
           @rope_line.hide unless @rope_line.hidden
@@ -820,12 +823,12 @@ module Burrow
                 effect[:frame] = frame
               end
             when :particle
-              effect[:node].move(px(effect[:x] + effect[:vx] * age), px(effect[:y] + effect[:vy] * age + age * age * 110))
+              move_to(effect[:node], px(effect[:x] + effect[:vx] * age), px(effect[:y] + effect[:vy] * age + age * age * 110))
             when :text
-              effect[:node].move(px(effect[:x]), px(effect[:y] - age * 24))
+              move_to(effect[:node], px(effect[:x]), px(effect[:y] - age * 24))
             when :ring
               radius = 8 + effect[:radius] * (age / effect[:life])
-              effect[:node].style(left: px(effect[:x] - radius), top: px(effect[:y] - radius), width: px(radius * 2), height: px(radius * 2))
+              restyle(effect[:node], left: px(effect[:x] - radius), top: px(effect[:y] - radius), width: px(radius * 2), height: px(radius * 2))
             end
             false
           end
