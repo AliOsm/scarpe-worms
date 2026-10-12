@@ -172,7 +172,9 @@ class FrameWorkTest < Minitest::Test
     assert_match(%r{/grubs/left/0-idle-0.png\z}, node[:image].path)
   end
 
-  def test_offscreen_hazards_catch_up_without_cycling_invisible_images
+  # Offscreen flames keep their place without cycling frames, and nothing is
+  # hidden: visibility toggles during a zoom left half the frames unpainted.
+  def test_offscreen_flames_skip_animation_without_toggling_visibility
     scene = Burrow::Client::Scene.allocate
     flame = {"id" => 1, "kind" => "flame", "x" => 2200.0, "y" => 500.0, "radius" => 8}
     gas = {"id" => 2, "kind" => "gas", "x" => 1550.0, "y" => 500.0, "radius" => 200}
@@ -186,24 +188,19 @@ class FrameWorkTest < Minitest::Test
       scene.instance_variable_set("@#{key}", value)
     end
     scene.send(:render_hazards)
-    assert flame_image.hidden
-    refute gas_image.hidden, "a zone centre can be offscreen while its radius remains visible"
-    count = flame_image.writes.length
+    refute flame_image.hidden
+    refute gas_image.hidden
+    path = flame_image.path
     timeline.tick = 7.5
     flame["x"] += 5
     scene.send(:render_hazards)
-    assert_equal count, flame_image.writes.length
+    assert_equal path, flame_image.path, "an offscreen flame does not swap frames"
+    assert_equal 2193, flame_image.left, "but it keeps its place"
     camera.pan(1000, 0)
     scene.send(:render_hazards)
     refute flame_image.hidden
-    assert_equal 2193, flame_image.left
     assert_equal 470, flame_image.top
-    assert_equal Burrow::Client::Scene::FLAME_PATHS[3], flame_image.path
-    # Even a small collision radius must retain a sprite straddling the bottom.
-    flame["y"] = 745
-    scene.send(:render_hazards)
-    refute flame_image.hidden
-    assert_equal 715, flame_image.top
+    assert_equal Burrow::Client::Scene::FLAME_PATHS[3], flame_image.path, "it catches up when it returns"
   end
 
   def test_zoom_batches_actor_bounds_and_keeps_offscreen_active_marker_metrics

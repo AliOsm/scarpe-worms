@@ -414,15 +414,6 @@ module Burrow
       def render_hazards
         @state["hazards"].each do |h|
           node = @hazard_nodes[h["id"]]
-          # Hidden fire still belongs to the simulation, but cycling its image
-          # paths cannot contribute a pixel. Catch up to the current frame and
-          # geometry when it returns. Include the full gas/fire radius at edges.
-          sx, sy = (h["x"] - camera.x) * camera.zoom, (h["y"] - camera.y) * camera.zoom
-          radius = h["radius"]
-          margin = (radius && radius > 40 ? radius : 40) * camera.zoom + 2
-          visible = sx.between?(-margin, 1440 + margin) && sy.between?(-margin, 720 + margin)
-          show_if(node[:image], visible)
-          next unless visible
           if h["kind"] == "gas" || h["kind"] == "fire"
             radius = h["radius"]
             place(node[:image], px(h["x"] - radius), px(h["y"] - radius), px(radius * 2), px(radius * 2))
@@ -431,6 +422,11 @@ module Burrow
             # Props rest most of the time: restyle only those that moved or rescaled.
             place(node[:image], px(h["x"] - ax), px(h["y"] - ay), px(width), px(height))
             if h["kind"] == "flame"
+              # Offscreen flames keep their place but skip animation path swaps.
+              # Do not hide/show them: toggling visibility while the camera zooms
+              # starved native presentation (half the zoom frames went unpainted).
+              sx, sy = (h["x"] - camera.x) * camera.zoom, (h["y"] - camera.y) * camera.zoom
+              next unless sx.between?(-40, 1480) && sy.between?(-40, 760)
               frame = @controller.motion? ? ((@timeline.tick / 2.5).floor + node[:phase]) % 4 : 0
               if node[:frame] != frame
                 node[:image].path = FLAME_PATHS[frame]
