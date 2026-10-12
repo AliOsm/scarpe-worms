@@ -1,0 +1,206 @@
+Subject: Dispatch frame deadlines before the platform drains redraws
+
+diff --git a/native/src/window.rs b/native/src/window.rs
+index d30eaa2..18f0c1e 100644
+--- a/native/src/window.rs
++++ b/native/src/window.rs
+@@ -4,7 +4,7 @@
+ //! Each window has an AccessKit adapter, so a screen reader can read and work it (a11y.rs).
+ 
+ mod ghost;
+-mod pacing;
++pub mod pacing;
+ mod resolution;
+ mod voiceover;
+ 
+@@ -26,7 +26,7 @@ use std::time::{Duration, Instant};
+ use tiny_skia::Pixmap;
+ use winit::application::ApplicationHandler;
+ use winit::dpi::{LogicalPosition, LogicalSize};
+-use winit::event::{ElementState, Ime, KeyEvent, MouseButton, MouseScrollDelta, WindowEvent};
++use winit::event::{ElementState, Ime, KeyEvent, MouseButton, MouseScrollDelta, StartCause, WindowEvent};
+ use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy};
+ use winit::keyboard::{Key as WKey, ModifiersState, NamedKey};
+ use winit::platform::modifier_supplement::KeyEventExtModifierSupplement;
+@@ -242,7 +242,9 @@ impl Shell {
+             self.rt.stats.mark("colour_space_matched");
+         }
+         let compositor_scaling = configure_surface_scaling(&window);
+-        let pacing = Pacing::new(window.current_monitor().and_then(|m| m.refresh_rate_millihertz()));
++        let refresh = window.current_monitor().and_then(|m| m.refresh_rate_millihertz());
++        self.rt.stats.set("refresh_millihertz", refresh.unwrap_or(0) as u64);
++        let pacing = Pacing::new(refresh);
+         window.request_redraw();
+         let id = window.id();
+         self.windows.insert(
+@@ -378,6 +380,9 @@ impl Shell {
+     }
+ 
+     fn redraw(&mut self, id: WindowId) {
++        // A due frame can be queued before stdin supplies the first part of a
++        // new batch. Its flush will request another redraw once it is complete.
++        if self.rt.mid_batch { return; }
+         let redraw_started = Instant::now();
+         let Some(win) = self.windows.get_mut(&id) else { return };
+         win.pacing.drawing(Instant::now());
+@@ -428,6 +433,21 @@ impl Shell {
+         self.rt.stats.set("max_window_redraw_us", self.rt.stats.counter("max_window_redraw_us").max(redraw_started.elapsed().as_micros() as u64));
+     }
+ 
++    /// Request a paced frame before the platform drains its redraw queue. On
++    /// AppKit that drain precedes AboutToWait, so waiting until AboutToWait adds
++    /// another run-loop turn to every expired frame deadline.
++    fn request_due_frames(&mut self, now: Instant) {
++        for win in self.windows.values_mut() {
++            if let Some(lateness) = win.pacing.take_due(now, !self.rt.mid_batch) {
++                let late_us = lateness.as_micros() as u64;
++                self.rt.stats.count("frame_deadline_requests", 1);
++                self.rt.stats.count("frame_deadline_lateness_us", late_us);
++                self.rt.stats.set("max_frame_deadline_lateness_us", self.rt.stats.counter("max_frame_deadline_lateness_us").max(late_us));
++                win.window.request_redraw();
++            }
++        }
++    }
++
+     /// A screen reader wants the window's whole tree (the Mirror already knows it owes it), or
+     /// asks something of one of its nodes.
+     fn a11y_event(&mut self, event: accesskit_winit::Event) {
+@@ -488,6 +508,10 @@ fn order_front(window: &Window) {
+ }
+ 
+ impl ApplicationHandler<UserEvent> for Shell {
++    fn new_events(&mut self, _el: &ActiveEventLoop, _cause: StartCause) {
++        self.request_due_frames(Instant::now());
++    }
++
+     fn resumed(&mut self, _el: &ActiveEventLoop) {}
+ 
+     fn user_event(&mut self, el: &ActiveEventLoop, event: UserEvent) {
+@@ -623,13 +647,12 @@ impl ApplicationHandler<UserEvent> for Shell {
+             }
+         }
+         let tooltip_wake = tooltip.map(|(_, due)| due).filter(|due| *due > now);
+-        // Frames that waited for the display's next refresh (window::pacing).
+-        for win in self.windows.values_mut() {
+-            if win.pacing.take_due(now) {
+-                win.window.request_redraw();
+-            }
+-        }
+-        let next_frame = self.windows.values().filter_map(|w| w.pacing.due()).min();
++        // Also handle a deadline that elapsed while processing this turn's
++        // events. Incomplete batches wait for stdin, not an already-past timer.
++        self.request_due_frames(now);
++        let next_frame = if self.rt.mid_batch { None } else {
++            self.windows.values().filter_map(|w| w.pacing.due()).min()
++        };
+         let wake = [self.deadline, self.orphaned_since.map(|t| t + QUIT_GRACE), tooltip_wake, next_frame]
+             .into_iter()
+             .flatten()
+diff --git a/native/src/window/pacing.rs b/native/src/window/pacing.rs
+index 3f54b29..ea623bb 100644
+--- a/native/src/window/pacing.rs
++++ b/native/src/window/pacing.rs
+@@ -37,13 +37,13 @@ impl Pacing {
+         }
+     }
+ 
+-    /// Whether the frame that waited may be drawn now.
+-    pub fn take_due(&mut self, now: Instant) -> bool {
+-        if self.due.is_some_and(|due| now >= due) {
+-            self.due = None;
+-            return true;
+-        }
+-        false
++    /// Take a frame whose deadline has passed, returning how late it is. A
++    /// partial protocol batch must not reach the screen: retain its deadline
++    /// until `ready` is true again, without postponing it another refresh.
++    pub fn take_due(&mut self, now: Instant, ready: bool) -> Option<Duration> {
++        let due = self.due.filter(|due| ready && now >= *due)?;
++        self.due = None;
++        Some(now.duration_since(due))
+     }
+ 
+     pub fn due(&self) -> Option<Instant> {
+@@ -76,8 +76,8 @@ mod tests {
+         assert!(!pacing.want_frame(ms(t0, 9)), "asking again changes nothing");
+         let due = pacing.due().expect("the frame is due later");
+         assert!(due > ms(t0, 16) && due <= ms(t0, 17), "one refresh after the first");
+-        assert!(!pacing.take_due(ms(t0, 15)));
+-        assert!(pacing.take_due(due));
++        assert!(pacing.take_due(ms(t0, 15), true).is_none());
++        assert_eq!(pacing.take_due(due, true), Some(Duration::ZERO));
+         assert!(pacing.due().is_none());
+     }
+ 
+diff --git a/native/tests/frame_deadlines.rs b/native/tests/frame_deadlines.rs
+new file mode 100644
+index 0000000..7f0bce2
+--- /dev/null
++++ b/native/tests/frame_deadlines.rs
+@@ -0,0 +1,66 @@
++//! Event order matters on AppKit: NewEvents, user messages, queued redraws,
++//! then AboutToWait. Exercise deadlines without depending on a desktop timer.
++
++use scarpe_native::window::pacing::Pacing;
++use std::time::{Duration, Instant};
++
++fn waiting_frame() -> (Pacing, Instant) {
++    let mut pacing = Pacing::new(Some(60_000));
++    let started = Instant::now();
++    pacing.drawing(started);
++    assert!(!pacing.want_frame(started + Duration::from_millis(4)));
++    let due = pacing.due().unwrap();
++    (pacing, due)
++}
++
++#[test]
++fn waking_for_a_frame_queues_it_before_the_platform_drains_redraws() {
++    let (mut pacing, due) = waiting_frame();
++    let mut redraws = 0;
++    // Shell::new_events: the deadline is handled in this event-loop turn.
++    if pacing.take_due(due, true).is_some() { redraws += 1; }
++    // AppKit drains queued redraws before Shell::about_to_wait.
++    assert_eq!(std::mem::take(&mut redraws), 1);
++    // The fallback must not queue a duplicate frame.
++    assert!(pacing.take_due(due, true).is_none());
++
++    let (mut old_pacing, old_due) = waiting_frame();
++    let mut old_redraws = 0;
++    // The previous handler only queued at AboutToWait, after this drain.
++    assert_eq!(std::mem::take(&mut old_redraws), 0);
++    if old_pacing.take_due(old_due, true).is_some() { old_redraws += 1; }
++    assert_eq!(old_redraws, 1, "the previous event order needs another turn");
++}
++
++#[test]
++fn incomplete_batches_keep_their_deadline_without_presenting_half_a_frame() {
++    let (mut pacing, due) = waiting_frame();
++    let later = due + Duration::from_millis(6);
++    assert!(pacing.take_due(due, false).is_none());
++    assert!(pacing.take_due(later, false).is_none());
++    assert_eq!(pacing.due(), Some(due));
++    assert_eq!(pacing.take_due(later, true), Some(Duration::from_millis(6)));
++    assert!(pacing.due().is_none());
++}
++
++#[test]
++fn event_work_crossing_the_deadline_uses_the_fallback_and_records_lateness() {
++    let (mut pacing, due) = waiting_frame();
++    assert!(pacing.take_due(due - Duration::from_millis(1), true).is_none());
++    assert_eq!(pacing.take_due(due + Duration::from_millis(2), true), Some(Duration::from_millis(2)));
++}
++
++#[test]
++fn idle_input_stays_immediate_and_frame_work_does_not_shift_the_deadline() {
++    let mut pacing = Pacing::new(Some(60_000));
++    let started = Instant::now();
++    pacing.drawing(started);
++    // Six ms spent drawing must count inside the refresh interval.
++    assert!(!pacing.want_frame(started + Duration::from_millis(6)));
++    let due = pacing.due().unwrap();
++    assert!(due < started + Duration::from_millis(17));
++    assert_eq!(pacing.take_due(due, true), Some(Duration::ZERO));
++    pacing.drawing(due);
++    assert!(pacing.want_frame(started + Duration::from_millis(100)));
++    assert!(pacing.due().is_none());
++}
