@@ -12,6 +12,7 @@ ENV.delete("BURROW_AUTOPLAY")
 require_relative "../lib/burrow/client/app"
 failed = false
 intervals, preparation, motion_samples = [], [], []
+presented = Set.new
 recording = false
 last_at = nil
 last_work = nil
@@ -38,6 +39,8 @@ Burrow::Client::Scene.prepend(Module.new do
       current = instance_variable_get(:@state)
       moving = current && (current["projectiles"].any? { |p| p["vx"].abs + p["vy"].abs > 8 } || current["worms"].any? { |w| w["hp"] > 0 && w["vx"].abs + w["vy"].abs > 8 })
       motion_samples << [Time.now.to_f, !!moving]
+      # The timeline forgets finished flights, so collect them as they are shown.
+      presented.merge(timeline.seen_shots)
     end
   end
 end)
@@ -80,7 +83,7 @@ Scarpe::Native.after_first_heartbeat do
     report = {ruby: RUBY_VERSION, platform: RUBY_PLATFORM, headless: ENV["SCARPE_NATIVE_HEADLESS"] == "1",
       world: [client.state["world_width"], client.state["world_height"]],
       motion_samples: motion_samples, stalls: stalls,
-      presented_shots: client.scene.timeline.seen_shots.to_a, terrain_revision: client.scene.terrain_revision,
+      presented_shots: presented.to_a, terrain_revision: client.scene.terrain_revision,
       scenario: "18 seconds of walking, jumping, cluster flight/explosions and bot turns with 36 grubs in a native window",
       app_update_intervals: stats.call(intervals), ruby_scene_preparation: stats.call(preparation)}
     raise "Timer delivery stalled" unless intervals.length > 400
