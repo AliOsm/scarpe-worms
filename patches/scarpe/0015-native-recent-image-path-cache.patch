@@ -1,0 +1,294 @@
+Subject: Retain a bounded cache of recently unshown animation paths
+
+diff --git a/native/src/elements/image.rs b/native/src/elements/image.rs
+index e1147de..24a9319 100644
+--- a/native/src/elements/image.rs
++++ b/native/src/elements/image.rs
+@@ -16,7 +16,7 @@ use fast_image_resize::{images::{Image, ImageRef}, FilterType, PixelType, Resize
+ /// or its length), so an app that rewrites a picture and shows it again sees the new one, and
+ /// a file that did not read (not there yet, not a picture) is tried again once it changes.
+ /// A file is looked at once a batch at most (`next_batch`), not on every paint. Runtime::flush
+-/// lets go of pictures nothing shows any more (`retain`).
++/// keeps a bounded recent set of pictures nothing shows any more (`retain`).
+ ///
+ /// A picture shown bigger or smaller than its pixels is resampled once for the size it is shown
+ /// at, and the copy kept with it (`at_size`): resampling a 211 px glow up to 844 device pixels
+@@ -37,7 +37,7 @@ struct Entry {
+     opaque: bool,
+     transparent: bool,
+     runs: Option<Rc<ImageRuns>>,
+-    /// The batch the file was last looked at in.
++    /// The batch the file was last looked at (and used) in.
+     looked: u64,
+     /// The picture resampled to the device sizes it is drawn at, the last used first.
+     sized: Vec<(Rc<Pixmap>, Option<Rc<ImageRuns>>)>,
+@@ -47,6 +47,11 @@ struct Entry {
+ const SIZES_KEPT: usize = 4;
+ /// A copy bigger than this many pixels is not kept; the picture is drawn resampled as it goes.
+ const MOST_KEPT_PIXELS: u64 = 16 * 1024 * 1024;
++/// Recently-unshown pictures are kept briefly so animation paths can be swapped back without
++/// decoding and resizing on the next frame. These limits apply only to entries `retain` marks
++/// unshown; pictures still referenced by the document are always kept.
++const INACTIVE_KEPT: usize = 64;
++const INACTIVE_KEPT_BYTES: usize = 32 * 1024 * 1024;
+ 
+ #[derive(Clone, Copy, PartialEq, Eq)]
+ struct FileStamp {
+@@ -147,9 +152,41 @@ impl ImageCache {
+         self.entries.remove(path);
+     }
+ 
+-    /// Keeps only the pictures whose paths `shown` still wants.
++    /// Keeps pictures whose paths `shown` still wants and a bounded recent inactive set.
++    ///
++    /// Keeping a small inactive set avoids decoding and resizing an animation frame that was
++    /// swapped out one frame ago. Active entries are never counted against either bound: a
++    /// document may legitimately show many terrain tiles at once. Inactive entries are ordered
++    /// by their last use, with a path tie-breaker for deterministic eviction.
+     pub fn retain(&mut self, shown: impl Fn(&Path) -> bool) {
+-        self.entries.retain(|path, _| shown(path));
++        let mut inactive = Vec::new();
++        for (path, entry) in &self.entries {
++            if !shown(path) {
++                inactive.push((path.clone(), entry.looked, entry.bytes()));
++            }
++        }
++        inactive.sort_unstable_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
++        let mut bytes = 0usize;
++        let mut count = 0usize;
++        let evict: std::collections::HashSet<PathBuf> = inactive
++            .into_iter()
++            .filter_map(|(path, _, size)| {
++                if count >= INACTIVE_KEPT || size > INACTIVE_KEPT_BYTES.saturating_sub(bytes) {
++                    return Some(path);
++                }
++                bytes += size;
++                count += 1;
++                None
++            })
++            .collect();
++        self.entries.retain(|path, _| !evict.contains(path));
++    }
++
++    /// Bytes occupied by decoded pictures, run indexes and retained size copies.
++    ///
++    /// This is primarily a bounded-cache diagnostic; HashMap and Rc metadata are not included.
++    pub fn memory_bytes(&self) -> usize {
++        self.entries.values().map(Entry::bytes).sum()
+     }
+ 
+     pub fn len(&self) -> usize {
+@@ -161,6 +198,16 @@ impl ImageCache {
+     }
+ }
+ 
++impl Entry {
++    fn bytes(&self) -> usize {
++        let base = self.image.as_ref().map_or(0, |image| image.data().len())
++            + self.runs.as_ref().map_or(0, |runs| runs.bytes());
++        base + self.sized.iter().map(|(image, runs)| {
++            image.data().len() + runs.as_ref().map_or(0, |runs| runs.bytes())
++        }).sum::<usize>()
++    }
++}
++
+ /// Decodes an image file, whatever its extension says, within limits::MAX_IMAGE_SIDE and
+ /// MAX_IMAGE_BYTES. None for anything else, including what is not a plain file: a FIFO
+ /// would block the display on open and /dev/zero would never end.
+diff --git a/native/src/paint/image_runs.rs b/native/src/paint/image_runs.rs
+index 74686a7..f8ccc3c 100644
+--- a/native/src/paint/image_runs.rs
++++ b/native/src/paint/image_runs.rs
+@@ -53,4 +53,15 @@ impl ImageRuns {
+     pub(super) fn row(&self, y: usize) -> &[Run] {
+         &self.spans[self.rows[y]..self.rows[y + 1]]
+     }
++
++    /// Bytes held by the run index, including the capacity reserved by its vectors.
++    ///
++    /// The image cache uses this when bounding recently-unshown pictures.  Counting
++    /// capacities (rather than only lengths) keeps the bound conservative when a
++    /// fragmented-alpha image caused the vectors to grow before the index was kept.
++    pub(crate) fn bytes(&self) -> usize {
++        std::mem::size_of::<Self>()
++            + self.rows.capacity() * std::mem::size_of::<usize>()
++            + self.spans.capacity() * std::mem::size_of::<Run>()
++    }
+ }
+diff --git a/native/tests/image_retention.rs b/native/tests/image_retention.rs
+new file mode 100644
+index 0000000..55ea738
+--- /dev/null
++++ b/native/tests/image_retention.rs
+@@ -0,0 +1,135 @@
++//! Recently-unshown pictures stay warm for a bounded time, and a retained entry
++//! still revalidates its file metadata before it is used again.
++
++use scarpe_native::elements::image::ImageCache;
++use std::path::{Path, PathBuf};
++use std::rc::Rc;
++use tiny_skia::{Color, Pixmap};
++
++fn scratch(name: &str) -> PathBuf {
++    let dir = std::env::temp_dir().join(format!("scarpe-native-image-retention-{}-{name}", std::process::id()));
++    std::fs::create_dir_all(&dir).unwrap();
++    dir
++}
++
++fn png(path: &Path, side: u32, rgb: [u8; 3]) {
++    let mut pm = Pixmap::new(side, side).unwrap();
++    pm.fill(Color::from_rgba8(rgb[0], rgb[1], rgb[2], 255));
++    pm.save_png(path).unwrap();
++}
++
++#[test]
++fn cycling_animation_paths_reuses_decodes_and_size_copies() {
++    let dir = scratch("animation");
++    let paths: Vec<_> = (0..4).map(|i| {
++        let path = dir.join(format!("frame{i}.png"));
++        png(&path, 32, [i * 50, 40, 100]);
++        path
++    }).collect();
++    let mut cache = ImageCache::default();
++    let mut original = Vec::new();
++    for path in &paths {
++        original.push(cache.get(path).unwrap());
++    }
++    for frame in 0..60 {
++        let i = frame % paths.len();
++        cache.next_batch();
++        cache.retain(|path| path == paths[i]);
++        assert!(Rc::ptr_eq(&original[i], &cache.get(&paths[i]).unwrap()), "returning to a path reuses its decode");
++        cache.at_size(&paths[i], 21, 21).unwrap();
++    }
++    assert_eq!(cache.take_resampled(), 4, "each animation frame is resized just once");
++}
++
++#[test]
++fn inactive_entries_are_bounded_by_count_while_shown_entries_stay() {
++    let dir = scratch("count");
++    let paths: Vec<_> = (0..80)
++        .map(|i| {
++            let path = dir.join(format!("{i}.png"));
++            png(&path, 2, [i as u8, 0, 0]);
++            path
++        })
++        .collect();
++    let mut cache = ImageCache::default();
++    for path in &paths {
++        cache.get(path).unwrap();
++    }
++    cache.next_batch();
++    let active = &paths[0];
++    let active_pixels = cache.get(active).unwrap();
++    let recent = &paths[79];
++    let recent_pixels = cache.get(recent).unwrap();
++    cache.retain(|path| path == active);
++    assert!(cache.len() <= 65, "one active + 64 inactive entries: {}", cache.len());
++    assert!(Rc::ptr_eq(&active_pixels, &cache.get(active).unwrap()), "active entries are never evicted");
++    assert!(Rc::ptr_eq(&recent_pixels, &cache.get(recent).unwrap()), "most recently used inactive entries stay");
++}
++
++#[test]
++fn inactive_entries_are_bounded_by_decoded_and_resized_bytes() {
++    let dir = scratch("bytes");
++    let paths: Vec<_> = (0..9)
++        .map(|i| {
++            let path = dir.join(format!("{i}.png"));
++            png(&path, 512, [i as u8, 32, 64]);
++            path
++        })
++        .collect();
++    let mut cache = ImageCache::default();
++    for path in &paths {
++        cache.get(path).unwrap();
++        cache.at_size(path, 1024, 1024).unwrap();
++    }
++    cache.next_batch();
++    cache.retain(|_| false);
++    assert!(cache.memory_bytes() <= 32 * 1024 * 1024, "inactive image bytes exceeded cap: {}", cache.memory_bytes());
++    assert!(cache.len() <= 6, "resized copies and run indexes count against the cap");
++}
++
++#[test]
++fn a_retained_entry_rechecks_file_metadata_before_reuse() {
++    let dir = scratch("metadata");
++    let path = dir.join("sprite.png");
++    png(&path, 8, [255, 0, 0]);
++    let mut cache = ImageCache::default();
++    assert_eq!(cache.get(&path).unwrap().width(), 8);
++    let original_size = cache.at_size(&path, 12, 12).unwrap();
++
++    cache.next_batch();
++    cache.retain(|_| false);
++    png(&path, 9, [0, 0, 255]);
++    cache.next_batch();
++    cache.retain(|_| false);
++    assert_eq!(cache.get(&path).unwrap().width(), 9, "an inactive picture is reloaded after its file changes");
++    let resized = cache.at_size(&path, 12, 12).unwrap();
++    assert!(!Rc::ptr_eq(&original_size, &resized), "size copies of changed files are discarded");
++    assert!(resized.pixels().iter().all(|pixel| pixel.blue() == 255 && pixel.red() == 0));
++    std::fs::remove_file(&path).unwrap();
++    cache.next_batch();
++    assert!(cache.get(&path).is_none(), "a deleted retained file is no longer shown");
++    png(&path, 10, [0, 255, 0]);
++    cache.next_batch();
++    assert_eq!(cache.get(&path).unwrap().width(), 10, "a file that returns invalidates the cached miss");
++}
++
++/// Optional timing loop with caller-provided frames. The renderer knows no
++/// application asset paths. Compare against the same test on the prior patch
++/// series; run serially under the benchmark lock.
++#[test]
++#[ignore = "timing; set SCARPE_IMAGE_BENCH_PATHS to four paths separated by the platform path separator"]
++fn animation_path_cycle_benchmark() {
++    let Some(paths) = std::env::var_os("SCARPE_IMAGE_BENCH_PATHS") else { return };
++    let paths: Vec<_> = std::env::split_paths(&paths).collect();
++    assert_eq!(paths.len(), 4);
++    let mut cache = ImageCache::default();
++    let started = std::time::Instant::now();
++    for i in 0..2400 {
++        let path = &paths[i % paths.len()];
++        cache.next_batch();
++        cache.retain(|shown| shown == path);
++        std::hint::black_box(cache.get(path).unwrap());
++        std::hint::black_box(cache.at_size(path, 21, 29).unwrap());
++    }
++    println!("2400 image path swaps: {:.3} ms, {} resamples", started.elapsed().as_secs_f64() * 1000.0, cache.take_resampled());
++}
+diff --git a/native/tests/images.rs b/native/tests/images.rs
+index 97ea803..4f74cfa 100644
+--- a/native/tests/images.rs
++++ b/native/tests/images.rs
+@@ -1,4 +1,4 @@
+-//! Image files are read once and kept, but never kept past what is on disk or on screen.
++//! Image files are read once and kept while in use, with a bounded recently-unshown cache.
+ 
+ mod common;
+ 
+@@ -101,21 +101,21 @@ fn a_file_that_arrives_late_shows_once_it_is_there() {
+     assert_eq!(pixel(&mut h, 10.0, 10.0), json!([0, 128, 0, 255]));
+ }
+ 
+-/// A slideshow kept every picture it had ever shown decoded in memory.
++/// A slideshow must not keep every picture it has ever shown decoded in memory.
+ #[test]
+ fn pictures_nothing_shows_any_more_are_let_go() {
+     let dir = scratch("slides");
+     let mut h = Harness::new();
+     h.feed(&app(200, 100, &[]));
+-    for i in 0..5 {
++    for i in 0..80 {
+         let path = dir.join(format!("slide{i}.png"));
+-        png(&path, 10, [i * 40, 0, 0]);
++        png(&path, 10, [i * 3, 0, 0]);
+         let slide = 10 + i as i64;
+         h.feed(&format!("{}\n{{\"t\":\"flush\"}}\n", create(slide, "Image", 2, json!({"url": path.display().to_string()}))));
+         pixel(&mut h, 1.0, 1.0);
+         h.feed(&format!("{}\n{{\"t\":\"flush\"}}\n", json!({"t": "destroy", "id": slide})));
+     }
+-    assert!(h.rt.images.len() <= 1, "{} pictures kept for no image", h.rt.images.len());
++    assert!(h.rt.images.len() <= 64, "{} inactive pictures exceed the bounded recent set", h.rt.images.len());
+ }
+ 
+ /// A picture shown bigger or smaller than its pixels is resampled once for the size it is shown
