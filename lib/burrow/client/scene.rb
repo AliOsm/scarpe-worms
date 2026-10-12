@@ -11,7 +11,14 @@ module Burrow
       Y = 104
       # Diagonal outline copies keep names legible over any scenery at little paint cost.
       BADGE_OUTLINE = [[-1, -1], [1, -1], [-1, 1], [1, 1]].freeze
-      LABELS_PER_FRAME = 8
+      # Each name builds five native paragraphs. Bound construction to two
+      # names per frame so discovering a crowd leaves time for motion and input.
+      LABELS_PER_FRAME = 2
+      ANIMATIONS = {"idle" => [4, 6], "walk" => [8, 12], "jump" => [4, 8], "hurt" => [3, 9],
+        "victory" => [6, 8], "dead" => [1, 1]}.transform_values(&:freeze).freeze
+      FLAME_PATHS = Array.new(4) { |i| File.join(Theme::ART, "fx/flame-#{i}.png").freeze }.freeze
+      MINE_PATH = File.join(Theme::ART, "mine-prop.png").freeze
+      LIT_MINE_PATH = File.join(Theme::ART, "mine-prop-lit.png").freeze
       SEA_BELOW = 1200
       FX = JSON.parse(File.read(File.join(Theme::ART, "manifest.json"), encoding: Encoding::UTF_8)).fetch("extras").fetch("fx_animations").freeze
       COMBAT = JSON.parse(File.read(File.join(Theme::ART, "manifest.json"), encoding: Encoding::UTF_8)).fetch("combat").freeze
@@ -28,6 +35,7 @@ module Burrow
         @shoes, @controller, @scale = shoes, controller, scale
         @actors, @projectile_nodes, @hazard_nodes, @frame_cache, @hurt_until = {}, {}, {}, {}, {}
         @effects = []
+        @positions = {}
         @frame_count, @max_frame_ms = 0, 0.0
         @frame_times = []
         @terrain_art = presentation ? presentation.fetch(:terrain_art) : TerrainArt.new
@@ -157,9 +165,11 @@ module Burrow
         render_camera(active, started)
         render_backdrop
         @last_render = started
-        origin = [px(-camera.x), px(-camera.y)]
-        @world.move(*origin) if origin != @origin
-        @origin = origin
+        ox, oy = px(-camera.x), px(-camera.y)
+        if !@origin || @origin[0] != ox || @origin[1] != oy
+          @world.move(ox, oy)
+          @origin = [ox, oy]
+        end
         resize_world if @world_scale != @scale
         update_terrain if @terrain_art
         if @terrain_art.error && !@render_error_shown
@@ -171,130 +181,9 @@ module Burrow
         reconcile_objects(@hazard_nodes, @state["hazards"], @props_layer, projectile: false)
         @timeline.events.each { |e| event(e); @controller.play_event(e) }
         @finished_at ||= started if @state["phase"] == "finished" && @timeline.tick >= @state["tick"]
-        dense = camera.zoom < 0.7
-        labels_built = 0
-        @positions = {}
-        @state["worms"].each do |worm|
-          node = @actors.fetch(worm["id"])
-          if worm["hp"] <= 0
-            node[:dead_since] ||= started
-            if started - node[:dead_since] > 0.8
-              node[:slot].hide
-              next
-            end
-          end
-          x, y = worm.values_at("x", "y")
-          @positions[worm["id"]] = [x, y]
-          # Aim/turn markers use these bounds even when the actor is outside a
-          # manually explored viewport, including immediately after a resize.
-          resize_actor(node) if node[:scale] != @scale
-          sx, sy = camera.screen(x, y)
-          visible = sx.between?(-90, 1530) && sy.between?(-90, 810)
-          if node[:visible] != visible
-            visible ? node[:slot].show : node[:slot].hide
-            node[:visible] = visible
-          end
-          next unless visible
-          position = [px(x) - node[:offset_x], px(y) - node[:offset_y]]
-          node[:slot].move(*position) if node[:position] != position
-          node[:position] = position
-          state = if worm["hp"] <= 0
-            "dead"
-          elsif @state["phase"] == "finished" && worm["team"] == @state["winner"]
-            "victory"
-          elsif @hurt_until.fetch(worm["id"], 0) > started
-            "hurt"
-          elsif worm["vy"].abs > 15
-            "jump"
-          elsif worm["vx"].abs > 8
-            "walk"
-          else
-            "idle"
-          end
-          count, fps = {"idle" => [4, 6], "walk" => [8, 12], "jump" => [4, 8], "hurt" => [3, 9], "victory" => [6, 8], "dead" => [1, 1]}.fetch(state)
-          frame = if !@controller.motion?
-            0
-          elsif state == "hurt"
-            [((started - (@hurt_until[worm["id"]] - 0.35)) * fps).floor, 2].min.clamp(0, 2)
-          elsif state == "jump"
-            worm["vy"] < -30 ? 1 : worm["vy"] > 30 ? 3 : 2
-          else
-            (started * fps).to_i % count
-          end
-          path = "grubs/#{worm['facing'] < 0 ? 'left/' : ''}#{node[:team]}-#{state}-#{frame}"
-          cache_frame(path)
-          node[:image].path = File.join(Theme::ART, path + ".png") if node[:path] != path
-          node[:path] = path
-          tx, ty = @controller.target
-          show_badge = worm["hp"] > 0 && (!dense || worm["id"] == @state["active"] || Math.hypot(tx - x, ty - y + 15) * camera.zoom < 22)
-          # Status tints the name's outline: frost, a shield's glow or poison.
-          outline = worm["frozen"] ? "#1f6fb8" : worm["shield"] ? "#1d8a52" : worm["poisoned"] ? "#6b7d12" : Theme::INK
-          if show_badge && !node[:label]
-            # Names appear as grubs first come into view, a few per frame, so a
-            # six-team match does not build 180 text layers in its first frame.
-            labels_built < LABELS_PER_FRAME ? build_label(node, worm, outline) : show_badge = false
-            labels_built += 1
-          end
-          next unless node[:label]
-          restyle_label(node) if node[:label_scale] != @scale
-          if node[:show_badge] != show_badge
-            show_badge ? node[:label].show : node[:label].hide
-            node[:show_badge] = show_badge
-          end
-          set_text(node[:label], "#{worm['name']}\n#{worm['hp']}") if show_badge
-          node[:label].layers[0...-1].each { |layer| layer.style(stroke: outline) } if node[:outline] != outline
-          node[:outline] = outline
-        end
-        @state["projectiles"].each do |p|
-          node = @projectile_nodes[p["id"]]
-          x, y = p.values_at("x", "y")
-          node[:image].style(left: px(x - 14), top: px(y - 14), width: px(28), height: px(28))
-          if !p["walker"] && Math.hypot(p["vx"], p["vy"]) > 25
-            rotation = COMBAT["projectiles"].include?(p["weapon"]) ? Math.atan2(p["vy"], p["vx"]) * 180 / Math::PI : @timeline.tick * 7
-            node[:image].rotate((rotation / 6).round * 6)
-          end
-          if node[:fuse]
-            badge_scale = @ui_scale * [camera.zoom, 0.8].max
-            bw, bh = (34 * badge_scale).round, (22 * badge_scale).round
-            bx, by = px(x) - bw / 2, px(y - 19) - bh
-            node[:fuse_plate].style(left: bx, top: by, width: bw, height: bh)
-            node[:fuse].style(left: bx, top: by + (3 * badge_scale).round, width: bw, size: [(12 * badge_scale).round, 8].max)
-            set_text(node[:fuse], p["life"] ? "#{(p['life'].fdiv(TICK_RATE)).ceil}s" : "")
-            color = p["life"].to_f <= TICK_RATE ? Theme::ORANGE : Theme::WHITE
-            node[:fuse].style(stroke: color) if node[:fuse_color] != color
-            node[:fuse_color] = color
-          end
-          if @controller.motion? && @frame_count % 4 == 0 && !p["walker"] && Math.hypot(p["vx"], p["vy"]) > 40
-            add_particle(x, y, color: "#ffefc188", life: 0.35, size: 7, vx: 0, vy: -8)
-          end
-        end
-        @state["hazards"].each do |h|
-          node = @hazard_nodes[h["id"]]
-          if %w[gas fire].include?(h["kind"])
-            radius = h["radius"]
-            placed = [px(h["x"] - radius), px(h["y"] - radius), px(radius * 2)]
-            node[:image].style(left: placed[0], top: placed[1], width: placed[2], height: placed[2]) if node[:placed] != placed
-            node[:placed] = placed
-          else
-            width, height, ax, ay = node[:bounds]
-            # Props rest most of the time: restyle only those that moved or rescaled.
-            placed = [px(h["x"] - ax), px(h["y"] - ay), px(width), px(height)]
-            node[:image].style(left: placed[0], top: placed[1], width: placed[2], height: placed[3]) if node[:placed] != placed
-            node[:placed] = placed
-            if h["kind"] == "flame"
-              frame = @controller.motion? ? ((@timeline.tick / 2.5).floor + node[:phase]) % 4 : 0
-              if node[:frame] != frame
-                node[:image].path = File.join(Theme::ART, "fx/flame-#{frame}.png")
-                node[:frame] = frame
-              end
-            elsif h["kind"] == "mine"
-              blinking = @controller.motion? && @timeline.tick >= h.fetch("armed", 0)
-              lit = h["trigger"] || (blinking && (@timeline.tick / 15).floor.odd?)
-              path = File.join(Theme::ART, "#{lit ? 'mine-prop-lit' : 'mine-prop'}.png")
-              node[:image].path = path if node[:image].path != path
-            end
-          end
-        end
+        render_actors(started)
+        render_projectiles
+        render_hazards
         render_aim(started)
         render_effects(started)
         if @water_level != @state["water"] || @water_scale != @scale
@@ -406,6 +295,157 @@ module Burrow
 
       private
 
+      def render_actors(started)
+        dense = camera.zoom < 0.7
+        labels_built = 0
+        @positions.clear
+        @state["worms"].each do |worm|
+          node = @actors.fetch(worm["id"])
+          if worm["hp"] <= 0
+            node[:dead_since] ||= started
+            if started - node[:dead_since] > 0.8
+              node[:slot].hide unless node[:slot].hidden
+              next
+            end
+          end
+          x, y = worm["x"], worm["y"]
+          position = (node[:world_position] ||= [0, 0])
+          position[0], position[1] = x, y
+          @positions[worm["id"]] = position
+          sx, sy = (x - camera.x) * camera.zoom, (y - camera.y) * camera.zoom
+          visible = sx.between?(-90, 1530) && sy.between?(-90, 810)
+          # Only the active grub's bounds feed the aim marker off screen. Other
+          # hidden actors can adopt a zoom when they next enter the viewport.
+          if node[:scale] != @scale && (visible || worm["id"] == @state["active"])
+            resize_actor(node, x, y)
+          end
+          if node[:visible] != visible
+            visible ? node[:slot].show : node[:slot].hide
+            node[:visible] = visible
+          end
+          next unless visible
+          left, top = px(x) - node[:offset_x], px(y) - node[:offset_y]
+          if !node[:position] || node[:position][0] != left || node[:position][1] != top
+            node[:slot].move(left, top)
+            node[:position] = [left, top]
+          end
+          state = if worm["hp"] <= 0
+            "dead"
+          elsif @state["phase"] == "finished" && worm["team"] == @state["winner"]
+            "victory"
+          elsif @hurt_until.fetch(worm["id"], 0) > started
+            "hurt"
+          elsif worm["vy"].abs > 15
+            "jump"
+          elsif worm["vx"].abs > 8
+            "walk"
+          else
+            "idle"
+          end
+          count, fps = ANIMATIONS.fetch(state)
+          frame = if !@controller.motion?
+            0
+          elsif state == "hurt"
+            [((started - (@hurt_until[worm["id"]] - 0.35)) * fps).floor, 2].min.clamp(0, 2)
+          elsif state == "jump"
+            worm["vy"] < -30 ? 1 : worm["vy"] > 30 ? 3 : 2
+          else
+            (started * fps).to_i % count
+          end
+          facing_left = worm["facing"] < 0
+          if node[:pose] != state || node[:frame] != frame || node[:facing_left] != facing_left
+            path = "grubs/#{facing_left ? 'left/' : ''}#{node[:team]}-#{state}-#{frame}"
+            cache_frame(path)
+            node[:image].path = File.join(Theme::ART, path + ".png") if node[:path] != path
+            node[:path], node[:pose], node[:frame], node[:facing_left] = path, state, frame, facing_left
+          end
+          tx, ty = @controller.target
+          show_badge = worm["hp"] > 0 && (!dense || worm["id"] == @state["active"] || Math.hypot(tx - x, ty - y + 15) * camera.zoom < 22)
+          # Status tints the name's outline: frost, a shield's glow or poison.
+          outline = worm["frozen"] ? "#1f6fb8" : worm["shield"] ? "#1d8a52" : worm["poisoned"] ? "#6b7d12" : Theme::INK
+          if show_badge && !node[:label]
+            # Names appear as grubs first come into view, a few per frame, so a
+            # six-team match does not build 180 text layers in its first frame.
+            labels_built < LABELS_PER_FRAME ? build_label(node, worm, outline) : show_badge = false
+            labels_built += 1
+          end
+          next unless node[:label]
+          restyle_label(node) if node[:label_scale] != @scale
+          if node[:show_badge] != show_badge
+            show_badge ? node[:label].show : node[:label].hide
+            node[:show_badge] = show_badge
+          end
+          if show_badge && (node[:label_name] != worm["name"] || node[:label_hp] != worm["hp"])
+            set_text(node[:label], "#{worm['name']}\n#{worm['hp']}")
+            node[:label_name], node[:label_hp] = worm["name"], worm["hp"]
+          end
+          node[:label].layers[0...-1].each { |layer| layer.style(stroke: outline) } if node[:outline] != outline
+          node[:outline] = outline
+        end
+      end
+
+      def render_projectiles
+        @state["projectiles"].each do |p|
+          node = @projectile_nodes[p["id"]]
+          x, y = p["x"], p["y"]
+          place(node[:image], px(x - 14), px(y - 14), px(28), px(28))
+          if !p["walker"] && Math.hypot(p["vx"], p["vy"]) > 25
+            rotation = COMBAT["projectiles"].include?(p["weapon"]) ? Math.atan2(p["vy"], p["vx"]) * 180 / Math::PI : @timeline.tick * 7
+            rotation = (rotation / 6).round * 6
+            node[:image].rotate(rotation) if node[:image].rotate_angle != rotation
+          end
+          if node[:fuse]
+            badge_scale = @ui_scale * [camera.zoom, 0.8].max
+            bw, bh = (34 * badge_scale).round, (22 * badge_scale).round
+            bx, by = px(x) - bw / 2, px(y - 19) - bh
+            restyle(node[:fuse_plate], left: bx, top: by, width: bw, height: bh)
+            restyle(node[:fuse], left: bx, top: by + (3 * badge_scale).round, width: bw, size: [(12 * badge_scale).round, 8].max)
+            set_text(node[:fuse], p["life"] ? "#{(p['life'].fdiv(TICK_RATE)).ceil}s" : "")
+            color = p["life"].to_f <= TICK_RATE ? Theme::ORANGE : Theme::WHITE
+            node[:fuse].style(stroke: color) if node[:fuse_color] != color
+            node[:fuse_color] = color
+          end
+          if @controller.motion? && @frame_count % 4 == 0 && !p["walker"] && Math.hypot(p["vx"], p["vy"]) > 40
+            add_particle(x, y, color: "#ffefc188", life: 0.35, size: 7, vx: 0, vy: -8)
+          end
+        end
+      end
+
+      def render_hazards
+        @state["hazards"].each do |h|
+          node = @hazard_nodes[h["id"]]
+          # Hidden fire still belongs to the simulation, but cycling its image
+          # paths cannot contribute a pixel. Catch up to the current frame and
+          # geometry when it returns. Include the full gas/fire radius at edges.
+          sx, sy = (h["x"] - camera.x) * camera.zoom, (h["y"] - camera.y) * camera.zoom
+          radius = h["radius"]
+          margin = (radius && radius > 40 ? radius : 40) * camera.zoom + 2
+          visible = sx.between?(-margin, 1440 + margin) && sy.between?(-margin, 720 + margin)
+          show_if(node[:image], visible)
+          next unless visible
+          if h["kind"] == "gas" || h["kind"] == "fire"
+            radius = h["radius"]
+            place(node[:image], px(h["x"] - radius), px(h["y"] - radius), px(radius * 2), px(radius * 2))
+          else
+            width, height, ax, ay = node[:bounds]
+            # Props rest most of the time: restyle only those that moved or rescaled.
+            place(node[:image], px(h["x"] - ax), px(h["y"] - ay), px(width), px(height))
+            if h["kind"] == "flame"
+              frame = @controller.motion? ? ((@timeline.tick / 2.5).floor + node[:phase]) % 4 : 0
+              if node[:frame] != frame
+                node[:image].path = FLAME_PATHS[frame]
+                node[:frame] = frame
+              end
+            elsif h["kind"] == "mine"
+              blinking = @controller.motion? && @timeline.tick >= h.fetch("armed", 0)
+              lit = h["trigger"] || (blinking && (@timeline.tick / 15).floor.odd?)
+              path = lit ? LIT_MINE_PATH : MINE_PATH
+              node[:image].path = path if node[:image].path != path
+            end
+          end
+        end
+      end
+
       def render_turn_notice(now, active)
         if @turn_notice_pending && @terrain_revision >= 0 && active && @state["phase"] == "aiming"
           team = @state["teams"].find { |entry| entry["id"] == active["team"] }
@@ -479,28 +519,32 @@ module Burrow
       # including their minimum readable size in overview, while anchoring the
       # sprite's source foot (80,136 of 160) to the authoritative world position.
       def actor_metrics
+        return @actor_metrics if @actor_metrics_scale == @scale
+        @actor_metrics_scale = @scale
         label_scale = @ui_scale * [camera.zoom, 0.75].max
         bw, bh = (110 * label_scale).round, (40 * label_scale).round
         width = [px(110), bw].max
         sprite_top = bh + px(3)
-        {bw: bw, bh: bh, bx: (width - bw) / 2, width: width, height: sprite_top + px(64), sprite_top: sprite_top,
+        @actor_metrics = {bw: bw, bh: bh, bx: (width - bw) / 2, width: width, height: sprite_top + px(64), sprite_top: sprite_top,
           size: [(15 * label_scale).round, 8].max, edge: [(1.5 * label_scale).round, 1].max}
       end
 
-      def resize_actor(node)
+      def resize_actor(node, x, y)
         node[:scale] = @scale
         m = actor_metrics
         node[:offset_x], node[:offset_y] = m[:width] / 2, m[:sprite_top] + px(54.4)
-        node[:slot].style(width: m[:width], height: m[:height])
-        node[:image].style(left: node[:offset_x] - px(32), top: m[:sprite_top], width: px(64), height: px(64))
-        node[:badge].style(left: m[:bx], top: 0, width: m[:bw], height: m[:bh])
+        left, top = px(x) - node[:offset_x], px(y) - node[:offset_y]
+        place(node[:slot], left, top, m[:width], m[:height])
+        node[:position] = [left, top]
+        place(node[:image], node[:offset_x] - px(32), m[:sprite_top], px(64), px(64))
+        place(node[:badge], m[:bx], 0, m[:bw], m[:bh])
       end
 
       # Name layers follow a zoom only once their grub is on screen (see render).
       def restyle_label(node)
         m = actor_metrics
         node[:label].layers.zip(BADGE_OUTLINE + [[0, 0]]).each do |layer, (dx, dy)|
-          layer.style(left: m[:bx] + dx * m[:edge], top: m[:edge] + dy * m[:edge], width: m[:bw], size: m[:size])
+          restyle(layer, left: m[:bx] + dx * m[:edge], top: m[:edge] + dy * m[:edge], width: m[:bw], size: m[:size])
         end
         node[:label_scale] = @scale
       end
@@ -515,6 +559,7 @@ module Burrow
           end)
         end
         node[:show_badge], node[:outline], node[:label_scale] = true, outline, @scale
+        node[:label_name], node[:label_hp] = worm["name"], worm["hp"]
       end
 
       def place_tile(tile)
@@ -554,9 +599,13 @@ module Burrow
 
       def render_navigation
         saved, @scale = @scale, @ui_scale
-        set_text(@camera_caption, "#{(camera.zoom * 100).round}%  #{camera.following ? 'FOLLOW' : 'FREE'}  ·  Wheel zoom / drag pan")
+        percent = (camera.zoom * 100).round
+        if @caption_zoom != percent || @caption_following != camera.following
+          set_text(@camera_caption, "#{percent}%  #{camera.following ? 'FOLLOW' : 'FREE'}  ·  Wheel zoom / drag pan")
+          @caption_zoom, @caption_following = percent, camera.following
+        end
         water_y = @state["water"].fdiv(@height).clamp(0, 1) * @map_h
-        @map_water.style(top: px(@map_y + water_y), height: px(@map_h - water_y))
+        restyle(@map_water, top: px(@map_y + water_y), height: px(@map_h - water_y))
         @state["worms"].each do |w|
           unless @map_marks[w["id"]]
             @slot.append { @map_marks[w["id"]] = box(0, 0, 5, 5, color: COLORS[@state["teams"].find { |t| t["id"] == w["team"] }["color"]], radius: 2) }
@@ -565,20 +614,20 @@ module Burrow
           if w["hp"] <= 0
             dot.hide unless dot.hidden
           else
-            dot.move(px(@map_x + w["x"] / @width * @map_w - 2), px(@map_y + w["y"] / @height * @map_h - 2))
+            move_to(dot, px(@map_x + w["x"] / @width * @map_w - 2), px(@map_y + w["y"] / @height * @map_h - 2))
           end
         end
         left, top = [camera.x, 0].max, [camera.y, 0].max
         right, bottom = [camera.x + 1440 / camera.zoom, @width].min, [camera.y + 720 / camera.zoom, @height].min
         if right > left && bottom > top
           @map_frame.show if @map_frame.hidden
-          @map_frame.style(left: px(@map_x + left / @width * @map_w), top: px(@map_y + top / @height * @map_h),
-            width: px((right - left) / @width * @map_w), height: px((bottom - top) / @height * @map_h))
+          place(@map_frame, px(@map_x + left / @width * @map_w), px(@map_y + top / @height * @map_h),
+            px((right - left) / @width * @map_w), px((bottom - top) / @height * @map_h))
         else
           @map_frame.hide unless @map_frame.hidden
         end
         if (shot = @state["projectiles"].first) && shot["y"].between?(0, @height)
-          @map_shot.move(px(@map_x + shot["x"] / @width * @map_w - 3), px(@map_y + shot["y"] / @height * @map_h - 3))
+          move_to(@map_shot, px(@map_x + shot["x"] / @width * @map_w - 3), px(@map_y + shot["y"] / @height * @map_h - 3))
           @map_shot.show if @map_shot.hidden
         else
           @map_shot.hide unless @map_shot.hidden
@@ -666,23 +715,25 @@ module Burrow
         @aim_layer.show if @aim_layer.hidden
         marker_scale = @ui_scale * [camera.zoom, 0.75].max
         marker_width = (30 * marker_scale).round
-        @active_arrow.style(left: px(x) - marker_width / 2,
+        restyle(@active_arrow, left: px(x) - marker_width / 2,
           top: px(y) - @actors.fetch(active["id"])[:offset_y] - (28 * marker_scale).round + px(@controller.motion? ? Math.sin(now * 5) * 3 : 0),
           width: marker_width, size: (22 * marker_scale).round)
         can_aim = @controller.my_turn? && @state["phase"] == "aiming" && !@controller.overlay?
         weapon = Catalog.fetch(@controller.selected_weapon)
         aimed = can_aim && Catalog::AIMED.include?(weapon[:kind]) && !@controller.special_control
         angle = @controller.angle * Math::PI / 180
+        cos, sin = Math.cos(angle), Math.sin(angle)
         speed = weapon[:id] == "mortar" ? 580 : 130 + @controller.power * 540
         ballistic = Catalog::CHARGED.include?(weapon[:kind])
+        gravity = 285 * @state.dig("config", "gravity") * (@state.dig("effects", "low_gravity") ? 0.45 : 1) if aimed
+        wind = ballistic && (weapon[:id] == "rocket" || weapon[:id] == "homing")
         @aim_dots.each_with_index do |dot, i|
           if aimed
             distance = 26 + i * 10
             t = (distance - 20) / speed
-            gravity = 285 * @state.dig("config", "gravity") * (@state.dig("effects", "low_gravity") ? 0.45 : 1)
-            drift = ballistic && %w[rocket homing].include?(weapon[:id]) ? @state["wind"] * 21 * t * t : 0
+            drift = wind ? @state["wind"] * 21 * t * t : 0
             fall = ballistic ? 0.5 * gravity * t * t : 0
-            dot.move(px(x + Math.cos(angle) * distance + drift - 2), px(y - 13 + Math.sin(angle) * distance + fall - 2))
+            move_to(dot, px(x + cos * distance + drift - 2), px(y - 13 + sin * distance + fall - 2))
             dot.show if dot.hidden
           else
             dot.hide unless dot.hidden
@@ -691,7 +742,7 @@ module Burrow
         targeted = can_aim && Catalog::TARGETED.include?(weapon[:kind]) && !@controller.special_control
         if targeted
           tx, ty = @controller.target
-          @reticle.move(px(tx - 12), px(ty - 12))
+          move_to(@reticle, px(tx - 12), px(ty - 12))
           @reticle.show if @reticle.hidden
         else
           @reticle.hide unless @reticle.hidden
@@ -702,7 +753,7 @@ module Burrow
         if locked
           tx, ty = locked
           size = (48 * marker_scale * (@controller.motion? ? 1 + Math.sin(now * 6) * 0.06 : 1)).round
-          @lock_marker.style(left: px(tx) - size / 2, top: px(ty) - size / 2, width: size, height: size)
+          place(@lock_marker, px(tx) - size / 2, px(ty) - size / 2, size, size)
           @lock_marker.show if @lock_marker.hidden
           caption = [px(tx) - (45 * marker_scale).round, px(ty) + (26 * marker_scale).round, (90 * marker_scale).round, (12 * marker_scale).round]
           if @lock_caption_at != caption
@@ -719,9 +770,10 @@ module Burrow
           tx, ty = @controller.target
           side = @controller.strike_direction
           width, height = (64 * marker_scale).round, (32 * marker_scale).round
-          @strike_arrow.style(left: px(tx) - width / 2 - side * (52 * marker_scale).round, top: px(ty) - (64 * marker_scale).round,
-            width: width, height: height)
-          @strike_arrow.rotate(side.negative? ? 180 : 0)
+          place(@strike_arrow, px(tx) - width / 2 - side * (52 * marker_scale).round, px(ty) - (64 * marker_scale).round,
+            width, height)
+          rotation = side.negative? ? 180 : 0
+          @strike_arrow.rotate(rotation) if @strike_arrow.rotate_angle != rotation
           @strike_arrow.show if @strike_arrow.hidden
         else
           @strike_arrow.hide unless @strike_arrow.hidden
@@ -730,27 +782,31 @@ module Burrow
           tx, ty = @controller.target
           tilt = @controller.girder_rotation * Math::PI / 180
           dx, dy = Math.cos(tilt) * 70, Math.sin(tilt) * 70
-          @placement.style(left: px(tx - dx), top: px(ty + 6 - dy), x2: px(tx + dx), y2: px(ty + 6 + dy))
+          restyle(@placement, left: px(tx - dx), top: px(ty + 6 - dy), x2: px(tx + dx), y2: px(ty + 6 + dy))
           @placement.show if @placement.hidden
         else
           @placement.hide unless @placement.hidden
         end
         if can_aim && !@controller.special_control
           directional = COMBAT["held"].include?(weapon[:id])
-          left = Math.cos(angle).negative?
-          folder = directional ? "held/#{left ? 'left/' : ''}" : "weapons/"
-          path = File.join(Theme::ART, "#{folder}#{weapon[:id]}.png")
-          @held_weapon.path = path if @held_weapon.path != path
+          left = cos.negative?
+          if @held_id != weapon[:id] || @held_left != left
+            folder = directional ? "held/#{left ? 'left/' : ''}" : "weapons/"
+            path = File.join(Theme::ART, "#{folder}#{weapon[:id]}.png")
+            @held_weapon.path = path if @held_weapon.path != path
+            @held_id, @held_left = weapon[:id], left
+          end
           size = directional ? 44 : 30
           reach = directional ? 17 : 13
-          @held_weapon.style(left: px(x + Math.cos(angle) * reach - size / 2), top: px(y - 13 + Math.sin(angle) * reach - size / 2), width: px(size), height: px(size))
-          @held_weapon.rotate(directional ? (@controller.angle + (left ? 180 : 0)).round : 0)
+          place(@held_weapon, px(x + cos * reach - size / 2), px(y - 13 + sin * reach - size / 2), px(size), px(size))
+          rotation = directional ? (@controller.angle + (left ? 180 : 0)).round : 0
+          @held_weapon.rotate(rotation) if @held_weapon.rotate_angle != rotation
           @held_weapon.show if @held_weapon.hidden
         else
           @held_weapon.hide unless @held_weapon.hidden
         end
         if (rope = active["rope"])
-          @rope_line.style(left: px(x), top: px(y - 12), x2: px(rope['x']), y2: px(rope['y']))
+          restyle(@rope_line, left: px(x), top: px(y - 12), x2: px(rope['x']), y2: px(rope['y']))
           @rope_line.show if @rope_line.hidden
         else
           @rope_line.hide unless @rope_line.hidden
@@ -820,12 +876,12 @@ module Burrow
                 effect[:frame] = frame
               end
             when :particle
-              effect[:node].move(px(effect[:x] + effect[:vx] * age), px(effect[:y] + effect[:vy] * age + age * age * 110))
+              move_to(effect[:node], px(effect[:x] + effect[:vx] * age), px(effect[:y] + effect[:vy] * age + age * age * 110))
             when :text
-              effect[:node].move(px(effect[:x]), px(effect[:y] - age * 24))
+              move_to(effect[:node], px(effect[:x]), px(effect[:y] - age * 24))
             when :ring
               radius = 8 + effect[:radius] * (age / effect[:life])
-              effect[:node].style(left: px(effect[:x] - radius), top: px(effect[:y] - radius), width: px(radius * 2), height: px(radius * 2))
+              restyle(effect[:node], left: px(effect[:x] - radius), top: px(effect[:y] - radius), width: px(radius * 2), height: px(radius * 2))
             end
             false
           end

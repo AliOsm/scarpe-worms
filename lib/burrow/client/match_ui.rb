@@ -112,9 +112,9 @@ module Burrow
       def refresh_match_hud
         return unless @page == :match && state && @turn_label
         if @connection_status == "online"
-          @connection_overlay.hide
+          show_if(@connection_overlay, false)
         else
-          @connection_overlay.show
+          show_if(@connection_overlay, true)
           set_text(@reconnect_label, @status_message)
         end
         active = active_worm
@@ -133,7 +133,7 @@ module Burrow
         remaining = seconds.ceil
         set_text(@clock_label, counting ? remaining.to_s.rjust(2, "0") : "··")
         set_text(@phase_label, {"aiming" => "TURN", "retreat" => "RETREAT", "settling" => "ACTION", "finished" => "FINISH"}.fetch(phase, "ACTION"))
-        @clock_label.style(stroke: counting && (remaining <= 10 || phase == "retreat") ? "#ff5a45" : Theme::WHITE)
+        restyle(@clock_label, stroke: counting && (remaining <= 10 || phase == "retreat") ? "#ff5a45" : Theme::WHITE)
         cue = [state["turn"], phase, remaining]
         if @timer_cue != cue
           @audio&.play("tick", volume: 0.35) if counting && my_turn? && @window_active && remaining.between?(1, 5)
@@ -146,7 +146,7 @@ module Burrow
         @wind_chevrons.each do |direction, chevrons|
           chevrons.each_with_index do |chevron, i|
             shown = wind * direction > 0 && i < strength
-            shown ? chevron.show : chevron.hide
+            show_if(chevron, shown)
           end
         end
         set_text(@round_label, "ROUND #{state['round']}  ·  #{@rtt} ms")
@@ -155,12 +155,13 @@ module Burrow
           ratio = members.sum { |w| w["hp"] }.fdiv(members.sum { |w| w["max_hp"] })
           set_text(@team_hud[team["id"]][:health], members.sum { |w| w["hp"] }.to_s)
           set_text(@team_hud[team["id"]][:members], "#{members.count { |w| w['hp'] > 0 }} / #{members.length} grubs")
-          @team_hud[team["id"]][:bar].style(width: px([@team_hud[team["id"]][:width] * ratio, 0.5].max))
+          restyle(@team_hud[team["id"]][:bar], width: px([@team_hud[team["id"]][:width] * ratio, 0.5].max))
           marker = @team_hud[team["id"]][:marker]
-          team["id"] == state["team"] ? marker.show : marker.hide
+          show_if(marker, team["id"] == state["team"])
         end
         weapon = Catalog.fetch(@selected_weapon)
-        @weapon_image.path = File.join(Theme::ART, "weapons/#{@selected_weapon}.png")
+        path = File.join(Theme::ART, "weapons/#{@selected_weapon}.png")
+        @weapon_image.path = path if @weapon_image.path != path
         set_text(@weapon_label, weapon[:name])
         ammo = (my_inventory || {}).fetch(@selected_weapon, 0)
         set_text(@weapon_ammo, "#{weapon[:group]} · #{ammo < 0 ? 'Unlimited' : "#{ammo} remaining"}")
@@ -185,11 +186,11 @@ module Burrow
           Catalog::AIMED.include?(weapon[:kind]) ? "Aim #{@angle.abs.round}° · tap to fire" : "Ready to deploy"
         end
         set_text(@aim_label, detail)
-        @power_bar.style(width: px(168 * (charged ? @power : active["jetpack"] ? active["fuel"].fdiv(4 * TICK_RATE) : 0)))
+        restyle(@power_bar, width: px(168 * (charged ? @power : active["jetpack"] ? active["fuel"].fdiv(4 * TICK_RATE) : 0)))
         @power_minus.state = @power_plus.state = aiming && charged ? nil : "disabled"
-        @fuse_button.text = @selected_weapon == "holy_bomb" ? "Fixed 5s" : Catalog::FUSED.include?(@selected_weapon) ? "Fuse #{@fuse}s" : "No fuse"
+        set_text(@fuse_button, @selected_weapon == "holy_bomb" ? "Fixed 5s" : Catalog::FUSED.include?(@selected_weapon) ? "Fuse #{@fuse}s" : "No fuse")
         @fuse_button.state = aiming && Catalog::FUSED.include?(@selected_weapon) && !control ? nil : "disabled"
-        @fire_button.text = @pending_action ? "Sending…" : control ? control[0] : @charge_started ? "Charging…" : state["shots_left"] > 0 ? "Second shot" : @selected_weapon == "homing" && !@locked_target ? "1 · Lock target" : @selected_weapon == "homing" ? "2 · Launch" : "Fire · Space"
+        set_text(@fire_button, @pending_action ? "Sending…" : control ? control[0] : @charge_started ? "Charging…" : state["shots_left"] > 0 ? "Second shot" : @selected_weapon == "homing" && !@locked_target ? "1 · Lock target" : @selected_weapon == "homing" ? "2 · Launch" : "Fire · Space")
         @fire_button.state = my_turn? && !@pending_action && (control || (aiming && can_equip?(@selected_weapon))) ? nil : "disabled"
         @pass_button.state = aiming && state["shots_left"].zero? && !@pending_action ? nil : "disabled"
         hint = if !my_turn?

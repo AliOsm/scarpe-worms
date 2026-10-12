@@ -59,8 +59,8 @@ module Burrow
         layers.each { |layer| layer.text = value }
       end
 
-      def show = layers.each(&:show)
-      def hide = layers.each(&:hide)
+      def show = (layers.each(&:show) if hidden)
+      def hide = (layers.each(&:hide) unless hidden)
     end
 
     # A real Shoes button (focus, keys, screen readers, `state`) with a glossy
@@ -76,7 +76,8 @@ module Burrow
       end
 
       def state=(value)
-        __getobj__.state = value unless state == value
+        return if state == value
+        __getobj__.state = value
         paint
       end
 
@@ -257,6 +258,31 @@ module Burrow
 
       def set_text(node, text)
         node.text = text if node && node.text != text
+      end
+
+      # A Shoes write is a JSON message to the native child even when its value
+      # is unchanged. Compare the retained drawable first; batch changed styles
+      # into one message. Reading its public properties needs no renderer roundtrip.
+      def restyle(node, **styles)
+        styles.delete_if { |name, value| node.public_send(name) == value }
+        node.style(**styles) unless styles.empty?
+      end
+
+      def move_to(node, left, top)
+        node.move(left, top) unless node.left == left && node.top == top
+      end
+
+      def place(node, left, top, width, height)
+        return if node.left == left && node.top == top && node.width == width && node.height == height
+        restyle(node, left: left, top: top, width: width, height: height)
+      end
+
+      def show_if(node, visible)
+        if visible
+          node.show if node.hidden
+        else
+          node.hide unless node.hidden
+        end
       end
 
       def grub(team, x, y, size: 80, state: "idle", frame: 0)

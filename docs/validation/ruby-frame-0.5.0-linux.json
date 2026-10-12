@@ -1,0 +1,751 @@
+{
+  "date_utc": "2026-10-12T21:16:05.802195+00:00",
+  "game": "Burrow Brigade 0.5.0",
+  "branch": "perf/ruby-frame",
+  "baseline_commit": "47dec15",
+  "implementation_commit": "873d0d7",
+  "platform": "x86_64-linux",
+  "macos_execution": false,
+  "environment": "Shared six-core Linux machine; all native commands under flock /tmp/burrow-bench.lock and nice -n 10. Native renderer and other workstreams unchanged.",
+  "distribution_format": "[mean, p95, max]; times in milliseconds; GC time is the GUI-process cumulative GC.stat(:time) delta in milliseconds.",
+  "methodology": ["Live journey: 36 grubs, movement/jump/banana clusters, six-second pan and discrete zoom; 1920x1200 at simulated 2x, 1.5-million-pixel render budget, OpenAL null audio.", "Profiled counts at Scarpe::Native::Child#post include actual props messages and messages whose entire normalized payload already matched the retained node. GC/allocated-object counters include every GUI-process thread; nested method totals overlap.", "Profiling adds allocations and CPU. The final profiler additionally exposes actor/projectile/hazard phases. Detailed samples and native statistics stay in ignored .cache/perf-ruby files.", "Deterministic 1440x900 headless fixture: 360 frames per phase, 36 grubs, 60 flames, a homing lock and HUD. Frozen presentation data isolates scene work; it excludes timeline interpolation, socket parsing and cadence. Full GC between phases is a fixture control, not a runtime change.", "ObjectSpace allocation tracing runs separately for one warmed frame with GC temporarily disabled. The usual per-frame allocation counts use GC.stat(:total_allocated_objects), including VM objects not enumerable through ObjectSpace.", "Discrete zoom presented gaps contain intentionally skipped idle paints; higher gaps after redundant writes are removed are not a continuous-FPS measurement."],
+  "live_profiled": {
+    "before": {
+      "combat": {
+        "frames": 1083,
+        "scene_ms": [3.307, 6.398, 29.228],
+        "scene_cpu_ms": [3.091, 5.859, 21.985],
+        "app_ms": [3.582, 7.194, 29.295],
+        "props_per_update": [60.247, 112, 151],
+        "duplicate_props_per_update": [45.909, 65, 87],
+        "allocations_per_update": [4156.15, 7078, 25102],
+        "scene_allocations": [3936.837, 6938, 25074],
+        "gc": {
+          "minor_gc_count": 114,
+          "major_gc_count": 9,
+          "time": 485,
+          "total_allocated_objects": 5260483
+        },
+        "presented_intervals_ms": [16.727, 21.362, 55.291]
+      },
+      "pan": {
+        "frames": 361,
+        "scene_ms": [2.717, 4.649, 11.452],
+        "scene_cpu_ms": [2.544, 4.303, 7.389],
+        "app_ms": [2.981, 5.253, 11.567],
+        "props_per_update": [47.274, 66, 73],
+        "duplicate_props_per_update": [42.147, 62, 64],
+        "allocations_per_update": [3407.08, 4329, 7040],
+        "scene_allocations": [3185.457, 3645, 5875],
+        "gc": {
+          "minor_gc_count": 19,
+          "major_gc_count": 2,
+          "time": 136,
+          "total_allocated_objects": 1549215
+        },
+        "presented_intervals_ms": [16.76, 19.677, 27.393]
+      },
+      "zoom": {
+        "frames": 440,
+        "scene_ms": [3.145, 7.764, 43.381],
+        "scene_cpu_ms": [2.828, 5.261, 21.987],
+        "app_ms": [3.412, 8.191, 43.44],
+        "props_per_update": [54.695, 75, 610],
+        "duplicate_props_per_update": [44.259, 63, 179],
+        "allocations_per_update": [3854.459, 4746, 30533],
+        "scene_allocations": [3636.614, 4444, 30504],
+        "gc": {
+          "minor_gc_count": 22,
+          "major_gc_count": 1,
+          "time": 134,
+          "total_allocated_objects": 1933755
+        },
+        "presented_intervals_ms": [19.723, 42.157, 84.135]
+      }
+    },
+    "after": {
+      "combat": {
+        "frames": 1084,
+        "scene_ms": [2.021, 6.033, 24.352],
+        "scene_cpu_ms": [1.519, 3.801, 14.304],
+        "app_ms": [2.153, 6.352, 24.444],
+        "props_per_update": [13.983, 52, 88],
+        "duplicate_props_per_update": [0.001, 0, 1],
+        "allocations_per_update": [1629.048, 4074, 15967],
+        "scene_allocations": [1581.561, 4040, 15939],
+        "gc": {
+          "minor_gc_count": 48,
+          "major_gc_count": 7,
+          "time": 270,
+          "total_allocated_objects": 2504272
+        },
+        "presented_intervals_ms": [17.025, 23.823, 59.52]
+      },
+      "pan": {
+        "frames": 360,
+        "scene_ms": [1.343, 3.244, 11.034],
+        "scene_cpu_ms": [1.061, 1.973, 3.772],
+        "app_ms": [1.496, 3.482, 11.11],
+        "props_per_update": [4.472, 14, 23],
+        "duplicate_props_per_update": [0, 0, 0],
+        "allocations_per_update": [1061.033, 1444, 3680],
+        "scene_allocations": [1013.897, 1405, 3647],
+        "gc": {
+          "minor_gc_count": 6,
+          "major_gc_count": 2,
+          "time": 80,
+          "total_allocated_objects": 694907
+        },
+        "presented_intervals_ms": [16.847, 21.384, 28.408]
+      },
+      "zoom": {
+        "frames": 442,
+        "scene_ms": [1.234, 2.896, 23.501],
+        "scene_cpu_ms": [1.076, 2.242, 22.413],
+        "app_ms": [1.353, 2.96, 23.797],
+        "props_per_update": [8.122, 24, 545],
+        "duplicate_props_per_update": [0, 0, 0],
+        "allocations_per_update": [1225.966, 1971, 25300],
+        "scene_allocations": [1179.889, 1946, 25126],
+        "gc": {
+          "minor_gc_count": 5,
+          "major_gc_count": 1,
+          "time": 58,
+          "total_allocated_objects": 774166
+        },
+        "presented_intervals_ms": [28.002, 69.056, 153.036]
+      }
+    },
+    "after_budget_passed": true
+  },
+  "iterations": {
+    "dedup": {
+      "combat": {
+        "frames": 1081,
+        "scene_ms": [2.002, 5.536, 48.195],
+        "scene_cpu_ms": [1.589, 3.801, 15.317],
+        "app_ms": [2.129, 5.751, 48.253],
+        "props_per_update": [13.673, 49, 80],
+        "duplicate_props_per_update": [0.001, 0, 1],
+        "allocations_per_update": [1853.006, 4226, 14916],
+        "scene_allocations": [1804.395, 4188, 14633],
+        "gc": {
+          "minor_gc_count": 43,
+          "major_gc_count": 7,
+          "time": 281,
+          "total_allocated_objects": 2731592
+        },
+        "presented_intervals_ms": [17.052, 23.465, 77.12]
+      },
+      "pan": {
+        "frames": 358,
+        "scene_ms": [1.808, 4.388, 37.195],
+        "scene_cpu_ms": [1.192, 2.035, 7.003],
+        "app_ms": [1.999, 5.061, 37.497],
+        "props_per_update": [5.304, 15, 21],
+        "duplicate_props_per_update": [0.003, 0, 1],
+        "allocations_per_update": [1370.399, 1774, 4513],
+        "scene_allocations": [1322.162, 1700, 4484],
+        "gc": {
+          "minor_gc_count": 6,
+          "major_gc_count": 1,
+          "time": 66,
+          "total_allocated_objects": 811550
+        },
+        "presented_intervals_ms": [17.803, 26.2, 73.101]
+      },
+      "zoom": {
+        "frames": 435,
+        "scene_ms": [1.613, 3.323, 103.568],
+        "scene_cpu_ms": [1.259, 2.628, 24.338],
+        "app_ms": [1.729, 3.517, 103.625],
+        "props_per_update": [9.556, 24, 576],
+        "duplicate_props_per_update": [0.313, 0, 34],
+        "allocations_per_update": [1662.315, 2176, 27221],
+        "scene_allocations": [1615.083, 2100, 27193],
+        "gc": {
+          "minor_gc_count": 8,
+          "major_gc_count": 2,
+          "time": 87,
+          "total_allocated_objects": 963182
+        },
+        "presented_intervals_ms": [23.616, 50.026, 124.535]
+      }
+    },
+    "allocations": {
+      "combat": {
+        "frames": 1079,
+        "scene_ms": [1.886, 5.083, 35.25],
+        "scene_cpu_ms": [1.593, 3.814, 17.99],
+        "app_ms": [2.019, 5.188, 37.403],
+        "props_per_update": [14.272, 52, 85],
+        "duplicate_props_per_update": [0.001, 0, 1],
+        "allocations_per_update": [1638.915, 3984, 22059],
+        "scene_allocations": [1591.288, 3927, 21777],
+        "gc": {
+          "minor_gc_count": 48,
+          "major_gc_count": 8,
+          "time": 290,
+          "total_allocated_objects": 2529028
+        },
+        "presented_intervals_ms": [16.926, 22.594, 42.843]
+      },
+      "pan": {
+        "frames": 360,
+        "scene_ms": [1.124, 2.52, 5.818],
+        "scene_cpu_ms": [1.011, 1.689, 3.549],
+        "app_ms": [1.262, 2.962, 7.995],
+        "props_per_update": [5.139, 15, 24],
+        "duplicate_props_per_update": [0, 0, 0],
+        "allocations_per_update": [1074.753, 1503, 3667],
+        "scene_allocations": [1027.839, 1408, 3642],
+        "gc": {
+          "minor_gc_count": 6,
+          "major_gc_count": 1,
+          "time": 60,
+          "total_allocated_objects": 705942
+        },
+        "presented_intervals_ms": [16.678, 19.543, 26.219]
+      },
+      "zoom": {
+        "frames": 442,
+        "scene_ms": [1.189, 2.426, 23.322],
+        "scene_cpu_ms": [1.141, 2.12, 23.323],
+        "app_ms": [1.282, 2.477, 23.376],
+        "props_per_update": [9.74, 25, 577],
+        "duplicate_props_per_update": [0, 0, 0],
+        "allocations_per_update": [1290.907, 2087, 26401],
+        "scene_allocations": [1245.269, 2062, 26374],
+        "gc": {
+          "minor_gc_count": 8,
+          "major_gc_count": 1,
+          "time": 66,
+          "total_allocated_objects": 807277
+        },
+        "presented_intervals_ms": [20.012, 36.829, 66.974]
+      }
+    }
+  },
+  "unprofiled": {
+    "before": {
+      "budget_passed": null,
+      "scenarios": {
+        "combat": {
+          "scene_ms": [3.355, 7.093, 85.128],
+          "presented_intervals_ms": [17.383, 24.431, 111.516]
+        },
+        "pan": {
+          "scene_ms": [2.89, 6.374, 23.986],
+          "presented_intervals_ms": [17.916, 23.752, 57.492]
+        },
+        "zoom": {
+          "scene_ms": [2.378, 3.831, 22.107],
+          "presented_intervals_ms": [19.304, 36.223, 69.019]
+        }
+      }
+    },
+    "after": {
+      "budget_passed": false,
+      "scenarios": {
+        "combat": {
+          "scene_ms": [1.437, 3.807, 20.9],
+          "presented_intervals_ms": [16.61, 20.953, 42.564]
+        },
+        "pan": {
+          "scene_ms": [1.471, 3.478, 48.971],
+          "presented_intervals_ms": [18.286, 25.336, 100.587]
+        },
+        "zoom": {
+          "scene_ms": [1.051, 2.245, 36.428],
+          "presented_intervals_ms": [31.508, 82.131, 136.245]
+        }
+      }
+    },
+    "after_retry": {
+      "budget_passed": false,
+      "scenarios": {
+        "combat": {
+          "scene_ms": [5.478, 23.202, 124.579],
+          "presented_intervals_ms": [37.454, 98.582, 392.32]
+        },
+        "pan": {
+          "scene_ms": [2.547, 10.554, 22.668],
+          "presented_intervals_ms": [35.235, 71.909, 166.919]
+        },
+        "zoom": {
+          "scene_ms": [2.491, 10.288, 50.884],
+          "presented_intervals_ms": [39.943, 88.359, 210.649]
+        }
+      }
+    }
+  },
+  "deterministic": {
+    "frames_per_phase": 360,
+    "ruby_4_0_7": {
+      "before": {
+        "static": {
+          "scene_ms": [2.386, 3.194, 8.464],
+          "scene_cpu_ms": [2.284, 2.926, 3.627],
+          "allocations_per_frame": [3707.794, 3708, 3718],
+          "props_per_frame": [58, 58, 58],
+          "duplicate_props_per_frame": [58, 58, 58],
+          "gc": {
+            "minor_gc_count": 30,
+            "major_gc_count": 0,
+            "time": 56
+          }
+        },
+        "flames": {
+          "scene_ms": [2.953, 5.586, 10.275],
+          "scene_cpu_ms": [2.799, 5.266, 9.447],
+          "allocations_per_frame": [4331.778, 7452, 9972],
+          "props_per_frame": [73.461, 154, 154],
+          "duplicate_props_per_frame": [57.65, 58, 58],
+          "gc": {
+            "minor_gc_count": 35,
+            "major_gc_count": 0,
+            "time": 73
+          }
+        },
+        "pan": {
+          "scene_ms": [2.795, 5.23, 6.572],
+          "scene_cpu_ms": [2.786, 5.23, 6.572],
+          "allocations_per_frame": [4364.072, 7504, 7505],
+          "props_per_frame": [74.622, 155, 155],
+          "duplicate_props_per_frame": [57.531, 58, 58],
+          "gc": {
+            "minor_gc_count": 32,
+            "major_gc_count": 0,
+            "time": 72
+          }
+        },
+        "zoom": {
+          "scene_ms": [2.778, 4.861, 25.236],
+          "scene_cpu_ms": [2.773, 4.839, 25.238],
+          "allocations_per_frame": [4415.628, 7316, 39517],
+          "props_per_frame": [79.581, 154, 806],
+          "duplicate_props_per_frame": [59.219, 58, 254],
+          "gc": {
+            "minor_gc_count": 7,
+            "major_gc_count": 0,
+            "time": 48
+          }
+        }
+      },
+      "after": {
+        "static": {
+          "scene_ms": [0.457, 0.465, 1.957],
+          "scene_cpu_ms": [0.457, 0.465, 1.957],
+          "allocations_per_frame": [165.861, 166, 176],
+          "props_per_frame": [0, 0, 0],
+          "duplicate_props_per_frame": [0, 0, 0],
+          "gc": {
+            "minor_gc_count": 2,
+            "major_gc_count": 0,
+            "time": 4
+          }
+        },
+        "flames": {
+          "scene_ms": [1.154, 3.816, 10.065],
+          "scene_cpu_ms": [1.052, 3.734, 5.771],
+          "allocations_per_frame": [760.661, 3706, 6261],
+          "props_per_frame": [15.811, 96, 97],
+          "duplicate_props_per_frame": [0, 0, 0],
+          "gc": {
+            "minor_gc_count": 7,
+            "major_gc_count": 0,
+            "time": 15
+          }
+        },
+        "pan": {
+          "scene_ms": [1.115, 3.577, 7.669],
+          "scene_cpu_ms": [1.086, 3.525, 7.663],
+          "allocations_per_frame": [796.628, 3759, 3850],
+          "props_per_frame": [16.897, 97, 99],
+          "duplicate_props_per_frame": [0, 0, 0],
+          "gc": {
+            "minor_gc_count": 7,
+            "major_gc_count": 1,
+            "time": 27
+          }
+        },
+        "zoom": {
+          "scene_ms": [0.877, 3.343, 19.657],
+          "scene_cpu_ms": [0.874, 3.343, 19.657],
+          "allocations_per_frame": [766.197, 3706, 29211],
+          "props_per_frame": [14.531, 96, 562],
+          "duplicate_props_per_frame": [0, 0, 0],
+          "gc": {
+            "minor_gc_count": 0,
+            "major_gc_count": 0,
+            "time": 0
+          }
+        }
+      }
+    },
+    "ruby_3_4_7": {
+      "before": {
+        "static": {
+          "scene_ms": [2.284, 2.863, 12.51],
+          "scene_cpu_ms": [2.278, 2.857, 12.504],
+          "allocations_per_frame": [4038.742, 4039, 4049],
+          "props_per_frame": [58, 58, 58],
+          "duplicate_props_per_frame": [58, 58, 58],
+          "gc": {
+            "minor_gc_count": 48,
+            "major_gc_count": 1,
+            "time": 85
+          }
+        },
+        "flames": {
+          "scene_ms": [2.926, 5.518, 9.326],
+          "scene_cpu_ms": [2.914, 5.518, 9.326],
+          "allocations_per_frame": [4711.231, 8071, 10843],
+          "props_per_frame": [73.461, 154, 154],
+          "duplicate_props_per_frame": [57.65, 58, 58],
+          "gc": {
+            "minor_gc_count": 49,
+            "major_gc_count": 1,
+            "time": 107
+          }
+        },
+        "pan": {
+          "scene_ms": [2.946, 5.642, 7.508],
+          "scene_cpu_ms": [2.926, 5.586, 7.509],
+          "allocations_per_frame": [4748.031, 8129, 8129],
+          "props_per_frame": [74.622, 155, 155],
+          "duplicate_props_per_frame": [57.531, 58, 58],
+          "gc": {
+            "minor_gc_count": 42,
+            "major_gc_count": 1,
+            "time": 104
+          }
+        },
+        "zoom": {
+          "scene_ms": [3.201, 5.687, 28.569],
+          "scene_cpu_ms": [3.191, 5.688, 28.57],
+          "allocations_per_frame": [4793.7, 7935, 40878],
+          "props_per_frame": [79.581, 154, 806],
+          "duplicate_props_per_frame": [59.219, 58, 254],
+          "gc": {
+            "minor_gc_count": 47,
+            "major_gc_count": 1,
+            "time": 167
+          }
+        }
+      },
+      "after": {
+        "static": {
+          "scene_ms": [0.463, 0.511, 2.051],
+          "scene_cpu_ms": [0.461, 0.501, 2.045],
+          "allocations_per_frame": [181.858, 182, 192],
+          "props_per_frame": [0, 0, 0],
+          "duplicate_props_per_frame": [0, 0, 0],
+          "gc": {
+            "minor_gc_count": 2,
+            "major_gc_count": 0,
+            "time": 4
+          }
+        },
+        "flames": {
+          "scene_ms": [1.094, 3.846, 6.965],
+          "scene_cpu_ms": [1.08, 3.805, 6.965],
+          "allocations_per_frame": [825.142, 4010, 6817],
+          "props_per_frame": [15.811, 96, 97],
+          "duplicate_props_per_frame": [0, 0, 0],
+          "gc": {
+            "minor_gc_count": 9,
+            "major_gc_count": 0,
+            "time": 20
+          }
+        },
+        "pan": {
+          "scene_ms": [2.345, 5.755, 72.047],
+          "scene_cpu_ms": [1.228, 4.075, 6.554],
+          "allocations_per_frame": [865.031, 4069, 4160],
+          "props_per_frame": [16.897, 97, 99],
+          "duplicate_props_per_frame": [0, 0, 0],
+          "gc": {
+            "minor_gc_count": 7,
+            "major_gc_count": 0,
+            "time": 19
+          }
+        },
+        "zoom": {
+          "scene_ms": [1.068, 3.94, 20.889],
+          "scene_cpu_ms": [1.031, 3.906, 20.842],
+          "allocations_per_frame": [815.106, 4010, 29626],
+          "props_per_frame": [14.531, 96, 562],
+          "duplicate_props_per_frame": [0, 0, 0],
+          "gc": {
+            "minor_gc_count": 6,
+            "major_gc_count": 0,
+            "time": 23
+          }
+        }
+      }
+    }
+  },
+  "native_screenshots": {
+    "4.0.7": {
+      "static": {
+        "byte_identical": true,
+        "sha256": "e35fa1869dafe5bb09a9f0b88879e5529c1c9a4cf23023f21cf9f7afaa9295fb"
+      },
+      "flames": {
+        "byte_identical": true,
+        "sha256": "21bf9a7f55774c0a0bcecf545e4fdf09a73470c55af7a6b15c386056d439e5f6"
+      },
+      "pan": {
+        "byte_identical": true,
+        "sha256": "21bf9a7f55774c0a0bcecf545e4fdf09a73470c55af7a6b15c386056d439e5f6"
+      },
+      "zoom": {
+        "byte_identical": true,
+        "sha256": "8f7c13eb26a316a8e9b4d3b96c90fa91d491ab6fb682b59d6c91bc8eb9f1c259"
+      }
+    },
+    "3.4.7": {
+      "static": {
+        "byte_identical": true,
+        "sha256": "e35fa1869dafe5bb09a9f0b88879e5529c1c9a4cf23023f21cf9f7afaa9295fb"
+      },
+      "flames": {
+        "byte_identical": true,
+        "sha256": "21bf9a7f55774c0a0bcecf545e4fdf09a73470c55af7a6b15c386056d439e5f6"
+      },
+      "pan": {
+        "byte_identical": true,
+        "sha256": "21bf9a7f55774c0a0bcecf545e4fdf09a73470c55af7a6b15c386056d439e5f6"
+      },
+      "zoom": {
+        "byte_identical": true,
+        "sha256": "8f7c13eb26a316a8e9b4d3b96c90fa91d491ab6fb682b59d6c91bc8eb9f1c259"
+      }
+    }
+  },
+  "hud": {
+    "cadence": "Every sixth App#update (~10 Hz) plus explicit input/action refreshes; 180 refreshes during 1,083 baseline combat updates.",
+    "before_combat": {
+      "wall_ms": [1.14, 2.568, 4.267],
+      "cpu_ms": [1.1, 2.516, 3.35],
+      "allocated_objects": [1144.822, 1182, 1602],
+      "props": [24.267, 25, 35],
+      "duplicate_props": [23.883, 24, 24]
+    },
+    "after_combat": {
+      "wall_ms": [0.223, 0.49, 3.258],
+      "cpu_ms": [0.197, 0.381, 0.9],
+      "allocated_objects": [117.022, 174, 823],
+      "props": [0.378, 2, 14],
+      "duplicate_props": [0, 0, 0]
+    },
+    "redundant_writes_removed": ["Connection overlay and six wind chevrons", "Timer colour and six team health bars", "Team turn markers and equipped weapon image path", "Power bar, fuse/fire button text", "GlossButton repaint when state is unchanged"]
+  },
+  "phase_costs_after_combat": [
+    ["Timeline#sample", 0.334, 0.849, 6.295, 0.271, 632.248, 0],
+    ["Scene#render_camera", 0.021, 0.028, 1.132, 0.019, 4.281, 0],
+    ["Scene#render_backdrop", 0.028, 0.104, 2.796, 0.023, 9.351, 0.107],
+    ["Scene#update_terrain", 0.01, 0.008, 2.348, 0.007, 2.482, 0.008],
+    ["Scene#reconcile_actors", 0.017, 0.022, 1.426, 0.014, 2, 0],
+    ["Scene#reconcile_objects", 0.01, 0.009, 3.761, 0.009, 5.715, 0.003],
+    ["Scene#render_actors", 0.249, 0.711, 4.808, 0.215, 85.113, 1.576],
+    ["Scene#render_projectiles", 0.234, 1.397, 6.274, 0.189, 153.606, 1.999],
+    ["Scene#render_hazards", 0.034, 0.059, 1.582, 0.029, 9.237, 0.036],
+    ["Scene#render_aim", 0.168, 0.673, 11.503, 0.132, 121.536, 1.984],
+    ["Scene#render_effects", 0.435, 2.044, 23.07, 0.31, 374.571, 7.137],
+    ["Scene#render_navigation", 0.127, 0.181, 9.04, 0.092, 32.462, 0.593],
+    ["Scene#render", 2.021, 6.033, 24.352, 1.519, 1581.561, 13.921],
+    ["Timeline#accept", 0.026, 0.034, 0.065, 0.026, 1.182, 0]
+  ],
+  "connection_decode": {
+    "before": {
+      "bytes": {
+        "count": 180,
+        "mean": 44230.239,
+        "p95": 49223,
+        "max": 71101
+      },
+      "wall_ms": {
+        "count": 180,
+        "mean": 0.676,
+        "p95": 2.127,
+        "max": 4.894
+      },
+      "cpu_ms": {
+        "count": 180,
+        "mean": 0.651,
+        "p95": 2.03,
+        "max": 4.86
+      },
+      "allocated_objects": {
+        "count": 180,
+        "mean": 1899.228,
+        "p95": 2010,
+        "max": 2043
+      }
+    },
+    "after": {
+      "bytes": {
+        "count": 176,
+        "mean": 44303.216,
+        "p95": 49336,
+        "max": 71228
+      },
+      "wall_ms": {
+        "count": 176,
+        "mean": 0.794,
+        "p95": 2.869,
+        "max": 8.02
+      },
+      "cpu_ms": {
+        "count": 176,
+        "mean": 0.657,
+        "p95": 2.069,
+        "max": 4.004
+      },
+      "allocated_objects": {
+        "count": 176,
+        "mean": 1899.653,
+        "p95": 2010,
+        "max": 2043
+      }
+    },
+    "finding": "Roughly 44 KB snapshots, 0.65 ms mean thread CPU and ~1,900 allocations each at ~10 Hz. This competes for the GVL, but there was no decode overlapping the largest diagnosed GUI stalls. No protocol, connection or timeline edits."
+  },
+  "scheduler_diagnosis": {
+    "budget_passed": false,
+    "tool": "BURROW_BENCH_PROFILE=1 BURROW_BENCH_SCHED=1",
+    "mechanism": "Linux /proc/self/task/<GUI native thread id>/schedstat run-queue wait deltas, independently of CPU time and GC.",
+    "slowest_updates": [
+      {
+        "at": 1791839447.38,
+        "stage": "zoom",
+        "method": "App#update",
+        "wall_ms": 152.194,
+        "cpu_ms": 10.924,
+        "allocated_objects": 11193,
+        "props": 194,
+        "duplicate_props": 0,
+        "minor_gc": 0,
+        "major_gc": 0,
+        "gc_ms": 0,
+        "runqueue_ms": 141.274,
+        "overlapping_decodes": []
+      },
+      {
+        "at": 1791839446.595,
+        "stage": "zoom",
+        "method": "App#update",
+        "wall_ms": 70.561,
+        "cpu_ms": 1.419,
+        "allocated_objects": 1283,
+        "props": 10,
+        "duplicate_props": 0,
+        "minor_gc": 0,
+        "major_gc": 0,
+        "gc_ms": 0,
+        "runqueue_ms": 69.145,
+        "overlapping_decodes": []
+      },
+      {
+        "at": 1791839445.396,
+        "stage": "pan",
+        "method": "App#update",
+        "wall_ms": 69.1,
+        "cpu_ms": 2.314,
+        "allocated_objects": 1448,
+        "props": 15,
+        "duplicate_props": 0,
+        "minor_gc": 0,
+        "major_gc": 0,
+        "gc_ms": 1,
+        "runqueue_ms": 66.763,
+        "overlapping_decodes": []
+      },
+      {
+        "at": 1791839429.871,
+        "stage": "combat",
+        "method": "App#update",
+        "wall_ms": 60.498,
+        "cpu_ms": 5.701,
+        "allocated_objects": 4900,
+        "props": 72,
+        "duplicate_props": 0,
+        "minor_gc": 0,
+        "major_gc": 0,
+        "gc_ms": 0,
+        "runqueue_ms": 54.798,
+        "overlapping_decodes": []
+      },
+      {
+        "at": 1791839446.048,
+        "stage": "pan",
+        "method": "App#update",
+        "wall_ms": 59.932,
+        "cpu_ms": 3.401,
+        "allocated_objects": 1496,
+        "props": 16,
+        "duplicate_props": 0,
+        "minor_gc": 0,
+        "major_gc": 0,
+        "gc_ms": 1,
+        "runqueue_ms": 56.534,
+        "overlapping_decodes": []
+      }
+    ],
+    "finding": "The largest update was 152.194 ms wall, 10.924 ms CPU and 141.274 ms run-queue wait, with zero GC and no overlapping decode. Other 50-70 ms stalls also mostly equal run-queue wait. This establishes Linux scheduler contention for that run, not the cause of the owner Mac capture or every historical outlier.",
+    "native_presented_intervals": {
+      "combat": [32.656, 79.821, 421.327],
+      "pan": [65.791, 250.997, 595.532],
+      "zoom": [40.175, 91.734, 304.358]
+    }
+  },
+  "root_causes_fixed": ["Baseline combat averaged 60.25 props/update, 45.91 wholly redundant. Minimap navigation alone averaged 1.47 ms, 1,889 allocations and 37.65 messages every frame. Conditional movement/styles remove the repeated work before Shoes serialization.", "ObjectSpace found 216 arrays and 36 hashes per warmed fixture frame from reconstructing each grub animation table, plus paths, name/HP strings and position arrays. Immutable animation/path constants and retained actor data remove this churn.", "Outlined names require five paragraphs; newly revealed names are now limited to two per frame instead of eight. Hidden actors defer zoom geometry except the active actor, whose bounds must remain correct for aim markers.", "The lock pulse, flame rate, sprite poses and aim geometry are preserved. Only rounded visual changes send messages; offscreen hazards retain simulation state while deferring image changes until visible.", "Terrain and minimap swaps were measured but were not the dominant recurring Ruby cost; no worker or terrain protocol restructuring was justified."],
+  "gc_decision": "No launcher heap settings, disabled runtime GC or forced idle collections. Allocation reductions reduce collection pressure; diagnosed long stalls had zero GC. Mac Ruby 3.4.7 heap/RSS and pause measurements are needed before changing packaged GC policy.",
+  "tests": {
+    "ruby_4_0_7": {
+      "command": "nice -n 10 bundle exec rake test",
+      "runs": 117,
+      "assertions": 5127,
+      "failures": 0,
+      "errors": 0
+    },
+    "ruby_3_4_7": {
+      "command": "PATH=<Ruby 3.4.7>/bin:$PATH nice -n 10 bundle exec rake test",
+      "runs": 117,
+      "assertions": 5127,
+      "failures": 0,
+      "errors": 0
+    },
+    "native": {
+      "pass": 7,
+      "fail": 0,
+      "error": 0,
+      "skip": 0,
+      "expected_fail": 0,
+      "unexpected_pass": 0,
+      "not_applicable": 0,
+      "timeout": 0
+    },
+    "native_assertions": 228,
+    "python_rendering_analysis": {
+      "tests": 9,
+      "failures": 0
+    },
+    "new_behavior_tests": {
+      "tests": 6,
+      "assertions": 42
+    },
+    "screenshots_equal": 8
+  },
+  "suggestions_for_other_owners": {
+    "timeline.rb": "~632 allocations/sample and 0.27 ms mean CPU remain, accounting for much of the optimized idle/pan allocation rate. Reuse interpolation scratch storage and avoid per-worm merge/zip/to_h while preserving elapsed time, short flights and pruned-history recovery.",
+    "connection.rb": "Measure decode/receive and GVL waits on the actual Mac build before a protocol redesign. Decode averages ~0.65 ms CPU, peaks ~4-5 ms in these profiled captures. Keep socket work off the GUI thread.",
+    "vendor/scarpe and patches/scarpe": "Large zooms still emit hundreds of required geometry/text updates (up to 545/update in this final live capture). A native text outline could replace five paragraph nodes per name; cheaper native props/layout/image-cache handling would address the remaining burst. Upstream unchanged-value filtering would protect other callers, but avoiding Ruby setters still saves serialization and allocations.",
+    "audio.rb": "Re-test audible event timing after integration on the M3 Pro. Linux OpenAL null mixing is not evidence of audible Mac output."
+  },
+  "risks_and_unfinished": ["No Mac execution or 60 FPS guarantee. The profiled final benchmark passed existing budgets; subsequent unprofiled captures failed under variable machine load and are retained here. Repeat on an otherwise idle host and on the packaged M3 Pro build.", "Native resize/text work can still put a zoom frame over 16.7 ms (about 20-23.5 ms in the representative final fixtures/live profile). Initial actor construction, many simultaneous effects or hazard births can still burst; native/other-workstream integration remains.", "Names can take up to 18 frames to populate a newly revealed 36-grub crowd at two/frame. Sprites and controls remain live; names and status/health are correct once shown.", "Synthetic screenshots prove the tested static/flame/pan/zoom views are unchanged, not every possible game state. Flame/gas viewport edges, hidden-label updates and offscreen active-actor zoom bounds have regression tests."],
+  "phase_cost_columns": ["method", "wall_mean_ms", "wall_p95_ms", "wall_max_ms", "cpu_mean_ms", "allocations_mean", "props_mean"],
+  "files_changed": ["CONTRIBUTING.md", "docs/STATUS.md", "docs/validation/README.md", "lib/burrow/client/app.rb", "lib/burrow/client/match_ui.rb", "lib/burrow/client/scene.rb", "lib/burrow/client/theme.rb", "test/frame_work_test.rb", "tools/check_frame_work.rb", "tools/check_rendering.py", "tools/check_rendering.rb", "tools/frame_profile.rb", "tools/test_rendering.py", "docs/validation/ruby-frame-0.5.0-linux.json"]
+}

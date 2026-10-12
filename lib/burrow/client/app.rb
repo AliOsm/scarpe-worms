@@ -96,7 +96,7 @@ module Burrow
         started = Burrow.clock
         update_activity
         @frame += 1
-        if [@shoes.width, @shoes.height] != @dimensions
+        if @shoes.width != @dimensions[0] || @shoes.height != @dimensions[1]
           @resize_at ||= Burrow.clock
           if Burrow.clock - @resize_at > 0.12
             @resize_at = nil
