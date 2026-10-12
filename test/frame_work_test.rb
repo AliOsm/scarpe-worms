@@ -26,6 +26,26 @@ class FrameWorkTest < Minitest::Test
     def show = self.hidden = false
     def hover(&block) = @hover = block
     def leave(&block) = @leave = block
+    def append = yield
+  end
+
+  class ActorScene < Burrow::Client::Scene
+    def initialize(state)
+      @state, @positions, @hurt_until = state, {}, {}
+      @scale = @ui_scale = 1
+      @camera = Burrow::Client::Camera.new(4800, 1600)
+      @controller = Struct.new(:target) { def motion? = false }.new([-1000, -1000])
+      @shoes = Object.new
+      def @shoes.para(text, **styles) = Drawable.new(text: text, **styles)
+      @actors = state["worms"].to_h do |w|
+        [w["id"], {team: 0, slot: Drawable.new, image: Drawable.new, badge: Drawable.new}]
+      end
+    end
+    def cache_frame(_path); end
+    def frame
+      @scale = @ui_scale * camera.zoom
+      render_actors(100)
+    end
   end
 
   class HUD
@@ -120,5 +140,35 @@ class FrameWorkTest < Minitest::Test
     widget.restyle(node, left: 10, top: 21, width: 30, height: 41)
     assert_equal [{top: 21, height: 41}], node.writes
     assert_equal [10, 21, 30, 41], [node.left, node.top, node.width, node.height]
+  end
+
+  def test_crowd_names_build_in_small_batches_and_refresh_after_being_hidden
+    worms = 12.times.map do |i|
+      {"id" => i, "name" => "Grub #{i}", "hp" => 100, "facing" => 1,
+        "x" => 100 + i * 95, "y" => 500, "vx" => 0, "vy" => 0}
+    end
+    scene = ActorScene.new("worms" => worms, "active" => 0, "phase" => "aiming")
+    scene.frame
+    assert_equal 2, scene.actors.values.count { |node| node[:label] }, "do not construct a crowd of text layers in one frame"
+    5.times { scene.frame }
+    assert_equal 12, scene.actors.values.count { |node| node[:label] }
+    node = scene.actors.fetch(1)
+    writes = node[:image].writes.length
+    scene.frame
+    assert_equal writes, node[:image].writes.length, "a retained pose must not resend its path"
+    scene.camera.overview
+    scene.frame
+    assert node[:label].hidden
+    worms[1]["name"], worms[1]["hp"] = "Renamed", 50
+    scene.frame
+    scene.camera.follow
+    scene.camera.navigate(720, 600)
+    scene.frame
+    refute node[:label].hidden
+    assert node[:label].layers.all? { |layer| layer.text == "Renamed\n50" }
+    assert_equal [worms[1]["x"], worms[1]["y"]], scene.positions[1]
+    worms[1]["facing"] = -1
+    scene.frame
+    assert_match(%r{/grubs/left/0-idle-0.png\z}, node[:image].path)
   end
 end

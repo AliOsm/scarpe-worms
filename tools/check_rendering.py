@@ -6,6 +6,7 @@ Mac: python3 tools/check_rendering.py --app 'dist/Burrow Brigade.app'
 from pathlib import Path
 import argparse
 import bisect
+from collections import defaultdict
 import json
 import os
 import statistics
@@ -56,6 +57,42 @@ def moving_intervals(rows, samples, started_unix):
     return intervals
 
 
+def distribution(values):
+    """A unit-neutral distribution for objects, messages, bytes and milliseconds."""
+    values = sorted(values)
+    if not values:
+        return dict(count=0, mean=None, p95=None, max=None)
+    return dict(count=len(values), mean=statistics.mean(values),
+                p95=values[min(len(values)-1, int(len(values)*.95))], max=values[-1])
+
+
+def frame_profile_summary(profile):
+    if not profile:
+        return None
+    groups = defaultdict(lambda: defaultdict(list))
+    for row in profile['samples']:
+        groups[row[1]][row[2]].append(row)
+    stages = {}
+    for stage, methods in groups.items():
+        counters = profile['stages'][stage]
+        decodes = [row for row in profile['decodes'] if row[1] == stage and row[2] == 'state']
+        stages[stage] = dict(methods={method: {
+            key: distribution(row[i] for row in rows)
+            for i, key in enumerate(profile['columns']) if 3 <= i <= 7
+        } for method, rows in methods.items()},
+            gc={key: counters['after'][key] - counters['before'][key]
+                for key in ('minor_gc_count', 'major_gc_count', 'time', 'total_allocated_objects')},
+            snapshot_decode={key: distribution(row[i] for row in decodes)
+                             for i, key in enumerate(profile['decode_columns']) if i >= 3})
+    slowest = sorted((s for s in profile['samples'] if s[2] == 'App#update'), key=lambda s: -s[3])[:10]
+    stalls = []
+    for row in slowest:
+        start, end = row[0] - row[3] / 1000, row[0]
+        overlapping = [d for d in profile['decodes'] if d[0] >= start and d[0] - d[4] / 1000 <= end]
+        stalls.append(dict(zip(profile['columns'], row), overlapping_decodes=overlapping))
+    return dict(stages=stages, slowest_updates=stalls, caveats=profile['caveats'])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--scale', type=float, help='Linux X11 window density; macOS uses the actual display')
@@ -99,6 +136,7 @@ def main():
         gameplay = json.loads((Path(directory)/'game.json').read_text())
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.with_suffix('.raw.json').write_text(json.dumps(dict(journey=report, native=native, ruby=ruby, gameplay=gameplay))+'\n')
+        report['frame_profile'] = frame_profile_summary(report.get('frame_profile'))
         report['surface'] = {k: native['counters'].get(k) for k in ('surface_width', 'surface_height', 'surface_scale_milli',
                                                                  'render_width', 'render_height', 'render_scale_milli')}
         report['surface']['compositor_scaling'] = bool(native['counters'].get('compositor_scaling'))

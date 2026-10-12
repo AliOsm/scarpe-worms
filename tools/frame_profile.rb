@@ -13,7 +13,7 @@ module FrameProfile
       @samples, @decodes, @props, @duplicates, @known = [], [], 0, 0, {}
       @stages = {}
       wrap(Burrow::Client::App, %i[update update_connection update_controls refresh_match_hud])
-      wrap(Burrow::Client::Scene, %i[render render_camera render_backdrop update_terrain reconcile_actors
+      wrap(Burrow::Client::Scene, %i[render render_camera render_backdrop render_actors render_projectiles render_hazards update_terrain reconcile_actors
         reconcile_objects build_label restyle_label render_aim render_effects render_navigation])
       wrap(Burrow::Client::Timeline, %i[sample accept])
       Scarpe::Native::Child.prepend(Module.new do
@@ -75,7 +75,7 @@ module FrameProfile
         end
         @props += 1
         @duplicates += 1 if same
-      when "remove"
+      when "destroy"
         @known.delete(id)
       end
     end

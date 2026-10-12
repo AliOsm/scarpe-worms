@@ -272,6 +272,11 @@ module Burrow
         node.move(left, top) unless node.left == left && node.top == top
       end
 
+      def place(node, left, top, width, height)
+        return if node.left == left && node.top == top && node.width == width && node.height == height
+        restyle(node, left: left, top: top, width: width, height: height)
+      end
+
       def show_if(node, visible)
         if visible
           node.show if node.hidden

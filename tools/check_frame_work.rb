@@ -60,9 +60,26 @@ Scarpe::Native.after_first_heartbeat do
     scene.instance_variable_set(:@timeline, timeline)
     scene.camera.navigate(850, 740)
     FixtureClock.now = 100.0
-    12.times { scene.render }
+    20.times { scene.render }
     client.refresh_match_hud
     auto.snapshot(File.join(out, "static.png"))
+    if ENV["BURROW_FRAME_ALLOCATIONS"] == "1"
+      # Trace a single warmed frame separately: allocation tracing changes cost
+      # substantially and must not contaminate the measured frame distributions.
+      was_disabled = GC.disable
+      ObjectSpace.trace_object_allocations_start
+      scene.render
+      ObjectSpace.trace_object_allocations_stop
+      sites = Hash.new(0)
+      ObjectSpace.each_object do |object|
+        file = ObjectSpace.allocation_sourcefile(object)
+        next unless file
+        sites[[file.delete_prefix(Burrow::ROOT + "/"), ObjectSpace.allocation_sourceline(object), object.class.name]] += 1
+      end
+      File.write(File.join(out, "allocation-sites.json"), JSON.pretty_generate(sites.sort_by { |_site, count| -count }))
+      ObjectSpace.trace_object_allocations_clear
+      GC.enable unless was_disabled
+    end
     %w[static flames pan zoom].each do |name|
       client.preferences["motion"] = name != "static"
       GC.start
