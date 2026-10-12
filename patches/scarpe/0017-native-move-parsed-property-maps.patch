@@ -1,0 +1,94 @@
+Subject: Move owned JSON property maps instead of cloning each update
+
+diff --git a/native/src/protocol.rs b/native/src/protocol.rs
+index cbbbad6..f799dd6 100644
+--- a/native/src/protocol.rs
++++ b/native/src/protocol.rs
+@@ -168,7 +168,7 @@ pub fn read_batches(input: impl std::io::Read, mut deliver: impl FnMut(Vec<Strin
+ 
+ pub fn parse_line(line: &str) -> Result<Incoming, ParseError> {
+     let value: Value = serde_json::from_str(line).map_err(|e| ParseError::Json(e.to_string()))?;
+-    let Value::Object(obj) = value else {
++    let Value::Object(mut obj) = value else {
+         return Err(ParseError::Message("not an object".into()));
+     };
+     let t = obj.get("t").and_then(Value::as_str).unwrap_or("");
+@@ -180,13 +180,13 @@ pub fn parse_line(line: &str) -> Result<Incoming, ParseError> {
+             parent: id(&obj, "parent"),
+             index: obj.get("index").and_then(Value::as_u64).map(|i| i as usize),
+             widget: obj.get("widget").and_then(Value::as_bool).unwrap_or(false),
+-            props: obj.get("props").and_then(Value::as_object).cloned().unwrap_or_default(),
++            props: take_props(&mut obj),
+             doc_root: id(&obj, "doc_root"),
+             owner: id(&obj, "owner"),
+         }),
+         "props" => Incoming::Props {
+             id: required(id(&obj, "id"), "id")?,
+-            props: obj.get("props").and_then(Value::as_object).cloned().unwrap_or_default(),
++            props: take_props(&mut obj),
+         },
+         "destroy" => Incoming::Destroy { id: required(id(&obj, "id"), "id")? },
+         "reparent" => Incoming::Reparent {
+@@ -209,6 +209,15 @@ pub fn parse_line(line: &str) -> Result<Incoming, ParseError> {
+     })
+ }
+ 
++// The JSON parser already owns each property map. Move it into the message instead
++// of cloning every key, string, array and nested drawing context for every update.
++fn take_props(obj: &mut Map<String, Value>) -> Map<String, Value> {
++    match obj.remove("props") {
++        Some(Value::Object(props)) => props,
++        _ => Map::new(),
++    }
++}
++
+ fn parse_op(obj: &Map<String, Value>) -> Op {
+     match op_fields(obj) {
+         Ok(op) => op,
+diff --git a/native/tests/protocol_owned_props.rs b/native/tests/protocol_owned_props.rs
+new file mode 100644
+index 0000000..7610027
+--- /dev/null
++++ b/native/tests/protocol_owned_props.rs
+@@ -0,0 +1,41 @@
++//! Protocol changes keep nested property values intact and avoid duplicate allocations.
++use scarpe_native::protocol::{parse_line, Incoming};
++use serde_json::json;
++use std::{hint::black_box, time::Instant};
++
++#[test]
++fn nested_props_and_creation_metadata_survive_parsing() {
++    let props = json!({"left": 12, "text_items": ["caption", 92], "draw_context": {"fill": {"rgba": [12, 30, 99, 127]}, "path": [["move_to", 4, 7]]}});
++    for kind in ["create", "props"] {
++        let line = json!({"t": kind, "id": 7, "kind": "Image", "parent": 2, "props": props, "doc_root": 9, "owner": 10}).to_string();
++        match parse_line(&line).unwrap() {
++            Incoming::Create(c) => {
++                assert_eq!(c.props, props.as_object().unwrap().clone());
++                assert_eq!((c.id, c.parent, c.doc_root, c.owner), (7, Some(2), Some(9), Some(10)));
++            }
++            Incoming::Props { id, props: actual } => { assert_eq!(id, 7); assert_eq!(&actual, props.as_object().unwrap()); }
++            other => panic!("{other:?}"),
++        }
++    }
++    for malformed in [json!(null), json!([]), json!("invalid")] {
++        let line = json!({"t": "props", "id": 7, "props": malformed}).to_string();
++        assert!(matches!(parse_line(&line).unwrap(), Incoming::Props { props, .. } if props.is_empty()));
++    }
++}
++
++#[test]
++#[ignore = "timing; run under the shared benchmark lock"]
++fn parse_small_property_batches() {
++    let lines = [
++        json!({"t":"props","id":3,"props":{"left":128}}).to_string(),
++        json!({"t":"props","id":3,"props":{"top":64}}).to_string(),
++        json!({"t":"props","id":4,"props":{"url":"/tmp/animation/frame-3.png","width":48,"height":48}}).to_string(),
++        json!({"t":"props","id":5,"props":{"text_items":["Caption"],"stroke":{"rgba":[255,200,25,255]}}}).to_string(),
++    ];
++    let start = Instant::now();
++    let batches = 20_000;
++    for _ in 0..batches {
++        for _ in 0..25 { for line in &lines { black_box(parse_line(black_box(line)).unwrap()); } }
++    }
++    println!("parse 100 property messages: {:.3} us/batch", start.elapsed().as_secs_f64() * 1e6 / batches as f64);
++}
