@@ -192,6 +192,16 @@ class AudioTest < Minitest::Test
     assert_equal [:stop, 8], al.calls.first, "use a finished voice before cutting off a playing voice"
   end
 
+  def test_authoritative_attack_reports_are_not_lost_to_the_ambient_cue_throttle
+    audio, al = fake_mixer
+    Burrow.stub(:clock, 100) do
+      2.times { |id| audio.event({"id" => id, "kind" => "beam", "style" => "burst"}) }
+      2.times { |id| audio.event({"id" => id + 2, "kind" => "explosion"}) }
+    end
+    assert_equal 2, al.calls.count { |call| call.first == :buffer && call.last == "shot" }
+    assert_equal 1, al.calls.count { |call| call.first == :buffer && call.last == "explosion" }
+  end
+
   private
 
   def chunk(name, bytes)

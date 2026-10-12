@@ -70,12 +70,12 @@ class PresentationTest < Minitest::Test
         end}}
   end
 
-  def stream_timing(timeline, connection, intervals, start_tick: 30, start_at: 1)
+  def stream_timing(timeline, connection, intervals, start_tick: 30, start_at: 1, tick_step: 1)
     now = start_at
     ticks = []
     intervals.each_with_index do |interval, i|
       now += interval
-      tick = start_tick + i
+      tick = start_tick + i * tick_step
       packet = {"type" => "state", "room" => {"match_id" => "adaptive"}, "match" => moving_state(tick)}
       connection.send(:receive, packet, now: now)
       timeline.accept(connection.poll[:state]["match"], now: now)
@@ -96,6 +96,14 @@ class PresentationTest < Minitest::Test
     assert_equal ticks.sort, ticks
     assert_equal [previous, *jittered].sort, [previous, *jittered]
     assert_in_delta 4.4, timeline.delay, 0.001
+  end
+
+  def test_remote_snapshot_cadence_keeps_a_full_interval_and_margin_in_the_buffer
+    timeline = Burrow::Client::Timeline.new
+    connection = Burrow::Client::Connection.new(endpoint: "tls://127.0.0.1:1", name: "Remote cadence")
+    stream_timing(timeline, connection, Array.new(100, 0.1), tick_step: 3)
+    assert_in_delta 3.5, timeline.delay, 0.001
+    assert_operator timeline.backlog_ms, :<, 20
   end
 
   def test_adaptive_delay_uses_arrival_history_through_coalescing_and_bounds_recovery

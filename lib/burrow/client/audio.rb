@@ -119,10 +119,10 @@ module Burrow
         end
       end
 
-      def play(name, x: WIDTH / 2, volume: 1, immediate: false)
+      def play(name, x: WIDTH / 2, volume: 1, immediate: false, throttle: true)
         return if muted? || !CUES.include?(name)
         now = Burrow.clock
-        return if !immediate && now - @last.fetch(name, 0) < 0.065
+        return if throttle && !immediate && now - @last.fetch(name, 0) < 0.065
         @last[name] = now
         source = voice(immediate)
         return unless source
@@ -148,7 +148,10 @@ module Burrow
           # Keep the bounded receipt so neither repeats the local cue.
           return if @predicted && @predicted[key] == cue
         end
-        play(cue, x: screen_x) if cue
+        # Timeline already emits each event once. Valid reports in a burst can
+        # arrive less than 65 ms apart during catch-up; do not discard them.
+        report = %w[fire beam jump activate].include?(event["kind"])
+        play(cue, x: screen_x, throttle: !report) if cue
       end
 
       # Called only after an input passes the UI gate and enters the connection
