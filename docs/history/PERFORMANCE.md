@@ -70,3 +70,48 @@ Linux Xvfb presentation does not measure Mac displays or input-to-photon latency
 - [Independent Scarpe patches](../../patches/scarpe/README.md)
 - [Apple select implementation](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/sys_generic.c)
 - [Apple kernel events and timers](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_event.c)
+
+
+## 0.5.0 renderer investigation (2026-10-12)
+
+Patches 0014–0017 reduce native work without changing simulation or Ruby timing.
+The 50% damage cutoff repainted the full window whenever the clipped battlefield
+moved. Keeping the undamaged strips until damage reaches 95% preserves the HUD's
+already-correct pixels, without a second transparent subtree compositor. The
+existing padded raster, clipping and damage verification remain in use.
+
+Shaping is cached by content/style/width/owner, and glyphs by physical glyph key.
+Moving an unchanged para reuses its shape; integer physical moves also reuse its
+glyph raster. Fractional X movement can populate four subpixel bins. Outlined
+labels have separate hit-test owners and shape entries but share glyph rasters;
+full paints still traverse and blend every layer.
+
+Images have four exact device-size copies per path. Fractional edge rounding can
+need four width/height combinations even at a fixed zoom; zooming needs new sizes.
+Rotated images use the normal bicubic shader and do not increment the resample
+counter. The document's hidden references already keep many grub frames alive,
+but other path cycles lost both decode and resized copies as soon as they were
+unshown. A 64-path / 32 MiB inactive cache removes that avoidable churn while
+preserving file invalidation. IPC already batches pipe writes and native event
+wakeups; removing a redundant property-map clone provides smaller headroom.
+
+[Mac preview run 38299955006](https://github.com/AliOsm/scarpe-worms/actions/runs/38299955006)
+executed packaged 0.5.0 on Apple silicon and failed its sustained-rendering gate.
+Combat/pan presentation intervals averaged 22.27/24.62 ms, with 32.95/36.21 ms p95,
+while paint averaged 2.07/3.80 ms and present 1.61/1.73 ms. The surface was only
+1280×653 at 1×. This confirms a Mac cadence problem, not its cause or Retina cost.
+The renderer queued expired frame deadlines in `AboutToWait`, after winit AppKit
+had drained redraws; patch 0016 queues them in `NewEvents` and records lateness.
+No new Mac result exists for that change.
+
+Mac presentation already uses the bounded CoreAnimation image and DeviceRGB
+matching. Scarpe converts RGBA to softbuffer's 0RGB; softbuffer 0.4 allocates a
+fresh presentation buffer each frame and ignores damage hints on Mac. That path
+was not rewritten without a Mac measurement. With the 1.5 MP budget, a physical
+3024×1964 window renders 1512×982; 3456×2234 renders 1152×745, because divisors are
+integers. Linux's 3840×2400 benchmark renders 1280×800, then expands in software.
+
+The [renderer validation report](../validation/renderer-per-frame-0.5.0.json) retains
+before/after and failed captures plus microbenchmarks. `perf` was installed but
+unavailable (`perf_event_paranoid=4`). Linux/Xvfb and OpenAL null output do not
+establish Retina Mac frame times or audible sound.

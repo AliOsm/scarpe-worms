@@ -2,8 +2,8 @@
 
 0.5.0 is an unreleased preview built on the 0.4.0 presentation pass. The current
 [report index](validation/README.md) links to versioned evidence; older reports remain
-historical. All execution in these passes ran on Linux. Native Apple silicon
-acceptance remains required.
+historical. Earlier passes ran on Linux. The later renderer investigation includes
+a failing Apple silicon CI baseline; updated Retina Mac acceptance remains required.
 
 ## 0.5.0 battlefield and blast physics (unreleased)
 
@@ -23,7 +23,12 @@ files, 3,470 resource hashes, ad-hoc signatures) and the archive integrity check
 Its bundled Ruby code passed fresh/resumed matches from a Unicode path under the default
 and C locales with Linux substitutes for the Darwin executables.
 
-Not run for 0.5.0: the app on a Mac, the 30-minute soak and human playtesting.
+The later Apple silicon CI run executed the packaged app but failed its sustained
+rendering gate on a 1280×653, 1× surface. The
+[renderer investigation](validation/renderer-per-frame-0.5.0.json) records that
+baseline and Linux measurements for patches 0014–0017: final combat/pan paint
+means 3.03/4.41 ms versus 3.74/6.17 ms before. Retina Mac execution after those
+patches, the 30-minute soak and human playtesting remain outstanding.
 
 ## Arcade interface restyle (unreleased)
 

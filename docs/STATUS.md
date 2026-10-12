@@ -74,8 +74,10 @@ and six full bot matches on every terrain type
 ([report](validation/battlefield-0.5.0-linux.json), [screenshots](evidence/README.md)).
 A 0.5.0 Apple silicon archive was cross-built on Linux and passed static,
 integrity and Linux-substituted packaged-code checks ([integrity](validation/distributable-0.5.0.json),
-[static](validation/macos-arm64-package-0.5.0.json)). Not yet run: the app on a Mac,
-the 30-minute soak, and human playtesting of the physics tuning and new maps.
+[static](validation/macos-arm64-package-0.5.0.json)). The packaged app subsequently
+ran on an Apple silicon CI runner: its sustained rendering gate failed (see the
+renderer investigation below). The 30-minute soak, Retina Mac validation and
+human playtesting remain outstanding.
 
 ## Arcade interface (unreleased)
 
@@ -122,10 +124,30 @@ An earlier 61.23 ms combat outlier remains
 documented; subsequent passing captures do not establish its cause or promise
 every frame reaches 60 FPS.
 
-All current execution evidence is Linux. The owner's M3 Pro smoothness report
-was for 0.2.4, whose timing fixes are preserved. Native 0.4.0 Mac execution,
-audible sound, real internet matches and signing/notarization remain outstanding.
+Most execution evidence is Linux. Packaged 0.5.0 also ran on Apple silicon CI,
+where the sustained-rendering gate failed on a 1× surface. The owner's M3 Pro
+smoothness report was for 0.2.4, whose timing fixes are preserved. Updated Retina
+Mac execution, human audio checks, real internet matches and signing/notarization
+remain outstanding.
 This is a preview, not a certified sales release.
+
+## Renderer investigation (2026-10-12)
+
+Independent patches 0014–0017 preserve static frame regions during large camera
+repaints, retain a bounded cache of animation paths, dispatch native frame deadlines
+before AppKit drains redraws, and avoid cloning parsed property maps. No game rules
+or Ruby scheduling changed. Linux measurements and checks are in the
+[renderer report](validation/renderer-per-frame-0.5.0.json); code and Mac present-path
+findings are in the [performance history](history/PERFORMANCE.md#050-renderer-investigation-2026-10-12).
+
+Patch verification, 364 Rust tests, 111 Ruby tests, all 7 native journeys and the
+final rendering gate passed. The report also retains an earlier native timing
+failure and an adverse rendering capture; their causes remain unestablished.
+
+The earlier Mac CI run had combat/pan presentation means of 22.27/24.62 ms despite
+paint/present means below 4 ms each. Its 1280×653, 1× surface does not test the
+owner's Retina display. The new patches need a packaged Mac run, device listening
+and an M3 Pro comparison before claiming the reported 0.5.0 regression is fixed.
 
 ## Next checks
 
@@ -141,9 +163,9 @@ This is a preview, not a certified sales release.
 
 ## Repository handoff
 
-The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 13
-independent patches; the arcade interface added patch 0013. 0.5.0 needs no new patch
-but moves to protocol 4, so hosts and clients must upgrade together.
+The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 17
+independent patches; the arcade interface added 0013 and the renderer investigation
+added 0014–0017. Protocol 4 hosts and clients must upgrade together.
 Runtime assets live in the source tree, so running the game needs no image service or
 asset download. Generated bundles, raw captures and player data remain ignored.
 No publishing or deployment was performed.

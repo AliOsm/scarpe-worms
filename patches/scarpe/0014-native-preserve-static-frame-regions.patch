@@ -1,0 +1,195 @@
+Subject: Preserve static frame pixels around large animated viewports
+
+diff --git a/native/src/paint/damage.rs b/native/src/paint/damage.rs
+index 77ba92a..a44f4d8 100644
+--- a/native/src/paint/damage.rs
++++ b/native/src/paint/damage.rs
+@@ -26,8 +26,11 @@ use std::hash::{Hash, Hasher};
+ use std::rc::Rc;
+ use tiny_skia::Pixmap;
+ 
+-/// More damage than this share of the frame is cheaper to paint in one go.
+-const MOSTLY: f32 = 0.5;
++/// Keep pixels outside a large animated viewport: their cost is not proportional
++/// to their area (a narrow toolbar may hold hundreds of text/shape layers).
++/// Repaint whole only when almost no static area remains to preserve. The padded
++/// partial raster and row copy stay bounded to the window size.
++const MOSTLY: f32 = 0.95;
+ /// Scattered damage beyond this many rects is joined into this many, the nearest first.
+ const MAX_RECTS: usize = 8;
+ /// Two rects merge when their union is at most this many pixels bigger than the pair.
+diff --git a/native/tests/damage.rs b/native/tests/damage.rs
+index 44c8396..f073a48 100644
+--- a/native/tests/damage.rs
++++ b/native/tests/damage.rs
+@@ -268,7 +268,9 @@ fn turned_scaled_and_skewed_art_repaints_in_part() {
+     props(&mut h, 12, json!({"left": 300}));
+     assert!(partial(&window.repaint(&mut h), &window, 0.3), "untransformed art stays cheap, and the transformed rect still shows through");
+     props(&mut h, 13, json!({"draw_context": {"scale": [30, 30]}}));
+-    assert_eq!(window.repaint(&mut h), Repaint::Everything, "scaled past the window, it is cheaper to paint it all");
++    assert!(partial(&window.repaint(&mut h), &window, 0.95), "the transformed art leaves a static strip worth keeping");
++    props(&mut h, 13, json!({"draw_context": {"scale": [40, 40]}}));
++    assert_eq!(window.repaint(&mut h), Repaint::Everything, "almost the whole frame is cheaper to paint directly");
+ 
+     feed(&mut h, &[create(30, "Star", 2, json!({"left": 120, "top": 270, "points": 5, "outer": 12, "inner": 5.4, "draw_context": {"rotate": 20, "transform": "center"}}))]);
+     window.repaint(&mut h);
+diff --git a/native/tests/large_damage.rs b/native/tests/large_damage.rs
+new file mode 100644
+index 0000000..4af413b
+--- /dev/null
++++ b/native/tests/large_damage.rs
+@@ -0,0 +1,154 @@
++//! A camera-like clipped viewport can cover most of a frame without invalidating
++//! controls that sit outside it.  The partial repaint must still match a full
++//! paint at both logical and Retina scales.
++
++mod common;
++
++use common::{app, create, Harness};
++use scarpe_native::paint::damage::{FrameMemory, Repaint};
++use serde_json::json;
++use std::time::{Duration, Instant};
++
++const APP: i64 = 1;
++
++fn move_actor(h: &mut Harness, left: i64) {
++    h.feed(&format!(
++        "{}\n{{\"t\":\"flush\"}}\n",
++        json!({"t": "props", "id": 9, "props": {"left": left}})
++    ));
++}
++
++#[test]
++fn large_clipped_viewport_keeps_static_controls_partial() {
++    for scale in [1.0, 2.0] {
++        let mut h = Harness::new();
++        h.feed(&app(
++            800,
++            600,
++            &[
++                create(3, "Stack", 2, json!({"width": 800, "height": 600})),
++                // Static top and bottom trays stand outside the moving viewport.
++                create(4, "Rect", 3, json!({"left": 0, "top": 0, "width": 800, "height": 70,
++                    "fill": {"rgba": [24, 30, 52, 255]}})),
++                create(5, "Rect", 3, json!({"left": 0, "top": 530, "width": 800, "height": 70,
++                    "fill": {"rgba": [24, 30, 52, 255]}})),
++                create(6, "Button", 3, json!({"left": 20, "top": 15, "width": 120, "height": 40, "text": "MENU"})),
++                create(7, "Button", 3, json!({"left": 20, "top": 545, "width": 120, "height": 40, "text": "ACTION"})),
++                // A fixed-height Stack clips descendants like a camera viewport.
++                // Moving its large actor exposes old pixels and covers a large,
++                // but not whole, fraction of the window.
++                create(8, "Stack", 3, json!({"left": 0, "top": 70, "width": 800, "height": 460})),
++                create(9, "Rect", 8, json!({"left": 0, "top": 0, "width": 780, "height": 440,
++                    "fill": {"rgba": [76, 148, 214, 255]}})),
++            ],
++        ));
++
++        let mut frame = h.rt.picture(APP, scale).expect("initial picture");
++        let mut memory = FrameMemory::default();
++        assert_eq!(h.rt.repaint(APP, &mut frame, scale, &mut memory), Repaint::Everything);
++        let before = frame.clone();
++
++        // The old and new child boxes union to roughly 77% of the frame.  This
++        // used to cross damage::MOSTLY and force a full repaint.
++        move_actor(&mut h, 100);
++        let plan = h.rt.repaint(APP, &mut frame, scale, &mut memory);
++        assert!(matches!(plan, Repaint::Rects(_)), "large viewport repainted whole: {plan:?}");
++        let total = frame.width() as u64 * frame.height() as u64;
++        let area = plan.pixels((frame.width(), frame.height()));
++        assert!(area * 100 > total * 50, "test damage did not exceed half the frame: {plan:?}");
++        assert!(area * 100 < total * 90, "test damage consumed almost the whole frame: {plan:?}");
++
++        let full = h.rt.picture(APP, scale).expect("full picture after move");
++        h.rt.verify_repaint(APP, &plan, &frame, scale, &full, &before).expect("partial repaint differs from full paint");
++    }
++}
++
++/// A repeatable native-only comparison for the battle-screen shape: many static
++/// outlined labels sit outside a mostly damaged viewport.  Run before and after
++/// changing damage::MOSTLY and compare the full/partial counts and timings.
++#[test]
++#[ignore]
++fn large_clipped_viewport_with_outlined_hud_benchmark() {
++    let mut h = Harness::new();
++    let mut body = vec![
++        create(3, "Stack", 2, json!({"width": 800, "height": 600})),
++        create(4, "Rect", 3, json!({"left": 0, "top": 0, "width": 800, "height": 70,
++            "fill": {"rgba": [24, 30, 52, 255]}})),
++        create(5, "Rect", 3, json!({"left": 0, "top": 530, "width": 800, "height": 70,
++            "fill": {"rgba": [24, 30, 52, 255]}})),
++        create(8, "Stack", 3, json!({"left": 0, "top": 70, "width": 800, "height": 460})),
++        create(9, "Rect", 8, json!({"left": 0, "top": 0, "width": 780, "height": 440,
++            "fill": {"rgba": [76, 148, 214, 255]}})),
++    ];
++    // Nine offset layers per label match the renderer cost of an outlined HUD
++    // label while keeping all of them in the static top tray.
++    let mut id = 100;
++    for label in 0..64 {
++        for layer in 0..9 {
++            body.push(create(
++                id,
++                "Para",
++                3,
++                json!({
++                    "left": 12 + layer % 3,
++                    "top": 8 + (label % 4) * 15 + layer / 3,
++                    "size": 14,
++                    "stroke": if layer == 0 { json!([255, 246, 180, 255]) } else { json!([8, 12, 24, 255]) },
++                    "text_items": [format!("HUD label {label}")],
++                }),
++            ));
++            id += 1;
++        }
++    }
++    h.feed(&app(800, 600, &body));
++    let mut frame = h.rt.picture(APP, 1.0).expect("initial picture");
++    let mut memory = FrameMemory::default();
++    assert_eq!(h.rt.repaint(APP, &mut frame, 1.0, &mut memory), Repaint::Everything);
++
++    let mut full = 0;
++    let mut partial = 0;
++    let mut total = Duration::ZERO;
++    for n in 0..60 {
++        move_actor(&mut h, if n % 2 == 0 { 100 } else { 0 });
++        let started = Instant::now();
++        let plan = h.rt.repaint(APP, &mut frame, 1.0, &mut memory);
++        total += started.elapsed();
++        match plan {
++            Repaint::Everything => full += 1,
++            Repaint::Rects(_) => partial += 1,
++            Repaint::Nothing => panic!("moving viewport repainted nothing"),
++        }
++    }
++    println!(
++        "large viewport + outlined HUD: full={full}, partial={partial}, mean repaint={:?}",
++        total / 60
++    );
++}
++
++/// Outlined labels have independent hit-test owners, but moving their container
++/// must keep each shaped buffer and all warmed physical glyph rasters.
++#[test]
++fn translating_outlined_paras_reuses_shapes_and_glyph_rasters() {
++    for scale in [1.0, 2.0] {
++        let mut h = Harness::new();
++        let mut body = vec![create(3, "Stack", 2, json!({"left": 20, "top": 20, "width": 400, "height": 120}))];
++        for i in 0..9 {
++            body.push(create(10 + i, "Para", 3, json!({"left": i % 3, "top": i / 3,
++                "margin": 0, "width": 300, "size": 18, "text_items": ["Outlined caption"]})));
++        }
++        h.feed(&app(800, 300, &body));
++        let _ = h.rt.picture(APP, scale).unwrap();
++        let shapes = h.rt.text.texts_shaped();
++        let glyphs = h.rt.text.raster.len();
++        let buffers: Vec<_> = (10..19).map(|id| h.rt.views[&APP].layout.as_ref().unwrap().texts[&id].shaped.buffer.clone()).collect();
++        for left in [30, 40, 80, 20] {
++            h.feed(&format!("{}\n{{\"t\":\"flush\"}}\n", json!({"t": "props", "id": 3, "props": {"left": left}})));
++            let _ = h.rt.picture(APP, scale).unwrap();
++            assert_eq!(h.rt.text.texts_shaped(), shapes);
++            assert_eq!(h.rt.text.raster.len(), glyphs);
++            for (id, before) in (10..19).zip(&buffers) {
++                assert!(std::rc::Rc::ptr_eq(before, &h.rt.views[&APP].layout.as_ref().unwrap().texts[&id].shaped.buffer));
++            }
++        }
++    }
++}
