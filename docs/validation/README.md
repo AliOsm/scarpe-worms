@@ -5,6 +5,7 @@ their scope; generic filenames are outputs of individual tools.
 
 | Evidence | Start here |
 | --- | --- |
+| 0.5.0 renderer per-frame investigation | [Linux before/after, Mac CI baseline, tests and limits](renderer-per-frame-0.5.0.json) |
 | 0.5.0 battlefield and blast physics (unreleased) | [battlefield-0.5.0-linux.json](battlefield-0.5.0-linux.json) |
 | 0.5.0 Mac archive (cross-built, not launched on a Mac) | [Integrity](distributable-0.5.0.json), [static checks](macos-arm64-package-0.5.0.json), relocated packaged Ruby code on Linux ([unset locale](package-0.5.0-relocated-linux.json), [C locale](package-0.5.0-relocated-linux-locale-c.json)) |
 | Arcade interface restyle (unreleased) | [ui-arcade-restyle-linux.json](ui-arcade-restyle-linux.json) |

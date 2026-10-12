@@ -123,3 +123,43 @@ Presentation patch (independent of game code):
 ```sh
 cargo test --release --locked --manifest-path vendor/scarpe/native/Cargo.toml --test bare_buttons
 ```
+
+
+Per-frame renderer patches (independent of game code):
+
+- `0014-native-preserve-static-frame-regions.patch`: retain undamaged pixels when
+  a clipped animation covers 50–95% of a window. The previous 50% cutoff repainted
+  dense static toolbars even though their pixels were still correct. The existing
+  bounded partial-paint path handles these regions; almost-whole damage, resize,
+  reordered content and overlays still use the full path. Tests compare pixels at
+  1×/2×, cover the 95% fallback, and verify moved outlined paras reuse shapes/glyphs.
+- `0015-native-recent-image-path-cache.patch`: retain up to 64 recently unshown paths
+  and 32 MiB of their decoded/resized pixels and alpha indexes, with last-used
+  eviction. Returning animation frames reuse both decode and resize work. Active
+  document references remain live; file metadata is still rechecked every batch.
+  Each path still holds at most four exact resized copies. This changes cache
+  lifetime, not image sampling or placement.
+- `0016-native-dispatch-frame-deadlines-before-redraw.patch`: queue paced frames
+  during `NewEvents`, before AppKit drains its redraw queue. Keep an end-of-turn
+  fallback and wait for complete IPC batches. Report refresh rate and request
+  lateness. Unit tests exercise deadline ordering, batching and idle input; the
+  Mac scheduling benefit still needs a new Mac execution.
+- `0017-native-move-parsed-property-maps.patch`: transfer the JSON parser's owned
+  property maps into `create`/`props` messages instead of cloning all their nested
+  data. Wire format, batch boundaries and malformed-property handling stay the same.
+
+Validation and Linux before/after measurements are recorded in
+[`renderer-per-frame-0.5.0.json`](../../docs/validation/renderer-per-frame-0.5.0.json).
+Run the focused regressions or the full native suite:
+
+```sh
+PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
+  --manifest-path vendor/scarpe/native/Cargo.toml \
+  --test damage --test large_damage --test image_retention --test images \
+  --test frame_deadlines --test protocol_owned_props
+```
+
+`large_damage` and `protocol_owned_props` include ignored timing tests. Run them
+serially under `/tmp/burrow-bench.lock`. For the image-cycle timing test, set
+`SCARPE_IMAGE_BENCH_PATHS` to four local image paths separated by the platform path
+separator. Its loop alternates paths 2,400 times and requests an exact 21×29 copy.
