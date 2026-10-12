@@ -8,6 +8,15 @@ Burrow Brigade supports two to six teams, bots, 48 weapons/tools, four seeded
 destructible biomes, self-hosted TLS rooms, reconnects, saves and rematches.
 It uses native Scarpe; host simulation and terrain painting run outside the GUI.
 
+Local input feedback now submits fire, jump and activation sounds immediately,
+with exact host-event receipts preventing duplicate reports. Loopback matches
+send incremental snapshots at 30 Hz; a measured 50–150 ms playback buffer retains
+the elapsed-time, short-flight and history-recovery protections from 0.2.4.
+The [latency/audio report](validation/latency-audio-linux.json) records TCP/TLS
+latency, snapshot/CPU costs and native checks, including a rendering outlier.
+These are Linux OpenAL submission and Timeline measurements; audible Mac output,
+display latency and real internet jitter still need testing.
+
 The 0.4.0 presentation pass adds:
 
 - An original painted menu, four atmospheric skies and four painted materials;

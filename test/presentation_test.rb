@@ -70,6 +70,104 @@ class PresentationTest < Minitest::Test
         end}}
   end
 
+  def stream_timing(timeline, connection, intervals, start_tick: 30, start_at: 1, tick_step: 1)
+    now = start_at
+    ticks = []
+    intervals.each_with_index do |interval, i|
+      now += interval
+      tick = start_tick + i * tick_step
+      packet = {"type" => "state", "room" => {"match_id" => "adaptive"}, "match" => moving_state(tick)}
+      connection.send(:receive, packet, now: now)
+      timeline.accept(connection.poll[:state]["match"], now: now)
+      timeline.sample(now: now)
+      ticks << timeline.tick
+    end
+    [now, ticks]
+  end
+
+  def test_adaptive_delay_shrinks_for_tick_snapshots_and_grows_under_jitter_without_reversing
+    timeline = Burrow::Client::Timeline.new
+    connection = Burrow::Client::Connection.new(endpoint: "tcp://127.0.0.1:1", name: "Timing")
+    now, ticks = stream_timing(timeline, connection, Array.new(180, 1.0 / 30))
+    assert_in_delta 1.5, timeline.delay, 0.001
+    assert_operator timeline.backlog_ms, :<, 20
+    previous = timeline.tick
+    _now, jittered = stream_timing(timeline, connection, [0.13, 0.001] * 12, start_tick: 210, start_at: now)
+    assert_equal ticks.sort, ticks
+    assert_equal [previous, *jittered].sort, [previous, *jittered]
+    assert_in_delta 4.4, timeline.delay, 0.001
+  end
+
+  def test_remote_snapshot_cadence_keeps_a_full_interval_and_margin_in_the_buffer
+    timeline = Burrow::Client::Timeline.new
+    connection = Burrow::Client::Connection.new(endpoint: "tls://127.0.0.1:1", name: "Remote cadence")
+    stream_timing(timeline, connection, Array.new(100, 0.1), tick_step: 3)
+    assert_in_delta 3.5, timeline.delay, 0.001
+    assert_operator timeline.backlog_ms, :<, 20
+  end
+
+  def test_adaptive_delay_uses_arrival_history_through_coalescing_and_bounds_recovery
+    connection = Burrow::Client::Connection.new(endpoint: "tcp://127.0.0.1:1", name: "Coalesced")
+    timeline = Burrow::Client::Timeline.new
+    # The UI consumes at 10 Hz, while the connection really receives at 30 Hz.
+    240.times do |i|
+      state = moving_state(i + 30)
+      state["motion"]["frames"] = state["motion"]["frames"].last(2)
+      connection.send(:receive, {"type" => "state", "room" => {"match_id" => "coalesced"}, "match" => state}, now: 1 + i / 30.0)
+      next unless i % 3 == 2
+      packet = connection.poll[:state]["match"]
+      timeline.accept(packet, now: 1 + i / 30.0 + 0.02)
+      timeline.sample(now: 1 + i / 30.0 + 0.02)
+      assert_operator packet["motion"]["frames"].size, :<=, 18
+    end
+    assert_in_delta 1.5, timeline.delay, 0.001
+    assert_operator timeline.backlog_ms, :<, 40
+    assert_operator timeline.instance_variable_get(:@offsets).size, :<=, 30
+    assert_equal 60, connection.instance_variable_get(:@intervals).length
+    # A new match cannot borrow motion or timing from the old one.
+    connection.send(:receive, {"type" => "state", "room" => {"match_id" => "new"}, "match" => moving_state(0)}, now: 20)
+    packet = connection.poll[:state]["match"]
+    assert_equal [0], packet["motion"]["frames"].map { |f| f["tick"] }
+    assert_equal 0, packet[:presentation_timing][:samples]
+  end
+
+  def test_coalescing_delta_frames_keeps_full_retained_motion_and_independent_packets
+    connection = Burrow::Client::Connection.new(endpoint: "tcp://127.0.0.1:1", name: "Delta")
+    31.times do |i|
+      state = moving_state(i)
+      state["motion"]["frames"] = state["motion"]["frames"].last(2)
+      connection.send(:receive, {"type" => "state", "match" => state}, now: 1 + i / 30.0)
+    end
+    first = connection.poll[:state]["match"]
+    assert_equal (13..30).to_a, first["motion"]["frames"].map { |f| f["tick"] }
+    connection.send(:receive, {"type" => "state", "match" => moving_state(60)}, now: 3)
+    assert_equal (43..60).to_a, connection.poll[:state]["match"]["motion"]["frames"].map { |f| f["tick"] }
+    assert_equal (13..30).to_a, first["motion"]["frames"].map { |f| f["tick"] }
+  end
+
+  def test_adaptive_buffer_still_presents_a_coalesced_short_flight_before_impact
+    connection = Burrow::Client::Connection.new(endpoint: "tcp://127.0.0.1:1", name: "Flight")
+    timeline = Burrow::Client::Timeline.new
+    now, = stream_timing(timeline, connection, Array.new(180, 1.0 / 30))
+    shot = {"id" => "short", "from" => 211, "to" => 212,
+      "samples" => [[211, 100, 100, 1, 0], [212, 110, 100, 1, 0]]}
+    state = moving_state(219, shots: [shot], events: [{"id" => 1, "kind" => "explosion", "tick" => 212}])
+    connection.send(:receive, {"type" => "state", "room" => {"match_id" => "adaptive"}, "match" => state}, now: now + 1.0 / 3)
+    timeline.accept(connection.poll[:state]["match"], now: now + 1.0 / 3)
+    seen, impacts = [], []
+    30.times do |i|
+      view = timeline.sample(now: now + 1.0 / 3 + i / 60.0)
+      seen << i if view["projectiles"].any?
+      impacts << i if timeline.events.any?
+    end
+    refute_empty seen
+    refute_empty impacts
+    assert_operator seen.first, :<, impacts.first
+    assert_operator timeline.delay, :<=, 4.5
+    timeline.accept(moving_state(260), now: now + 2)
+    assert_empty timeline.seen_shots, "completed shot IDs must not accumulate for the entire match"
+  end
+
   def test_camera_pointer_zoom_preserves_world_anchor_and_manual_control
     camera = Burrow::Client::Camera.new(4800, 1600)
     camera.follow
@@ -184,6 +282,32 @@ class PresentationTest < Minitest::Test
     assert_operator lags.map(&:first).max, :<, 12, "presentation escaped retained motion history"
     assert_operator lags.map(&:last).max, :<, 100
     assert_operator lags.last.first, :<, 6
+  end
+
+  def test_recorded_slow_frames_with_live_tick_arrivals_keep_adaptive_playback_current
+    timeline = Burrow::Client::Timeline.new
+    connection = Burrow::Client::Connection.new(endpoint: "tcp://127.0.0.1:1", name: "Cadence")
+    cadence = JSON.parse(File.read(File.join(__dir__, "fixtures/macos_0_2_3_cadence.json")))
+    next_tick = 30
+    cursors, backlog = [], []
+    cadence.each do |seconds, _recorded_tick|
+      host_tick = 30 + (seconds * Burrow::TICK_RATE).floor
+      while next_tick <= host_tick
+        state = moving_state(next_tick)
+        state["motion"]["frames"] = state["motion"]["frames"].last(2)
+        connection.send(:receive, {"type" => "state", "match" => state}, now: (next_tick - 30) / 30.0)
+        next_tick += 1
+      end
+      packet = connection.poll[:state]
+      timeline.accept(packet["match"], now: seconds) if packet
+      timeline.sample(now: seconds)
+      cursors << timeline.tick
+      backlog << timeline.backlog_ms
+      assert_operator host_tick - timeline.tick, :<, 12
+    end
+    assert_equal cursors.sort, cursors
+    assert_operator backlog.max, :<, 100
+    assert_in_delta 1.5, timeline.delay, 0.001
   end
 
   def test_long_pause_resynchronizes_without_replaying_expired_impacts

@@ -46,6 +46,7 @@ module Burrow
       def initialize(preferences)
         @preferences = preferences
         @available, @buffers, @sources, @last, @gains = false, {}, [], {}, {}
+        @predicted, @voice_priority, @voice_started = {}, {}, {}
         return if ENV["BURROW_MUTE"] == "1" || ENV["SCARPE_NATIVE_HEADLESS"] == "1"
         require "ffi"
         @al = Module.new do
@@ -89,6 +90,7 @@ module Burrow
         # allocate native sample buffers in the presentation loop.
         CUES.each { |name| buffer(name) }
         @cursor = 0
+        @source_status = FFI::MemoryPointer.new(:int)
         @available = true
         refresh
       rescue LoadError, StandardError => exception
@@ -110,42 +112,83 @@ module Burrow
             @music_started = true
           end
           @al.alSourcef(@music_source, 0x100a, @preferences["volume"] * 0.35)
-          status = FFI::MemoryPointer.new(:int)
-          @al.alGetSourcei(@music_source, 0x1010, status)
-          @al.alSourcePlay(@music_source) unless status.read_int == 0x1012
+          @al.alGetSourcei(@music_source, 0x1010, @source_status)
+          @al.alSourcePlay(@music_source) unless @source_status.read_int == 0x1012
         else
           @al.alSourceStop(@music_source)
         end
       end
 
-      def play(name, x: WIDTH / 2, volume: 1)
+      def play(name, x: WIDTH / 2, volume: 1, immediate: false, throttle: true)
         return if muted? || !CUES.include?(name)
         now = Burrow.clock
-        return if now - @last.fetch(name, 0) < 0.065
+        return if throttle && !immediate && now - @last.fetch(name, 0) < 0.065
         @last[name] = now
-        source = @sources[@cursor % MAX_VOICES]
-        @cursor += 1
+        source = voice(immediate)
+        return unless source
+        @voice_priority[source], @voice_started[source] = immediate, now
         @al.alSourceStop(source)
-        @al.alSourcei(source, 0x1009, buffer(name))
+        @al.alSourcei(source, 0x1009, @buffers.fetch(name))
         @gains[source] = volume.clamp(0.0, 1.0)
         @al.alSourcef(source, 0x100a, @gains[source] * @preferences["volume"])
         pan = ((x.to_f / WIDTH - 0.5) * 1.8).clamp(-0.9, 0.9)
         @al.alSource3f(source, 0x1004, pan, 0.0, -1.0)
         @al.alSourcePlay(source)
+        true
       rescue StandardError => exception
         @error = exception.message
         nil
       end
 
       def event(event, screen_x: WIDTH / 2)
-        cue = case event["kind"]
+        cue = event_cue(event)
+        if cue && (receipt = event["input"])
+          key = receipt.values_at("match", "player", "seq")
+          # A single command can emit two reports (fire + build, for example).
+          # Keep the bounded receipt so neither repeats the local cue.
+          return if @predicted && @predicted[key] == cue
+        end
+        # Timeline already emits each event once. Valid reports in a burst can
+        # arrive less than 65 ms apart during catch-up; do not discard them.
+        report = %w[fire beam jump activate].include?(event["kind"])
+        play(cue, x: screen_x, throttle: !report) if cue
+      end
+
+      # Called only after an input passes the UI gate and enters the connection
+      # queue. It predicts sound alone; the host still owns every game change.
+      def local_action(type, values:, state:, player:, sequence:, match_id:)
+        return unless state && state["team"] == player
+        event = case type
+        when "fire"
+          weapon = values[:weapon]
+          kind = Catalog::WEAPONS[weapon]&.fetch(:kind)
+          if %w[beam laser shotgun burst flame].include?(kind)
+            {"kind" => "beam", "style" => kind}
+          else
+            {"kind" => "fire", "weapon" => weapon}
+          end
+        when "jump" then {"kind" => "jump"}
+        when "activate", "detonate"
+          projectile = state["projectiles"].find { |p| p["owner"] == player && p["remote"] && p["life"] > 0 }
+          flying = projectile && projectile["kind"] == "guided" && projectile["stage"] == "walking"
+          {"kind" => "activate", "stage" => flying ? "flying" : nil}
+        end
+        cue = event && event_cue(event)
+        return unless cue && play(cue, immediate: true)
+        @predicted ||= {}
+        @predicted[[match_id, player, sequence]] = cue
+        @predicted.shift while @predicted.size > 96
+      end
+
+      def event_cue(event)
+        case event["kind"]
         when "fire"
           kind = Catalog::WEAPONS[event["weapon"]]&.fetch(:kind)
           case kind
           when "projectile", "homing" then "launch"
           when "bounce", "cluster", "sticky", "gas" then "throw"
           # Beam, melee, healing and teleport events supply their own report.
-          when "beam", "laser", "shotgun", "burst", "melee", "dash", "heal", "teleport", "skip" then nil
+          when "beam", "laser", "shotgun", "burst", "flame", "melee", "dash", "heal", "teleport", "skip" then nil
           when "shield", "freeze", "boost", "gravity", "wind" then "pickup"
           else "equip"
           end
@@ -154,7 +197,6 @@ module Burrow
         when "activate" then event["stage"] == "flying" ? "launch" : "equip"
         else EVENT_CUES[event["kind"]]
         end
-        play(cue, x: screen_x) if cue
       end
 
       def close
@@ -179,6 +221,21 @@ module Burrow
       end
 
       private
+
+      def voice(immediate)
+        # Prefer finished voices. When all twelve are busy, protect a fresh
+        # local report from a same-frame burst of authoritative impact effects.
+        indices = MAX_VOICES.times.map { |i| (@cursor + i) % MAX_VOICES }
+        index = indices.find do |i|
+          @al.alGetSourcei(@sources[i], 0x1010, @source_status)
+          @source_status.read_int != 0x1012
+        end
+        index ||= indices.reject { |i| @voice_priority[@sources[i]] }.min_by { |i| @voice_started.fetch(@sources[i], 0) }
+        index ||= indices.min_by { |i| @voice_started.fetch(@sources[i], 0) } if immediate
+        return unless index
+        @cursor = index + 1
+        @sources[index]
+      end
 
       def buffer(name)
         raise "Unknown sound cue" unless CUES.include?(name)

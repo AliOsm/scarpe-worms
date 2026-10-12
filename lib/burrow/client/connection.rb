@@ -26,7 +26,13 @@ module Burrow
       def connect
         return if @thread&.alive?
         @stopping = false
-        @thread = Thread.new { run }
+        @wake_reader, @wake_writer = IO.pipe
+        @thread = Thread.new do
+          run
+        ensure
+          @wake_reader.close unless @wake_reader.closed?
+          @wake_writer.close unless @wake_writer.closed?
+        end
         self
       end
 
@@ -36,6 +42,7 @@ module Burrow
           @sequence += 1
           @outbox.push(values.merge(type: type, seq: @sequence), true)
         end
+        wake
         true
       rescue ThreadError
         false
@@ -58,6 +65,7 @@ module Burrow
 
       def close
         @stopping = true
+        wake
         @socket&.close
         @thread&.join(1)
         set_status("offline", "Disconnected")
@@ -66,6 +74,12 @@ module Burrow
       end
 
       private
+
+      def wake
+        @wake_writer&.write_nonblock(".", exception: false)
+      rescue IOError, SystemCallError
+        nil
+      end
 
       def set_status(value, message)
         @lock.synchronize { @status, @message = value, message }
@@ -113,7 +127,10 @@ module Burrow
             last_ping = Burrow.clock
           end
           raise IOError, "The server stopped responding. Reconnecting…" if Burrow.clock - last_message > 12
-          readable, writable = IO.select([socket], output.empty? ? nil : [socket], nil, 0.04) || [[], []]
+          readable, writable = IO.select([socket, @wake_reader].compact, output.empty? ? nil : [socket], nil, 0.04) || [[], []]
+          if readable.delete(@wake_reader)
+            @wake_reader.read_nonblock(4096, exception: false)
+          end
           if !output.empty? && !writable.empty?
             write_chunk ||= output.byteslice(0, Protocol::WRITE_CHUNK)
             written = socket.write_nonblock(write_chunk, exception: false)
@@ -189,12 +206,13 @@ module Burrow
         raise
       end
 
-      def receive(message)
+      def receive(message, now: Burrow.clock)
         case message["type"]
         when "welcome"
           raise RuleError, "Protocol version mismatch." unless message["version"] == PROTOCOL
           @welcomed = true
           @lock.synchronize do
+            @state = @terrain_packet = @snapshot_identity = nil
             @token, @id = message.fetch("token"), message.fetch("id")
             @sequence = message.fetch("seq", 0)
             @welcome = message
@@ -206,6 +224,7 @@ module Burrow
           @lock.synchronize { @notices = (@notices + [message.fetch("message")]).last(12) }
         when "state"
           @lock.synchronize do
+            prepare_snapshot(message, now)
             @terrain_packet = message.dig("match", "terrain") if message.dig("match", "terrain")
             @state = message
           end
@@ -213,6 +232,48 @@ module Burrow
           at = message["at"]
           @rtt = ((Burrow.clock - at) * 1000).round if at.is_a?(Numeric)
         end
+      end
+
+      def prepare_snapshot(message, now)
+        state = message["match"]
+        unless state
+          @snapshot_identity = nil
+          return
+        end
+        identity = [message.dig("room", "code"), message.dig("room", "match_id")]
+        tick = state.fetch("tick")
+        if !@motion_frames || identity != @snapshot_identity || tick < @snapshot_tick
+          @motion_frames, @intervals, @jitters = {}, [], []
+          @snapshot_at = @snapshot_tick = nil
+        end
+        if @snapshot_at && tick > @snapshot_tick
+          interval = now - @snapshot_at
+          if interval > 0.6
+            @intervals.clear
+            @jitters.clear
+          elsif interval > 0
+            @intervals << interval
+            @jitters << (interval - (tick - @snapshot_tick).fdiv(TICK_RATE)).abs
+            @intervals.shift while @intervals.length > 60
+            @jitters.shift while @jitters.length > 60
+          end
+        end
+        # Internal metadata records socket arrivals, not UI poll cadence. A slow
+        # frame must not teach the jitter buffer that the network is slow.
+        intervals = @intervals.sort
+        state[:presentation_timing] = {received_at: now, samples: intervals.length,
+          interval: intervals[intervals.length / 2] || 0,
+          p95: intervals[(intervals.length * 0.95).floor] || 0,
+          jitter: @jitters.sort[(@jitters.length * 0.95).floor] || 0}
+        if (motion = state["motion"])
+          Array(motion["frames"]).each { |frame| @motion_frames[frame["tick"]] = frame }
+          @motion_frames.delete_if { |t, _| t < tick - 17 }
+          # The array and hash belong to this packet; later receives cannot
+          # mutate a packet already handed to the presentation thread.
+          state["motion"] = motion.merge("frames" => @motion_frames.values)
+        end
+        @snapshot_identity = identity
+        @snapshot_tick, @snapshot_at = tick, now if !@snapshot_tick || tick > @snapshot_tick
       end
 
       def friendly_error(error)

@@ -1,0 +1,905 @@
+{
+  "date": "2026-10-12",
+  "baseline": "47dec15",
+  "implementation_commits": [
+    "e2af774",
+    "5aea166"
+  ],
+  "platform": "Linux x86_64, Ruby 4.0.7, shared six-core machine",
+  "scope": "Real ProcessHost TCP and certificate-pinned TLS on loopback; App action through Timeline and OpenAL. Eight input rounds per transport. CPU window: six teams, 36 grubs, one recipient, five seconds including saves.",
+  "limits": [
+    "Audio timestamps are alSourcePlay submissions to the Linux null driver, not acoustic output.",
+    "Projectile timestamps are the first Timeline sample containing the shot at a 60 Hz sampling cadence, not display photons.",
+    "TLS measurements use loopback, not a WAN.",
+    "Native benchmarks were serialized with /tmp/burrow-bench.lock. Other machine workloads still competed for CPU; failed captures are retained below."
+  ],
+  "latency_before": {
+    "ruby": "ruby 4.0.7 (2026-09-15 revision 229531a6cf) +PRISM [x86_64-linux]",
+    "platform": "x86_64-linux",
+    "rounds": 8,
+    "weapon": "super_sheep (fire, then walking-to-flying activation)",
+    "load": "six teams, 36 grubs, one snapshot recipient; five-second CPU window",
+    "audio_measurement": "OpenAL source submission, not acoustic output",
+    "projectile_measurement": "Timeline sample, not pixels",
+    "tcp": {
+      "latency": {
+        "jump_to_event_ms": {
+          "count": 8,
+          "mean": 192.52467365004122,
+          "p50": 184.28468285128474,
+          "p95": 236.52146197855473,
+          "max": 236.52146197855473
+        },
+        "jump_to_audio_ms": {
+          "count": 8,
+          "mean": 192.66224995953962,
+          "p50": 185.11060206219554,
+          "p95": 236.55887506902218,
+          "max": 236.55887506902218
+        },
+        "fire_to_event_ms": {
+          "count": 8,
+          "mean": 198.80746031412855,
+          "p50": 197.84997589886189,
+          "p95": 228.05403405800462,
+          "max": 228.05403405800462
+        },
+        "fire_to_audio_ms": {
+          "count": 8,
+          "mean": 198.85207258630544,
+          "p50": 197.89176899939775,
+          "p95": 228.09407021850348,
+          "max": 228.09407021850348
+        },
+        "fire_to_projectile_ms": {
+          "count": 8,
+          "mean": 198.80746031412855,
+          "p50": 197.84997589886189,
+          "p95": 228.05403405800462,
+          "max": 228.05403405800462
+        },
+        "activate_to_event_ms": {
+          "count": 8,
+          "mean": 184.11376263247803,
+          "p50": 183.53925878182054,
+          "p95": 222.06833492964506,
+          "max": 222.06833492964506
+        },
+        "activate_to_audio_ms": {
+          "count": 8,
+          "mean": 184.15711406851187,
+          "p50": 183.5774970240891,
+          "p95": 222.1081219613552,
+          "max": 222.1081219613552
+        }
+      },
+      "snapshot_rate_hz": 8.39942734360849,
+      "arrival_ms": {
+        "count": 41,
+        "mean": 119.69888263677315,
+        "p50": 105.09409802034497,
+        "p95": 191.57084682956338,
+        "max": 253.32996202632785
+      },
+      "payload_bytes": {
+        "count": 42,
+        "mean": 40591.880952380954,
+        "p50": 40497,
+        "p95": 40943,
+        "max": 40945
+      },
+      "parse_cpu_ms": {
+        "count": 42,
+        "mean": 0.5724189285714265,
+        "p50": 0.43635900000001115,
+        "p95": 1.395590000000002,
+        "max": 1.5316429999999992
+      },
+      "parse_cpu_ms_per_second": 4.807991200641915,
+      "receive_cpu_ms": {
+        "count": 42,
+        "mean": 0.010324261904762145,
+        "p50": 0.009802000000003197,
+        "p95": 0.012804000000005145,
+        "max": 0.021854000000001705
+      },
+      "receive_cpu_ms_per_second": 0.08671788774543462,
+      "host_cpu_ms_per_second": 29.997954798601818,
+      "backlog_ms": {
+        "count": 301,
+        "mean": 29.878098010162557,
+        "p50": 20.33866070210877,
+        "p95": 84.84232677146746,
+        "max": 114.9986317194994
+      },
+      "delay_ticks": {
+        "count": 0
+      }
+    },
+    "tls": {
+      "latency": {
+        "jump_to_event_ms": {
+          "count": 8,
+          "mean": 175.81327725201845,
+          "p50": 183.59070597216487,
+          "p95": 202.54627102985978,
+          "max": 202.54627102985978
+        },
+        "jump_to_audio_ms": {
+          "count": 8,
+          "mean": 175.94526015454903,
+          "p50": 184.3596319667995,
+          "p95": 202.58212881162763,
+          "max": 202.58212881162763
+        },
+        "fire_to_event_ms": {
+          "count": 8,
+          "mean": 180.1108915824443,
+          "p50": 183.52766381576657,
+          "p95": 202.7643616311252,
+          "max": 202.7643616311252
+        },
+        "fire_to_audio_ms": {
+          "count": 8,
+          "mean": 180.3420790238306,
+          "p50": 183.57003387063742,
+          "p95": 202.80612399801612,
+          "max": 202.80612399801612
+        },
+        "fire_to_projectile_ms": {
+          "count": 8,
+          "mean": 180.1108915824443,
+          "p50": 183.52766381576657,
+          "p95": 202.7643616311252,
+          "max": 202.7643616311252
+        },
+        "activate_to_event_ms": {
+          "count": 8,
+          "mean": 185.92584453290328,
+          "p50": 184.05471881851554,
+          "p95": 290.22573260590434,
+          "max": 290.22573260590434
+        },
+        "activate_to_audio_ms": {
+          "count": 8,
+          "mean": 186.5207040682435,
+          "p50": 184.20596281066537,
+          "p95": 290.2650157921016,
+          "max": 290.2650157921016
+        }
+      },
+      "snapshot_rate_hz": 7.399314147439388,
+      "arrival_ms": {
+        "count": 36,
+        "mean": 133.4450188377458,
+        "p50": 111.85221001505852,
+        "p95": 212.1416600421071,
+        "max": 216.52580006048083
+      },
+      "payload_bytes": {
+        "count": 37,
+        "mean": 40587.48648648649,
+        "p50": 40497,
+        "p95": 40944,
+        "max": 40944
+      },
+      "parse_cpu_ms": {
+        "count": 37,
+        "mean": 0.517648675675678,
+        "p50": 0.42262399999998257,
+        "p95": 1.4117549999999868,
+        "max": 1.495486000000018
+      },
+      "parse_cpu_ms_per_second": 3.8302451693303072,
+      "receive_cpu_ms": {
+        "count": 37,
+        "mean": 0.010085945945946716,
+        "p50": 0.009297999999990925,
+        "p95": 0.019236000000005804,
+        "max": 0.020405000000001117
+      },
+      "receive_cpu_ms_per_second": 0.07462908252815248,
+      "host_cpu_ms_per_second": 27.99740488220303,
+      "backlog_ms": {
+        "count": 301,
+        "mean": 25.22186834511591,
+        "p50": 19.96679156397742,
+        "p95": 63.299120118220735,
+        "max": 83.33007798840602
+      },
+      "delay_ticks": {
+        "count": 0
+      }
+    }
+  },
+  "latency_after": {
+    "ruby": "ruby 4.0.7 (2026-09-15 revision 229531a6cf) +PRISM [x86_64-linux]",
+    "platform": "x86_64-linux",
+    "rounds": 8,
+    "weapon": "super_sheep (fire, then walking-to-flying activation)",
+    "load": "six teams, 36 grubs, one snapshot recipient; five-second CPU window",
+    "audio_measurement": "OpenAL source submission, not acoustic output",
+    "projectile_measurement": "Timeline sample, not pixels",
+    "tcp": {
+      "latency": {
+        "jump_to_event_ms": {
+          "count": 8,
+          "mean": 115.53941277088597,
+          "p50": 116.92602979019284,
+          "p95": 133.60799429938197,
+          "max": 133.60799429938197
+        },
+        "jump_to_audio_ms": {
+          "count": 8,
+          "mean": 0.06570830009877682,
+          "p50": 0.06719212979078293,
+          "p95": 0.07545482367277145,
+          "max": 0.07545482367277145
+        },
+        "fire_to_event_ms": {
+          "count": 8,
+          "mean": 71.47833344060928,
+          "p50": 83.56983307749033,
+          "p95": 100.28544487431645,
+          "max": 100.28544487431645
+        },
+        "fire_to_audio_ms": {
+          "count": 8,
+          "mean": 0.07875455776229501,
+          "p50": 0.07495516911149025,
+          "p95": 0.09740795940160751,
+          "max": 0.09740795940160751
+        },
+        "fire_to_projectile_ms": {
+          "count": 8,
+          "mean": 71.47833344060928,
+          "p50": 83.56983307749033,
+          "p95": 100.28544487431645,
+          "max": 100.28544487431645
+        },
+        "activate_to_event_ms": {
+          "count": 8,
+          "mean": 94.24282138934359,
+          "p50": 83.72681774199009,
+          "p95": 267.12111895903945,
+          "max": 267.12111895903945
+        },
+        "activate_to_audio_ms": {
+          "count": 8,
+          "mean": 0.06832490907981992,
+          "p50": 0.0687730498611927,
+          "p95": 0.07722293958067894,
+          "max": 0.07722293958067894
+        }
+      },
+      "snapshot_rate_hz": 21.98844704986654,
+      "arrival_ms": {
+        "count": 109,
+        "mean": 45.764618305438155,
+        "p50": 41.425995994359255,
+        "p95": 76.55779598280787,
+        "max": 123.29321168363094
+      },
+      "payload_bytes": {
+        "count": 110,
+        "mean": 18297.090909090908,
+        "p50": 17745,
+        "p95": 19298,
+        "max": 19300
+      },
+      "parse_cpu_ms": {
+        "count": 110,
+        "mean": 0.2549163181818165,
+        "p50": 0.22844699999999274,
+        "p95": 0.39604899999998167,
+        "max": 0.811407000000014
+      },
+      "parse_cpu_ms_per_second": 5.6052139644878025,
+      "receive_cpu_ms": {
+        "count": 110,
+        "mean": 0.05171602727273042,
+        "p50": 0.051179999999984016,
+        "p95": 0.06355900000001857,
+        "max": 0.09114700000001363
+      },
+      "receive_cpu_ms_per_second": 1.1371551273158866,
+      "host_cpu_ms_per_second": 31.98319570889681,
+      "backlog_ms": {
+        "count": 301,
+        "mean": 4.982181448089173,
+        "p50": 2.538533173500923,
+        "p95": 16.060012156764476,
+        "max": 25.674691796302795
+      },
+      "delay_ticks": {
+        "count": 301,
+        "mean": 2.9247363930555723,
+        "p50": 2.796765772625804,
+        "p95": 3.2330722333863378,
+        "max": 3.3827598905190825
+      }
+    },
+    "tls": {
+      "latency": {
+        "jump_to_event_ms": {
+          "count": 8,
+          "mean": 121.97970651322976,
+          "p50": 133.74417508020997,
+          "p95": 150.42491583153605,
+          "max": 150.42491583153605
+        },
+        "jump_to_audio_ms": {
+          "count": 8,
+          "mean": 0.07352809188887477,
+          "p50": 0.07136398926377296,
+          "p95": 0.1041400246322155,
+          "max": 0.1041400246322155
+        },
+        "fire_to_event_ms": {
+          "count": 8,
+          "mean": 90.82041605142877,
+          "p50": 100.23871622979641,
+          "p95": 134.53384907916188,
+          "max": 134.53384907916188
+        },
+        "fire_to_audio_ms": {
+          "count": 8,
+          "mean": 0.07782177999615669,
+          "p50": 0.07230695337057114,
+          "p95": 0.10364968329668045,
+          "max": 0.10364968329668045
+        },
+        "fire_to_projectile_ms": {
+          "count": 8,
+          "mean": 90.82041605142877,
+          "p50": 100.23871622979641,
+          "p95": 134.53384907916188,
+          "max": 134.53384907916188
+        },
+        "activate_to_event_ms": {
+          "count": 8,
+          "mean": 79.8273173859343,
+          "p50": 83.65119202062488,
+          "p95": 100.52917618304491,
+          "max": 100.52917618304491
+        },
+        "activate_to_audio_ms": {
+          "count": 8,
+          "mean": 0.19237748347222805,
+          "p50": 0.07466226816177368,
+          "p95": 0.9466898627579212,
+          "max": 0.9466898627579212
+        }
+      },
+      "snapshot_rate_hz": 20.198562761851335,
+      "arrival_ms": {
+        "count": 100,
+        "mean": 49.6702692983672,
+        "p50": 50.3996261395514,
+        "p95": 74.96290095150471,
+        "max": 86.04841725900769
+      },
+      "payload_bytes": {
+        "count": 101,
+        "mean": 18473.20792079208,
+        "p50": 17857,
+        "p95": 19298,
+        "max": 19300
+      },
+      "parse_cpu_ms": {
+        "count": 101,
+        "mean": 0.27169592079207927,
+        "p50": 0.23251599999998818,
+        "p95": 0.389285000000017,
+        "max": 1.3897260000000355
+      },
+      "parse_cpu_ms_per_second": 5.487867108257802,
+      "receive_cpu_ms": {
+        "count": 101,
+        "mean": 0.0531557623762364,
+        "p50": 0.05021499999999235,
+        "p95": 0.0719160000000052,
+        "max": 0.09679800000000904
+      },
+      "receive_cpu_ms_per_second": 1.0736700025104668,
+      "host_cpu_ms_per_second": 33.99758088628442,
+      "backlog_ms": {
+        "count": 301,
+        "mean": 3.827650404637483,
+        "p50": 0.0,
+        "p95": 14.23137987653457,
+        "max": 17.152694687247322
+      },
+      "delay_ticks": {
+        "count": 301,
+        "mean": 2.765448024753246,
+        "p50": 2.690825553610921,
+        "p95": 3.0379379307851195,
+        "max": 3.4627396557480097
+      }
+    }
+  },
+  "quieter_initial_measurements": {
+    "before": {
+      "tcp": {
+        "fire_to_audio_mean_ms": 183.62279003486037,
+        "fire_to_projectile_mean_ms": 183.57360659865662,
+        "snapshot_rate_hz": 9.9994278169755,
+        "payload_mean_bytes": 40585.24,
+        "parse_cpu_mean_ms": 0.5877545799999978,
+        "parse_cpu_ms_per_second": 5.87720949680673,
+        "host_cpu_ms_per_second": 31.998169014321537
+      },
+      "tls": {
+        "fire_to_audio_mean_ms": 183.7508269236423,
+        "fire_to_projectile_mean_ms": 183.70817456161603,
+        "snapshot_rate_hz": 9.999109745125647,
+        "payload_mean_bytes": 40602.56,
+        "parse_cpu_mean_ms": 1.052045160000001,
+        "parse_cpu_ms_per_second": 10.519515011668279,
+        "host_cpu_ms_per_second": 53.99519262367849
+      }
+    },
+    "after": {
+      "tcp": {
+        "fire_to_audio_mean_ms": 0.12298248475417495,
+        "fire_to_projectile_mean_ms": 73.6845342325978,
+        "snapshot_rate_hz": 29.986165443856592,
+        "payload_mean_bytes": 17765.833333333332,
+        "parse_cpu_mean_ms": 0.23324273333333015,
+        "parse_cpu_ms_per_second": 6.994055190310563,
+        "host_cpu_ms_per_second": 31.985243140113635
+      },
+      "tls": {
+        "fire_to_audio_mean_ms": 0.07597001967951655,
+        "fire_to_projectile_mean_ms": 66.96889630984515,
+        "snapshot_rate_hz": 28.398144716234814,
+        "payload_mean_bytes": 17846.50704225352,
+        "parse_cpu_mean_ms": 0.3029295422535233,
+        "parse_cpu_ms_per_second": 8.602636979738323,
+        "host_cpu_ms_per_second": 41.997256270488094
+      }
+    },
+    "note": "Earlier observations before the sustained contention period; receive-history CPU was not instrumented in these runs."
+  },
+  "implementation": {
+    "network": "Input queue wakes socket select with a bounded nonblocking pipe. Active loopback snapshots target 30 Hz, remote snapshots keep the 95 ms gate. Terrain and output-queue limits stay unchanged.",
+    "history": "Wire motion rows are incremental with one overlap; the connection rebuilds up to 18 ticks before coalescing. Full sync/reconnect snapshots carry complete history. Shot tracks retain birth/end samples.",
+    "delay": "Starts at 4.5 ticks. After 12 arrivals, target is max(interval p95, interval median + jitter p95) * 30 + 0.5 ticks, clamped to 1.5\u20134.5. Uses 60 socket-arrival samples; shrink limited to two ticks/second; growth immediate. Stable synthetic 30 Hz reaches 1.5 ticks, 10 Hz reaches 3.5; 130 ms bursts raise it to 4.4. Legacy snapshots retain 4.5.",
+    "audio": "Local input plays after successful enqueue through the existing pending-action gate. Match/player/sequence receipts suppress every matching authoritative report, including fire/build pairs. Cache bounded to 96 receipts. Optional room checkpoint metadata preserves receipts across restart without changing simulation state.",
+    "voices": "Twelve preloaded effect sources plus separate looping music. Reuse stopped sources first and call alSourceStop before rebinding. Protect local reports from ambient voice stealing. Local cues and authoritative attack reports bypass the 65 ms ambient throttle; no audio playback queue or gameplay file reads.",
+    "root_causes": [
+      "Input enqueue did not wake the 40 ms connection select.",
+      "Local snapshots used the same ~100 ms cadence as remote peers.",
+      "Fixed 150 ms playback buffering delayed all local reports.",
+      "Global cue throttling could discard valid attack sounds during catch-up."
+    ]
+  },
+  "tests": {
+    "core": {
+      "command": "nice -n 10 bundle exec rake test",
+      "runs": 127,
+      "assertions": 5939,
+      "failures": 0,
+      "errors": 0
+    },
+    "native": {
+      "command": "nice -n 10 flock /tmp/burrow-bench.lock ./bin/check-native",
+      "cases": 7,
+      "assertions": 228,
+      "failures": 0
+    },
+    "audio": {
+      "command": "nice -n 10 bundle exec ruby tools/check_audio.rb",
+      "cues": 22,
+      "result": "OpenAL decode/mix, stereo positioning, music, mute/resume and idempotent close passed"
+    },
+    "regressions": [
+      "Loopback/IPv6/remote cadence",
+      "Immediate enqueue wakeup",
+      "Incremental overlap/full sync/coalescing isolation",
+      "Adaptive jitter and remote buffer margin",
+      "Recorded Mac cadence with live arrivals",
+      "Coalesced short flights and bounded seen-shot IDs",
+      "Exact receipt deduplication, including remote players, build pairs and checkpoint recovery",
+      "Existing pending-action gate and failed sends",
+      "Voice reuse/stop order/music exclusion and cue throttle"
+    ]
+  },
+  "rendering": {
+    "command": "nice -n 10 flock /tmp/burrow-bench.lock xvfb-run -a -s \"-screen 0 3840x2400x24\" python3 tools/check_rendering.py --scale 2 --size 1920x1200 --audio [--timer-slack-ms 100] --output /tmp/report.json",
+    "baseline_pass": {
+      "measurement": "Linux native X11 window",
+      "timer_slack_ms": 0,
+      "audio_output": "Linux OpenAL null driver",
+      "wait_backend": {
+        "name": "TimerFD",
+        "error": null
+      },
+      "wait_overshoot": {
+        "count": 4030,
+        "mean_ms": 0.1099106000630051,
+        "p95_ms": 0.32698316499590874,
+        "p99_ms": 1.2891297228634357,
+        "max_ms": 11.67487958446145,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "playback_backlog": {
+        "count": 2191,
+        "mean_ms": 11.59816081015869,
+        "p95_ms": 23.538039910296977,
+        "p99_ms": 42.899122126400435,
+        "max_ms": 60.83524730056524,
+        "over_33ms": 47,
+        "over_50ms": 9
+      },
+      "scenarios": {
+        "combat": {
+          "presented_intervals": {
+            "count": 873,
+            "mean_ms": 17.055264862951955,
+            "p95_ms": 23.195981979370117,
+            "p99_ms": 33.17546844482422,
+            "max_ms": 52.16622352600098,
+            "over_33ms": 8,
+            "over_50ms": 1
+          },
+          "app_update_max_ms": 48.54880040511489,
+          "paint_max_ms": 21.693035
+        },
+        "pan": {
+          "presented_intervals": {
+            "count": 349,
+            "mean_ms": 17.190891810888253,
+            "p95_ms": 22.428115000000304,
+            "p99_ms": 29.097882999998603,
+            "max_ms": 42.08291400000164,
+            "over_33ms": 1,
+            "over_50ms": 0
+          },
+          "app_update_max_ms": 32.85734774544835,
+          "paint_max_ms": 15.419587
+        },
+        "zoom": {
+          "presented_intervals": {
+            "count": 379,
+            "mean_ms": 19.247922337730866,
+            "p95_ms": 38.288039000001106,
+            "p99_ms": 52.76084700000183,
+            "max_ms": 68.2143900000014,
+            "over_33ms": 35,
+            "over_50ms": 5
+          },
+          "app_update_max_ms": 21.64899604395032,
+          "paint_max_ms": 18.840842
+        }
+      },
+      "result": "passed_all_budgets"
+    },
+    "timer_slack_pass": {
+      "measurement": "Linux native X11 window",
+      "timer_slack_ms": 100,
+      "audio_output": "Linux OpenAL null driver",
+      "wait_backend": {
+        "name": "TimerFD",
+        "error": null
+      },
+      "wait_overshoot": {
+        "count": 4062,
+        "mean_ms": 0.12006000274033866,
+        "p95_ms": 0.17502764239907265,
+        "p99_ms": 1.0836422443389893,
+        "max_ms": 25.39664786309004,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "playback_backlog": {
+        "count": 2182,
+        "mean_ms": 9.333422375121206,
+        "p95_ms": 16.05232090378763,
+        "p99_ms": 16.534827432284754,
+        "max_ms": 60.43204196418325,
+        "over_33ms": 1,
+        "over_50ms": 1
+      },
+      "scenarios": {
+        "combat": {
+          "presented_intervals": {
+            "count": 900,
+            "mean_ms": 16.589288976457382,
+            "p95_ms": 21.51036262512207,
+            "p99_ms": 26.218175888061523,
+            "max_ms": 52.993059158325195,
+            "over_33ms": 2,
+            "over_50ms": 1
+          },
+          "app_update_max_ms": 23.953961674124002,
+          "paint_max_ms": 16.802861999999998
+        },
+        "pan": {
+          "presented_intervals": {
+            "count": 360,
+            "mean_ms": 16.688114352777777,
+            "p95_ms": 19.18923299999875,
+            "p99_ms": 21.241268000004254,
+            "max_ms": 22.523163000002455,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update_max_ms": 18.641653936356306,
+          "paint_max_ms": 9.808501000000001
+        },
+        "zoom": {
+          "presented_intervals": {
+            "count": 377,
+            "mean_ms": 19.373832114058363,
+            "p95_ms": 40.16678300000365,
+            "p99_ms": 71.73834000000312,
+            "max_ms": 76.90428699999785,
+            "over_33ms": 32,
+            "over_50ms": 9
+          },
+          "app_update_max_ms": 34.65730603784323,
+          "paint_max_ms": 15.365393
+        }
+      },
+      "result": "passed_all_budgets"
+    },
+    "failed_captures": [
+      {
+        "name": "first_candidate",
+        "status": "failed_budget",
+        "timer_slack_ms": 0,
+        "combat": {
+          "count": 901,
+          "mean_ms": 16.602460340442722,
+          "p95_ms": 20.718097686767578,
+          "p99_ms": 27.45652198791504,
+          "max_ms": 94.26307678222656,
+          "over_33ms": 5,
+          "over_50ms": 1
+        },
+        "pan": {
+          "count": 356,
+          "mean_ms": 16.85742448595506,
+          "p95_ms": 20.097569999997233,
+          "p99_ms": 23.503914999999154,
+          "max_ms": 34.53278699999984,
+          "over_33ms": 2,
+          "over_50ms": 0
+        },
+        "backlog_max_ms": 19.800108671188354,
+        "wait_backend": {
+          "name": "TimerFD",
+          "error": null
+        }
+      },
+      {
+        "name": "profiled_repeat",
+        "status": "failed_budget",
+        "timer_slack_ms": 0,
+        "combat": {
+          "count": 613,
+          "mean_ms": 21.630850351654104,
+          "p95_ms": 41.06283187866211,
+          "p99_ms": 103.30390930175781,
+          "max_ms": 209.04231071472168,
+          "over_33ms": 54,
+          "over_50ms": 20
+        },
+        "pan": {
+          "count": 256,
+          "mean_ms": 23.65973197265625,
+          "p95_ms": 46.773207999997624,
+          "p99_ms": 71.89037800000264,
+          "max_ms": 89.48258999999936,
+          "over_33ms": 32,
+          "over_50ms": 10
+        },
+        "backlog_max_ms": 176.7581769886116,
+        "wait_backend": {
+          "name": "TimerFD",
+          "error": null
+        }
+      },
+      {
+        "name": "timer_slack_under_contention",
+        "status": "failed_budget",
+        "timer_slack_ms": 100,
+        "combat": {
+          "count": 279,
+          "mean_ms": 47.36377346900202,
+          "p95_ms": 115.36431312561035,
+          "p99_ms": 311.3820552825928,
+          "max_ms": 869.5297241210938,
+          "over_33ms": 123,
+          "over_50ms": 66
+        },
+        "pan": {
+          "count": 338,
+          "mean_ms": 17.729751026627213,
+          "p95_ms": 25.251621000002444,
+          "p99_ms": 32.44457899999986,
+          "max_ms": 59.34487199999694,
+          "over_33ms": 3,
+          "over_50ms": 1
+        },
+        "backlog_max_ms": 254.5225522170464,
+        "wait_backend": {
+          "name": "TimerFD",
+          "error": null
+        }
+      },
+      {
+        "name": "normal_under_contention",
+        "status": "failed_budget",
+        "timer_slack_ms": 0,
+        "combat": {
+          "count": 344,
+          "mean_ms": 46.21935306593429,
+          "p95_ms": 127.73633003234863,
+          "p99_ms": 209.7933292388916,
+          "max_ms": 287.37473487854004,
+          "over_33ms": 162,
+          "over_50ms": 90
+        },
+        "pan": {
+          "count": 98,
+          "mean_ms": 59.05079101020405,
+          "p95_ms": 172.81491399999993,
+          "p99_ms": 310.7257600000004,
+          "max_ms": 310.7257600000004,
+          "over_33ms": 64,
+          "over_50ms": 39
+        },
+        "backlog_max_ms": 137.1520346341034,
+        "wait_backend": {
+          "name": "TimerFD",
+          "error": null
+        }
+      },
+      {
+        "name": "baseline_timer_slack_control",
+        "status": "failed_budget",
+        "timer_slack_ms": 100,
+        "combat": {
+          "count": 906,
+          "mean_ms": 16.981957764025555,
+          "p95_ms": 23.089885711669922,
+          "p99_ms": 33.5996150970459,
+          "max_ms": 65.80781936645508,
+          "over_33ms": 10,
+          "over_50ms": 3
+        },
+        "pan": {
+          "count": 328,
+          "mean_ms": 18.287412268292684,
+          "p95_ms": 28.53746499999943,
+          "p99_ms": 51.32241599999787,
+          "max_ms": 61.27577700000231,
+          "over_33ms": 10,
+          "over_50ms": 4
+        },
+        "backlog_max_ms": 84.0402979714175,
+        "wait_backend": {
+          "name": "TimerFD",
+          "error": null
+        }
+      },
+      {
+        "name": "additional_timer_slack_repeat",
+        "status": "failed_combat_update_budget",
+        "timer_slack_ms": 100,
+        "combat": {
+          "count": 713,
+          "mean_ms": 16.64981701598094,
+          "p95_ms": 22.765159606933594,
+          "p99_ms": 27.73261070251465,
+          "max_ms": 53.08699607849121,
+          "over_33ms": 4,
+          "over_50ms": 1
+        },
+        "pan": {
+          "count": 356,
+          "mean_ms": 16.841575101123585,
+          "p95_ms": 21.32548700000214,
+          "p99_ms": 30.064426999999228,
+          "max_ms": 44.27155599999821,
+          "over_33ms": 2,
+          "over_50ms": 0
+        },
+        "combat_app_update_max_ms": 92.69105177372694,
+        "backlog_max_ms": 46.55785961076617,
+        "wait_backend": {
+          "name": "TimerFD",
+          "error": null
+        }
+      }
+    ],
+    "first_outlier_analysis": {
+      "frame_gap_ms": 94.2631,
+      "ui_update_wall_ms": 50.8792,
+      "ui_update_thread_cpu_ms": 2.9203,
+      "maximum_backlog_ms": 19.8001,
+      "wait_backend": "TimerFD, no fallback error",
+      "interpretation": "Most UI elapsed time was not UI-thread CPU. This does not establish whether scheduling, GVL ownership or synchronous native calls caused the stall. The profiled contention repeat showed the same wall/CPU disparity. Machine CPU pressure avg60 reached 27.56 percent; unrelated workloads were active."
+    },
+    "normal_pass": {
+      "measurement": "Linux native X11 window",
+      "timer_slack_ms": 0,
+      "audio_output": "Linux OpenAL null driver",
+      "wait_backend": {
+        "name": "TimerFD",
+        "error": null
+      },
+      "wait_overshoot": {
+        "count": 4047,
+        "mean_ms": 0.09923435131804513,
+        "p95_ms": 0.1675095409154892,
+        "p99_ms": 0.7100813090801239,
+        "max_ms": 44.89466082304716,
+        "over_33ms": 1,
+        "over_50ms": 0
+      },
+      "playback_backlog": {
+        "count": 2190,
+        "mean_ms": 10.603320121000857,
+        "p95_ms": 15.877195621531351,
+        "p99_ms": 18.08492016668121,
+        "max_ms": 53.770747811843954,
+        "over_33ms": 8,
+        "over_50ms": 1
+      },
+      "scenarios": {
+        "combat": {
+          "presented_intervals": {
+            "count": 822,
+            "mean_ms": 16.362705950029284,
+            "p95_ms": 21.26312255859375,
+            "p99_ms": 26.419878005981445,
+            "max_ms": 42.909860610961914,
+            "over_33ms": 3,
+            "over_50ms": 0
+          },
+          "app_update_max_ms": 26.969475205987692,
+          "paint_max_ms": 15.545783
+        },
+        "pan": {
+          "presented_intervals": {
+            "count": 360,
+            "mean_ms": 16.638759508333333,
+            "p95_ms": 18.844849000000607,
+            "p99_ms": 21.542106999998367,
+            "max_ms": 27.216080999998837,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update_max_ms": 18.0872050113976,
+          "paint_max_ms": 11.265865999999999
+        },
+        "zoom": {
+          "presented_intervals": {
+            "count": 408,
+            "mean_ms": 17.935239924019605,
+            "p95_ms": 33.634059999997135,
+            "p99_ms": 39.381363000003944,
+            "max_ms": 49.09605799999639,
+            "over_33ms": 21,
+            "over_50ms": 0
+          },
+          "app_update_max_ms": 30.75340297073126,
+          "paint_max_ms": 14.308824
+        }
+      },
+      "result": "passed_all_budgets"
+    }
+  },
+  "risks_and_remaining": [
+    "Both ends must ship these protocol-4 changes together; saves remain compatible through optional room metadata.",
+    "An intent rejected by the host can already have produced local feedback; no game-state prediction occurs.",
+    "Mac speakers/display and real internet jitter have not been tested.",
+    "Every-frame 60 FPS is not established; native captures included stalls under shared-machine contention.",
+    "Normal and 100 ms timer-slack captures each passed, but later/earlier reruns also failed frame budgets. Stable every-frame performance remains an integration/Mac validation task; do not treat the passing captures as a universal 60 FPS guarantee."
+  ]
+}

@@ -333,4 +333,80 @@ class NetworkTest < Minitest::Test
     assert_equal first + second, delivered
     assert_equal ["écho", "state"], delivered.lines.map { |line| JSON.parse(line)["type"] }
   end
+
+  def test_loopback_cadence_including_ipv6_and_remote_budget
+    room = Struct.new(:match).new(Struct.new(:finished?).new(false))
+    %w[127.0.0.1 127.0.0.2 ::1 ::ffff:127.0.0.1].each do |address|
+      peer = Burrow::Server::Peer.new(nil, address)
+      assert peer.loopback, address
+      assert_operator @server.send(:snapshot_interval, peer, room), :<, Burrow::DT
+    end
+    %w[192.168.1.2 203.0.113.1 ::ffff:203.0.113.1 2001:db8::1].each do |address|
+      peer = Burrow::Server::Peer.new(nil, address)
+      refute peer.loopback, address
+      assert_in_delta 0.095, @server.send(:snapshot_interval, peer, room)
+      assert_in_delta 0.35, @server.send(:snapshot_interval, peer, nil)
+    end
+    host = client
+    accepted(host, "create", name: "Cadence", bots: 1)
+    accepted(host, "start")
+    ticks = 12.times.map { host.state { |s| s["match"] }.dig("match", "tick") }
+    assert_operator ticks.last - ticks.first, :<, 20, "loopback must deliver faster than one packet per three ticks"
+  end
+
+  def test_input_receipts_identify_only_events_from_that_authoritative_command
+    host = client
+    accepted(host, "create", name: "Feedback", bots: 1)
+    accepted(host, "start")
+    initial = host.state { |s| s["match"] }
+    accepted(host, "fire", weapon: "shotgun", angle: -60)
+    state = host.state { |s| s.dig("match", "events")&.any? { |e| e["kind"] == "fire" } }
+    expected = {"player" => host.id, "seq" => host.sequence, "match" => initial.dig("room", "match_id")}
+    events = state.dig("match", "events")
+    assert_equal expected, events.find { |e| e["kind"] == "fire" }["input"]
+    assert_equal expected, events.find { |e| e["kind"] == "beam" }["input"]
+    assert_nil events.find { |e| e["kind"] == "turn" }["input"]
+    match = @server.rooms.values.first.match
+    assert match.events.none? { |e| e.key?(:input) }, "transport receipts must not mutate deterministic events"
+    checkpoint = JSON.parse(JSON.generate(@server.rooms.values.first.checkpoint))
+    restored = Burrow::Server::Room.restore(checkpoint)
+    restored_event = JSON.parse(JSON.generate(restored.match_snapshot))['events'].find { |e| e['kind'] == 'fire' }
+    assert_equal expected, restored_event["input"], "host recovery must not replay a predicted cue"
+    legacy = Burrow::Server::Room.restore(checkpoint.except("input_events"))
+    assert_equal match.tick, legacy.match.tick, "old saves still load without receipt metadata"
+  end
+
+  def test_incremental_snapshots_overlap_and_sync_restores_full_history
+    host = client
+    accepted(host, "create", name: "History", bots: 1)
+    accepted(host, "start")
+    packet = host.state { |s| s.dig("match", "tick").to_i >= 21 }
+    frames = packet.dig("match", "motion", "frames")
+    assert_operator frames.length, :<=, 4
+    last = packet.dig("match", "tick")
+    following = host.state { |s| s.dig("match", "tick").to_i > last }
+    assert_equal last, following.dig("match", "motion", "frames", 0, "tick")
+    accepted(host, "sync")
+    synced = host.state { |s| s.dig("match", "terrain") && s.dig("match", "tick").to_i >= 21 }
+    assert_equal 18, synced.dig("match", "motion", "frames").length
+  end
+
+  def test_queuing_an_intent_wakes_the_connection_wait_without_polling
+    connection = Burrow::Client::Connection.new(endpoint: "tcp://127.0.0.1:1", name: "Wake")
+    reader, writer = IO.pipe
+    connection.instance_variable_set(:@wake_reader, reader)
+    connection.instance_variable_set(:@wake_writer, writer)
+    connection.send(:set_status, "online", "Test")
+    assert connection.send_action("fire", weapon: "rocket")
+    assert_equal [reader], IO.select([reader], nil, nil, 0)&.first
+    assert_equal ".", reader.read_nonblock(1)
+    assert_equal 1, connection.sequence
+    assert_equal "fire", connection.instance_variable_get(:@outbox).pop[:type]
+    connection.send(:set_status, "offline", "Test")
+    refute connection.send_action("activate")
+    assert_nil IO.select([reader], nil, nil, 0), "failed inputs must not wake the socket"
+  ensure
+    reader&.close
+    writer&.close
+  end
 end
