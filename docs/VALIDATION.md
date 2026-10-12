@@ -17,7 +17,13 @@ Linux only; [summary report](validation/battlefield-0.5.0-linux.json).
 | Simulation | Six bot matches over every terrain type finish; slowest host tick 9 ms |
 | Assets | Audit passes (526 runtime PNGs); terrain and props rebuild byte-identically |
 
-Not run for 0.5.0: macOS, packaged builds, the 30-minute soak and human playtesting.
+The 0.5.0 Apple silicon archive (`Burrow-Brigade-0.5.0-macos-arm64.zip`, 42.6 MiB,
+SHA-256 `f8c38e85…d323b`) was cross-built on Linux. Static checks (106 arm64 Mach-O
+files, 3,470 resource hashes, ad-hoc signatures) and the archive integrity check pass.
+Its bundled Ruby code passed fresh/resumed matches from a Unicode path under the default
+and C locales with Linux substitutes for the Darwin executables.
+
+Not run for 0.5.0: the app on a Mac, the 30-minute soak and human playtesting.
 
 ## Arcade interface restyle (unreleased)
 

@@ -1,7 +1,7 @@
 # macOS build and diagnostics
 
-Target: **Apple silicon (arm64), macOS 13+**. The source is version 0.5.0 (unreleased);
-the last packaged and checked archive was the ad-hoc signed 0.4.0 preview. Intel/Windows packages and a notarized sales release are not provided.
+Target: **Apple silicon (arm64), macOS 13+**. Version 0.5.0 (unreleased) is an ad-hoc
+signed preview; its archive has been cross-built and statically checked, not yet launched on a Mac. Intel/Windows packages and a notarized sales release are not provided.
 
 ## Build the standalone app on Linux
 

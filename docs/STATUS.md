@@ -63,8 +63,10 @@ seven native journeys (including new homing, girder, strike and split input path
 the rendering benchmark within budget, byte-identical art rebuilds and asset checks,
 and six full bot matches on every terrain type
 ([report](validation/battlefield-0.5.0-linux.json), [screenshots](evidence/README.md)).
-Not yet run: macOS, packaged builds, the 30-minute soak, and human playtesting of the
-physics tuning and new maps.
+A 0.5.0 Apple silicon archive was cross-built on Linux and passed static,
+integrity and Linux-substituted packaged-code checks ([integrity](validation/distributable-0.5.0.json),
+[static](validation/macos-arm64-package-0.5.0.json)). Not yet run: the app on a Mac,
+the 30-minute soak, and human playtesting of the physics tuning and new maps.
 
 ## Arcade interface (unreleased)
 
@@ -124,7 +126,7 @@ This is a preview, not a certified sales release.
    Retina/external displays, Finder launch, focus, resizing and sleep/wake.
 3. Listen to the mixed audio and complete two-to-six-person internet matches.
    Collect human feedback on aiming, camera, balance and small-window legibility.
-4. Re-run the packaged checks and 30-minute soak for 0.5.0; profile the isolated
+4. Launch the 0.5.0 archive on Macs and run the 30-minute soak; profile the isolated
    timing outlier if it reproduces, preserving the 0.2.4 precise-wait/playback fixes.
 5. Complete the [release requirements](RELEASE.md) before sales.
 
