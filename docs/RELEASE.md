@@ -1,7 +1,8 @@
 # Release status and remaining acceptance work
 
 Version 0.4.0 is a functional preview with the implemented game and automated
-validation. It is **not yet certified for sale**. The evidence in VALIDATION.md
+validation; 0.5.0 (unreleased) adds the new battlefield, blast physics and multi-step
+weapons, with Linux-only evidence so far. Neither is **certified for sale**. The evidence in VALIDATION.md
 describes what actually ran; generated workflows are not execution evidence.
 
 The user confirmed 0.2.4 runs smoothly on an M3 Pro; 0.4.0 retains that renderer

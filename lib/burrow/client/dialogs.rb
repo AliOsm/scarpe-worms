@@ -349,8 +349,8 @@ module Burrow
           steps = [
             ["01", "Get your bearings", "Each team takes a turn. Your active grub has an orange arrow.\nA / D moves. W jumps; B backflips. G shows the map; F follows."],
             ["02", "Make an educated guess", "Point to aim. Hold Space or mouse for throws; release to fire.\nGuns and tools use a tap. Up / Down adjusts aim."],
-            ["03", "Know your next move", "E opens the arsenal. 1–5 sets grenade fuses. Homing: click to lock,\nthen aim and charge. Critters: Space activates the next stage."],
-            ["04", "Have an exit strategy", "You get a few seconds to retreat after firing. Keep moving.\nWater is lethal. The last surviving team wins; sudden death raises the tide."]
+            ["03", "Know your next move", "E opens the arsenal. 1–5 sets fuses. Homing: click to lock, then aim and charge.\n← → picks an air strike's approach or tilts a girder. Space triggers the next stage."],
+            ["04", "Have an exit strategy", "You get a few seconds to retreat. Blasts fling grubs, barrels and mines; fire spreads.\nWater is lethal. The last surviving team wins; sudden death raises the tide."]
           ]
           steps.each_with_index do |(number, title, detail), i|
             top = y + 137 + i * 116

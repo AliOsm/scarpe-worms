@@ -566,6 +566,10 @@
       "fx/explosion-6.png",
       "fx/explosion-7.png",
       "fx/explosion-8.png",
+      "fx/flame-0.png",
+      "fx/flame-1.png",
+      "fx/flame-2.png",
+      "fx/flame-3.png",
       "fx/smoke-0.png",
       "fx/smoke-1.png",
       "fx/smoke-2.png",
@@ -585,6 +589,7 @@
     ],
     "ui": [
       "ui/crosshair.png",
+      "ui/target-lock.png",
       "ui/turn-marker-0.png",
       "ui/turn-marker-1.png",
       "ui/turn-marker-2.png",
@@ -678,6 +683,43 @@
         ],
         "fps": 12,
         "pattern": "fx/sparkle-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          96,
+          96
+        ]
+      },
+      "flame": {
+        "frames": 4,
+        "size": [
+          24,
+          32
+        ],
+        "anchor": [
+          12,
+          30
+        ],
+        "fps": 12,
+        "pattern": "fx/flame-{frame}.png",
+        "note": "burning fuel on the ground; loops while a flame lives",
+        "raster_scale": 2,
+        "source_size": [
+          48,
+          64
+        ]
+      },
+      "target-lock": {
+        "frames": 1,
+        "size": [
+          48,
+          48
+        ],
+        "anchor": [
+          24,
+          24
+        ],
+        "pattern": "ui/target-lock.png",
+        "note": "a locked homing destination",
         "raster_scale": 2,
         "source_size": [
           96,

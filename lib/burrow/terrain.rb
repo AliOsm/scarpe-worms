@@ -37,7 +37,9 @@ module Burrow
     end
 
     def surface(x, from: 0)
-      y = [from.to_i, 0].max
+      # Step whole cells from a cell boundary, so the result is the top edge of
+      # the first solid cell rather than a pixel inside it.
+      y = [(from / CELL).floor * CELL, 0].max
       y += CELL until y >= height || solid?(x, y)
       y
     end
@@ -96,6 +98,34 @@ module Burrow
       bottom = ((y + height) / CELL).floor.clamp(0, rows - 1)
       (top..bottom).each { |cy| @data[cy * cols + left, right - left + 1] = "\x02" * (right - left + 1) }
       touch!
+    end
+
+    # A steel beam centred on its top-left-anchored horizontal position: at angle 0
+    # this is exactly `bridge(x, y)`; other angles rotate it about its middle.
+    def girder(x, y, length: 140, thickness: 12, angle: 0)
+      return bridge(x, y, width: length, height: thickness) if angle.zero?
+      ux, uy = Math.cos(angle * Math::PI / 180), Math.sin(angle * Math::PI / 180)
+      cx, cy, half = x, y + thickness / 2.0, length / 2.0
+      corners = [[-half, -thickness / 2.0], [half, -thickness / 2.0], [half, thickness / 2.0], [-half, thickness / 2.0]]
+        .map { |a, b| [(cx + ux * a - uy * b) / CELL, (cy + uy * a + ux * b) / CELL] }
+      top, bottom = corners.map(&:last).minmax
+      (top.floor.clamp(0, rows - 1)..bottom.ceil.clamp(0, rows - 1)).each do |row|
+        scan = row + 0.5
+        xs = corners.zip(corners.rotate).filter_map do |(x1, y1), (x2, y2)|
+          x1 + (scan - y1) * (x2 - x1) / (y2 - y1) if (y1 <= scan && y2 > scan) || (y2 <= scan && y1 > scan)
+        end
+        next if xs.length < 2
+        left, right = xs.min.ceil.clamp(0, cols - 1), xs.max.floor.clamp(0, cols - 1)
+        @data[row * cols + left, right - left + 1] = "\x02" * (right - left + 1) if right >= left
+      end
+      touch!
+    end
+
+    # The first open cell at or below `from` in this column (a cavern's roof underside).
+    def open_below(x, from)
+      y = [from.to_i, 0].max
+      y += CELL while y < height && solid?(x, y)
+      y
     end
 
     def ray(x, y, dx, dy, limit: self.width, step: 3)

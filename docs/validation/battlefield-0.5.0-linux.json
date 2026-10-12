@@ -1,0 +1,86 @@
+{
+  "scope": "0.5.0 battlefield, blast physics and multi-step weapons (unreleased); Linux only",
+  "recorded": "2026-10-12",
+  "platform": "Linux x86_64, Xvfb; shared 6-core machine, 1-minute load 2.8-3.8 during rendering",
+  "protocol": 4,
+  "core": {
+    "ruby_4_0_7": "111 runs / 5085 assertions, no failures",
+    "ruby_3_4_7": "111 runs / 5085 assertions, no failures",
+    "command": "bundle exec rake test",
+    "new": [
+      "test/battlefield_physics_test.rb (16 tests)",
+      "test/weapon_controls_test.rb (+4 multi-step input tests)"
+    ]
+  },
+  "native_journeys": {
+    "command": "./bin/check-native",
+    "passed": 7,
+    "failed": 0,
+    "assertions": 228,
+    "new_paths": "checks/controls.sspec: homing lock then mouse charge, arrow-key girder tilt, arrow-key strike approach, Fruit salad split",
+    "adjusted": "checks/camera.sspec chooses level teleport ground well above the water on the new map"
+  },
+  "rendering": {
+    "command": "xvfb-run -a -s '-screen 0 3840x2400x24' python3 tools/check_rendering.py --scale 2 --size 1920x1200 --audio",
+    "budgets": "combat/pan mean <18.5 ms, p95 <25 ms, max <60 ms; zoom paint max <55 ms; combat app update max <60 ms",
+    "result": "passed",
+    "world": [
+      4800,
+      1600
+    ],
+    "grubs": 36,
+    "combat": {
+      "mean_ms": 16.61,
+      "p95_ms": 21.31,
+      "max_ms": 48.84,
+      "paint_max_ms": 14.5,
+      "app_update_max_ms": 35.5
+    },
+    "pan": {
+      "mean_ms": 16.68,
+      "p95_ms": 19.26,
+      "max_ms": 25.71,
+      "paint_mean_ms": 6.06
+    },
+    "zoom": {
+      "mean_ms": 19.49,
+      "p95_ms": 35.99,
+      "max_ms": 89.45,
+      "paint_max_ms": 18.2
+    }
+  },
+  "simulation": {
+    "bot_matches": "Six 4-team bot matches (islands, archipelago and cavern × meadow and volcano) all finished with a winner; slowest host tick 9.0 ms",
+    "terrain_generation_ms": "40-130 on 2880x1280 to 4800x1600 worlds (previous generator 100-200)",
+    "terrain_tests": "36 safe spawns on 12 seeds of every shape; visible ground equals collision for every biome, including scorched soil"
+  },
+  "assets": {
+    "check": "uv run tools/check_assets.py: passed, 526 runtime PNGs",
+    "reproducibility": "uv run tools/build_art.py terrain props rebuilds all 536 art files and the manifest byte-identically",
+    "new": [
+      "terrain/{biome}-scorch.png",
+      "fx/flame-{0..3}.png",
+      "ui/target-lock.png"
+    ],
+    "seamless_fills": "the four painted fills are rebuilt to wrap without mirror axes; checked visually in a 2x2 tiling"
+  },
+  "screenshots": {
+    "docs/evidence/battlefield/arsenal-airstrike.png": "bbfeb914bf1ad9954f3fea7f0eaa08a9bc0d4b9e72b98c64d02b126d32ea9b0e",
+    "docs/evidence/battlefield/blast-tumble.png": "dd163d382e7b7add9b9e5902a1fbff61a89bcb3f47cdc2e63a0ed49512a55a6a",
+    "docs/evidence/battlefield/charred-crater.png": "52ac97a5fa01889f0b6cf367dc74cce98a73d4c571eb92fac959b3eee931007d",
+    "docs/evidence/battlefield/desert-archipelago-overview.png": "9897e6f79a784fbc396d87fc438082549b9e94e867882700b7781df74f7d2ac5",
+    "docs/evidence/battlefield/girder-tilt.png": "fc7af2c57e0924923a9b214d17c6f2b88539358f2489859011d1fc5485aaaeaa",
+    "docs/evidence/battlefield/glacier-islands-overview.png": "f92f22f32ebe03521bc2e42a75ce4b32db9de4be74fb223bb18e7cf166413cd3",
+    "docs/evidence/battlefield/homing-locked.png": "3f04d513c14f8cbe87fe5ca720253fa39436798da296367f4a3faf901aeb97f1",
+    "docs/evidence/battlefield/napalm-fire.png": "abbae1365cdd3fbf28e73b5cdbf7eb9de5fe5c2b93884e3e6ef021c7325fda87",
+    "docs/evidence/battlefield/strike-approach.png": "f3a3b2cf17527208976038bee8902f349f63ce10e480189c17f3b219c540f2f4",
+    "docs/evidence/battlefield/volcano-cavern-overview.png": "f9e9232793920694404635182283508d178029b45fed65d4cc6f6190d0de5a2e"
+  },
+  "not_run": [
+    "macOS execution",
+    "packaged build checks",
+    "30-minute soak",
+    "human playtest of physics tuning and maps",
+    "real internet matches"
+  ]
+}

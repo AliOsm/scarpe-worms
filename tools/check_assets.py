@@ -90,7 +90,7 @@ def main():
             check_image(ART / "grubs/portraits" / f"{team}-{pose}.png", (512, 512), interior=True)
 
     for biome in ("meadow", "desert", "glacier", "volcano"):
-        for material in ("fill", "deep", "shade", "edge"):
+        for material in ("fill", "deep", "shade", "edge", "scorch"):
             check_image(ART / "terrain" / f"{biome}-{material}.png", (512, 512), opaque=True)
         check_image(ART / "terrain" / f"{biome}-crust.png", (512, 20))
         check_image(ART / "terrain" / f"{biome}-tufts.png", (512, 12))

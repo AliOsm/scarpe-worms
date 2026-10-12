@@ -35,7 +35,7 @@ and macOS 13+; source development and automated checks also run on Linux.
 - Clear held controls on focus loss, menu/weapon changes, and disconnection.
   Fire/activation waits for the snapshot sequence acknowledgement; charge releases
   must match their keyboard or mouse source.
-- Protocol 3 hosts reject older clients. Coordinate protocol changes on both ends;
+- Protocol 4 hosts reject older clients. Coordinate protocol changes on both ends;
   retain supported save compatibility or document an explicit migration.
 - Visible terrain must agree with collision. Keep sprite dimensions, anchors,
   and generator/runtime contracts consistent.

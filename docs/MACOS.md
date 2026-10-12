@@ -1,7 +1,7 @@
 # macOS build and diagnostics
 
-Target: **Apple silicon (arm64), macOS 13+**. Version 0.4.0 is an ad-hoc signed
-preview. Intel/Windows packages and a notarized sales release are not provided.
+Target: **Apple silicon (arm64), macOS 13+**. The source is version 0.5.0 (unreleased);
+the last packaged and checked archive was the ad-hoc signed 0.4.0 preview. Intel/Windows packages and a notarized sales release are not provided.
 
 ## Build the standalone app on Linux
 
@@ -13,7 +13,7 @@ python3 tools/verify_macos.py 'dist/Burrow Brigade.app'
 python3 tools/check_distributable.py
 ```
 
-Output: `dist/Burrow-Brigade-0.4.0-macos-arm64.zip` and its `.sha256` sidecar.
+Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.0) and its `.sha256` sidecar.
 The archive bundles Ruby 3.4.7, patched native Scarpe, gems, fonts, art, and audio.
 Players do not need a separate Ruby, Rust, browser, or server installation.
 
@@ -39,7 +39,7 @@ use a trusted Developer ID build for normal distribution.
 | Latest three timing sessions | `~/Library/Logs/Burrow Brigade/performance/` |
 
 The app bundle stays read-only. Existing settings and unfinished matches remain
-compatible. Host and client must both use protocol 3. Do not delete data to upgrade.
+compatible. Host and client must both use protocol 4 (0.5.0). Do not delete data to upgrade.
 
 After reproducing a problem, quit normally, including Command-Q, then:
 

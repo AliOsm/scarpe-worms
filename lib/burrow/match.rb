@@ -10,7 +10,7 @@ module Burrow
     include Physics
     include Weapons
     PARAMETERS = {"move" => %w[direction lift], "jump" => %w[backflip],
-      "fire" => %w[weapon angle power fuse x y], "steer" => %w[direction lift], "activate" => [], "detonate" => []}.freeze
+      "fire" => %w[weapon angle power fuse x y direction rotation], "steer" => %w[direction lift], "activate" => [], "detonate" => []}.freeze
     attr_reader :config, :terrain, :teams, :worms, :projectiles, :hazards, :events,
       :tick, :phase, :turn, :active_id, :water, :winner, :wind, :inputs, :initial_teams
 
@@ -19,7 +19,7 @@ module Burrow
       raise RuleError, "Team IDs must be unique." unless players.map { |p| p.fetch(:id) }.uniq.length == players.length
       @config = config
       @rng = RandomStream.new(config.seed_number)
-      @terrain = Terrain.new(seed: config.seed_number, shape: config["terrain"],
+      @terrain = Terrain.new(seed: config.seed_number, shape: config["terrain"], biome: config["biome"],
         width: config.world_size(players.length)[0], height: config.world_size(players.length)[1])
       @initial_teams = players.map(&:dup)
       @teams = players.each_with_index.map do |p, i|
@@ -71,14 +71,17 @@ module Burrow
         if active[:rope]
           active[:rope] = nil
           active[:vy] -= 100
-        elsif grounded?(active)
+        elsif grounded?(active) && !active[:launched]
           active[:vx] = active[:facing] * (values["backflip"] ? -68 : 100)
           active[:vy] = values["backflip"] ? -220 : -178
           emit("jump", x: active[:x], y: active[:y], worm: active[:id])
         end
       when "fire"
         use_weapon(values)
-        values = values.except("x", "y") unless Catalog::TARGETED.include?(Catalog.fetch(values["weapon"])[:kind])
+        kind = Catalog.fetch(values["weapon"])[:kind]
+        values = values.except("x", "y") unless Catalog::TARGETED.include?(kind)
+        values = values.except("direction") unless Catalog::SKY.include?(kind)
+        values = values.except("rotation") unless kind == "girder"
       when "detonate", "activate"
         activate_control(player_id)
       when "steer"
@@ -119,7 +122,8 @@ module Burrow
           @phase = "settling"
           active[:input] = active[:lift] = 0
         elsif phase == "settling"
-          quiet = projectiles.empty? && (@salvos || []).empty? && !@tool && worms.none? { |w| w[:hp] > 0 && (w[:vy].abs > 4 || w[:vx].abs > 4) }
+          quiet = projectiles.empty? && (@salvos || []).empty? && !@tool && worms.none? { |w| w[:hp] > 0 && (w[:vy].abs > 4 || w[:vx].abs > 4) } &&
+            hazards.none? { |h| h[:kind] == "flame" || h[:trigger] || (!h[:chute] && (h.fetch(:vx, 0).abs > 4 || h.fetch(:vy, 0).abs > 4)) }
           @quiet_ticks = quiet ? @quiet_ticks + 1 : 0
           next_turn if @quiet_ticks >= 20 || tick >= @settle_limit
         end
@@ -344,9 +348,12 @@ module Burrow
     def drop_crate
       return if hazards.count { |h| h[:kind] == "crate" } >= 4
       x = @rng.rand(70..world_width - 70)
-      hazards << {id: next_object_id, kind: "crate", x: x.to_f, y: 130.0, owner: nil,
+      # Crates parachute in below a cavern's roof.
+      y = config["terrain"] == "cavern" ? terrain.open_below(x, 0) + 24 : 130
+      return if y >= water - 40
+      hazards << {id: next_object_id, kind: "crate", x: x.to_f, y: y.to_f, owner: nil, chute: true,
         life: 100_000, armed: tick, hp: 15, supply: @rng.rand < 0.35 ? "health" : Catalog::WEAPONS.keys[@rng.rand(Catalog::WEAPONS.length - 1)]}
-      emit("supply", x: x, y: 130)
+      emit("supply", x: x, y: y)
     end
   end
 end

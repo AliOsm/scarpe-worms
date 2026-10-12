@@ -84,9 +84,12 @@ assert_operator client.scene.camera.x, :<, previous
 refute client.instance_variable_get(:@charge_started)
 # Teleport to real safe ground past the old 1440px boundary, using screen input.
 terrain = client.scene.terrain
+# Level ground well above the water: the pointer resolves to about two world
+# pixels at this zoom, and the target must stay clear of the hint bar.
 wx = (4020..4500).step(12).find do |at|
   feet = terrain.landing(at, 0, water: client.state["water"])
-  feet && client.state["worms"].none? { |w| Math.hypot(w["x"] - at, w["y"] - feet) < 50 }
+  level = feet && (-6..6).step(3).all? { |dx| terrain.landing(at + dx, 0, water: client.state["water"]).to_i.between?(feet - 2, feet + 2) }
+  level && feet < client.state["water"] - 260 && client.state["worms"].none? { |w| Math.hypot(w["x"] - at, w["y"] - feet) < 50 }
 end
 wy = terrain.landing(wx, 0, water: client.state["water"]) - 20
 client.scene.camera.navigate(wx, wy)

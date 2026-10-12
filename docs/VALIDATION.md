@@ -1,8 +1,23 @@
 # Validation
 
-The 0.4.0 presentation pass is a preview. The current [report index](validation/README.md)
-links to versioned evidence; older reports remain historical. All execution in
-this pass ran on Linux. Native Apple silicon acceptance remains required.
+0.5.0 is an unreleased preview built on the 0.4.0 presentation pass. The current
+[report index](validation/README.md) links to versioned evidence; older reports remain
+historical. All execution in these passes ran on Linux. Native Apple silicon
+acceptance remains required.
+
+## 0.5.0 battlefield and blast physics (unreleased)
+
+Linux only; [summary report](validation/battlefield-0.5.0-linux.json).
+
+| Check | Result |
+| --- | --- |
+| Core on Ruby 3.4.7 and 4.0.7 | 111 tests / 5,085 assertions each; no failures |
+| Native input/UI journeys | Seven journeys / 228 assertions; no failures, including homing, girder, strike and split input |
+| Rendering (command below) | Combat mean 16.6 ms, p95 21.3 ms, max 48.8 ms; pan mean 16.7 ms; zoom paint max 18 ms |
+| Simulation | Six bot matches over every terrain type finish; slowest host tick 9 ms |
+| Assets | Audit passes (526 runtime PNGs); terrain and props rebuild byte-identically |
+
+Not run for 0.5.0: macOS, packaged builds, the 30-minute soak and human playtesting.
 
 ## Arcade interface restyle (unreleased)
 

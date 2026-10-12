@@ -3,13 +3,14 @@
 An original desktop artillery game built with [Scarpe](https://github.com/scarpe-team/scarpe)'s native renderer.
 Up to six teams, destructible random maps, 48 weapons and tools, and self-hosted online play.
 
-![Burrow Brigade gameplay](docs/evidence/arcade-ui/battle.png)
+![Burrow Brigade battlefield](docs/evidence/battlefield/glacier-islands-overview.png)
 
-**Status: 0.4.0 preview.** Painted environments, sharper combat art, improved camera
-framing, and redesigned native menus. The first distribution target is Apple
+**Status: 0.5.0 preview (unreleased).** Organic islands with caves, overhangs, sea
+arches and ruins; blasts that fling grubs, mines and barrels; spreading fire; and
+two-step weapons such as a homing rocket you lock on, then aim and charge. This builds
+on 0.4.0's painted environments and the glossy arcade interface
+([screenshots](docs/evidence/README.md)). The first distribution target is Apple
 silicon, macOS 13+; native Mac and human acceptance remain before a sales release.
-An unreleased arcade interface pass adds glossy panels, bubble lettering and a
-gauge-style battle HUD ([screenshots](docs/evidence/README.md)).
 See [current status and next work](docs/STATUS.md).
 
 ## Run from source
@@ -40,6 +41,8 @@ App bundles and ZIPs are build artifacts, not files in the source checkout.
 | --- | --- |
 | Move / jump / backflip | A/D or arrows · W/Enter · B |
 | Aim / fire | Mouse · hold/release Space for throws; tap for guns and tools |
+| Homing rocket | Click to lock a target, then aim and hold/release · Backspace re-targets |
+| Air strike approach / girder tilt | ← → (A/D still walk) |
 | Arsenal / fuse / chat | E · 1–5 · T |
 | Overview / follow / zoom | G · F · Q/R or mouse wheel |
 | Pan / menu | Middle-drag or minimap · Escape |
@@ -47,7 +50,7 @@ App bundles and ZIPs are build artifacts, not files in the source checkout.
 Wheel zoom stays under the pointer; dragging or scouting leaves the camera in
 manual mode until **F / Follow**. The on-screen hint explains each weapon's
 stages. See the [weapon guide](docs/WEAPONS.md).
-Hosts and clients must use **protocol 3** together.
+Hosts and clients must use **protocol 4** together.
 
 ## Host online
 

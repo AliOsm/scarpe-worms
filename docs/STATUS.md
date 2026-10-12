@@ -1,6 +1,6 @@
 # Current status
 
-Updated **2026-10-12** · game **0.4.0** · protocol **3** · macOS preview.
+Updated **2026-10-12** · game **0.5.0 (unreleased)** · protocol **4** · macOS preview.
 
 ## Implemented
 
@@ -28,9 +28,47 @@ See [native screenshots](evidence/README.md), [research](ART_RESEARCH.md), and
 Claude Opus 5.5 reviewed the integrated work after its initial access outage;
 the implementation continued under the user's authorized model fallback.
 
+## 0.5.0 battlefield, blast physics and multi-step weapons (unreleased)
+
+- **Land.** A new seeded generator builds organic islands from layered noise. Each island
+  has a character (hills, summit, valley, mesa or a volcanic cone) and ends in a beach,
+  cliff or undercut overhang that slopes into the sea. Islands have sea grottos,
+  walkable caves, winding tunnels, floating rocks and girders. Biome set pieces (towers,
+  colonnades, henges, walls, arches, ziggurats, obelisks, igloos, ice spires, basalt
+  columns and aqueducts) are drawn into the same destructible mask. Caverns gain a
+  stalactite roof within grapple reach, side walls and pillars.
+- **Look.** Craters get charred rims with no grass on their floors (soil material 4).
+  Painted fills wrap seamlessly, without mirror axes. Water is deeper, nearly opaque,
+  has a pale crest and extends below the world. Generation takes 40–130 ms (it was
+  100–200 ms).
+- **Blast physics.** Explosions push along the line from their centre and add lift.
+  Blasted grubs tumble, rebound off walls and slide to a stop without fall damage.
+  Blasts throw resting bombs, mines, barrels, crates and sentries. Close mines and
+  barrels chain after short, staggered fuses. Firebombs, barrels and the flamethrower
+  spill flames that fall, creep downhill and scald. Bombs roll down steep slopes, and
+  bounciness varies by weapon. A turn waits for fire and props to settle.
+- **Multi-step weapons.** Love letter (homing) is two steps: lock a target, then aim and
+  charge with the mouse or Space; Backspace re-targets. Its cruise speed follows launch
+  power, and its motor burns out after 4.5 s. Air support takes an approach direction
+  (← →) and lands across the target. Girders tilt in 22.5° steps. Fruit salad splits
+  early on a second press.
+- **Fixes.** Rotated sprites (rockets, held weapons) now turn about their centres
+  instead of their top-left corners. Ground probes align to cells, so clicking an odd
+  pixel on a slope no longer rejects a teleport.
+- Protocol 4: new `fire` parameters (`direction`, `rotation`) and new hazard kinds.
+  Checkpoints keep their format; older saves restore, and their fire zones keep burning.
+
+Evidence (Linux): core suites on Ruby 3.4.7 and 4.0.7 (111 runs / 5,085 assertions each),
+seven native journeys (including new homing, girder, strike and split input paths),
+the rendering benchmark within budget, byte-identical art rebuilds and asset checks,
+and six full bot matches on every terrain type
+([report](validation/battlefield-0.5.0-linux.json), [screenshots](evidence/README.md)).
+Not yet run: macOS, packaged builds, the 30-minute soak, and human playtesting of the
+physics tuning and new maps.
+
 ## Arcade interface (unreleased)
 
-Built on 0.4.0 without a version or protocol change:
+Built on 0.4.0 without a version or protocol change; it ships with 0.5.0:
 
 - Glossy blue frames with ink outlines, navy wells, cyan bubble titles, yellow menu
   text and red back arrows across the menu, room browser, lobby, every dialog and results.
@@ -50,6 +88,8 @@ packaged code, the 30-minute soak and a human review of the new look. Arsenal sl
 reached by arrow keys rather than Tab focus.
 
 ## Evidence and limits
+
+The table below is the 0.4.0 release evidence; 0.5.0's Linux results are summarized above.
 
 | Evidence | Result |
 | --- | --- |
@@ -78,18 +118,21 @@ This is a preview, not a certified sales release.
 
 ## Next checks
 
-1. Run the packaged game on the M3 Pro and clean Apple silicon Macs, including
+1. Play 0.5.0 with people: tune blast force, tumbling, fire damage and the new maps
+   (island size, cave frequency, set-piece density) from their feedback.
+2. Run the packaged game on the M3 Pro and clean Apple silicon Macs, including
    Retina/external displays, Finder launch, focus, resizing and sleep/wake.
-2. Listen to the mixed audio and complete two-to-six-person internet matches.
+3. Listen to the mixed audio and complete two-to-six-person internet matches.
    Collect human feedback on aiming, camera, balance and small-window legibility.
-3. Profile the isolated timing outlier if it reproduces on target hardware;
-   preserve strict budgets and the 0.2.4 precise-wait/playback fixes.
-4. Complete the [release requirements](RELEASE.md) before sales.
+4. Re-run the packaged checks and 30-minute soak for 0.5.0; profile the isolated
+   timing outlier if it reproduces, preserving the 0.2.4 precise-wait/playback fixes.
+5. Complete the [release requirements](RELEASE.md) before sales.
 
 ## Repository handoff
 
 The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 13
-independent patches; the arcade interface added patch 0013 and no protocol change.
+independent patches; the arcade interface added patch 0013. 0.5.0 needs no new patch
+but moves to protocol 4, so hosts and clients must upgrade together.
 Runtime assets live in the source tree, so running the game needs no image service or
 asset download. Generated bundles, raw captures and player data remain ignored.
 No publishing or deployment was performed.

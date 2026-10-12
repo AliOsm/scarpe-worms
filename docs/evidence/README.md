@@ -1,5 +1,15 @@
 # Native screenshots
 
+The unreleased 0.5.0 battlefield, from headless native Linux captures:
+[glacier islands](battlefield/glacier-islands-overview.png),
+[volcano cavern](battlefield/volcano-cavern-overview.png),
+[desert archipelago](battlefield/desert-archipelago-overview.png),
+[homing lock](battlefield/homing-locked.png), [tilted girder](battlefield/girder-tilt.png),
+[strike approach](battlefield/strike-approach.png), [napalm fire](battlefield/napalm-fire.png),
+[air strike blasts](battlefield/blast-tumble.png), [charred craters](battlefield/charred-crater.png)
+and the [arsenal description](battlefield/arsenal-airstrike.png). Hashes are in the
+[0.5.0 report](../validation/battlefield-0.5.0-linux.json).
+
 The unreleased arcade interface, from the final automated Linux journeys:
 [menu](arcade-ui/menu.png), [arsenal](arcade-ui/arsenal-catalog.png),
 [settings at 1080×675](arcade-ui/settings-small.png), [six-team lobby](arcade-ui/six-player-lobby.png),

@@ -9,7 +9,8 @@ module Burrow
       worms.each do |w|
         next if w[:hp] <= 0
         was_grounded = grounded?(w) && w[:vy] >= 0
-        controlled = w[:id] == active_id && %w[aiming retreat].include?(phase) && tick <= w[:input_until] && !w[:frozen] && !@tool
+        tumbling = w[:launched]
+        controlled = w[:id] == active_id && %w[aiming retreat].include?(phase) && tick <= w[:input_until] && !w[:frozen] && !@tool && !tumbling
         direction = controlled ? w[:input] : 0
         lift = controlled ? w[:lift] : 0
         if w[:frozen]
@@ -28,6 +29,14 @@ module Burrow
           w[:rope][:length] = (w[:rope][:length] - lift * 105 * DT).clamp(28, 460)
           w[:vx] = w[:vx] * 0.995 + direction * 5
           w[:vy] += gravity * DT
+        elsif tumbling
+          # A blasted grub keeps its momentum, rebounds and slides to a stop.
+          w[:vx] *= was_grounded ? 0.86 : 0.995
+          w[:vy] += gravity * DT unless was_grounded
+          if was_grounded && w[:vx].abs < 16
+            w[:launched] = tumbling = false
+            w[:vx] = 0.0
+          end
         elsif was_grounded && !direction.zero?
           w[:vx] = direction * 72
           w[:vy] = 0
@@ -44,22 +53,32 @@ module Burrow
           nx = (w[:x] + dx / steps).clamp(10, world_width - 10)
           if body_clear?(nx, w[:y])
             w[:x] = nx
-          elsif was_grounded && !direction.zero? && (1..7).any? { |up| body_clear?(nx, w[:y] - up) }
-            up = (1..7).find { |offset| body_clear?(nx, w[:y] - offset) }
+          elsif was_grounded && (!direction.zero? || tumbling) && (up = (1..(tumbling ? 5 : 7)).find { |offset| body_clear?(nx, w[:y] - offset) })
             w[:x], w[:y] = nx, w[:y] - up
+          elsif tumbling && w[:vx].abs > 45
+            # Tumbling grubs rebound off walls instead of sticking to them.
+            w[:vx] = -w[:vx] * 0.45
+            dx = 0
           else
             w[:vx] = 0
           end
           ny = w[:y] + dy / steps
           if dy >= 0 && (terrain.solid?(w[:x] - 6, ny) || terrain.solid?(w[:x] + 6, ny))
             impact = w[:vy]
-            w[:vy] = 0.0
-            dy = 0
-            if config["fall_damage"] && impact > 225 && !w[:parachute] && !w[:rope]
-              hurt(w, ((impact - 225) * 0.16).round, source: nil)
+            if tumbling && impact > 110
+              w[:vy] = -impact * 0.3
+              w[:vx] *= 0.8
+              emit("bounce", x: w[:x], y: w[:y], worm: w[:id]) if impact > 170
+            else
+              w[:vy] = 0.0
+              # Blast flights end in a tumble, not a fall: only drops hurt.
+              if config["fall_damage"] && impact > 225 && !w[:parachute] && !w[:rope] && !tumbling
+                hurt(w, ((impact - 225) * 0.16).round, source: nil)
+              end
             end
+            dy = 0
           elsif dy < 0 && !body_clear?(w[:x], ny)
-            w[:vy] = 0.0
+            w[:vy] = tumbling ? -w[:vy] * 0.3 : 0.0
             dy = 0
           else
             w[:y] = ny
@@ -121,6 +140,7 @@ module Burrow
       w[:vx] = w[:vy] = 0.0
       w[:rope] = nil
       w[:fuel], w[:jetpack] = 0, false
+      w[:launched] = false
       w[:input] = w[:lift] = 0.0
       emit(reason == "water" ? "splash" : "defeat", worm: w[:id], x: w[:x], y: [w[:y], water].min, text: "#{w[:name]} is out")
     end
@@ -130,6 +150,7 @@ module Burrow
       terrain.carve(x, y, radius)
       emit("explosion", x: x, y: y, radius: radius, style: kind)
       reach = radius + 27
+      strength = (120 + damage * 2.2) * knock
       worms.each do |w|
         next if w[:hp] <= 0
         distance = Math.hypot(w[:x] - x, w[:y] - 10 - y)
@@ -137,17 +158,72 @@ module Burrow
         ratio = (1 - distance / (reach + 1)).clamp(0.15, 1)
         hurt(w, (damage * ratio).round, source: owner)
         next if w[:hp] <= 0
-        dx = (w[:x] - x) / [distance, 1].max
-        w[:vx] += dx * ratio * 270 * knock
-        w[:vy] -= (85 + ratio * 160) * knock
         w[:rope] = nil
+        throw_body(w, x, y + 10, strength * ratio, lift: (60 + 90 * ratio) * knock)
       end
-      chain = hazards.select { |h| %w[mine barrel turret crate].include?(h[:kind]) && Math.hypot(h[:x] - x, h[:y] - y) < reach }
-      chain.each { |h| hazards.delete(h) }
-      chain.each do |h|
-        next if h[:kind] == "crate" || h[:kind] == "turret"
-        weapon = Catalog.fetch(h[:kind])
-        explode(h[:x], h[:y] - 4, damage: weapon[:damage], radius: weapon[:radius], owner: owner)
+      shove(x, y, reach, strength, owner)
+    end
+
+    # Push a body away from a blast centre, with extra lift off the ground.
+    def throw_body(body, x, y, force, lift:)
+      distance = Math.hypot(body[:x] - x, body[:y] - y)
+      nx, ny = distance < 1 ? [0.0, -1.0] : [(body[:x] - x) / distance, (body[:y] - y) / distance]
+      body[:vx] = body.fetch(:vx, 0.0) + nx * force
+      body[:vy] = body.fetch(:vy, 0.0) + ny * force - lift
+      body[:launched] = true
+    end
+
+    PROP_MASS = {"mine" => 0.8, "barrel" => 1.7, "crate" => 1.4, "turret" => 1.6, "flame" => 2.5}.freeze
+
+    # A blast also moves the battlefield's loose objects: resting bombs roll away,
+    # mines and barrels fly, close mines arm a short fuse and barrels rupture.
+    def shove(x, y, reach, strength, owner)
+      projectiles.each do |p|
+        next unless p[:bounce] && !p[:attached_to] && p[:life] > 0
+        distance = Math.hypot(p[:x] - x, p[:y] - y)
+        next if distance > reach
+        ratio = (1 - distance / (reach + 1)).clamp(0.15, 1)
+        throw_body(p, x, y, strength * ratio * 0.8, lift: 50 * ratio)
+        p[:stuck], p[:support_x], p[:support_y] = false, nil, nil
+      end
+      hazards.each do |h|
+        mass = PROP_MASS[h[:kind]]
+        next unless mass
+        distance = Math.hypot(h[:x] - x, h[:y] - 8 - y)
+        next if distance > reach
+        ratio = (1 - distance / (reach + 1)).clamp(0.15, 1)
+        throw_body(h, x, y + 8, strength * ratio / mass, lift: 70 * ratio / mass)
+        h[:chute] = false
+        case h[:kind]
+        when "mine", "crate", "turret"
+          ignite(h, owner, 8 + @rng.rand(10)) if ratio > (h[:kind] == "mine" ? 0.5 : 0.6)
+        when "barrel"
+          h[:hp] = h.fetch(:hp, 20) - (strength * ratio / 9)
+          ignite(h, owner, 4 + @rng.rand(6)) if h[:hp] <= 0
+        end
+      end
+    end
+
+    def ignite(h, owner, delay)
+      return if h[:trigger] && h[:trigger] <= tick + delay
+      h[:trigger] = tick + delay
+      h[:blame] = owner
+    end
+
+    def detonate_hazard(h)
+      hazards.delete(h)
+      case h[:kind]
+      when "barrel"
+        weapon = Catalog.fetch("barrel")
+        explode(h[:x], h[:y] - 14, damage: weapon[:damage], radius: weapon[:radius], owner: h[:blame] || h[:owner], kind: "barrel")
+        # Spilled fuel keeps burning.
+        7.times { |i| flame(h[:x], h[:y] - 18, h[:blame] || h[:owner], vx: (i - 3) * 38 + @rng.rand(-12.0..12.0), vy: -110 - @rng.rand(90.0)) }
+      when "mine"
+        explode(h[:x], h[:y] - 4, damage: 48, radius: 44, owner: h[:blame] || h[:owner], kind: "mine")
+      when "crate"
+        explode(h[:x], h[:y] - 12, damage: 24, radius: 34, owner: h[:blame])
+      when "turret"
+        emit("defeat", x: h[:x], y: h[:y] - 10)
       end
     end
 
@@ -197,14 +273,16 @@ module Burrow
         steering = tick <= p.fetch(:input_until, 0) ? p.fetch(:steer, 0) : 0
         p[:heading] = p.fetch(:heading, Math.atan2(p[:vy], p[:vx])) + steering * 2.9 * DT
         p[:vx], p[:vy] = Math.cos(p[:heading]) * 230, Math.sin(p[:heading]) * 230
-      elsif p[:homing] && p[:age] > TICK_RATE / 2
-        # Rotate towards the beacon at a bounded rate, preserving speed through
-        # turns. Vector blending used to stall rockets on a target behind them.
+      elsif p[:homing] && p[:age] > TICK_RATE / 2 && p[:age] <= HOMING_TICKS
+        # After a short ballistic launch the motor locks on: rotate towards the
+        # beacon at a bounded rate, preserving speed through turns, and cruise
+        # at a speed set by the launch power. Once the motor burns out it falls.
         desired = Math.atan2(p[:target_y] - p[:y], p[:target_x] - p[:x])
         heading = Math.atan2(p[:vy], p[:vx])
         delta = Math.atan2(Math.sin(desired - heading), Math.cos(desired - heading))
         heading += delta.clamp(-2.6 * DT, 2.6 * DT)
-        speed = (Math.hypot(p[:vx], p[:vy]) + 100 * DT).clamp(260, 670)
+        cruise = p.fetch(:cruise, 670)
+        speed = (Math.hypot(p[:vx], p[:vy]) + 160 * DT).clamp([260, cruise].min, cruise)
         p[:vx], p[:vy] = Math.cos(heading) * speed, Math.sin(heading) * speed
       else
         p[:vx] += wind * 42 * DT if p[:wind]
@@ -238,7 +316,8 @@ module Burrow
               terrain_normal(nx, ny, p)
             end
             reflect_projectile(p, *normal)
-            if !victim && p[:vx].abs < 12 && p[:vy].abs < 22 && normal[1] < -0.35
+            # Bombs settle on level ground and keep rolling down steeper slopes.
+            if !victim && p[:vx].abs < 12 && p[:vy].abs < 22 && normal[1] < -0.8
               p[:stuck] = true
               p[:support_x], p[:support_y] = nx, ny
               p[:vx] = p[:vy] = 0.0
@@ -282,13 +361,19 @@ module Burrow
       [gx / length, gy / length]
     end
 
+    HOMING_TICKS = TICK_RATE * 9 / 2
+    BOUNCE = {"banana" => 0.72, "cluster" => 0.48, "mega_bomb" => 0.38, "holy_bomb" => 0.32,
+      "dynamite" => 0.2, "poison" => 0.5}.freeze
+
     def reflect_projectile(p, nx, ny)
       dot = p[:vx] * nx + p[:vy] * ny
       return if dot >= 0
-      bounce = p[:weapon] == "banana" ? 0.72 : 0.55
+      bounce = BOUNCE.fetch(p[:weapon], 0.55)
+      # Gentle contacts roll; hard impacts scrub off more speed along the surface.
+      grip = dot > -40 ? 0.9 : 0.8
       tangent_x, tangent_y = p[:vx] - dot * nx, p[:vy] - dot * ny
-      p[:vx] = tangent_x * 0.8 - dot * nx * bounce
-      p[:vy] = tangent_y * 0.8 - dot * ny * bounce
+      p[:vx] = tangent_x * grip - dot * nx * bounce
+      p[:vy] = tangent_y * grip - dot * ny * bounce
     end
 
     def walker_clear?(x, y)
@@ -349,34 +434,35 @@ module Burrow
     end
 
     def update_hazards
+      burning = []
       hazards.dup.each do |h|
         next unless hazards.include?(h)
         h[:life] -= 1
-        if %w[fire gas].include?(h[:kind])
+        case h[:kind]
+        when "flame"
+          update_flame(h)
+          burning << h
+        when "gas"
+          # Poison drifts with the wind and rises slowly.
+          h[:x] += wind * 9 * DT
+          h[:y] -= 2.5 * DT
+          poison_cloud(h) if tick % 15 == 0
+        when "fire"
+          # Saved games from before burning fuel became loose flames.
           if tick % 15 == 0
-            worms.each do |w|
-              next if w[:hp] <= 0 || Math.hypot(w[:x] - h[:x], w[:y] - 10 - h[:y]) > h[:radius]
-              if h[:kind] == "gas"
-                w[:poisoned] = true unless w[:frozen] || (w[:team] == h[:owner] && !config["friendly_fire"])
-              else
-                hurt(w, 4, source: h[:owner])
-              end
-            end
+            worms.each { |w| hurt(w, 4, source: h[:owner]) if w[:hp] > 0 && Math.hypot(w[:x] - h[:x], w[:y] - 10 - h[:y]) <= h[:radius] }
           end
         else
-          # Sweep falling props so narrow bridges can catch them too.
-          (h[:kind] == "crate" ? 2 : 4).times do
-            break if terrain.solid?(h[:x], h[:y] + 1)
-            h[:y] += h[:kind] == "crate" ? 0.65 : 1.0
+          prop_motion(h)
+          next unless hazards.include?(h)
+          if h[:trigger] && tick >= h[:trigger]
+            detonate_hazard(h)
+            next
           end
           near = worms.select { |w| w[:hp] > 0 && Math.hypot(w[:x] - h[:x], w[:y] - h[:y]) < 25 }
           if h[:kind] == "mine" && tick >= h[:armed] && !near.empty?
             h[:trigger] ||= tick + 18
-          end
-          if h[:trigger] && tick >= h[:trigger]
-            hazards.delete(h)
-            explode(h[:x], h[:y] - 4, damage: 48, radius: 44, owner: h[:owner])
-          elsif h[:kind] == "crate" && !near.empty?
+          elsif h[:kind] == "crate" && !near.empty? && !h[:trigger]
             collector = near.first
             if h[:supply] == "health"
               collector[:hp] = [collector[:hp] + 30, collector[:max_hp]].min
@@ -387,6 +473,7 @@ module Burrow
             end
             hazards.delete(h)
             emit("pickup", x: h[:x], y: h[:y], text: h[:supply] == "health" ? "+30 health" : Catalog.fetch(h[:supply])[:name])
+            next
           elsif h[:kind] == "turret" && tick >= h[:armed] && tick % 35 == 0 && h[:shots] > 0
             target = worms.select { |w| w[:hp] > 0 && w[:team] != h[:owner] && Math.hypot(w[:x] - h[:x], w[:y] - h[:y]) < 270 }
               .find { |w| clear_line?(h[:x], h[:y] - 20, w[:x], w[:y] - 10) }
@@ -397,7 +484,108 @@ module Burrow
             end
           end
         end
-        hazards.delete(h) if h[:life] <= 0 || h[:y] > water + 5
+        if h[:y] > water + 5 && h[:kind] != "gas"
+          hazards.delete(h)
+          emit("splash", x: h[:x].clamp(0, world_width), y: water) if PROP_MASS[h[:kind]] && h[:kind] != "flame"
+        elsif h[:life] <= 0
+          hazards.delete(h)
+        end
+      end
+      scald(burning) if tick % 10 == 0 && !burning.empty?
+    end
+
+    def poison_cloud(h)
+      worms.each do |w|
+        next if w[:hp] <= 0 || Math.hypot(w[:x] - h[:x], w[:y] - 10 - h[:y]) > h[:radius]
+        w[:poisoned] = true unless w[:frozen] || (w[:team] == h[:owner] && !config["friendly_fire"])
+      end
+    end
+
+    # Loose props fall, bounce, slide and settle; parachuted crates drift down.
+    def prop_motion(h)
+      vx, vy = h.fetch(:vx, 0.0), h.fetch(:vy, 0.0)
+      grounded = terrain.solid?(h[:x], h[:y] + 1)
+      if grounded && vy >= 0 && vx.abs < 8
+        h[:vx] = h[:vy] = 0.0 if vx != 0 || vy != 0
+        h[:chute] = false
+        return
+      end
+      if h[:chute]
+        vx, vy = wind * 14, 40.0
+      else
+        vy += gravity * DT unless grounded && vy >= 0
+        vx *= grounded ? 0.8 : 0.995
+      end
+      steps = [((vx.abs + vy.abs) * DT / 2).ceil, 1].max
+      steps.times do
+        nx = (h[:x] + vx * DT / steps).clamp(6, world_width - 6)
+        if terrain.solid?(nx, h[:y] - 6)
+          vx = -vx * 0.35
+        else
+          h[:x] = nx
+        end
+        ny = h[:y] + vy * DT / steps
+        if vy > 0 && terrain.solid?(h[:x], ny)
+          vy = vy > 90 && !h[:chute] ? -vy * 0.3 : 0.0
+          vx *= 0.8
+          h[:chute] = false
+          break
+        elsif vy < 0 && terrain.solid?(h[:x], ny - 14)
+          vy = 0.0
+        else
+          h[:y] = ny
+        end
+      end
+      h[:vx], h[:vy] = vx, vy
+    end
+
+    # Burning fuel: falls, slides downhill along the ground and fizzles out.
+    def flame(x, y, owner, vx: 0.0, vy: 0.0)
+      return if hazards.count { |h| h[:kind] == "flame" } >= 60
+      hazards << {id: next_object_id, kind: "flame", x: x.to_f, y: y.to_f, vx: vx.to_f, vy: vy.to_f,
+        owner: owner, life: 3 * TICK_RATE + @rng.rand(2 * TICK_RATE), radius: 10}
+    end
+
+    def update_flame(h)
+      grounded = terrain.solid?(h[:x], h[:y] + 1)
+      if grounded && h[:vy] >= 0
+        h[:vy] = 0.0
+        h[:vx] *= 0.88
+        # Creep down a slope: compare the ground a few pixels to either side.
+        left, right = terrain.solid?(h[:x] - 5, h[:y] + 4), terrain.solid?(h[:x] + 5, h[:y] + 4)
+        h[:vx] += left && !right ? 9 : right && !left ? -9 : 0
+      else
+        h[:vy] = [h[:vy] + gravity * 0.8 * DT, 260].min
+        h[:vx] += wind * 18 * DT
+      end
+      steps = [((h[:vx].abs + h[:vy].abs) * DT / 2).ceil, 1].max
+      steps.times do
+        nx = (h[:x] + h[:vx] * DT / steps).clamp(4, world_width - 4)
+        if terrain.solid?(nx, h[:y] - 3)
+          h[:vx] = 0.0
+        else
+          h[:x] = nx
+        end
+        ny = h[:y] + h[:vy] * DT / steps
+        if h[:vy] > 0 && terrain.solid?(h[:x], ny)
+          h[:vy] = 0.0
+          break
+        elsif h[:vy] < 0 && terrain.solid?(h[:x], ny - 6)
+          h[:vy] = 0.0
+        else
+          h[:y] = ny
+        end
+      end
+    end
+
+    # Each grub standing in fire takes one scald per check, however many flames.
+    def scald(flames)
+      worms.each do |w|
+        next if w[:hp] <= 0
+        source = flames.find { |h| (h[:x] - w[:x]).abs < 13 && (h[:y] - w[:y] + 8).abs < 16 }
+        next unless source
+        hurt(w, 3, source: source[:owner])
+        w[:vy] = -70.0 if w[:hp] > 0 && !w[:frozen] && grounded?(w) # a hot-footed hop
       end
     end
 

@@ -5,6 +5,7 @@ their scope; generic filenames are outputs of individual tools.
 
 | Evidence | Start here |
 | --- | --- |
+| 0.5.0 battlefield and blast physics (unreleased) | [battlefield-0.5.0-linux.json](battlefield-0.5.0-linux.json) |
 | Arcade interface restyle (unreleased) | [ui-arcade-restyle-linux.json](ui-arcade-restyle-linux.json) |
 | Current integrated preview | [release-0.4.0.json](release-0.4.0.json) |
 | Core | [Ruby 3.4.7](core-0.4.0-ruby-3.4.7.json), [Ruby 4.0.7](core-0.4.0-ruby-4.0.7.json) |

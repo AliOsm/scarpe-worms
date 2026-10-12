@@ -173,8 +173,14 @@ module Burrow
           "Line #{active['rope']['length'].round} · ↑↓ reel"
         elsif control
           remote_critter ? "#{remote_critter['stage'].capitalize} · #{(remote_critter['life'].fdiv(TICK_RATE)).ceil}s" : "Tool active"
+        elsif @selected_weapon == "homing" && !@locked_target
+          "Step 1 of 2 · pick a target"
         elsif charged
           "Aim #{@angle.abs.round}° · Power #{(@power * 100).round}%"
+        elsif weapon[:kind] == "girder"
+          "Tilt #{girder_rotation.round}° · ← → turns"
+        elsif Catalog::SKY.include?(weapon[:kind]) && weapon[:kind] != "meteor"
+          "Approach from the #{strike_direction.negative? ? 'right ←' : 'left →'}"
         else
           Catalog::AIMED.include?(weapon[:kind]) ? "Aim #{@angle.abs.round}° · tap to fire" : "Ready to deploy"
         end
@@ -183,7 +189,7 @@ module Burrow
         @power_minus.state = @power_plus.state = aiming && charged ? nil : "disabled"
         @fuse_button.text = @selected_weapon == "holy_bomb" ? "Fixed 5s" : Catalog::FUSED.include?(@selected_weapon) ? "Fuse #{@fuse}s" : "No fuse"
         @fuse_button.state = aiming && Catalog::FUSED.include?(@selected_weapon) && !control ? nil : "disabled"
-        @fire_button.text = @pending_action ? "Sending…" : control ? control[0] : @charge_started ? "Charging…" : state["shots_left"] > 0 ? "Second shot" : @selected_weapon == "homing" && !@locked_target ? "Lock target" : "Fire · Space"
+        @fire_button.text = @pending_action ? "Sending…" : control ? control[0] : @charge_started ? "Charging…" : state["shots_left"] > 0 ? "Second shot" : @selected_weapon == "homing" && !@locked_target ? "1 · Lock target" : @selected_weapon == "homing" ? "2 · Launch" : "Fire · Space"
         @fire_button.state = my_turn? && !@pending_action && (control || (aiming && can_equip?(@selected_weapon))) ? nil : "disabled"
         @pass_button.state = aiming && state["shots_left"].zero? && !@pending_action ? nil : "disabled"
         hint = if !my_turn?
@@ -194,6 +200,9 @@ module Burrow
           "Retreat! A / D moves · W jumps · B backflips · watch where the shot lands"
         elsif state["phase"] != "aiming"
           "Waiting for the action to settle · G map · F follow"
+        elsif @selected_weapon == "homing"
+          @locked_target ? "Step 2 of 2 · Aim with the mouse or ↑ ↓ · hold the mouse or Space, release to launch · Backspace re-targets" :
+            "Step 1 of 2 · Click the target to lock it (Space locks at the pointer)"
         else
           Catalog.hint(@selected_weapon)
         end
@@ -211,6 +220,7 @@ module Burrow
           when ["guided", "flying"] then ["Drop · Space", "Left / Right turns Captain wool · Space drops it onto the target"]
           when ["digger", "walking"] then ["Dive · Space", "Tunnel buddy is running · Space starts the dive"]
           when ["poisoner", "walking"] then ["Spray · Space", "Stink express is running · Space releases the poison"]
+          when ["cluster", "thrown"] then ["Split · Space", "Fruit salad is in the air · Space splits it now"]
           else ["Detonate · Space", "Tap Space or click to detonate the critter"]
           end
         elsif state && state["tool"]
@@ -220,6 +230,34 @@ module Burrow
         elsif @selected_weapon == "jetpack" && active_worm && active_worm["jetpack"]
           ["Land · Space", "Arrow keys fly · release keys to save fuel · Space deploys a parachute"]
         end
+      end
+
+      def strike_direction = @strike_direction || 1
+      def girder_rotation = @girder_rotation || 0.0
+
+      # Arrow keys steer an air strike's approach or tilt a girder; A / D still walk.
+      def arrow_targeting?
+        return false unless state && my_turn? && state["phase"] == "aiming" && !special_control
+        kind = Catalog.fetch(@selected_weapon)[:kind]
+        kind == "girder" || (Catalog::SKY.include?(kind) && kind != "meteor")
+      end
+
+      def adjust_targeting(step)
+        return unless arrow_targeting?
+        if Catalog.fetch(@selected_weapon)[:kind] == "girder"
+          @girder_rotation = (girder_rotation + step * 22.5).clamp(-90.0, 90.0)
+        else
+          @strike_direction = step
+        end
+        @audio&.play("click", volume: 0.4)
+        refresh_match_hud
+      end
+
+      def retarget
+        return unless @locked_target && !@charge_started
+        @locked_target = nil
+        notify("Target cleared. Click a new destination.")
+        refresh_match_hud
       end
 
       def equip_weapon(id)
@@ -268,8 +306,12 @@ module Burrow
           notify(preferences["muted"] ? "Sound muted" : "Sound on")
         when "1", "2", "3", "4", "5"
           @fuse = key.to_i
+        when "left", "right"
+          adjust_targeting(key == "right" ? 1 : -1)
+        when "backspace", "delete"
+          retarget
         when "w", "enter", "b"
-          action("jump", backflip: key == "b") if my_turn? && active_worm["hp"] > 0 && !remote_critter && !state["tool"] && %w[aiming retreat].include?(state["phase"])
+          action("jump", backflip: key == "b") if my_turn? && active_worm["hp"] > 0 && !(remote_critter && remote_critter["kind"] != "cluster") && !state["tool"] && %w[aiming retreat].include?(state["phase"])
         when " " then begin_fire(:keyboard)
         end
       end
@@ -315,7 +357,9 @@ module Burrow
         end
         return unless button == 1 && my_turn?
         pointer(x, y)
-        if @selected_weapon == "homing" && !special_control && state["phase"] == "aiming"
+        # Homing is two steps: the first click locks the destination, then the
+        # mouse charges the launch like any other charged weapon.
+        if @selected_weapon == "homing" && !special_control && state["phase"] == "aiming" && !@locked_target
           lock_homing_target
         else
           begin_fire(:mouse)
@@ -325,7 +369,8 @@ module Burrow
       def lock_homing_target
         return if @pending_action || @charge_started
         @locked_target = bounded_target
-        notify("Target locked. Aim the launch, then hold Space and release.")
+        @audio&.play("equip", volume: 0.5)
+        notify("Target locked. Now aim, then hold the mouse or Space and release to launch.")
         refresh_match_hud
       end
 
@@ -360,9 +405,11 @@ module Burrow
         end
         return unless now - (@last_input_at || 0) > 0.08
         @last_input_at = now
-        direction = (@keys.intersect?(Set["d", "right"]) ? 1 : 0) - (@keys.intersect?(Set["a", "left"]) ? 1 : 0)
+        arrows = !arrow_targeting?
+        direction = (@keys.intersect?(arrows ? Set["d", "right"] : Set["d"]) ? 1 : 0) - (@keys.intersect?(arrows ? Set["a", "left"] : Set["a"]) ? 1 : 0)
         lift = (@keys.include?("up") ? 1 : 0) - (@keys.include?("down") ? 1 : 0)
-        if (p = remote_critter)
+        # Critters take over the controls; a thrown fruit salad leaves the grub free to retreat.
+        if (p = remote_critter) && p["kind"] != "cluster"
           action("steer", direction: direction) if p["stage"] == "flying"
           return
         elsif state["tool"]
@@ -416,7 +463,7 @@ module Burrow
         end
         target = @selected_weapon == "homing" ? @locked_target : bounded_target
         submit_weapon("fire", weapon: @selected_weapon, angle: @angle.round(3), power: @power.round(3),
-          fuse: @fuse, x: target[0], y: target[1])
+          fuse: @fuse, x: target[0], y: target[1], direction: strike_direction, rotation: girder_rotation)
       end
     end
   end

@@ -7,13 +7,13 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
 | --- | --- | ---: | --- |
 | Pocket rocket | Launchers | -1 | Wind bends its flight. Point, charge, and let it fly. |
 | Moon mortar | Launchers | 3 | A fixed-power shell bursts on impact into five fragments. |
-| Love letter | Launchers | 2 | Click a destination. The rocket steers toward it after launch. |
+| Love letter | Launchers | 2 | Lock a target, then aim and charge. The rocket homes in once its motor ignites. |
 | Tick-tock | Explosives | -1 | Bounces until the fuse expires. Set a 1–5 second fuse. |
 | Party popper | Explosives | 3 | A bouncing shell that scatters five explosive fragments. |
 | Velcro bomb | Explosives | 2 | Sticks to the first surface it touches. Mind the fuse. |
 | Short fuse | Explosives | 2 | Drop it at your feet, then use your retreat time. |
 | Big trouble | Explosives | 1 | A very large bouncing bomb. Your friends may object. |
-| Fruit salad | Explosives | 1 | One fruit becomes six. Each piece packs a punch. |
+| Fruit salad | Explosives | 1 | One fruit becomes six. Press Fire mid-air to split it early. |
 | Choir bomb | Explosives | 1 | A weighty bomb with a five-second fuse and a grand finale. |
 | Double tap | Direct | -1 | Two separate shots. Re-aim before the second. |
 | Long goodbye | Direct | 3 | A precise single shot. Terrain blocks the bullet. |
@@ -25,7 +25,7 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
 | Little nudge | Close-up | -1 | No damage. Plenty of shove. Best beside the water. |
 | Home run | Close-up | 2 | Aim the angle of an enormous knockback. |
 | Half measure | Close-up | 2 | Halves a nearby opponent's current health. |
-| Special delivery | Sky | 2 | Click a target for five falling bombs. Unavailable in caverns. |
+| Special delivery | Sky | 2 | Pick the approach with ← →, then click a target for five bombs. Not in caverns. |
 | Rain check | Sky | 1 | Drops five persistent proximity mines from above. |
 | Spicy forecast | Sky | 1 | A line of firebombs spreads persistent fire. |
 | Bad astronomy | Sky | 1 | A scattered shower of six destructive meteors. |
@@ -42,7 +42,7 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
 | Personal cloud | Mobility | 2 | Four seconds of thrust. Arrows fly; Fire stops. Fuel only burns while thrusting. |
 | Soft landing | Mobility | 2 | Slows this turn's falls and prevents fall damage. |
 | Here to there | Mobility | 2 | Click clear ground to relocate. Uses the turn. |
-| Bridge builder | Tools | 3 | Click open space to build a 140-pixel bridge. Uses the turn. |
+| Bridge builder | Tools | 3 | Tilt with ← →, then click open space to build a 140-pixel beam. Uses the turn. |
 | Down we go | Tools | 2 | Bore downward for two seconds. Fire again stops early. |
 | Side hustle | Tools | 2 | Dig forward; Up / Down changes slope. Fire again stops early. |
 | First aid | Supplies | 2 | Restore 35 health and clear poison. Uses the turn. |

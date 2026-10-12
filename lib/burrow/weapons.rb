@@ -14,7 +14,10 @@ module Burrow
       power = number(values.fetch("power", 0.65), 0.05..1.0)
       fuse = number(values.fetch("fuse", 3), 1..5)
       x, y = Catalog::TARGETED.include?(kind) ? target_point(values) : [active[:x] + Math.cos(angle) * 200, active[:y] - 12 + Math.sin(angle) * 200]
-      validate_tool(kind, x, y)
+      # Air support approaches from a chosen side; girders take a chosen tilt.
+      side = values.key?("direction") ? (number(values["direction"], -1..1) < 0 ? -1 : 1) : (x >= active[:x] ? 1 : -1)
+      tilt = number(values.fetch("rotation", 0), -90..90)
+      validate_tool(kind, x, y, tilt: tilt)
       # Spend only after complete validation. The second shotgun shot shares its cartridge.
       inventory[id] -= 1 if inventory[id] > 0 && @shots_left.zero?
       active[:facing] = Math.cos(angle) < 0 ? -1 : 1 if Catalog::AIMED.include?(kind)
@@ -25,11 +28,15 @@ module Burrow
       when "projectile", "bounce", "cluster", "sticky", "homing", "gas"
         speed = id == "mortar" ? 580 : 130 + power * 540
         mx, my = muzzle_point(angle)
+        staged = {}
+        # The launch power sets how fast a homing rocket cruises once its motor locks on.
+        staged[:cruise] = 300 + power * 370 if kind == "homing"
+        staged.merge!(remote: true, stage: "thrown") if id == "banana"
         projectile(weapon, x: mx, y: my,
           vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: damage,
           life: %w[bounce cluster sticky gas].include?(kind) ? ((id == "holy_bomb" ? 5 : fuse) * TICK_RATE).round : 9 * TICK_RATE,
           bounce: %w[bounce cluster gas].include?(kind), sticky: kind == "sticky", homing: kind == "homing",
-          target_x: x, target_y: y, wind: id != "mortar" && %w[projectile homing].include?(kind), shooter: active_id)
+          target_x: x, target_y: y, wind: id != "mortar" && %w[projectile homing].include?(kind), shooter: active_id, **staged)
       when "place"
         projectile(weapon, x: active[:x] + active[:facing] * 15, y: active[:y] - 8,
           vx: active[:facing] * 16, vy: 0, damage: damage, bounce: true, sticky: true, life: 4 * TICK_RATE)
@@ -56,8 +63,17 @@ module Burrow
       when "strike", "mines", "napalm", "meteor"
         count = kind == "meteor" ? 6 : 5
         count.times do |i|
-          px = kind == "meteor" ? @rng.rand(40..world_width - 40) : (x + (i - 2) * 34).clamp(15, world_width - 15)
-          projectile(weapon, x: px, y: -40 - i * 36, vx: kind == "meteor" ? 85 : 12, vy: 130,
+          if kind == "meteor"
+            px, top, vx = @rng.rand(40..world_width - 40), -40 - i * 36, 85.0
+          else
+            # Bombers cross from `side`; each bomb is released ahead of the target
+            # so the stick lands in a line across it.
+            vx, top = side * 95.0, -40 - i * 18
+            drop = [y - top, 40].max
+            fall = (-130 + Math.sqrt(130**2 + 2 * gravity * drop)) / gravity
+            px = (x - vx * fall + (i - 2) * 30).clamp(-60, world_width + 60)
+          end
+          projectile(weapon, x: px, y: top, vx: vx, vy: 130,
             damage: damage, life: 12 * TICK_RATE, drop_mine: kind == "mines", fire: kind == "napalm")
         end
       when "quake"
@@ -65,6 +81,7 @@ module Burrow
           next if w[:hp] <= 0 || w[:frozen]
           w[:vx] += (@rng.rand - 0.5) * 420
           w[:vy] = -90 - @rng.rand * 70
+          w[:launched] = true
           hurt(w, damage, source: team[:id])
         end
         emit("quake", x: world_width / 2, y: world_height / 2, radius: 100)
@@ -97,8 +114,8 @@ module Burrow
         emit("teleport", x: active[:x], y: active[:y], x2: x, y2: landing)
         active[:x], active[:y], active[:vx], active[:vy] = x, landing.to_f, 0.0, 0.0
       when "girder"
-        terrain.bridge(x, y)
-        emit("build", x: x, y: y)
+        terrain.girder(x, y, angle: tilt)
+        emit("build", x: x, y: y, rotation: tilt)
       when "drill", "torch"
         @tool = {kind: kind, until: tick + 60, direction: active[:facing], owner: team[:id], damage: damage, lift: 0, input_until: tick}
         active[:input] = active[:lift] = 0
@@ -123,16 +140,19 @@ module Burrow
       resolve_turn(retreat: !%w[teleport girder heal freeze skip].include?(kind)) unless Catalog::UTILITY.include?(kind)
     end
 
-    def validate_tool(kind, x, y)
+    def validate_tool(kind, x, y, tilt: 0)
       if kind == "teleport"
         landing = terrain.landing(x, y, water: water)
         if !landing || worms.any? { |w| w[:id] != active_id && w[:hp] > 0 && Math.hypot(w[:x] - x, w[:y] - landing) < 25 }
           raise RuleError, "Choose clear ground above the water."
         end
       elsif kind == "girder"
+        # Sample the tilted beam's centre line and both faces.
+        ux, uy = Math.cos(tilt * Math::PI / 180), Math.sin(tilt * Math::PI / 180)
+        points = (-70..70).step(10).map { |d| [x + ux * d, y + 6 + uy * d] }
         if !x.between?(80, world_width - 80) || !y.between?(100, water - 30) ||
-            (-70..70).step(10).any? { |dx| terrain.solid?(x + dx, y) || terrain.solid?(x + dx, y + 12) } ||
-            worms.any? { |w| w[:hp] > 0 && (w[:x] - x).abs < 83 && (w[:y] - 10 - y).abs < 27 }
+            points.any? { |px, py| !py.between?(60, water - 20) || [-6, 0, 6].any? { |o| terrain.solid?(px - uy * o, py + ux * o) } } ||
+            worms.any? { |w| w[:hp] > 0 && points.any? { |px, py| (w[:x] - px).abs < 13 && (w[:y] - 10 - py).abs < 21 } }
           raise RuleError, "A bridge needs clear space above water, away from grubs."
         end
       elsif kind == "rope"
@@ -178,6 +198,9 @@ module Burrow
           p[:stage], p[:spraying], p[:remote] = "spraying", true, false
           p[:life] = [p[:life], 4 * TICK_RATE].min
           gas_cloud(p[:x], p[:y] - 6, owner, radius: 35, life: 150)
+        when ["cluster", "thrown"]
+          # Fruit salad bursts early on command.
+          p[:life], p[:remote], p[:stage] = 0, false, "split"
         else
           p[:life] = 0
         end
@@ -233,7 +256,10 @@ module Burrow
     end
 
     def fire_patch(x, y, owner, radius: 35)
-      hazards << {id: next_object_id, kind: "fire", x: x, y: y, owner: owner, radius: radius, life: 4 * TICK_RATE}
+      count = (radius / 8.0).round.clamp(2, 7)
+      count.times do |i|
+        flame(x, y - 6, owner, vx: (i - (count - 1) / 2.0) * 32 + @rng.rand(-10.0..10.0), vy: -60 - @rng.rand(80.0))
+      end
     end
 
     def ray_shot(angle, damage, radius, kind, range:)
@@ -272,6 +298,7 @@ module Burrow
           unless victim[:frozen] || victim[:hp] <= 0
             victim[:vx] += Math.cos(angle) * 40
             victim[:vy] -= 22
+            victim[:launched] = true
           end
           hit_ids << victim[:id]
           break unless kind == "laser"
@@ -301,6 +328,7 @@ module Burrow
         w[:vx] = active[:facing] * force * [Math.cos(angle).abs, 0.35].max
         w[:vy] = weapon[:id] == "axe" ? -25 : -[Math.sin(angle).abs * force, 90].max
         w[:vx], w[:vy] = active[:facing] * 95, -235 if weapon[:id] == "fire_punch"
+        w[:launched] = true
       end
       active[:vy] = -135 if weapon[:id] == "fire_punch"
       emit("melee", x: active[:x], y: active[:y] - 10, style: weapon[:id], facing: active[:facing])
@@ -320,7 +348,7 @@ module Burrow
           next if w[:id] == active_id || w[:hp] <= 0 || @tool[:hits].include?(w[:id]) || Math.hypot(w[:x] - x, w[:y] - active[:y]) > 33
           @tool[:hits] << w[:id]
           hurt(w, @tool[:damage], source: @tool[:owner])
-          w[:vx], w[:vy] = @tool[:direction] * 230, -95 if w[:hp] > 0 && !w[:frozen]
+          w[:vx], w[:vy], w[:launched] = @tool[:direction] * 230, -95, true if w[:hp] > 0 && !w[:frozen]
         end
         emit("melee", x: x, y: active[:y] - 10, style: "dragon_punch", facing: active[:facing]) if tick % 3 == 0
         return

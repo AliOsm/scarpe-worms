@@ -88,6 +88,73 @@ class WeaponControlsTest < Minitest::Test
     assert_equal locked, m.projectiles.first.values_at(:target_x, :target_y)
   end
 
+  def test_homing_is_two_steps_with_the_mouse_and_backspace_retargets
+    c, m = harness
+    c.select("homing")
+    c.pointer_click(1, 700, 320)
+    first = c.locked_target.dup
+    c.key_down("backspace")
+    c.key_up("backspace")
+    assert_nil c.locked_target, "Backspace returns to target selection"
+    c.pointer_click(1, 900, 300)
+    second = c.locked_target.dup
+    refute_equal first, second
+    c.pointer(300, 200)
+    c.pointer_click(1, 300, 200)
+    assert c.instance_variable_get(:@charge_started), "the second click charges instead of re-locking"
+    assert_equal second, c.locked_target
+    c.release_charge(source: :mouse)
+    assert_equal 1, c.fired.length
+    assert_equal second, m.projectiles.first.values_at(:target_x, :target_y)
+  end
+
+  def test_arrows_pick_a_strike_approach_without_walking
+    c, m = harness("terrain" => "islands")
+    c.select("airstrike")
+    actor = m.active
+    start = actor[:x]
+    c.key_down("left")
+    c.update_controls
+    c.key_up("left")
+    assert_equal(-1, c.strike_direction)
+    m.step(10)
+    assert_in_delta start, actor[:x], 0.5, "the arrow chose a direction instead of walking"
+    c.pointer_click(1, 900, 300)
+    assert_equal(-1, c.fired.last[1][:direction])
+    assert m.projectiles.all? { |p| p[:vx] < 0 }
+  end
+
+  def test_arrows_tilt_the_girder_and_its_preview
+    c, = harness
+    c.select("girder")
+    2.times do
+      c.key_down("right")
+      c.key_up("right")
+    end
+    assert_equal 45.0, c.girder_rotation
+    10.times do
+      c.key_down("left")
+      c.key_up("left")
+    end
+    assert_equal(-90.0, c.girder_rotation)
+  end
+
+  def test_space_splits_a_thrown_fruit_salad_and_the_grub_can_still_retreat
+    c, m = harness("scheme" => "sandbox", "retreat_seconds" => 3)
+    c.select("banana")
+    c.key_down(" ")
+    c.key_up(" ")
+    assert_equal 1, c.fired.length
+    m.step(6)
+    c.sync
+    assert_equal "Split · Space", c.special_control[0]
+    c.key_down(" ")
+    c.key_up(" ")
+    assert_equal "activate", c.actions.last[0]
+    m.step
+    assert_equal 6, m.projectiles.count { |p| p[:fragment] }
+  end
+
   def test_space_also_locks_before_charging_homing
     c, = harness
     c.select("homing")

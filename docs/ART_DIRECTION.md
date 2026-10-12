@@ -154,7 +154,10 @@ compilation, not a fresh generation request. Packaging excludes source masters.
 ## Terrain material kit
 
 The destructible landscape is a cell bitmap (1 cell = 2 world px, materials 0 air, 1 soil,
-2 girder, 3 masonry). `lib/burrow/client/terrain_painter.rb` paints it in the terrain
+2 girder, 3 masonry, 4 scorched soil). `lib/burrow/terrain_generator.rb` builds it from
+seeded polygons (islands, caves, tunnels, rocks, girders and biome set pieces), so every
+visible feature collides and is destructible. Blasts turn the soil around a crater into
+scorched soil; drills, moles and dashes do not. `lib/burrow/client/terrain_painter.rb` paints it in the terrain
 worker process from the baked textures in `assets/art/terrain/` (built by
 `tools/build_art_terrain.py`). The textures are authored **at cell resolution**, so the
 painter only does array lookups per cell: no trigonometry, no colour blending.
@@ -165,17 +168,20 @@ painter only does array lookups per cell: no trigonometry, no colour blending.
 | `{biome}-deep.png` | 512×512 | the fill, darkened 12%: more than `DEEP` (24) cells below the air above |
 | `{biome}-shade.png` | 512×512 | the fill, darkened 32%: occluded under the surface lip and within 6 cells of air below (cave ceilings, overhangs) |
 | `{biome}-edge.png` | 512×512 | the fill, darkened 72%: the 2-cell silhouette rim on undersides and walls |
+| `{biome}-scorch.png` | 512×512 | the fill, charred 58%: blast rims (material 4), which never take a surface lip |
 | `{biome}-crust.png` | 512×20 | the surface lip; row r = r cells below the air above. **Alpha 255** = crust colour, **alpha 0** = fall through to the fill, **any other alpha** = use the shade texture (lip shadow) |
 | `{biome}-tufts.png` | 512×12 | optional grass/snow/ash fringe for empty cells above a soil surface. **Off in the shipped painter** (`TUFTS = false`), because the visible mask must equal the collision mask |
 | `{biome}-masonry.png` | 128×64 | weathered dressed stone for material 3 |
 | `{biome}-masonry-edge.png` | 128×64 | matching stone silhouette shadow |
 | `girder.png` | 32×6 | steel girder for material 2; the row is the depth from its top |
 
-Cell rule, in order: girder → masonry (edge rim on its silhouette) → crust if opaque →
+Cell rule, in order: girder → masonry (edge rim on its silhouette) → scorch (edge rim on
+its silhouette; soil below charred cells gets no lip either) → crust if opaque →
 edge (≤2 cells above air below, or air left/right) → shade (lip marker, or ≤6 cells
-above air below) → deep (more than 24 cells under the air above) → fill. Painted textures repeat by mirrored world-cell coordinates over a 1024-cell
-period, so craters cut cleanly through the pattern and worker tiles stitch
-seamlessly. The reviewed 512px masters are pinned by hash in
+above air below) → deep (more than 24 cells under the air above) → fill. Painted textures wrap by world-cell
+coordinates every 512 cells. The build blends each master with its half-offset copy,
+first across x and then across y, so the tiles wrap without seams or mirror axes;
+craters cut cleanly through the pattern and worker tiles stitch seamlessly. The reviewed 512px masters are pinned by hash in
 `assets/art/source/materials/provenance.json`. Masonry repeats at 128×64 cells.
 
 Painter invariants:
@@ -209,7 +215,9 @@ platform sizes. FX metadata retains logical `size`/`anchor` and separately recor
 | `barrel-prop.png` | 40×48 | in-world explosive drum |
 | `fx/explosion-{0..8}.png` | 160 | flash → fireball → smoke ring with debris; anchor centre; 18 fps |
 | `fx/smoke-{0..5}`, `fx/dust-{0..4}`, `fx/splash-{0..5}`, `fx/sparkle-{0..3}` | see manifest | small effect loops |
-| `ui/crosshair.png`, `ui/wind-arrow.png`, `ui/turn-marker-{0..3}.png` | see manifest | HUD pieces |
+| `fx/flame-{0..3}.png` | 24×32 | a licking flame for loose fire; anchor (12, 30) on the ground; 12 fps |
+| `ui/target-lock.png` | 48 | a locked homing destination (shown from lock-on until impact) |
+| `ui/crosshair.png`, `ui/wind-arrow.png`, `ui/turn-marker-{0..3}.png` | see manifest | HUD pieces; the wind arrow also shows an air strike's approach |
 
 `manifest.json` lists every asset with its path, size, frame counts, fps and anchor, plus
 a static `terrain` block that describes the kit and its alpha contract.
@@ -298,6 +306,17 @@ before and after two full art/audio builds to verify byte identity. Current
 validation reports record the exact build and environment checked.
 
 ## Revision history
+
+- **2026-10-12, battlefield and blast physics (0.5.0).**
+  - New terrain generator: islands from layered value noise with a per-island character
+    (hills, summit, valley, mesa or volcanic cone), beach/cliff/overhang ends with
+    leaning, bulging cliff faces, sea grottos, walkable caves and winding tunnels,
+    floating rocks and girders. Caverns gain a stalactite roof, side walls and pillars.
+  - Biome set pieces drawn into the same mask as masonry: towers, colonnades, henges,
+    walls, arches, ziggurats, obelisks, igloos, ice spires, basalt columns and aqueducts.
+  - Painted fills now wrap seamlessly (no mirror axes); blasts char a soil rim with the
+    new `{biome}-scorch.png`; the water is deeper and opaque with a pale crest.
+  - New FX: `fx/flame-{0..3}` for loose fire and `ui/target-lock.png` for homing locks.
 
 - **2026-10-12, arcade interface (unreleased, on top of 0.4.0).**
   - Glossy blue frames, navy wells, cyan titles, yellow menu text and red back arrows

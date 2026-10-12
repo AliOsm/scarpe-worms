@@ -12,6 +12,7 @@ module Burrow
       # Diagonal outline copies keep names legible over any scenery at little paint cost.
       BADGE_OUTLINE = [[-1, -1], [1, -1], [-1, 1], [1, 1]].freeze
       LABELS_PER_FRAME = 8
+      SEA_BELOW = 1200
       FX = JSON.parse(File.read(File.join(Theme::ART, "manifest.json"), encoding: Encoding::UTF_8)).fetch("extras").fetch("fx_animations").freeze
       COMBAT = JSON.parse(File.read(File.join(Theme::ART, "manifest.json"), encoding: Encoding::UTF_8)).fetch("combat").freeze
       # Everything here repaints with the battlefield: no gradients (Widgets#shade).
@@ -63,16 +64,21 @@ module Burrow
             @props_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) {}
             @actor_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) {}
             @shot_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) {}
-            @water = box(0, @height - 96, @width, 96, color: "#438c97dd", radius: 0)
-            @waterline = line(0, @height - 96, @width, @height - 96, color: "#c1e9dd", width: 3)
+            # Deep, nearly opaque water hides the islands' roots, under a pale crest.
+            # It runs on past the world's bottom edge, which a zoomed-out camera can show.
+            @water = box(0, @height - 96, @width, 96 + SEA_BELOW, color: "#236f88f4", radius: 0)
+            @water_band = box(0, @height - 96, @width, 14, color: "#4fa6b8", radius: 0)
+            @waterline = line(0, @height - 96, @width, @height - 96, color: "#e1fbf4", width: 4)
             @effect_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) {}
             @aim_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) do
               @aim_dots = Array.new(15) { @shoes.oval(0, 0, px(4), fill: "#fffaf0cc", stroke: "#182d3566", strokewidth: px(1)) }
               @reticle = @shoes.oval(0, 0, px(24), fill: "#ffffff00", stroke: Theme::INK, strokewidth: px(1.5))
-              @lock_marker = label("⊕", 0, 0, 38, size: 31, color: Theme::ORANGE, align: "center")
-              @lock_caption = label("LOCKED", 0, 0, 72, size: 10, color: Theme::INK, font: Theme.mono, align: "center")
-              @placement = box(0, 0, 140, 12, color: "#edc16d88", radius: 2, stroke: Theme::WHITE)
-              @held_weapon = image("weapons/rocket", 0, 0, 30, 30)
+              @lock_marker = image("ui/target-lock", 0, 0, 48, 48)
+              @lock_caption = label("LOCKED", 0, 0, 90, size: 12, color: "#ff5a45", font: Theme.display, weight: 700, align: "center")
+              @strike_arrow = image("ui/wind-arrow", 0, 0, 64, 32).tap { |arrow| arrow.transform(:center) }
+              @placement = line(0, 0, 140, 0, color: "#f2c46ddd", width: 12)
+              # Turning sprites pivot on their centres, not their top-left corners.
+              @held_weapon = image("weapons/rocket", 0, 0, 30, 30).tap { |held| held.transform(:center) }
               @active_arrow = label("▼", 0, 0, 30, size: 22, color: Theme::ORANGE, align: "center")
               @rope_line = line(0, 0, 0, 0, color: "#eac386", width: 2)
               @rope_line.hide unless @rope_line.hidden
@@ -266,11 +272,22 @@ module Burrow
           node = @hazard_nodes[h["id"]]
           if %w[gas fire].include?(h["kind"])
             radius = h["radius"]
-            node[:image].style(left: px(h["x"] - radius), top: px(h["y"] - radius), width: px(radius * 2), height: px(radius * 2))
+            placed = [px(h["x"] - radius), px(h["y"] - radius), px(radius * 2)]
+            node[:image].style(left: placed[0], top: placed[1], width: placed[2], height: placed[2]) if node[:placed] != placed
+            node[:placed] = placed
           else
             width, height, ax, ay = node[:bounds]
-            node[:image].style(left: px(h["x"] - ax), top: px(h["y"] - ay), width: px(width), height: px(height))
-            if h["kind"] == "mine"
+            # Props rest most of the time: restyle only those that moved or rescaled.
+            placed = [px(h["x"] - ax), px(h["y"] - ay), px(width), px(height)]
+            node[:image].style(left: placed[0], top: placed[1], width: placed[2], height: placed[3]) if node[:placed] != placed
+            node[:placed] = placed
+            if h["kind"] == "flame"
+              frame = @controller.motion? ? ((@timeline.tick / 2.5).floor + node[:phase]) % 4 : 0
+              if node[:frame] != frame
+                node[:image].path = File.join(Theme::ART, "fx/flame-#{frame}.png")
+                node[:frame] = frame
+              end
+            elsif h["kind"] == "mine"
               blinking = @controller.motion? && @timeline.tick >= h.fetch("armed", 0)
               lit = h["trigger"] || (blinking && (@timeline.tick / 15).floor.odd?)
               path = File.join(Theme::ART, "#{lit ? 'mine-prop-lit' : 'mine-prop'}.png")
@@ -281,7 +298,9 @@ module Burrow
         render_aim(started)
         render_effects(started)
         if @water_level != @state["water"] || @water_scale != @scale
-          @water.style(top: px(@state["water"]), width: px(@width), height: px(@height - @state["water"]))
+          @water.style(top: px(@state["water"]), width: px(@width), height: px(@height - @state["water"] + SEA_BELOW))
+          @water_band.style(top: px(@state["water"]), width: px(@width), height: px(14))
+          @waterline.style(strokewidth: px(4))
           @waterline.style(top: px(@state["water"]), x2: px(@width), y2: px(@state["water"]))
           @water_level, @water_scale = @state["water"], @scale
         end
@@ -450,8 +469,7 @@ module Burrow
         @tiles.each_value { |tile| place_tile(tile) }
         @aim_dots.each { |dot| dot.style(width: px(4), height: px(4), strokewidth: [px(1), 1].max) }
         @reticle.style(width: px(24), height: px(24))
-        @lock_marker.style(width: px(38), size: [px(31), 12].max)
-        @lock_caption.style(width: px(72), size: [px(10), 7].max)
+        @placement.style(strokewidth: px(12))
         @active_arrow.style(width: px(30), size: [px(22), 10].max)
         @effects.each { |effect| effect[:node].remove }
         @effects.clear
@@ -605,15 +623,17 @@ module Burrow
           layer.append do
             kind = p["kind"]
             bounds = {"mine" => [34, 34, 17, 27.625], "barrel" => [32, 38.4, 16, 36.8],
-                      "crate" => [34, 34, 17, 31.875]}.fetch(kind, [32, 32, 16, 29])
+                      "crate" => [34, 34, 17, 31.875], "flame" => [24, 32, 12, 30]}.fetch(kind, [32, 32, 16, 29])
             picture = if projectile
               folder = COMBAT["projectiles"].include?(p["weapon"]) ? "projectiles" : "weapons"
-              image("#{folder}/#{p['weapon']}", p["x"] - 14, p["y"] - 14, 28, 28)
+              image("#{folder}/#{p['weapon']}", p["x"] - 14, p["y"] - 14, 28, 28).tap { |shot| shot.transform(:center) }
             elsif %w[fire gas].include?(kind)
               @shoes.oval(px(p["x"] - p["radius"]), px(p["y"] - p["radius"]), px(p["radius"] * 2),
                 fill: kind == "gas" ? "#a3b56366" : "#f57c4966", strokewidth: 0)
             else
-              art = if kind == "crate"
+              art = if kind == "flame"
+                "fx/flame-0"
+              elsif kind == "crate"
                 supply = Catalog::WEAPONS[p["supply"]]
                 p["supply"] == "health" ? "crate-health" : supply && Catalog::UTILITY.include?(supply[:kind]) ? "crate-utility" : "crate"
               else
@@ -622,7 +642,7 @@ module Burrow
               width, height, ax, ay = bounds
               image(art, p["x"] - ax, p["y"] - ay, width, height)
             end
-            nodes[p["id"]] = {image: picture, bounds: bounds}
+            nodes[p["id"]] = {image: picture, bounds: bounds, phase: p["id"].to_s.sum % 4}
             if projectile && p["fused"]
               nodes[p["id"]][:fuse_plate] = box(0, 0, 34, 22, color: "#071731eb", radius: 11, stroke: Theme::YELLOW)
               nodes[p["id"]][:fuse] = label("", 0, 0, 34, size: 12, color: Theme::WHITE, font: Theme.display, weight: 700, align: "center")
@@ -676,19 +696,41 @@ module Burrow
         else
           @reticle.hide unless @reticle.hidden
         end
-        if can_aim && weapon[:id] == "homing" && @controller.locked_target
-          tx, ty = @controller.locked_target
-          @lock_marker.move(px(tx - 19), px(ty - 23))
-          @lock_caption.move(px(tx - 36), px(ty + 17))
+        # A homing rocket's destination stays marked from lock-on until impact.
+        locked = (@controller.locked_target if can_aim && weapon[:id] == "homing") ||
+          @latest["projectiles"].find { |p| p["homing"] && p["target_x"] }&.values_at("target_x", "target_y")
+        if locked
+          tx, ty = locked
+          size = (48 * marker_scale * (@controller.motion? ? 1 + Math.sin(now * 6) * 0.06 : 1)).round
+          @lock_marker.style(left: px(tx) - size / 2, top: px(ty) - size / 2, width: size, height: size)
           @lock_marker.show if @lock_marker.hidden
+          caption = [px(tx) - (45 * marker_scale).round, px(ty) + (26 * marker_scale).round, (90 * marker_scale).round, (12 * marker_scale).round]
+          if @lock_caption_at != caption
+            @lock_caption.style(left: caption[0], top: caption[1], width: caption[2], size: caption[3])
+            @lock_caption_at = caption
+          end
           @lock_caption.show if @lock_caption.hidden
         else
           @lock_marker.hide unless @lock_marker.hidden
           @lock_caption.hide unless @lock_caption.hidden
         end
+        if targeted && Catalog::SKY.include?(weapon[:kind]) && weapon[:kind] != "meteor"
+          # The bombers' approach: an arrow upwind of the target, pointing along the flight.
+          tx, ty = @controller.target
+          side = @controller.strike_direction
+          width, height = (64 * marker_scale).round, (32 * marker_scale).round
+          @strike_arrow.style(left: px(tx) - width / 2 - side * (52 * marker_scale).round, top: px(ty) - (64 * marker_scale).round,
+            width: width, height: height)
+          @strike_arrow.rotate(side.negative? ? 180 : 0)
+          @strike_arrow.show if @strike_arrow.hidden
+        else
+          @strike_arrow.hide unless @strike_arrow.hidden
+        end
         if targeted && weapon[:kind] == "girder"
           tx, ty = @controller.target
-          @placement.style(left: px(tx - 70), top: px(ty), width: px(140), height: px(12))
+          tilt = @controller.girder_rotation * Math::PI / 180
+          dx, dy = Math.cos(tilt) * 70, Math.sin(tilt) * 70
+          @placement.style(left: px(tx - dx), top: px(ty + 6 - dy), x2: px(tx + dx), y2: px(ty + 6 + dy))
           @placement.show if @placement.hidden
         else
           @placement.hide unless @placement.hidden

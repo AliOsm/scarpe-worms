@@ -31,6 +31,10 @@ FX_META = {
     "splash": {"frames": 6, "size": [96, 96], "anchor": [48, 84], "fps": 14, "pattern": "fx/splash-{frame}.png",
                "note": "falling into water"},
     "sparkle": {"frames": 4, "size": [48, 48], "anchor": [24, 24], "fps": 12, "pattern": "fx/sparkle-{frame}.png"},
+    "flame": {"frames": 4, "size": [24, 32], "anchor": [12, 30], "fps": 12, "pattern": "fx/flame-{frame}.png",
+              "note": "burning fuel on the ground; loops while a flame lives"},
+    "target-lock": {"frames": 1, "size": [48, 48], "anchor": [24, 24], "pattern": "ui/target-lock.png",
+                    "note": "a locked homing destination"},
     "crosshair": {"frames": 1, "size": [40, 40], "anchor": [20, 20], "pattern": "ui/crosshair.png"},
     "wind-arrow": {"frames": 1, "size": [64, 32], "anchor": [32, 16], "pattern": "ui/wind-arrow.png",
                    "note": "points right; rotate/mirror for wind direction"},
@@ -383,6 +387,32 @@ def sparkle_fx(ctx, k):
     fill(ctx, lambda c: circle(c, 24, 24, 3.5 * s), WHITE)
 
 
+def flame_fx(ctx, k):
+    """A licking tongue of fire whose base sits on the ground at (12, 30)."""
+    sway = [0.0, 1.8, -1.4, 0.9][k]
+    tall = [25.0, 28.0, 23.5, 26.5][k]
+    def tongue(c, w, h, lean):
+        c.move_to(12, 30.5)
+        c.curve_to(12 - w, 30.5, 12 - w * 1.05, 30.5 - h * 0.45, 12 - w * 0.35 + lean * 0.4, 30.5 - h * 0.72)
+        c.curve_to(12 - w * 0.1 + lean * 0.7, 30.5 - h * 0.86, 12 + lean, 30.5 - h * 0.9, 12 + lean * 1.4, 30.5 - h)
+        c.curve_to(12 + w * 0.55 + lean, 30.5 - h * 0.78, 12 + w * 1.05, 30.5 - h * 0.5, 12 + w, 30.5 - h * 0.2)
+        c.curve_to(12 + w * 0.95, 30.5, 12 + w * 0.3, 30.5, 12, 30.5)
+        c.close_path()
+    inked(ctx, lambda c: tongue(c, 9.5, tall, sway), ORANGE, 1.8)
+    fill(ctx, lambda c: tongue(c, 6.2, tall * 0.72, sway * 0.8), "#ffb347")
+    fill(ctx, lambda c: tongue(c, 3.4, tall * 0.42, sway * 0.5), "#fff1b5")
+
+
+def target_lock(ctx):
+    for w, col in ((6.0, INK), (3.0, "#ff5a45")):
+        stroke(ctx, lambda c: circle(c, 24, 24, 15), col, w)
+        for a in range(4):
+            ang = a * math.pi / 2 + math.pi / 4
+            stroke(ctx, lambda c, ang=ang: (c.move_to(24 + math.cos(ang) * 10, 24 + math.sin(ang) * 10),
+                                            c.line_to(24 + math.cos(ang) * 21, 24 + math.sin(ang) * 21)), col, w)
+    inked(ctx, lambda c: circle(c, 24, 24, 3.4), "#ffd35c", 1.6)
+
+
 def crosshair(ctx):
     for w, col in ((5.5, INK), (2.6, WHITE)):
         stroke(ctx, lambda c: circle(c, 20, 20, 12), col, w)
@@ -437,6 +467,9 @@ def build_all():
     for k in range(4):
         _render(f"sparkle-{k}", 48, 48, lambda c, k=k: sparkle_fx(c, k), "fx", svg=False, shadow=False)
         _render(f"turn-marker-{k}", 32, 32, lambda c, k=k: turn_marker(c, k), "ui", svg=False)
+    for k in range(4):
+        _render(f"flame-{k}", 24, 32, lambda c, k=k: flame_fx(c, k), "fx", svg=False, shadow=False)
+    _render("target-lock", 48, 48, target_lock, "ui", svg=False, shadow=False)
     _render("crosshair", 40, 40, crosshair, "ui", svg=False, shadow=False)
     _render("wind-arrow", 64, 32, wind_arrow, "ui", svg=False)
     return {}

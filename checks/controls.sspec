@@ -1,6 +1,6 @@
 ---
 display: native
-timeout: 160
+timeout: 220
 ----------- app code
 ENV["BURROW_DATA_DIR"] = File.join(Dir.pwd, "controls-data")
 require File.join(ENV.fetch("BURROW_ROOT"), "lib/burrow/server/reactor")
@@ -180,6 +180,66 @@ reset.call
   wait_real.call { client.state["projectiles"].any? { |shot| shot["stage"] == desired } }
   reset.call
 end
+# Homing by mouse alone: the first click locks, the second press charges and its release launches.
+equip.call("homing")
+x, y = world_point.call(1000, 700)
+auto.mouse(:move, x, y)
+auto.mouse(:down, x, y)
+auto.mouse(:up, x, y)
+assert client.locked_target
+locked = client.locked_target.dup
+x, y = world_point.call(520, 640)
+auto.mouse(:move, x, y)
+auto.mouse(:down, x, y)
+wait_real.call { client.instance_variable_get(:@charge_started) }
+assert_equal locked, client.locked_target, "the second press charges instead of re-locking"
+pause.call(0.3)
+auto.mouse(:up, x, y)
+wait_real.call { client.state["projectiles"].any? }
+assert_equal locked, client.state["projectiles"].first.values_at("target_x", "target_y")
+reset.call
+# Arrow keys tilt a girder before it is placed, without walking.
+equip.call("girder")
+start_x = client.active_worm["x"]
+press_key "right"
+press_key "right"
+assert_equal 45.0, client.girder_rotation
+x, y = world_point.call(620, 760)
+auto.mouse(:move, x, y)
+pause.call(0.1)
+snapshot "girder-tilted"
+auto.mouse(:down, x, y)
+auto.mouse(:up, x, y)
+wait_real.call { client.state["phase"] != "aiming" }
+match = $controls_server.rooms.values.first.match
+assert match.terrain.solid?(client.target[0] + 40, client.target[1] + 46), "the beam runs diagonally"
+refute match.terrain.solid?(client.target[0] + 40, client.target[1] + 6)
+assert_in_delta start_x, client.active_worm["x"], 1
+reset.call
+# Arrow keys choose the bombers' approach for an air strike.
+equip.call("airstrike")
+start_x = client.active_worm["x"]
+press_key "left"
+assert_equal(-1, client.strike_direction)
+x, y = world_point.call(1050, 860)
+auto.mouse(:move, x, y)
+pause.call(0.1)
+snapshot "strike-approach"
+auto.mouse(:down, x, y)
+auto.mouse(:up, x, y)
+wait_real.call { $controls_server.rooms.values.first.match.projectiles.size == 5 }
+assert $controls_server.rooms.values.first.match.projectiles.all? { |p| p[:vx] < 0 }, "bombers fly in from the right"
+assert_in_delta start_x, client.active_worm["x"], 1
+reset.call
+# Fruit salad splits on a second press of Space while it is in the air.
+equip.call("banana")
+press_key " "
+wait_real.call { client.remote_critter }
+acknowledged.call
+assert_equal "Split · Space", client.special_control[0]
+press_key " "
+wait_real.call { $controls_server.rooms.values.first.match.events.any? { |e| e[:kind] == "activate" && e[:weapon] == "banana" } }
+reset.call
 # Drilling can be stopped without waiting for its timer.
 equip.call("drill")
 press_key " "

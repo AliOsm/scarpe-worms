@@ -1,6 +1,7 @@
-# Weapon, input, and presentation audit — 0.3.0
+# Weapon, input, and presentation audit — 0.5.0
 
-This is Burrow Brigade's implemented contract, reviewed on 2026-10-09. Its 48
+This is Burrow Brigade's implemented contract, first reviewed on 2026-10-09 and
+updated for 0.5.0 on 2026-10-12 (see [0.5.0 changes](#050-blast-physics-and-multi-step-weapons)). Its 48
 weapons have original names, art, and balance values. It is not a compatibility
 implementation of a particular Worms release. [WEAPONS.md](WEAPONS.md) lists
 all 48 entries, ammunition defaults, and their current in-game descriptions.
@@ -60,9 +61,9 @@ are recorded in [ART_DIRECTION.md](ART_DIRECTION.md).
 | --- | --- |
 | Pocket rocket | Charged, wind-sensitive ballistic flight; terrain/body collision; swept muzzle and thin-wall collision. |
 | Moon mortar | Instant fixed-power launch; five secondary fragments on impact. |
-| Love letter | Persistent target lock; separately aimed launch; delayed, bounded homing without loss of turning speed. |
-| Tick-tock | Variable fuse; bounces on ground and grubs; surface-normal reflection; falls if support disappears. |
-| Party popper, Fruit salad | Timed parent explosion; five/six fragments; boosted fragment damage; fragments settle before handover. |
+| Love letter | Two steps: lock a target, then aim and charge (mouse or Space); Backspace re-targets. Ballistic launch, then bounded homing at a cruise speed set by launch power; the motor burns out after 4.5 s and the rocket falls. |
+| Tick-tock | Variable fuse; bounces on ground and grubs; surface-normal reflection; rolls down slopes steeper than about 35°; falls if support disappears; blasts knock it away. |
+| Party popper, Fruit salad | Timed parent explosion; five/six fragments; boosted fragment damage; fragments settle before handover. Fruit salad splits early on a second Fire press while airborne. |
 | Velcro bomb | Timed attachment to terrain or a grub; follows the attached grub; falls after support destruction. |
 | Short fuse | Placement and four-second countdown; full retreat window. |
 | Big trouble | Charged bouncing explosive with adjustable fuse and larger radius. |
@@ -71,13 +72,13 @@ are recorded in [ART_DIRECTION.md](ART_DIRECTION.md).
 | Long goodbye | Instant terrain-blocked ray; no muzzle gap through close walls. |
 | Peashooter | Eight visible rounds over time; saved burst queue survives host recovery. |
 | Sunbeam | Piercing ray, terrain cutting, one hit per body per ray. |
-| Hot breath | Seven timed short-range rays, persistent ground fire. |
+| Hot breath | Seven timed short-range rays; each spills loose flames where it stops. |
 | Uppercrust | Close uppercut with upward motion and knockback; ordinary melee cannot hit through walls. |
 | Dragon dash | Movement spans twelve ticks; carves along its path; hits each body once. |
 | Little nudge | Zero-damage shove; terrain obstruction respected. |
 | Home run | Angle-sensitive knockback; frozen bodies stay still. |
 | Half measure | Halves current health before configured damage modifiers. |
-| Special delivery, Rain check, Spicy forecast | Targeted five-object air support; normal blasts, armed mines, or lasting fire; cavern restrictions exposed before equipping. |
+| Special delivery, Rain check, Spicy forecast | ← → chooses the bombers' approach; five objects are released upwind so they land in a line across the target; normal blasts, armed mines, or spreading flames; cavern restrictions exposed before equipping. |
 | Bad astronomy | Random six-meteor shower, activated without a meaningless target selection; cavern restriction. |
 | Rumble button | Bounded seeded impulses; respects frozen bodies. |
 | Woolly menace | Hops at obstacles/ledges; manual or timed detonation. |
@@ -85,14 +86,14 @@ are recorded in [ART_DIRECTION.md](ART_DIRECTION.md).
 | Tunnel buddy | Walking → dive → digging → detonation; tunnel exit detection probes ahead of carved material. |
 | Stink express | Walking → activated spray → final gas and small blast. |
 | Cattle call | Three timed releases; pending cows are invisible and do not collide before release. |
-| Mind your step | Arms after deployment; delayed proximity trigger; persistent hazard. |
+| Mind your step | Arms after deployment; delayed proximity trigger; persistent hazard; blasts throw it and close blasts arm a short fuse. |
 | Sentry sprout | Five shots, range and line-of-sight limits, enemy selection. |
-| Red barrel | Persistent explosive, participates in blast chains. |
+| Red barrel | Persistent explosive; blasts throw and dent it, and a ruptured barrel explodes after a short delay, spilling flames. |
 | Grapple line | Validated overhead attachment; swing/reel/release; destroyed anchors detach; no extra ammo for releasing. |
 | Personal cloud | Directional thrust; fuel conservation; mutually exclusive with rope; graceful fuel exhaustion. |
 | Soft landing | Slows descent; suppresses fall damage; directional drift. |
 | Here to there | Clear landing and occupied-body validation before spending ammo; ends turn. |
-| Bridge builder | Clear placement preview; collision and bounds validation before spending ammo. |
+| Bridge builder | ← → tilts the beam in 22.5° steps up to vertical; tilted preview; collision and bounds validation along the beam before spending ammo. |
 | Down we go, Side hustle | Bounded-duration terrain tools; early stop; steerable torch slope; checkpoint recovery. |
 | First aid | Health cap, poison cure, rejects wasted use without spending ammo. |
 | Bubble wrap, Ice break | Protection lifetime through the team's next turn; frozen grubs resist weapon knockback. |
@@ -119,8 +120,32 @@ shot settles, including after the launching grub dies if its team still has a
 living member. A rematch invalidates lobby rendering state so Ready correctly
 re-enables Start.
 
-Protocol 3 is required on both ends. Existing checkpoint formats remain readable;
-legacy in-flight critters gain explicit stages during restore.
+Protocol 4 is required on both ends. Existing checkpoint formats remain readable;
+legacy in-flight critters gain explicit stages during restore, and fire zones from
+older saves keep burning as static zones.
+
+## 0.5.0 blast physics and multi-step weapons
+
+- **Blast impulse.** Explosions push along the line from the blast centre through
+  each body, scaled by damage and distance, with extra lift. A blast underneath
+  throws a grub upward; one overhead barely lifts it.
+- **Tumbling.** Blasted grubs keep their momentum, rebound off walls, ceilings and
+  floors, and slide to a stop. Their controls return when they settle. A blast flight
+  ends without fall damage; an ordinary drop still hurts.
+- **Loose objects.** Resting or rolling bombs, mines, barrels, crates and sentries are
+  thrown by blasts and fall, bounce and settle. Close mines, crates and sentries are
+  set off after a short, seeded delay; barrels take blast damage and rupture.
+  Parachuting crates drift with the wind.
+- **Fire.** Firebombs, barrels and the flamethrower spill flames (at most 60) that fall,
+  drift with the wind, creep downhill and burn out after 3–5 s. A grub in fire takes 3
+  damage every third of a second and hops, however many flames touch it.
+- **Bounces.** Restitution is per weapon (bouncy fruit, heavy choir bomb, dull
+  dynamite). Gentle contacts roll; bombs rest only on level ground.
+- **Craters.** Blasts char a rim of soil (material 4) with no grass regrowing on the
+  floor; drills, moles and dashes leave clean tunnels; the blowtorch scorches.
+- **Multi-step controls.** Homing is lock → aim and charge; air support takes a target
+  and an approach; girders take a target and a tilt; Fruit salad splits on command.
+  Arrow keys (not A/D) steer approach and tilt, so the grub does not walk meanwhile.
 
 ## Automated evidence
 
@@ -130,7 +155,11 @@ legacy in-flight critters gain explicit stages during restore.
   terrain normals, fuse timing, moving attachments, critical weapon stages,
   ownership, fuel/reeling, fragments, animated dash, and recovery within actions.
 - `test/weapon_controls_test.rb`: actual input handler contracts, source-specific
-  releases, target locks, cancellation, auto-repeat, pending actions, and selection.
+  releases, target locks, cancellation, auto-repeat, pending actions, and selection;
+  two-step homing by mouse, re-targeting, strike approach, girder tilt and splitting.
+- `test/battlefield_physics_test.rb`: blast direction, tumbling and rebounds, fall
+  damage rules, shoved bombs and props, staggered chains, flames, rolling, strike
+  approach, tilted girders, homing burnout, charred rims and checkpoint recovery.
 - `checks/controls.sspec`: native Rust keyboard/pointer/focus dispatch into the
   client and through a TLS host, with a repeatable obstacle course and observer.
 - Existing presentation/cadence regressions preserve 0.2.4's smooth playback;

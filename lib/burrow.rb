@@ -7,8 +7,8 @@ require "fileutils"
 
 module Burrow
   ROOT = File.expand_path("..", __dir__)
-  VERSION = "0.4.0"
-  PROTOCOL = 3
+  VERSION = "0.5.0"
+  PROTOCOL = 4
   TICK_RATE = 30
   DT = 1.0 / TICK_RATE
   # Legacy checkpoint dimensions; new matches carry their own world size.

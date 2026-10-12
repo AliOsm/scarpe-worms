@@ -161,7 +161,8 @@ module Burrow
           @map_preview_signature = signature
           @preview_art&.close
           @preview_art = TerrainArt.new
-          terrain = Terrain.new(seed: Config.new(config).seed_number, shape: config["terrain"], width: dimensions[0], height: dimensions[1])
+          terrain = Terrain.new(seed: Config.new(config).seed_number, shape: config["terrain"], width: dimensions[0], height: dimensions[1],
+            biome: config["biome"])
           @preview_art.request(terrain, config["biome"])
           @map_preview_path = nil
         end
@@ -176,7 +177,7 @@ module Burrow
             size: 22, align: "center", thickness: 2)
         end
         water = (dimensions[1] - 96).fdiv(dimensions[1])
-        box(x, y + height * water, width, height * (1 - water), color: "#438c97dd", radius: 0)
+        box(x, y + height * water, width, height * (1 - water), color: "#236f88f4", radius: 0)
         box(x + 9, y + 9, 374, 28, color: "#071731d9", radius: 14)
         micro("#{dimensions[0]} × #{dimensions[1]} · #{config.fetch('map_size', 'auto').capitalize} battlefield", x + 22, y + 15, width - 38, color: Theme::WHITE)
       end

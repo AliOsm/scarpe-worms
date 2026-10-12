@@ -51,25 +51,35 @@ Invalid movement does not partially update held controls. Inputs expire after
 400 ms without refresh. Projectiles, hazards, poison, knockback, fall damage,
 flooding, supplies, and winner detection are authoritative.
 
+Blasts push everything loose away from their centre: grubs tumble (rebounding
+off walls and sliding to a stop, without fall damage), resting bombs roll, and
+mines, barrels, crates and sentries fly. Close mines and barrels arm short,
+staggered fuses for chain reactions; ruptured barrels and firebombs spill flames
+that fall, creep downhill and scald. A turn settles only once flames have burned
+out and props have come to rest.
+
 Match phases are aiming → retreat → settling → next turn, or finished. Utilities
 can retain aiming; Double tap has two shots in one cartridge. Every action has
 a server implementation. Match checkpoints contain all simulation fields,
 terrain, inventories, in-flight objects, bot planning, and the PRNG state.
 
-## Wire format (protocol 3)
+## Wire format (protocol 4)
 
 Messages are UTF-8 JSON objects, one per newline. Client frames are limited to
 24 KiB; server frames to 512 KiB; nesting and numeric values are bounded. A
 connection starts with:
 
 ```json
-{"type":"hello","version":3,"name":"River crew","token":null}
+{"type":"hello","version":4,"name":"River crew","token":null}
 ```
 
 `welcome` returns `id`, a 256-bit session `token`, and the last accepted `seq`.
 The server persists only SHA-256 token hashes. Clients store their tokens in a
 private local preferences file. Subsequent mutating commands need increasing
-integer `seq` values; duplicate sequences are ignored. Protocol 3 rejects older clients before using staged controls and directional steering. A reconnect sends the
+integer `seq` values; duplicate sequences are ignored. Protocol 4 rejects older clients:
+`fire` accepts an air strike's approach `direction` (−1 or 1) and a girder's
+`rotation` (−90° to 90°), and snapshots carry loose flames and moving props that
+older clients cannot draw. A reconnect sends the
 same token, resumes its sequence, and receives a complete state/terrain packet.
 Queued old commands are dropped on reconnect rather than fired unexpectedly.
 
