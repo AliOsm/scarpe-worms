@@ -170,7 +170,7 @@ Scarpe::Native.after_first_heartbeat do
         auto.window_focus(true)
         auto.key("e")
         wait.call { client.overlay? }
-        auto.click({text: "Close"})
+        auto.click({text: "Back"})
         wait.call { !client.overlay? }
         auto.resize(*(resizes.odd? ? [1440, 900] : [1080, 675]))
         wait.call { client.scene && client.scene.terrain_revision >= 0 && client.instance_variable_get(:@dimensions) == (resizes.odd? ? [1440, 900] : [1080, 675]) }

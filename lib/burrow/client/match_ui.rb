@@ -21,52 +21,92 @@ module Burrow
         @keys.clear
         @scene = Scene.new(@shoes, self, scale: @scale, presentation: presentation)
         @scene.accept(state)
-        box(0, 0, 1440, 104, color: Theme::INK, radius: 0)
+        box(0, 0, 1440, 104, color: shade("#0d2a5c", "#061430"), radius: 0)
+        box(0, 99, 1440, 3, color: Theme::WELL_EDGE, radius: 0)
+        box(0, 102, 1440, 2, color: Theme::INK, radius: 0)
         @team_hud = {}
         count = state["teams"].length
-        column = 1320.0 / count
+        column = 1184.0 / count
         state["teams"].each_with_index do |team, i|
-          x = 32 + i * column
-          marker = box(x - 9, 13, 3, 37, color: COLORS[team["color"]], radius: 1)
-          title = label(short_text(team["name"], count > 4 ? 15 : 28), x, 12, column - 110, size: 15, color: COLORS[team["color"]], font: Theme.display)
-          health = label("", x + column - 99, 14, 70, size: 12, color: Theme::WHITE, font: Theme.mono, align: "right")
-          members = label("", x, 32, column - 30, size: 10, color: "#acc5c5")
-          box(x, 45, column - 30, 6, color: "#ffffff20", radius: 3)
-          bar = box(x, 45, column - 30, 6, color: COLORS[team["color"]], radius: 3)
-          @team_hud[team["id"]] = {bar: bar, width: column - 30, marker: marker, title: title, health: health, members: members}
+          x = 18 + i * column
+          width = column - 14
+          color = COLORS[team["color"]]
+          marker = box(x - 5, 5, width + 10, 60, color: "#ffd33522", radius: 30, stroke: Theme::YELLOW, stroke_width: 3)
+          box(x, 10, width, 50, color: shade(Theme::DEEP, Theme::NAVY), radius: 25, stroke: "#4f8fe0", stroke_width: 2)
+          box(x + 7, 16, 38, 38, color: color, radius: 11)
+          image("grubs/#{team['color']}-idle-0", x + 2, 11, 48, 48)
+          # Narrow capsules drop the grub counter so the team name keeps its room.
+          roomy = count <= 3
+          title_width = width - 54 - (roomy ? 116 : 56)
+          title = label(short_text(team["name"], [(title_width / 8.2).floor, 6].max), x + 54, 13, title_width, size: roomy ? 15 : 14,
+            color: color, font: Theme.display, weight: 700)
+          members = label("", x + width - 112, 16, 50, size: 11, color: Theme::MUTED, font: Theme.display, align: "right") if roomy
+          health = label("", x + width - 56, 13, 44, size: 15, color: Theme::WHITE, font: Theme.display, weight: 700, align: "right")
+          bar_width = width - 68
+          box(x + 52, 36, width - 64, 16, color: "#04101f", radius: 8)
+          bar = box(x + 54, 38, bar_width, 12, color: color, radius: 6)
+          @team_hud[team["id"]] = {bar: bar, width: bar_width, marker: marker, title: title, health: health, members: members}
         end
-        @turn_label = label("", 34, 72, 560, size: 15, color: Theme::WHITE, font: Theme.display)
-        box(616, 59, 158, 39, color: "#ffffff12", radius: 9)
-        @phase_label = label("TURN", 626, 75, 65, size: 10, color: "#b9d6d1", font: Theme.mono)
-        @clock_label = label("45", 690, 60, 78, size: 29, color: Theme::GOLD, font: Theme.mono, align: "center")
-        @wind_label = label("", 814, 63, 230, size: 11, color: "#b9d6d1", align: "center")
-        box(850, 87, 158, 5, color: "#ffffff20", radius: 2)
-        @wind_bar = box(929, 87, 1, 5, color: Theme::GOLD, radius: 2)
-        box(928, 85, 2, 9, color: "#ffffff88", radius: 0)
-        @round_label = label("", 1054, 74, 210, size: 11, color: "#b9d6d1", align: "right", font: Theme.mono)
-        button("Menu", 1298, 62, 108, height: 32) { show_match_menu }
-        box(0, 824, 1440, 76, color: Theme::PAPER, radius: 0)
-        line(0, 824, 1440, 824)
-        @weapon_image = image("weapons/#{@selected_weapon}", 22, 835, 47, 47)
-        @weapon_label = label("Pocket rocket", 84, 835, 230, size: 19, font: Theme.display)
-        @weapon_ammo = label("", 86, 866, 220, size: 12, color: Theme::MUTED)
-        button("Arsenal · E", 310, 845, 156) { show_arsenal }
-        @aim_label = label("", 491, 837, 255, size: 13, color: Theme::MUTED)
-        @power_bg = box(490, 867, 225, 11, color: "#d9d4c7", radius: 4)
-        @power_bar = box(490, 867, 146, 11, color: Theme::ORANGE, radius: 4)
-        @power_minus = button("−", 731, 845, 44, height: 32) { @power = [@power - 0.05, 0.05].max; refresh_match_hud }
-        @power_plus = button("+", 784, 845, 44, height: 32) { @power = [@power + 0.05, 1.0].min; refresh_match_hud }
-        @fuse_button = button("Fuse: #{@fuse}s", 850, 845, 140) { @fuse = @fuse % 5 + 1; refresh_match_hud }
-        @fire_button = button("Fire", 1018, 843, 223, primary: true) { fire_current }
-        @pass_button = button("Pass", 1264, 845, 142) { submit_weapon("fire", weapon: "skip") if my_turn? && state["phase"] == "aiming" && state["shots_left"].zero? }
-        box(16, 790, 1050, 28, color: "#182d35e8", radius: 7)
-        @control_hint = label("", 30, 797, 1020, size: 12, color: Theme::WHITE)
-        @connection_overlay = @shoes.stack(left: 0, top: px(106), width: px(1440), height: px(42)) do
-          box(360, 0, 720, 38, color: Theme::INK, radius: 9)
-          @reconnect_label = label("Rejoining your room…", 378, 10, 684, size: 13, color: Theme::WHITE, align: "center")
+        @turn_label = label("", 22, 68, 760, size: 19, color: Theme::WHITE, font: Theme.display, weight: 700)
+        @round_label = label("", 880, 74, 330, size: 12, color: Theme::MUTED, font: Theme.display, weight: 600, align: "right")
+        button("Menu", 1224, 14, 196, height: 40, size: 18) { show_match_menu }
+        box(0, 824, 1440, 76, color: shade("#061430", "#0d2a5c"), radius: 0)
+        box(0, 822, 1440, 2, color: Theme::INK, radius: 0)
+        box(0, 824, 1440, 3, color: Theme::WELL_EDGE, radius: 0)
+        hud_box(12, 832, 192, 62)
+        outlined("Wind", 24, 834, 80, size: 15, color: Theme::YELLOW, thickness: 1.5, offsets: Theme::OUTLINE.first(4))
+        @wind_label = label("", 96, 835, 96, size: 12, color: Theme::WHITE, font: Theme.display, weight: 700, align: "right")
+        box(22, 856, 172, 30, color: Theme::DEEP, radius: 15, stroke: Theme::INK, stroke_width: 2)
+        box(107, 860, 2, 22, color: "#ffffff40", radius: 0)
+        @wind_chevrons = {1 => [], -1 => []}
+        3.times do |i|
+          @wind_chevrons[1] << chevron(122 + i * 24, 871, 1)
+          @wind_chevrons[-1] << chevron(94 - i * 24, 871, -1)
+        end
+        hud_box(1236, 832, 192, 62)
+        @phase_label = label("TURN", 1248, 836, 90, size: 12, color: Theme::YELLOW, font: Theme.display, weight: 700)
+        box(1300, 838, 118, 50, color: Theme::DEEP, radius: 16, stroke: Theme::INK, stroke_width: 2)
+        @clock_label = label("45", 1300, 840, 118, size: 34, color: Theme::WHITE, font: Theme.display, weight: 700, align: "center")
+        well(216, 832, 1010, 62, radius: 26)
+        @shoes.oval(px(224), px(836), px(54), px(54), fill: shade("#09203f", "#123a6e"), stroke: "#06142b", strokewidth: px(2))
+        @weapon_image = image("weapons/#{@selected_weapon}", 229, 841, 44, 44)
+        @weapon_label = label("Pocket rocket", 288, 838, 160, size: 17, font: Theme.display, weight: 700, color: Theme::WHITE)
+        @weapon_ammo = label("", 289, 865, 160, size: 12, color: Theme::MUTED)
+        button("Arsenal · E", 452, 843, 120, height: 38, size: 15) { show_arsenal }
+        @aim_label = label("", 586, 838, 172, size: 13, color: "#e3f1ff")
+        box(584, 864, 172, 16, color: "#04101f", radius: 8, stroke: Theme::INK, stroke_width: 1)
+        @power_bar = box(586, 866, 110, 12, color: shade(Theme::YELLOW, Theme::ORANGE), radius: 6)
+        @power_minus = button("−", 766, 845, 34, height: 34, size: 18) { @power = [@power - 0.05, 0.05].max; refresh_match_hud }
+        @power_plus = button("+", 808, 845, 34, height: 34, size: 18) { @power = [@power + 0.05, 1.0].min; refresh_match_hud }
+        @fuse_button = button("Fuse #{@fuse}s", 852, 845, 100, height: 34, size: 14, tone: :navy) { @fuse = @fuse % 5 + 1; refresh_match_hud }
+        @fire_button = button("Fire", 962, 840, 162, height: 44, primary: true, size: 17) { fire_current }
+        @pass_button = button("Pass", 1136, 845, 80, height: 34, size: 15) { submit_weapon("fire", weapon: "skip") if my_turn? && state["phase"] == "aiming" && state["shots_left"].zero? }
+        box(16, 788, 1050, 30, color: "#071731d9", radius: 15, stroke: "#3d7fd0aa")
+        @control_hint = label("", 34, 795, 1020, size: 13, color: "#e3f1ff")
+        @connection_overlay = @shoes.stack(left: 0, top: px(110), width: px(1440), height: px(46)) do
+          box(360, 2, 720, 40, color: "#071731f0", radius: 20, stroke: Theme::YELLOW, stroke_width: 2)
+          @reconnect_label = label("Rejoining your room…", 378, 12, 684, size: 14, color: Theme::WHITE, align: "center", font: Theme.display, weight: 600)
         end
         @connection_overlay.hide
         refresh_match_hud
+      end
+
+      # A small glossy plate for the corner gauges.
+      def hud_box(x, y, width, height)
+        box(x - 3, y - 3, width + 6, height + 6, color: Theme::INK, radius: 19)
+        box(x, y, width, height, color: shade(*Theme::BLUE), radius: 16)
+        box(x + 8, y + 2, width - 16, 18, color: shade("#ffffff4d", "#ffffff00"), radius: 12)
+      end
+
+      def chevron(x, y, direction)
+        tip, back = x + 9 * direction, x - 9 * direction
+        @shoes.shape(fill: Theme::WHITE, stroke: Theme::INK, strokewidth: px(1)) do
+          @shoes.move_to(px(back), px(y - 10))
+          @shoes.line_to(px(tip), px(y))
+          @shoes.line_to(px(back), px(y + 10))
+          @shoes.line_to(px(back + 6 * direction), px(y))
+          @shoes.line_to(px(back), px(y - 10))
+        end
       end
 
       def refresh_match_hud
@@ -93,7 +133,7 @@ module Burrow
         remaining = seconds.ceil
         set_text(@clock_label, counting ? remaining.to_s.rjust(2, "0") : "··")
         set_text(@phase_label, {"aiming" => "TURN", "retreat" => "RETREAT", "settling" => "ACTION", "finished" => "FINISH"}.fetch(phase, "ACTION"))
-        @clock_label.style(stroke: counting && (remaining <= 10 || phase == "retreat") ? "#ef765e" : Theme::GOLD)
+        @clock_label.style(stroke: counting && (remaining <= 10 || phase == "retreat") ? "#ff5a45" : Theme::WHITE)
         cue = [state["turn"], phase, remaining]
         if @timer_cue != cue
           @audio&.play("tick", volume: 0.35) if counting && my_turn? && @window_active && remaining.between?(1, 5)
@@ -101,9 +141,14 @@ module Burrow
         end
         wind = state["wind"]
         arrow = wind >= 0 ? "→" : "←"
-        set_text(@wind_label, wind.abs < 0.03 ? "WIND · CALM" : "WIND  #{arrow}  #{(wind.abs * 10).round}")
-        wind_width = (wind.abs.clamp(0, 2) * 39).round
-        @wind_bar.style(left: px(wind.negative? ? 929 - wind_width : 929), width: px([wind_width, 1].max))
+        set_text(@wind_label, wind.abs < 0.03 ? "Calm" : "#{arrow} #{(wind.abs * 10).round}")
+        strength = wind.abs < 0.03 ? 0 : (wind.abs.clamp(0, 2) * 1.5).ceil.clamp(1, 3)
+        @wind_chevrons.each do |direction, chevrons|
+          chevrons.each_with_index do |chevron, i|
+            shown = wind * direction > 0 && i < strength
+            shown ? chevron.show : chevron.hide
+          end
+        end
         set_text(@round_label, "ROUND #{state['round']}  ·  #{@rtt} ms")
         state["teams"].each do |team|
           members = state["worms"].select { |w| w["team"] == team["id"] }
@@ -134,9 +179,9 @@ module Burrow
           Catalog::AIMED.include?(weapon[:kind]) ? "Aim #{@angle.abs.round}° · tap to fire" : "Ready to deploy"
         end
         set_text(@aim_label, detail)
-        @power_bar.style(width: px(225 * (charged ? @power : active["jetpack"] ? active["fuel"].fdiv(4 * TICK_RATE) : 0)))
+        @power_bar.style(width: px(168 * (charged ? @power : active["jetpack"] ? active["fuel"].fdiv(4 * TICK_RATE) : 0)))
         @power_minus.state = @power_plus.state = aiming && charged ? nil : "disabled"
-        @fuse_button.text = @selected_weapon == "holy_bomb" ? "Fuse: 5s fixed" : Catalog::FUSED.include?(@selected_weapon) ? "Fuse: #{@fuse}s" : "No fuse"
+        @fuse_button.text = @selected_weapon == "holy_bomb" ? "Fixed 5s" : Catalog::FUSED.include?(@selected_weapon) ? "Fuse #{@fuse}s" : "No fuse"
         @fuse_button.state = aiming && Catalog::FUSED.include?(@selected_weapon) && !control ? nil : "disabled"
         @fire_button.text = @pending_action ? "Sending…" : control ? control[0] : @charge_started ? "Charging…" : state["shots_left"] > 0 ? "Second shot" : @selected_weapon == "homing" && !@locked_target ? "Lock target" : "Fire · Space"
         @fire_button.state = my_turn? && !@pending_action && (control || (aiming && can_equip?(@selected_weapon))) ? nil : "disabled"
@@ -205,6 +250,7 @@ module Burrow
           overlay? ? hide_overlay : (@page == :match ? show_match_menu : to_menu)
           return
         end
+        return arsenal_key(key) if @arsenal && @window_active
         return if overlay? || @page != :match || !@window_active
         return if @keys.include?(key)
         @keys << key

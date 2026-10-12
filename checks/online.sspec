@@ -69,7 +69,7 @@ $online_friends.first.send_action("chat", text: "A live reply from another team.
 wait_real.call { client.instance_variable_get(:@chat_content).text.include?("A live reply from another team.") }
 assert_equal "", chat.text
 snapshot "online-chat"
-click_on "Close"
+click_on "Back"
 assert client.my_turn?
 worm = client.active_worm
 x, y = (worm["x"] + 145) * (1280.0 / 1440), (worm["y"] - 100 + Burrow::Client::Scene::Y) * (1280.0 / 1440)

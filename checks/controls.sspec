@@ -72,7 +72,7 @@ end
 equip = lambda do |id|
   press_key "e"
   name = Burrow::Catalog.fetch(id)[:name]
-  click_on buttons.find { |b| b.text.start_with?(name + " ") }
+  click_on images.find { |i| i.alt.to_s.start_with?(name + ", ") }
   click_on "Equip"
   assert_equal id, client.selected_weapon
   refute client.overlay?
@@ -115,9 +115,9 @@ assert_equal 0, client.my_inventory["shotgun"]
 assert_nil client.instance_variable_get(:@charge_started)
 acknowledged.call
 press_key "e"
-click_on buttons.find { |b| b.text.start_with?(Burrow::Catalog.fetch("rocket")[:name] + " ") }
+click_on images.find { |i| i.alt.to_s.start_with?(Burrow::Catalog.fetch("rocket")[:name] + ", ") }
 assert_equal "disabled", button("Equip").state
-click_on "Close"
+click_on "Back"
 press_key " "
 wait_real.call { client.state["phase"] != "aiming" }
 assert_equal 2, $controls_server.rooms.values.first.match.events.count { |e| e[:kind] == "beam" }

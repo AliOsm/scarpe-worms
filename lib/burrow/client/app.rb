@@ -215,8 +215,9 @@ module Burrow
         end
         @toast.style(top: px(top), height: px(height))
         @toast.clear do
-          box(0, 0, 800, height, color: Theme::INK, radius: 10)
-          label(short_text(@last_notice, 180), 20, 9, 760, size: 13, color: Theme::WHITE, align: "center", tooltip: @last_notice)
+          box(0, 0, 800, height, color: "#071731f2", radius: 19, stroke: Theme::YELLOW, stroke_width: 2)
+          label(short_text(@last_notice, 180), 20, 9, 760, size: 14, color: Theme::WHITE, align: "center", tooltip: @last_notice,
+            font: Theme.display, weight: 600)
         end
         @toast.show
       end

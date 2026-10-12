@@ -1,0 +1,171 @@
+diff --git a/native/src/elements/button.rs b/native/src/elements/button.rs
+index 813abb5..70d000f 100644
+--- a/native/src/elements/button.rs
++++ b/native/src/elements/button.rs
+@@ -1,5 +1,7 @@
+ //! button: a rounded push button with a soft gradient, border and shadow, and
+ //! Shoes 3.3's optional `icon:` beside its label (`icon_pos:` left, right, top, bottom).
++//! A fully transparent `color:` makes it bare: only its label, icon and focus ring paint,
++//! over art the app draws behind it.
+ 
+ use super::image::{self, ImageCache};
+ use super::{focus_ring, text_on, Label, WidgetState, CONTROL_TEXT_SIZE};
+@@ -95,12 +97,26 @@ fn surface(node: &Node) -> Option<Color> {
+     node.props.color("color").filter(|c| !c.is_invisible())
+ }
+ 
++/// A button whose `color:` is fully transparent: no face, border or shadow.
++pub fn bare(node: &Node) -> bool {
++    node.props.color("color").is_some_and(|c| c.is_invisible())
++}
++
++/// A disabled bare button fades its label; there is no face to grey out.
++const BARE_DISABLED_ALPHA: f32 = 0.45;
++
+ fn label_color(node: &Node) -> Color {
+     let p = &node.props;
+-    p.color("text_color")
++    let color = p
++        .color("text_color")
+         .or_else(|| p.color("stroke"))
+         .filter(|c| !c.is_invisible())
+-        .unwrap_or_else(|| surface(node).map(text_on).unwrap_or(INK))
++        .unwrap_or_else(|| surface(node).map(text_on).unwrap_or(INK));
++    if bare(node) && super::disabled(node) {
++        Color::rgba(color.r, color.g, color.b, (color.a as f32 * BARE_DISABLED_ALPHA).round() as u8)
++    } else {
++        color
++    }
+ }
+ 
+ pub fn size(node: &Node, engine: &mut TextEngine) -> (f32, f32) {
+@@ -143,19 +159,21 @@ pub fn paint(
+     if state.focused {
+         focus_ring(canvas, r, RADIUS, clip);
+     }
+-    canvas.fill_rounded(Rect::new(bx.x, bx.y + 0.5, bx.w, bx.h - 0.5), RADIUS + 0.5, Color::rgba(0, 0, 0, 14), clip);
+-    canvas.fill_rounded(Rect::new(r.x, r.y + 1.0, r.w, r.h), RADIUS, Color::rgba(0, 0, 0, 22), clip);
+-    let (top, bottom) = match surface(node) {
+-        Some(c) => {
+-            let shade = if state.pressed { 0.82 } else if state.hovered { 1.04 } else { 1.0 };
+-            (tint(c, shade * 1.06), tint(c, shade * 0.96))
+-        }
+-        None if state.pressed => (Color::rgb(0xdc, 0xdc, 0xe2), Color::rgb(0xd0, 0xd0, 0xd8)),
+-        None if state.hovered => (Color::WHITE, Color::rgb(0xf2, 0xf2, 0xf6)),
+-        None => (Color::WHITE, Color::rgb(0xee, 0xee, 0xf1)),
+-    };
+-    canvas.fill_gradient(r, RADIUS, top, bottom, clip);
+-    canvas.stroke_rounded(r, RADIUS, Color::rgba(0, 0, 0, 38), 1.0, clip);
++    if !bare(node) {
++        canvas.fill_rounded(Rect::new(bx.x, bx.y + 0.5, bx.w, bx.h - 0.5), RADIUS + 0.5, Color::rgba(0, 0, 0, 14), clip);
++        canvas.fill_rounded(Rect::new(r.x, r.y + 1.0, r.w, r.h), RADIUS, Color::rgba(0, 0, 0, 22), clip);
++        let (top, bottom) = match surface(node) {
++            Some(c) => {
++                let shade = if state.pressed { 0.82 } else if state.hovered { 1.04 } else { 1.0 };
++                (tint(c, shade * 1.06), tint(c, shade * 0.96))
++            }
++            None if state.pressed => (Color::rgb(0xdc, 0xdc, 0xe2), Color::rgb(0xd0, 0xd0, 0xd8)),
++            None if state.hovered => (Color::WHITE, Color::rgb(0xf2, 0xf2, 0xf6)),
++            None => (Color::WHITE, Color::rgb(0xee, 0xee, 0xf1)),
++        };
++        canvas.fill_gradient(r, RADIUS, top, bottom, clip);
++        canvas.stroke_rounded(r, RADIUS, Color::rgba(0, 0, 0, 38), 1.0, clip);
++    }
+     let inner = Rect::new(r.x + 2.0, r.y, r.w - 4.0, r.h);
+     let inner_clip = clip.and_then(|c| c.intersect(&inner)).or(Some(inner));
+     if let Some(tb) = label {
+diff --git a/native/src/elements/mod.rs b/native/src/elements/mod.rs
+index ea03df5..1529c62 100644
+--- a/native/src/elements/mod.rs
++++ b/native/src/elements/mod.rs
+@@ -110,7 +110,8 @@ pub fn paint(
+         Kind::Video => video::paint(canvas, lbox),
+         _ => {}
+     }
+-    if disabled(node) {
++    // A bare button has no face to wash; its label fades instead (button::label_color).
++    if disabled(node) && !(node.kind == Kind::Button && button::bare(node)) {
+         let r = lbox.rect;
+         canvas.fill_rect(Rect::new(r.x - 4.0, r.y - 4.0, r.w + 8.0, r.h + 8.0), Color::rgba(255, 255, 255, 140), lbox.clip);
+     }
+diff --git a/native/tests/bare_buttons.rs b/native/tests/bare_buttons.rs
+new file mode 100644
+index 0000000..d44273d
+--- /dev/null
++++ b/native/tests/bare_buttons.rs
+@@ -0,0 +1,75 @@
++mod common;
++use common::{app, create, Harness};
++use serde_json::json;
++use tiny_skia::Pixmap;
++
++const NAVY: [u8; 3] = [16, 40, 96];
++
++/// A navy window with one wide button whose face would cover (12..188, 20..60).
++fn window(color: serde_json::Value, state: Option<&str>) -> Harness {
++    let mut h = Harness::new();
++    h.feed(&app(200, 80, &[
++        create(3, "Background", 2, json!({"fill": {"rgba": [NAVY[0], NAVY[1], NAVY[2], 255]}, "curve": 0})),
++        create(4, "Button", 2, json!({"text": "Go", "left": 12, "top": 20, "width": 176, "height": 40,
++            "color": color, "text_color": {"rgba": [255, 210, 63, 255]}, "size": 18, "state": state})),
++    ]));
++    h
++}
++
++fn picture(h: &mut Harness) -> Pixmap {
++    h.rt.picture(1, 1.0).expect("a picture")
++}
++
++fn rgb(pm: &Pixmap, x: u32, y: u32) -> [u8; 3] {
++    let p = pm.pixel(x, y).unwrap().demultiply();
++    [p.red(), p.green(), p.blue()]
++}
++
++/// The brightest yellow-ish label pixel: how strongly the label paints.
++fn label_strength(pm: &Pixmap) -> u8 {
++    let mut best = 0;
++    for y in 20..60 {
++        for x in 12..188 {
++            let [r, g, _] = rgb(pm, x, y);
++            best = best.max(r.min(g));
++        }
++    }
++    best
++}
++
++#[test]
++fn a_transparent_colour_paints_no_face() {
++    let mut h = window(json!({"rgba": [0, 0, 0, 0]}), None);
++    let pm = picture(&mut h);
++    // Inside the face, away from the centred label, and along its border and shadow.
++    for (x, y) in [(20, 30), (180, 50), (12, 40), (100, 21), (100, 59)] {
++        assert_eq!(rgb(&pm, x, y), NAVY, "no face, border or shadow at {x},{y}");
++    }
++    assert!(label_strength(&pm) > 200, "the label still paints");
++}
++
++#[test]
++fn an_ordinary_button_keeps_its_face() {
++    let mut h = window(json!(null), None);
++    let pm = picture(&mut h);
++    assert_ne!(rgb(&pm, 20, 30), NAVY, "the default white face covers the window");
++}
++
++#[test]
++fn a_disabled_bare_button_fades_its_label_without_a_wash() {
++    let mut enabled = window(json!({"rgba": [0, 0, 0, 0]}), None);
++    let mut disabled = window(json!({"rgba": [0, 0, 0, 0]}), Some("disabled"));
++    let (on, off) = (picture(&mut enabled), picture(&mut disabled));
++    assert_eq!(rgb(&off, 20, 30), NAVY, "no white wash over the art behind it");
++    assert!(label_strength(&off) + 60 < label_strength(&on), "the label fades");
++    assert!(label_strength(&off) > NAVY[1], "but stays visible");
++}
++
++#[test]
++fn disabling_a_bare_button_relabels_it() {
++    let mut h = window(json!({"rgba": [0, 0, 0, 0]}), None);
++    let before = label_strength(&picture(&mut h));
++    h.feed("{\"t\":\"props\",\"id\":4,\"props\":{\"state\":\"disabled\"}}\n{\"t\":\"flush\"}\n");
++    let after = label_strength(&picture(&mut h));
++    assert!(after + 60 < before, "{after} is fainter than {before}");
++}

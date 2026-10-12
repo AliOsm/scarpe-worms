@@ -20,13 +20,13 @@ wait_real.call { client.instance_variable_get(:@dimensions) == [1080, 675] }
 click_on "Settings"
 snapshot "settings-small"
 assert_operator layout_of(button("Save settings")).y + layout_of(button("Save settings")).h, :<=, 675
-click_on "Close"
+click_on "Back"
 click_on "How to play"
 snapshot "guide-small"
 click_on "Got it"
 click_on "The arsenal"
 snapshot "arsenal-small"
-click_on "Close"
+click_on "Back"
 # Exercise room pagination with UI-only directory entries; no remote server or
 # external room is contacted by this fixture.
 rooms = 10.times.map do |i|
@@ -61,7 +61,7 @@ assert_operator log_bounds.y + log_bounds.h, :<, send_bounds.y
 auto.wheel(-240, x: log_bounds.x + 50, y: log_bounds.y + 80)
 advance 0.08
 snapshot "chat-small"
-click_on "Close"
+click_on "Back"
 click_on edit_lines.last
 type_text "Back in the lobby"
 click_on "Send"
@@ -73,7 +73,7 @@ click_on "World"
 snapshot "rules-world-small"
 click_on "Arsenal"
 snapshot "rules-arsenal-small"
-click_on "Close"
+click_on "Back"
 resize_window 1440, 900
 wait_real.call { client.instance_variable_get(:@dimensions) == [1440, 900] }
 %w[meadow desert glacier volcano].each do |biome|

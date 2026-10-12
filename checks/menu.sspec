@@ -7,9 +7,16 @@ load File.join(ENV.fetch("BURROW_ROOT"), "game.rb")
 ----------- test code
 client = Shoes.APPS.first.instance_variable_get(:@burrow)
 assert_equal :menu, client.page
-assert images.any? { |image| image.path.end_with?("menu-bg.png") }
+assert images.any? { |image| image.path.end_with?("menu-scene.png") }
 assert_operator layout_of(button("Quick battle")).w, :>=, 260
 snapshot "menu"
+# Arcade menu text lights up under the pointer and settles back when it leaves.
+item = button("Create a match")
+bounds = layout_of(item)
+hover_at(bounds.x + bounds.w / 2, bounds.y + bounds.h / 2)
+assert_equal "#ffffff", item.style[:text_color]
+hover_at(5, 5)
+assert_equal "#ffd335", item.style[:text_color]
 click_on "Settings"
 assert client.overlay?
 name = edit_lines.first
@@ -25,14 +32,21 @@ click_on "The arsenal"
 refute client.instance_variable_get(:@toast).hidden, "opening a dialog must not erase a live notice"
 notice = layout_of(client.instance_variable_get(:@toast))
 assert_operator notice.y + notice.h, :<, 70
-assert_equal 48, buttons.count { |b| b.text.match?(/(?:∞|\d+)\z/) }
+# The arsenal grid names every slot for screen readers and clicks alike.
+assert_equal 48, images.count { |i| i.alt.to_s.match?(/, (?:unlimited|\d+ left)\z/) }
 assert images.any? { |image| image.path.end_with?("weapons/rocket.png") }
+# Arrow keys walk the grid: one family per row.
+assert_equal "rocket", client.instance_variable_get(:@arsenal_pick)
+press_key "right"
+press_key "down"
+assert_equal "cluster", client.instance_variable_get(:@arsenal_pick)
+assert paras.any? { |p| p.text == Burrow::Catalog.fetch("cluster")[:description] }
 snapshot "arsenal-catalog"
 Burrow::Catalog::WEAPONS.each_value do |weapon|
-  click_on buttons.find { |b| b.text.start_with?(weapon[:name] + " ") }
+  click_on images.find { |i| i.alt.to_s.start_with?(weapon[:name] + ", ") }
   assert paras.any? { |p| p.text == weapon[:description] }, weapon[:name]
 end
-click_on "Close"
+click_on "Back"
 click_on "How to play"
 assert paras.any? { |p| p.text.include?("Be the last team") }
 click_on "Got it"

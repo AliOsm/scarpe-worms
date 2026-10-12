@@ -199,8 +199,10 @@ def write_manifest(meta):
                 out[n] = entry(p, **extra.get(n, {}))
         return out
 
-    m["backgrounds"] = collect(["menu-bg", "sky-meadow", "sky-desert", "sky-glacier", "sky-volcano"], **{
+    m["backgrounds"] = collect(["menu-bg", "menu-scene", "sky-meadow", "sky-desert", "sky-glacier", "sky-volcano"], **{
         "menu-bg": {"note": "Quiet warm ivory left column for menu text; painted original crew and island on the right"},
+        "menu-scene": {"note": "Full-bleed menu backdrop: menu-bg's crew over the meadow panorama with a dusk vignette",
+                       "derived_from": ["source/paintings/menu-bg.png", "source/paintings/sky-meadow.png"]},
     })
     from build_art_scenes import painting_manifest
     for painting in painting_manifest()["assets"]:

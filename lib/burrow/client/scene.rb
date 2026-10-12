@@ -9,8 +9,13 @@ module Burrow
     class Scene
       include Widgets
       Y = 104
+      # Diagonal outline copies keep names legible over any scenery at little paint cost.
+      BADGE_OUTLINE = [[-1, -1], [1, -1], [-1, 1], [1, 1]].freeze
+      LABELS_PER_FRAME = 8
       FX = JSON.parse(File.read(File.join(Theme::ART, "manifest.json"), encoding: Encoding::UTF_8)).fetch("extras").fetch("fx_animations").freeze
       COMBAT = JSON.parse(File.read(File.join(Theme::ART, "manifest.json"), encoding: Encoding::UTF_8)).fetch("combat").freeze
+      # Everything here repaints with the battlefield: no gradients (Widgets#shade).
+      def flat_ui? = true
       attr_reader :terrain_revision, :terrain_packet, :actors, :frame_count, :max_frame_ms, :last_frame_ms, :camera, :timeline, :positions
 
       # Inspection tools can request the full collision grid. Normal rendering
@@ -75,18 +80,22 @@ module Burrow
             @cache = @shoes.stack(left: 0, top: 0, width: 1, height: 1) {}
             @cache.hide
           end
-          box(12, 8, 332, 68, color: "#182d35dc", radius: 11)
-          button("−", 20, 16, 36, height: 30) { camera.zoom_by(-1) }
-          button("+", 62, 16, 36, height: 30) { camera.zoom_by(1) }
-          button("Map · G", 104, 16, 112, height: 30) { toggle_map }
-          button("Follow · F", 222, 16, 112, height: 30) { camera.follow }
-          @camera_caption = label("", 22, 55, 316, size: 10, color: "#d1e0d9", font: Theme.mono)
+          box(10, 6, 336, 72, color: Theme::INK, radius: 20)
+          # Overlays on the battlefield repaint as the camera moves: solid fills only.
+          box(13, 9, 330, 66, color: "#1f5bb5ee", radius: 17)
+          button("−", 22, 16, 34, height: 30, size: 17) { camera.zoom_by(-1) }
+          button("+", 64, 16, 34, height: 30, size: 17) { camera.zoom_by(1) }
+          button("Map · G", 108, 16, 108, height: 30, size: 14) { toggle_map }
+          button("Follow · F", 226, 16, 108, height: 30, size: 14) { camera.follow }
+          @camera_caption = label("", 24, 54, 316, size: 11, color: "#e3f1ff", font: Theme.display, weight: 600)
           map_scale = [286.0 / @width, 128.0 / @height].min
           @map_w, @map_h = @width * map_scale, @height * map_scale
           @map_x, @map_y = 1122 + (286 - @map_w) / 2, 572 + (128 - @map_h) / 2
-          box(1112, 540, 308, 170, color: "#182d35ed", radius: 12)
-          micro("TACTICAL MAP", 1126, 551, 180, color: "#c4d7ce")
-          label("Click to scout", 1282, 551, 124, size: 10, color: "#c4d7ce", align: "right")
+          box(1108, 536, 316, 178, color: Theme::INK, radius: 22)
+          box(1112, 540, 308, 170, color: "#1f5bb5f2", radius: 19)
+          box(@map_x - 4, @map_y - 4, @map_w + 8, @map_h + 8, color: Theme::DEEP, radius: 8, stroke: Theme::INK, stroke_width: 2)
+          outlined("Map", 1126, 545, 120, size: 15, color: Theme::YELLOW, thickness: 1.5, offsets: Theme::OUTLINE.first(4))
+          label("Click to scout", 1270, 549, 136, size: 11, color: "#e3f1ff", align: "right", font: Theme.display, weight: 600)
           @minimap_layer = @shoes.stack(left: 0, top: 0, width: px(1440), height: px(720)) {}
           @minimap = nil
           @map_marks = {}
@@ -94,15 +103,18 @@ module Burrow
           @map_frame = box(@map_x, @map_y, @map_w, @map_h, color: "#ffffff00", radius: 0, stroke: "#fffaf0")
           @map_shot = box(0, 0, 6, 6, color: Theme::ORANGE, radius: 3, stroke: Theme::WHITE)
           @map_shot.hide
-          @turn_notice = @shoes.stack(left: px(438), top: px(12), width: px(580), height: px(76)) do
-            box(0, 0, 580, 76, color: "#182d35f2", radius: 12)
-            @turn_notice_accent = box(0, 14, 3, 48, color: Theme::ORANGE, radius: 1)
-            @turn_notice_portrait = image("grubs/0-idle-0", 9, 4, 64, 64)
-            @turn_notice_title = label("", 84, 12, 476, size: 23, color: Theme::WHITE, font: Theme.display)
-            @turn_notice_detail = label("", 85, 46, 472, size: 12, color: "#c4d7ce")
+          @turn_notice = @shoes.stack(left: px(438), top: px(8), width: px(580), height: px(84)) do
+            box(3, 3, 574, 78, color: Theme::INK, radius: 28)
+            box(6, 6, 568, 72, color: "#2f7fe0", radius: 25)
+            box(16, 8, 548, 28, color: "#ffffff26", radius: 18)
+            @turn_notice_accent = box(14, 12, 60, 60, color: Theme::ORANGE, radius: 30)
+            box(18, 16, 52, 52, color: Theme::DEEP, radius: 26)
+            @turn_notice_portrait = image("grubs/0-idle-0", 12, 8, 66, 66)
+            @turn_notice_title = outlined("", 88, 13, 470, size: 25, color: Theme::CYAN, thickness: 2, offsets: Theme::OUTLINE.first(4))
+            @turn_notice_detail = label("", 89, 49, 470, size: 13, color: Theme::WHITE, font: Theme.display, weight: 600)
           end
           @turn_notice.hide
-          @loading_label = label("Charting the battlefield…", 400, 310, 640, size: 24, font: Theme.display, align: "center")
+          @loading_label = outlined("Charting the battlefield…", 400, 310, 640, size: 28, align: "center", thickness: 2)
         end
       end
 
@@ -154,6 +166,7 @@ module Burrow
         @timeline.events.each { |e| event(e); @controller.play_event(e) }
         @finished_at ||= started if @state["phase"] == "finished" && @timeline.tick >= @state["tick"]
         dense = camera.zoom < 0.7
+        labels_built = 0
         @positions = {}
         @state["worms"].each do |worm|
           node = @actors.fetch(worm["id"])
@@ -208,19 +221,23 @@ module Burrow
           node[:path] = path
           tx, ty = @controller.target
           show_badge = worm["hp"] > 0 && (!dense || worm["id"] == @state["active"] || Math.hypot(tx - x, ty - y + 15) * camera.zoom < 22)
+          # Status tints the name's outline: frost, a shield's glow or poison.
+          outline = worm["frozen"] ? "#1f6fb8" : worm["shield"] ? "#1d8a52" : worm["poisoned"] ? "#6b7d12" : Theme::INK
+          if show_badge && !node[:label]
+            # Names appear as grubs first come into view, a few per frame, so a
+            # six-team match does not build 180 text layers in its first frame.
+            labels_built < LABELS_PER_FRAME ? build_label(node, worm, outline) : show_badge = false
+            labels_built += 1
+          end
+          next unless node[:label]
+          restyle_label(node) if node[:label_scale] != @scale
           if node[:show_badge] != show_badge
-            [node[:badge], node[:label], node[:health]].each { |part| show_badge ? part.show : part.hide }
+            show_badge ? node[:label].show : node[:label].hide
             node[:show_badge] = show_badge
           end
-          set_text(node[:label], "#{worm['name']}  #{worm['hp']}") if show_badge
-          ratio = worm["hp"].fdiv(worm["max_hp"]).clamp(0, 1)
-          if node[:health_ratio] != ratio
-            node[:health].style(width: [((node[:badge_width] - 2) * ratio).round, 1].max)
-            node[:health_ratio] = ratio
-          end
-          badge_color = worm["frozen"] ? "#36536a" : worm["shield"] ? "#2e5947" : worm["poisoned"] ? "#536137" : Theme::INK
-          node[:badge].style(fill: badge_color) if node[:badge_color] != badge_color
-          node[:badge_color] = badge_color
+          set_text(node[:label], "#{worm['name']}\n#{worm['hp']}") if show_badge
+          node[:label].layers[0...-1].each { |layer| layer.style(stroke: outline) } if node[:outline] != outline
+          node[:outline] = outline
         end
         @state["projectiles"].each do |p|
           node = @projectile_nodes[p["id"]]
@@ -288,12 +305,12 @@ module Burrow
         x, y = event.values_at("x", "y")
         if event["kind"] == "damage"
           @hurt_until[event["worm"]] = now + 0.35
-          float_text("−#{event['amount']}", x, y, "#ffb199")
+          float_text(event["amount"].to_s, x, y, ["#ef2b1f", Theme::WHITE])
         elsif event["kind"] == "heal"
-          float_text("+#{event['amount']}", x, y, "#9ad9b3")
+          float_text("+#{event['amount']}", x, y, ["#4fe06d", Theme::INK])
           sprite_effect("sparkle", x, y, 1.3)
         elsif event["kind"] == "pickup"
-          float_text(event["text"], x, y - 15, Theme::GOLD)
+          float_text(event["text"], x, y - 15, [Theme::YELLOW, Theme::INK])
           sprite_effect("sparkle", x, y - 15, 1.2)
         elsif event["kind"] == "jump"
           sprite_effect("dust", x, y, 0.8)
@@ -440,23 +457,46 @@ module Burrow
         @effects.clear
       end
 
-      def resize_actor(node)
-        node[:scale], node[:health_ratio] = @scale, nil
+      # Native slots clip their children. Enclose the whole name and health,
+      # including their minimum readable size in overview, while anchoring the
+      # sprite's source foot (80,136 of 160) to the authoritative world position.
+      def actor_metrics
         label_scale = @ui_scale * [camera.zoom, 0.75].max
-        bw, bh = (84 * label_scale).round, (22 * label_scale).round
-        # Native slots clip their children. Enclose the whole badge, including
-        # its minimum readable size in overview, while anchoring the sprite's
-        # source foot (80,136 of 160) to the authoritative world position.
-        width = [px(84), bw].max
-        sprite_top = bh + px(7)
-        node[:offset_x], node[:offset_y] = width / 2, sprite_top + px(54.4)
-        node[:slot].style(width: width, height: sprite_top + px(64))
-        node[:image].style(left: node[:offset_x] - px(32), top: sprite_top, width: px(64), height: px(64))
-        bx, by = (width - bw) / 2, 0
-        node[:badge_width] = bw
-        node[:badge].style(left: bx, top: by, width: bw, height: bh)
-        node[:label].style(left: bx + 1, top: by + (2 * label_scale).round, width: bw - 2, size: [(11 * label_scale).round, 8].max)
-        node[:health].style(left: bx + 1, top: by + bh - (3 * label_scale).round, width: bw - 2, height: [(2 * label_scale).round, 1].max)
+        bw, bh = (110 * label_scale).round, (40 * label_scale).round
+        width = [px(110), bw].max
+        sprite_top = bh + px(3)
+        {bw: bw, bh: bh, bx: (width - bw) / 2, width: width, height: sprite_top + px(64), sprite_top: sprite_top,
+          size: [(15 * label_scale).round, 8].max, edge: [(1.5 * label_scale).round, 1].max}
+      end
+
+      def resize_actor(node)
+        node[:scale] = @scale
+        m = actor_metrics
+        node[:offset_x], node[:offset_y] = m[:width] / 2, m[:sprite_top] + px(54.4)
+        node[:slot].style(width: m[:width], height: m[:height])
+        node[:image].style(left: node[:offset_x] - px(32), top: m[:sprite_top], width: px(64), height: px(64))
+        node[:badge].style(left: m[:bx], top: 0, width: m[:bw], height: m[:bh])
+      end
+
+      # Name layers follow a zoom only once their grub is on screen (see render).
+      def restyle_label(node)
+        m = actor_metrics
+        node[:label].layers.zip(BADGE_OUTLINE + [[0, 0]]).each do |layer, (dx, dy)|
+          layer.style(left: m[:bx] + dx * m[:edge], top: m[:edge] + dy * m[:edge], width: m[:bw], size: m[:size])
+        end
+        node[:label_scale] = @scale
+      end
+
+      def build_label(node, worm, outline)
+        m = actor_metrics
+        text = "#{worm['name']}\n#{worm['hp']}"
+        node[:slot].append do
+          node[:label] = Outlined.new((BADGE_OUTLINE + [[0, 0]]).map do |dx, dy|
+            @shoes.para(text, left: m[:bx] + dx * m[:edge], top: m[:edge] + dy * m[:edge], width: m[:bw], size: m[:size],
+              stroke: dx.zero? && dy.zero? ? COLORS[node[:team]] : outline, font: Theme.display, weight: 700, align: "center", margin: 0)
+          end)
+        end
+        node[:show_badge], node[:outline], node[:label_scale] = true, outline, @scale
       end
 
       def place_tile(tile)
@@ -537,13 +577,15 @@ module Burrow
         @state["worms"].each do |w|
           next if @actors[w["id"]]
           color = @state["teams"].find { |t| t["id"] == w["team"] }["color"]
-          node = {team: color}
+          # Built at its final size: a six-team match adds 36 of these in one frame.
+          m = actor_metrics
+          node = {team: color, scale: @scale, offset_x: m[:width] / 2, offset_y: m[:sprite_top] + px(54.4)}
           @actor_layer.append do
-            node[:slot] = @shoes.stack(left: 0, top: 0, width: px(84), height: px(78)) do
-              node[:badge] = box(0, 0, 84, 20, color: Theme::INK, radius: 6)
-              node[:label] = label("#{w['name']}  #{w['hp']}", 1, 2, 82, size: 11, color: Theme::WHITE, align: "center")
-              node[:health] = box(1, 18, 82, 2, color: COLORS[color], radius: 1)
-              node[:image] = image("grubs/#{color}-idle-0", 10, 13.6, 64, 64)
+            node[:slot] = @shoes.stack(left: 0, top: 0, width: m[:width], height: m[:height]) do
+              # The name's bounds, for layout; the outlined text (build_label) paints over the scenery itself.
+              node[:badge] = @shoes.rect(m[:bx], 0, m[:bw], m[:bh], 0, fill: "#00000000", strokewidth: 0)
+              node[:image] = @shoes.image(File.join(Theme::ART, "grubs/#{color}-idle-0.png"), left: node[:offset_x] - px(32),
+                top: m[:sprite_top], width: px(64), height: px(64), alt: "")
             end
           end
           @actors[w["id"]] = node
@@ -582,8 +624,8 @@ module Burrow
             end
             nodes[p["id"]] = {image: picture, bounds: bounds}
             if projectile && p["fused"]
-              nodes[p["id"]][:fuse_plate] = box(0, 0, 34, 22, color: "#182d35eb", radius: 6)
-              nodes[p["id"]][:fuse] = label("", 0, 0, 34, size: 12, color: Theme::WHITE, font: Theme.mono, align: "center")
+              nodes[p["id"]][:fuse_plate] = box(0, 0, 34, 22, color: "#071731eb", radius: 11, stroke: Theme::YELLOW)
+              nodes[p["id"]][:fuse] = label("", 0, 0, 34, size: 12, color: Theme::WHITE, font: Theme.display, weight: 700, align: "center")
             end
           end
         end
@@ -682,18 +724,21 @@ module Burrow
       end
 
       def float_text(text, x, y, color)
-        size = [px(19), (13 * @ui_scale).round].max
-        # The text stays readable in overview; its capsule must retain the same
+        size = [px(22), (15 * @ui_scale).round].max
+        # The text stays readable in overview; its bounds must retain the same
         # display-space padding and width instead of shrinking with the world.
-        width = [(text.length * size * 0.68 + 20 * @ui_scale).round, (250 * @ui_scale).round].min
-        padding = (3 * @ui_scale).round
+        width = [(text.length * size * 0.7 + 20 * @ui_scale).round, (260 * @ui_scale).round].min
+        padding = [(4 * @ui_scale).round, 3].max
+        edge = [(2 * @ui_scale).round, 1].max
         height = (size * 1.4).ceil + padding * 2
         left, top = x - width.fdiv(@scale * 2), y - 20 - height.fdiv(@scale)
+        fill, outline = color
         @effect_layer.append do
           node = @shoes.stack(left: px(left), top: px(top), width: width, height: height) do
-            @shoes.rect(0, 0, width, height, (6 * @ui_scale).round, fill: "#182d35e8", strokewidth: 0)
-            @shoes.para(text, left: 0, top: padding, width: width, size: size,
-              stroke: color, font: Theme.display, align: "center", margin: 0)
+            (BADGE_OUTLINE + [[0, 0]]).each do |dx, dy|
+              @shoes.para(text, left: dx * edge, top: padding + dy * edge, width: width, size: size,
+                stroke: dx.zero? && dy.zero? ? fill : outline, font: Theme.display, weight: 700, align: "center", margin: 0)
+            end
           end
           retain_effect(node: node, born: Burrow.clock, life: 1.15, kind: :text, x: left, y: top)
         end

@@ -60,7 +60,7 @@ Scarpe::Native.after_first_heartbeat do
     auto.key_up(" ")
     auto.key("e")
     raise "Arsenal did not open" unless client.overlay?
-    auto.click({text: "Close"})
+    auto.click({text: "Back"})
     terrain_revision = client.scene.terrain_revision
     terrain_worker = client.scene.instance_variable_get(:@terrain_art)
     timeline = client.scene.timeline

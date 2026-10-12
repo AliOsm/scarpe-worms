@@ -1,6 +1,6 @@
 # Current status
 
-Updated **2026-10-09** · game **0.4.0** · protocol **3** · macOS preview.
+Updated **2026-10-12** · game **0.4.0** · protocol **3** · macOS preview.
 
 ## Implemented
 
@@ -27,6 +27,27 @@ See [native screenshots](evidence/README.md), [research](ART_RESEARCH.md), and
 [art contracts](ART_DIRECTION.md). No Team17 assets or code are distributed.
 Claude Opus 5.5 reviewed the integrated work after its initial access outage;
 the implementation continued under the user's authorized model fallback.
+
+## Arcade interface (unreleased)
+
+Built on 0.4.0 without a version or protocol change:
+
+- Glossy blue frames with ink outlines, navy wells, cyan bubble titles, yellow menu
+  text and red back arrows across the menu, room browser, lobby, every dialog and results.
+  The menu uses `menu-scene.png`, derived from the existing hash-pinned masters.
+- Battle HUD: team health capsules with portraits, a wind gauge, the turn timer and a
+  weapon dock. Grub names, health and floating numbers use outlined lettering.
+- Arsenal: one row per weapon family, `xN` ammo counts, arrow-key navigation. Slots are
+  clickable images whose alt text names the weapon and its ammo.
+- Scarpe patch 0013 paints bare buttons, so the glossy controls stay real buttons.
+- Match screens use solid fills instead of gradients and build grub names lazily, keeping
+  rendering on par with 0.4.0 ([art rules](ART_DIRECTION.md#interface)).
+
+Evidence: core suites on Ruby 3.4.7 and 4.0.7, seven native journeys (209 assertions),
+an alternating 0.4.0/restyle rendering comparison and asset checks, all on Linux; see
+[validation](VALIDATION.md#arcade-interface-restyle-unreleased). Not yet run: macOS,
+packaged code, the 30-minute soak and a human review of the new look. Arsenal slots are
+reached by arrow keys rather than Tab focus.
 
 ## Evidence and limits
 
@@ -67,8 +88,8 @@ This is a preview, not a certified sales release.
 
 ## Repository handoff
 
-The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 12
-independent patches; this pass makes no new framework patch or protocol change.
+The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 13
+independent patches; the arcade interface added patch 0013 and no protocol change.
 Runtime assets live in the source tree, so running the game needs no image service or
 asset download. Generated bundles, raw captures and player data remain ignored.
 No publishing or deployment was performed.

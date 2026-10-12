@@ -91,7 +91,7 @@ def validate(app):
     assert info['LSArchitecturePriority'] == ['arm64']
     assert info['LSMinimumSystemVersion'] == '13.0'
     required = ['boot.rb', 'launch.sh', 'app/game.rb', 'app/lib/burrow/server/reactor.rb',
-                'app/assets/art/manifest.json', 'app/assets/art/menu-bg.png',
+                'app/assets/art/manifest.json', 'app/assets/art/menu-scene.png',
                 'app/assets/fonts/InterVariable.ttf', 'app/assets/fonts/Fredoka.ttf',
                 'gems/ffi/lib/3.4/ffi_c.bundle', 'gems/chunky_png/lib/chunky_png.rb',
                 'app/assets/art/grubs/0-walk-0.png', 'app/assets/art/weapons/rocket.png',

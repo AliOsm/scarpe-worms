@@ -1,5 +1,12 @@
 # Native screenshots
 
+The unreleased arcade interface, from the final automated Linux journeys:
+[menu](arcade-ui/menu.png), [arsenal](arcade-ui/arsenal-catalog.png),
+[settings at 1080×675](arcade-ui/settings-small.png), [six-team lobby](arcade-ui/six-player-lobby.png),
+[battle](arcade-ui/battle.png), [six-team battle](arcade-ui/six-player-battle.png) and
+[results](arcade-ui/results.png). Hashes are in the
+[restyle report](../validation/ui-arcade-restyle-linux.json).
+
 Open the [interactive screenshot gallery](0.4.0/gallery.html) to compare screens
 and the original menu. Selected **0.4.0** captures from automated Linux journeys:
 

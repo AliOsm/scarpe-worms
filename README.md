@@ -3,11 +3,13 @@
 An original desktop artillery game built with [Scarpe](https://github.com/scarpe-team/scarpe)'s native renderer.
 Up to six teams, destructible random maps, 48 weapons and tools, and self-hosted online play.
 
-![Burrow Brigade gameplay](docs/evidence/0.4.0/battle.png)
+![Burrow Brigade gameplay](docs/evidence/arcade-ui/battle.png)
 
 **Status: 0.4.0 preview.** Painted environments, sharper combat art, improved camera
 framing, and redesigned native menus. The first distribution target is Apple
 silicon, macOS 13+; native Mac and human acceptance remain before a sales release.
+An unreleased arcade interface pass adds glossy panels, bubble lettering and a
+gauge-style battle HUD ([screenshots](docs/evidence/README.md)).
 See [current status and next work](docs/STATUS.md).
 
 ## Run from source

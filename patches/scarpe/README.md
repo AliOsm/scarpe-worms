@@ -111,3 +111,15 @@ cargo test --release --locked --manifest-path vendor/scarpe/native/Cargo.toml \
 xvfb-run -a -s '-screen 0 3840x2400x24' \
   python3 tools/check_rendering.py --scale 2 --size 1920x1200
 ```
+
+Presentation patch (independent of game code):
+
+- `0013-native-bare-buttons.patch`: a button whose `color:` is fully transparent
+  paints only its label, icon and focus ring, so an app can draw its own art behind
+  a real button that keeps keyboard focus, `state` and its screen-reader role.
+  A disabled bare button fades its label instead of washing its box white, which
+  would show as a pale rectangle over dark art. Other buttons are unchanged.
+
+```sh
+cargo test --release --locked --manifest-path vendor/scarpe/native/Cargo.toml --test bare_buttons
+```

@@ -23,7 +23,8 @@ study, candidate asset packs, selected audio and visual direction.
 ## Look & feel
 
 Expressive graphic characters and toy weapons against rich painted environments.
-Warm paper, teal and orange unify the menus with the battlefield.
+The interface follows classic arcade artillery menus: glossy blue panels, chunky
+outlined lettering, yellow menu text and compact HUD gauges (see [Interface](#interface)).
 
 - **Chunky ink outlines** in `#182d35` on every foreground element. Distant scenery uses
   tinted outlines or none, so depth reads clearly.
@@ -135,9 +136,12 @@ the motion preference disables it, and aim/collision coordinates stay independen
 - `sky-volcano.png`: a distant mauve volcano, ember-lit cloud and quiet coral haze.
 
 `menu-bg.png` is **1440×900** with an ivory left column and the original grub crew
-on an illustrated island on the right. Text is rendered by Scarpe, never baked
-into the painting. Check actual text contrast and the small-window composition
-when changing this asset or the menu positions.
+on an illustrated island on the right. `menu-scene.png` (also 1440×900) is what the
+menus show: `build_art_scenes.py` blends the crew island over the meadow panorama
+from the same two hash-pinned masters, then adds a soft dusk vignette so the bright
+panels stand off it. Text is rendered by Scarpe, never baked into a painting.
+Check actual text contrast and the small-window composition when changing these
+assets or the menu positions.
 
 The source paintings and complete prompts live in
 `assets/art/source/paintings/`. `provenance.json` pins each SHA-256 and output size.
@@ -255,6 +259,34 @@ game screenshots. Actual native captures live under `docs/evidence/`.
 - The paper grain is uniform noise from a `random.Random` seeded with the CRC-32 of the
   asset name. It is generated at build time, not loaded from a file.
 
+## Interface
+
+`lib/burrow/client/theme.rb` holds the palette and widgets; every screen builds from them.
+
+- **Frames:** bright blue panels (`#4a9cf0` to `#1a5cbc`) inside a 4px ink outline
+  (`#0a1d3f`), with a top gloss band, a pale inner rim and a drop shadow. A title sits
+  in a darker inset tab, in cyan (`#5ee3ff`) bubble lettering.
+- **Wells:** recessed navy panels (`#0b2350`, `#3d7fd0` edge) hold lists, details and gauges.
+- **Text:** Fredoka Bold for headings, captions and menus; Inter for body copy. Menu
+  items are yellow (`#ffd335`) and turn white under the pointer or when current.
+  Field captions are yellow; body text is near-white. Headings and anything drawn over
+  scenery carry an ink outline made of offset copies of the text.
+- **Buttons:** glossy capsules over a bare Scarpe button (patch 0013), so focus, keys,
+  `state` and screen readers still work. Blue is the default, yellow the primary action,
+  red destructive, green "on". A disabled button greys its capsule and fades its label.
+- **Back:** a red curved arrow on the panel's left ear, captioned for clarity.
+- **Arsenal:** one row per weapon family, round navy slots and orange `xN` ammo counts.
+  Arrow keys walk the grid and Return equips. Unlimited weapons show no count.
+- **Battle HUD:** team capsules with portraits and health bars across the top; a "Wind"
+  gauge with chevrons bottom-left, the turn timer bottom-right and the weapon dock between.
+  Grub names and health float over the scenery in team colours with an ink outline.
+  Damage numbers are red over white, heals green and pickups yellow.
+- **Performance rule:** gradients use tiny-skia's slower float pipeline, and a camera move
+  repaints the whole match window (the battlefield exceeds the renderer's 50% damage
+  threshold). On the match page, `Widgets#shade` therefore returns each gradient's midpoint
+  colour; menus and lobbies keep true gradients. Name labels are built as grubs first come
+  into view (at most eight per frame) and follow a zoom only once on screen.
+
 ## Reproducible builds
 
 The art build is deterministic. Procedural choices use fixed seeds, painted
@@ -266,6 +298,15 @@ before and after two full art/audio builds to verify byte identity. Current
 validation reports record the exact build and environment checked.
 
 ## Revision history
+
+- **2026-10-12, arcade interface (unreleased, on top of 0.4.0).**
+  - Glossy blue frames, navy wells, cyan titles, yellow menu text and red back arrows
+    replace the paper-and-teal menus, dialogs, lobby, arsenal and results.
+  - New `menu-scene.png` derived from the existing masters; no new generated art.
+  - The battle HUD gains team health capsules, wind and timer gauges and a weapon dock;
+    grub names and floating numbers drop their dark plates for outlined lettering.
+  - Arsenal becomes a family-per-row slot grid with keyboard navigation.
+  - Scarpe patch 0013 adds bare buttons so painted controls remain real buttons.
 
 - **2026-10-09, presentation polish (`2026.10.09.3`).**
   - Five original painted background masters replace the procedural panoramas and menu.

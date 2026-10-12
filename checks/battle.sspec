@@ -60,7 +60,7 @@ assert_equal 5, client.instance_variable_get(:@fuse)
 press_key "e"
 assert client.overlay?
 grenade = Burrow::Catalog.fetch("grenade")[:name]
-click_on buttons.find { |b| b.text.start_with?(grenade + " ") }
+click_on images.find { |i| i.alt.to_s.start_with?(grenade + ", ") }
 click_on "Equip"
 assert_equal "grenade", client.selected_weapon
 refute client.overlay?

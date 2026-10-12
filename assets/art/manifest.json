@@ -231,6 +231,18 @@
       "source": "source/paintings/menu-bg.png",
       "source_sha256": "a0a05ce3f94a83c60837c5e404fc86260e5e834f8b4e4884acc9ae2abbc9da0d"
     },
+    "menu-scene": {
+      "path": "menu-scene.png",
+      "size": [
+        1440,
+        900
+      ],
+      "note": "Full-bleed menu backdrop: menu-bg's crew over the meadow panorama with a dusk vignette",
+      "derived_from": [
+        "source/paintings/menu-bg.png",
+        "source/paintings/sky-meadow.png"
+      ]
+    },
     "sky-meadow": {
       "path": "sky-meadow.png",
       "size": [

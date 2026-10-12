@@ -92,7 +92,7 @@ wy = terrain.landing(wx, 0, water: client.state["water"]) - 20
 client.scene.camera.navigate(wx, wy)
 press_key "e"
 name = Burrow::Catalog.fetch("teleport")[:name]
-click_on buttons.find { |button| button.text.start_with?(name + " ") }
+click_on images.find { |image| image.alt.to_s.start_with?(name + ", ") }
 click_on "Equip"
 sx, sy = client.scene.camera.screen(wx, wy)
 auto.mouse(:move, sx * scale, (sy + Burrow::Client::Scene::Y) * scale)

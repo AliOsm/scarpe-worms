@@ -1,0 +1,166 @@
+{
+  "scope": "Arcade interface restyle on top of 0.4.0 (unreleased); Linux only",
+  "recorded": "2026-10-12",
+  "platform": "Linux x86_64, Xvfb; shared 6-core machine",
+  "core": {
+    "ruby_4_0_7": "91 runs / 5014 assertions, no failures",
+    "ruby_3_4_7": "91 runs / 5014 assertions, no failures",
+    "command": "bundle exec rake test"
+  },
+  "native_journeys": {
+    "command": "./bin/check-native",
+    "passed": 7,
+    "failed": 0,
+    "assertions": 209,
+    "six_player_scene": {
+      "frames": 308,
+      "mean_ruby_scene_ms": 3.13,
+      "p95_ruby_scene_ms": 6.84,
+      "max_ruby_scene_ms": 61.31,
+      "server_max_tick_ms": 3.23
+    },
+    "six_player_scene_0_4_0_max_ms": 62.55
+  },
+  "scarpe": {
+    "patches": 13,
+    "new_patch": "0013-native-bare-buttons.patch",
+    "rust": "cargo test --release --locked (native/): all suites pass, including 4 bare_buttons tests",
+    "verify": "python3 tools/verify_scarpe.py passes"
+  },
+  "assets": {
+    "check": "uv run tools/check_assets.py: passed, 517 runtime PNGs",
+    "menu_scene": "uv run tools/build_art.py scenes rebuilds menu-scene.png and manifest.json byte-identically"
+  },
+  "rendering_ab": {
+    "command": "xvfb-run -a -s '-screen 0 3840x2400x24' python3 tools/check_rendering.py --scale 2 --size 1920x1200 --audio --record-only",
+    "method": "0.4.0 (c867ff3) and the restyle alternated twice on the same machine, 1-minute load 2-5",
+    "budgets": "combat/pan mean <18.5 ms, p95 <25 ms, max <60 ms; zoom paint max <55 ms",
+    "baseline_0_4_0": [
+      {
+        "combat": {
+          "mean_ms": 16.19,
+          "p95_ms": 20.09,
+          "max_ms": 76.1,
+          "paint_mean_ms": 2.61,
+          "paint_max_ms": 12.8,
+          "app_update_max_ms": 28.3
+        },
+        "pan": {
+          "mean_ms": 16.65,
+          "p95_ms": 19.12,
+          "max_ms": 23.8,
+          "paint_mean_ms": 4.83,
+          "paint_max_ms": 16.3,
+          "app_update_max_ms": 17.2
+        },
+        "zoom": {
+          "mean_ms": 18.3,
+          "p95_ms": 34.88,
+          "max_ms": 57.1,
+          "paint_mean_ms": 0.84,
+          "paint_max_ms": 15.1,
+          "app_update_max_ms": 39.9
+        }
+      },
+      {
+        "combat": {
+          "mean_ms": 16.25,
+          "p95_ms": 20.35,
+          "max_ms": 56.6,
+          "paint_mean_ms": 2.62,
+          "paint_max_ms": 16.2,
+          "app_update_max_ms": 26.9
+        },
+        "pan": {
+          "mean_ms": 16.75,
+          "p95_ms": 19.34,
+          "max_ms": 32.4,
+          "paint_mean_ms": 4.95,
+          "paint_max_ms": 22.5,
+          "app_update_max_ms": 36.9
+        },
+        "zoom": {
+          "mean_ms": 17.77,
+          "p95_ms": 33.65,
+          "max_ms": 52.1,
+          "paint_mean_ms": 0.86,
+          "paint_max_ms": 15.3,
+          "app_update_max_ms": 25.1
+        }
+      }
+    ],
+    "restyle": [
+      {
+        "combat": {
+          "mean_ms": 16.41,
+          "p95_ms": 21.09,
+          "max_ms": 44.5,
+          "paint_mean_ms": 3.1,
+          "paint_max_ms": 18.8,
+          "app_update_max_ms": 29.6
+        },
+        "pan": {
+          "mean_ms": 16.79,
+          "p95_ms": 21.37,
+          "max_ms": 26.5,
+          "paint_mean_ms": 6.41,
+          "paint_max_ms": 15.2,
+          "app_update_max_ms": 20.3
+        },
+        "zoom": {
+          "mean_ms": 18.37,
+          "p95_ms": 35.08,
+          "max_ms": 102.0,
+          "paint_mean_ms": 0.98,
+          "paint_max_ms": 13.1,
+          "app_update_max_ms": 106.2
+        }
+      },
+      {
+        "combat": {
+          "mean_ms": 16.29,
+          "p95_ms": 20.43,
+          "max_ms": 31.4,
+          "paint_mean_ms": 3.12,
+          "paint_max_ms": 16.8,
+          "app_update_max_ms": 26.4
+        },
+        "pan": {
+          "mean_ms": 16.75,
+          "p95_ms": 19.52,
+          "max_ms": 29.3,
+          "paint_mean_ms": 6.21,
+          "paint_max_ms": 15.1,
+          "app_update_max_ms": 21.4
+        },
+        "zoom": {
+          "mean_ms": 18.08,
+          "p95_ms": 34.38,
+          "max_ms": 57.6,
+          "paint_mean_ms": 1.03,
+          "paint_max_ms": 17.0,
+          "app_update_max_ms": 21.5
+        }
+      }
+    ],
+    "reading": "Combat and pan presentation match 0.4.0. Both builds produced combat frame outliers above 60 ms on this machine (0.4.0: 76.1 ms) with Ruby and paint inside budget. Pan paint is about 1.4 ms higher. One restyle zoom run had a single 106 ms GUI update that did not recur in the second run."
+  },
+  "not_run": [
+    "macOS execution or packaging",
+    "packaged Ruby code on Linux",
+    "30-minute soak",
+    "human visual review"
+  ],
+  "evidence": {
+    "directory": "docs/evidence/arcade-ui",
+    "sha256": {
+      "arsenal-catalog.png": "f755b9b8be79831c7d148de7b96c5d1be610f2478ac5bf5bb6c9696844d46b36",
+      "battle.png": "8b62139579da7603d75467d357601a45e3fcab126c39f020422b8b0b7c53664c",
+      "menu.png": "f2d1213f61674b250106b2e0b4e48660002f2c3bd3726f8bd85b6148a5ae816f",
+      "results.png": "abd370c15c8822745747e7fac27893d6a1dee044539dad094846174441abcccf",
+      "settings-small.png": "fe358528ebf183f490e83101a48cc39e86a873b271e480056e461063d9672616",
+      "six-player-battle.png": "55f16f39d9649cec1c7b50d92daf845d529835c3189d3bae7213b5383e126b91",
+      "six-player-lobby.png": "7242cfec800a9edebb2626c8980b75d1362c079f222861d915e05b21aa68b7b6"
+    }
+  }
+}

@@ -4,6 +4,22 @@ The 0.4.0 presentation pass is a preview. The current [report index](validation/
 links to versioned evidence; older reports remain historical. All execution in
 this pass ran on Linux. Native Apple silicon acceptance remains required.
 
+## Arcade interface restyle (unreleased)
+
+Linux only; [summary report](validation/ui-arcade-restyle-linux.json).
+
+| Check | Result |
+| --- | --- |
+| Core on Ruby 3.4.7 and 4.0.7 | 91 tests / 5,014 assertions each; no failures |
+| Native input/UI journeys | Seven journeys / 209 assertions; no failures |
+| Scarpe | Pinned revision and 13 independent patches verified; native Rust suites pass |
+| Assets | Audit passes (517 runtime PNGs); `menu-scene.png` rebuilds byte-identically |
+
+Rendering alternated the 0.4.0 commit and the restyle twice on one machine with
+the command below. Combat and pan presentation match 0.4.0 (combat mean 16.2–16.4 ms,
+p95 20.1–21.1 ms). Both builds showed combat outliers above 60 ms there (0.4.0:
+76.1 ms) while Ruby and paint stayed in budget. Pan paint rose by about 1.4 ms.
+
 ## Recorded 0.4.0 results
 
 | Check | Result |
