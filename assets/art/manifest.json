@@ -492,6 +492,7 @@
         "deep": "terrain/meadow-deep.png",
         "shade": "terrain/meadow-shade.png",
         "edge": "terrain/meadow-edge.png",
+        "scorch": "terrain/meadow-scorch.png",
         "crust": "terrain/meadow-crust.png",
         "tufts": "terrain/meadow-tufts.png",
         "masonry": "terrain/meadow-masonry.png",
@@ -504,6 +505,7 @@
         "deep": "terrain/desert-deep.png",
         "shade": "terrain/desert-shade.png",
         "edge": "terrain/desert-edge.png",
+        "scorch": "terrain/desert-scorch.png",
         "crust": "terrain/desert-crust.png",
         "tufts": "terrain/desert-tufts.png",
         "masonry": "terrain/desert-masonry.png",
@@ -516,6 +518,7 @@
         "deep": "terrain/glacier-deep.png",
         "shade": "terrain/glacier-shade.png",
         "edge": "terrain/glacier-edge.png",
+        "scorch": "terrain/glacier-scorch.png",
         "crust": "terrain/glacier-crust.png",
         "tufts": "terrain/glacier-tufts.png",
         "masonry": "terrain/glacier-masonry.png",
@@ -528,6 +531,7 @@
         "deep": "terrain/volcano-deep.png",
         "shade": "terrain/volcano-shade.png",
         "edge": "terrain/volcano-edge.png",
+        "scorch": "terrain/volcano-scorch.png",
         "crust": "terrain/volcano-crust.png",
         "tufts": "terrain/volcano-tufts.png",
         "masonry": "terrain/volcano-masonry.png",
@@ -536,7 +540,14 @@
         "minimap_top": "#9a8590"
       }
     },
-    "sampling": "mirrored repeat at 512 cells; world coordinates, independent of render tile",
+    "sampling": "seamless wrap at 512 cells; world coordinates, independent of render tile",
+    "materials": {
+      "0": "air",
+      "1": "soil",
+      "2": "girder",
+      "3": "masonry",
+      "4": "scorched soil (blast rims)"
+    },
     "source": "source/materials/provenance.json"
   },
   "extras": {

@@ -9,6 +9,7 @@ with no per-pixel trigonometry or colour blending:
     terrain/{biome}-deep.png    512x512  same, slightly darker: more than DEEP cells below the surface
     terrain/{biome}-shade.png   512x512  same, occluded (under the grass lip, cave ceilings)
     terrain/{biome}-edge.png    512x512  same, deep shadow tone (1-2 cell silhouette rim)
+    terrain/{biome}-scorch.png  512x512  same, charred: blast rims (material 4)
     terrain/{biome}-crust.png   512x20   surface lip; row r = r cells below the air above.
                                          alpha 255 = paint crust colour, alpha 0 = use fill,
                                          any other alpha = use the shade texture (lip shadow)
@@ -18,9 +19,9 @@ with no per-pixel trigonometry or colour blending:
     terrain/{biome}-masonry.png 128x64   weathered dressed stone for material 3
     terrain/girder.png          32x6     steel girder for material 2; row = depth from its top
 
-Body materials compile from reviewed painted masters. Surface lips and masonry
-are drawn with Cairo at 4x and box-filtered down. All random choices are seeded;
-mirrored world-coordinate sampling keeps the painted body seamless.
+Body materials compile from reviewed painted masters, blended into seamlessly
+wrapping tiles (no mirror axes). Surface lips and masonry are drawn with Cairo at
+4x and box-filtered down. All random choices are seeded.
 """
 from __future__ import annotations
 
@@ -45,7 +46,7 @@ BIOMES = {
         base="#986d4a", lo="#87603f", hi="#a97e55", band="#7b563a", band_hi="#b88c61",
         stone="#c2b29a", stone_lo="#9c8a72", stone_hi="#e6dbc8", stone_ink="#563c2a",
         pebble=("#6f4c35", "#c7a47c", "#a07a57"), root="#5c3f2d", hole="#4a3224", hole_rim="#b88d61",
-        shade_to="#4a3640", edge_to="#2e211b",
+        shade_to="#4a3640", edge_to="#2e211b", scorch_to="#24170f",
         crust=dict(ink="#2d5527", top="#a9d865", hi="#cdec88", body="#79b34b", deep="#5d9840"),
         tuft=("#7fbe4f", "#4f8a39", "#a9d865"), flowers=("#fff6e0", "#ffd35c", "#ff8fa3"),
         masonry=("#c8b896", "#a8977a", "#e4d8bd", "#5d4a3a"),
@@ -54,7 +55,7 @@ BIOMES = {
         base="#c47a4a", lo="#b0683f", hi="#d48c5a", band="#9d5636", band_hi="#e7a874",
         stone="#efcf9d", stone_lo="#d2a676", stone_hi="#fff0d0", stone_ink="#7a3f27",
         pebble=("#8f4a30", "#f2cd96", "#b56f43"), root="#8f4a30", hole="#6b3524", hole_rim="#e7a874",
-        shade_to="#5a2a30", edge_to="#3a1c1f",
+        shade_to="#5a2a30", edge_to="#3a1c1f", scorch_to="#3a1a12",
         crust=dict(ink="#7a3f27", top="#f9dca3", hi="#fff1c9", body="#ecc07f", deep="#d99d62"),
         tuft=("#c2ad5a", "#8d7a3a", "#e0cc7a"), flowers=("#ff8fa3", "#fff0c4", "#ffb347"),
         masonry=("#e9c08e", "#cf9f6e", "#fbdcae", "#87503a"),
@@ -63,7 +64,7 @@ BIOMES = {
         base="#7fb0cf", lo="#6c9dc0", hi="#97c4de", band="#5f8db5", band_hi="#c2e1ef",
         stone="#66778f", stone_lo="#4e6078", stone_hi="#93a5ba", stone_ink="#26384f",
         pebble=("#4b6380", "#dff0f8", "#6f90ad"), root="#3f6d96", hole="#3d5d80", hole_rim="#dff0f8",
-        shade_to="#2a4166", edge_to="#18263f",
+        shade_to="#2a4166", edge_to="#18263f", scorch_to="#1c2a3c",
         crust=dict(ink="#4f7395", top="#ffffff", hi="#ffffff", body="#eef7fb", deep="#d3e7f1"),
         tuft=("#ffffff", "#c7dfec", "#e6f4fa"), flowers=("#bfeaf5", "#ffffff", "#9fd6ea"),
         masonry=("#bcd2e2", "#9ab6cc", "#e2eff6", "#3f5873"),
@@ -72,7 +73,7 @@ BIOMES = {
         base="#4b4049", lo="#3f353e", hi="#5b4e58", band="#251c25", band_hi="#8a7686",
         stone="#7a6875", stone_lo="#5e4d5c", stone_hi="#9c8894", stone_ink="#251a24",
         pebble=("#2e2330", "#8a7684", "#ff8a3d"), root="#ff7a3d", hole="#2a1f2b", hole_rim="#8a7684",
-        shade_to="#2a1c2c", edge_to="#170f18",
+        shade_to="#2a1c2c", edge_to="#170f18", scorch_to="#120b0c",
         crust=dict(ink="#1f1620", top="#9a8590", hi="#b9a5ae", body="#76626f", deep="#5f4d5c"),
         tuft=("#3a2c38", "#211821", "#5a4752"), flowers=("#ffb347", "#ffd35c", "#ff7a3d"),
         masonry=("#7d6d7b", "#64546a", "#9a8a96", "#231a25"),
@@ -108,6 +109,36 @@ def variant(im, to, t, lift=0.0):
     return out
 
 
+def seamless(im, seed):
+    """Blend a painting with its half-offset copy, first across x, then across y.
+
+    Each pass keeps the original in a noisy central band and the offset copy near
+    the tile edges, where its pixels continue across the wrap. The offset copy's
+    own seam lies in the central band, so the result wraps with no mirror axes.
+    """
+    r = Rand(seed)
+    out = im.convert("RGBA")
+    for axis in (0, 1):
+        dx, dy = (T // 2, 0) if axis == 0 else (0, T // 2)
+        shifted = Image.new("RGBA", out.size)
+        shifted.paste(out, (dx, dy))
+        shifted.paste(out, (dx - T if dx else 0, dy - T if dy else 0))
+        phases = [r.uniform(0, math.tau) for _ in range(3)]
+        mask = Image.new("L", out.size)
+        px = mask.load()
+        for a in range(T):
+            wobble = (26 * math.sin(a / T * math.tau * 2 + phases[0]) + 14 * math.sin(a / T * math.tau * 5 + phases[1])
+                      + 6 * math.sin(a / T * math.tau * 11 + phases[2]))
+            for b in range(T):
+                d = abs(b - T / 2)  # distance from the band centre along the blended axis
+                t = (178 + wobble - d) / 64
+                t = 0.0 if t <= 0 else 1.0 if t >= 1 else t * t * (3 - 2 * t)
+                x, y = (b, a) if axis == 0 else (a, b)
+                px[x, y] = round(t * 255)
+        out = Image.composite(out, shifted, mask)
+    return out
+
+
 def material_manifest():
     return json.loads((ART / "source/materials/provenance.json").read_text(encoding="utf-8"))
 
@@ -125,7 +156,8 @@ def painted_fill(biome):
     with Image.open(path) as master:
         if master.width != master.height:
             raise ValueError(f"Material master must be square: {path}")
-        return master.convert("RGB").resize((T, T), Image.Resampling.LANCZOS).convert("RGBA")
+        painted = master.convert("RGB").resize((T, T), Image.Resampling.LANCZOS).convert("RGBA")
+        return seamless(painted, 9000 + sorted(BIOMES).index(biome))
 
 
 # --------------------------------------------------------------------------
@@ -368,7 +400,7 @@ def terrain_meta():
     """Static description of the kit (identical whether or not the section ran)."""
     biomes = {}
     for biome, p in BIOMES.items():
-        biomes[biome] = {k: f"terrain/{biome}-{k}.png" for k in ("fill", "deep", "shade", "edge", "crust", "tufts", "masonry", "masonry-edge")}
+        biomes[biome] = {k: f"terrain/{biome}-{k}.png" for k in ("fill", "deep", "shade", "edge", "scorch", "crust", "tufts", "masonry", "masonry-edge")}
         biomes[biome].update(minimap=p["base"], minimap_top=p["crust"]["top"])
     return {
         "cell": 2, "fill_size": [T, T], "crust_rows": CR, "tuft_rows": TU,
@@ -378,7 +410,8 @@ def terrain_meta():
                     "written with their own alpha into empty cells above a material-1 surface (bottom row "
                     "touches the ground); see docs/ART_DIRECTION.md 'Terrain material kit'",
         "biomes": biomes,
-        "sampling": "mirrored repeat at 512 cells; world coordinates, independent of render tile",
+        "sampling": "seamless wrap at 512 cells; world coordinates, independent of render tile",
+        "materials": {"0": "air", "1": "soil", "2": "girder", "3": "masonry", "4": "scorched soil (blast rims)"},
         "source": "source/materials/provenance.json",
     }
 
@@ -391,6 +424,7 @@ def build_all():
         variant(fill_im, p["shade_to"], 0.32).save(OUT / f"{biome}-shade.png", optimize=True)
         variant(fill_im, p["edge_to"], 0.72).save(OUT / f"{biome}-edge.png", optimize=True)
         variant(fill_im, p["shade_to"], 0.12).save(OUT / f"{biome}-deep.png", optimize=True)
+        variant(fill_im, p["scorch_to"], 0.58).save(OUT / f"{biome}-scorch.png", optimize=True)
         crust(biome, p, Rand(9100 + i)).save(OUT / f"{biome}-crust.png", optimize=True)
         tufts(biome, p, Rand(9200 + i)).save(OUT / f"{biome}-tufts.png", optimize=True)
         wall = masonry(biome, p, Rand(9300 + i)).convert("RGB").convert("RGBA")
@@ -405,7 +439,7 @@ def build_all():
 # --------------------------------------------------------------------------
 
 def paint(mask, biome, tufts=False):
-    """Paint a terrain cell mask (uint8 HxW, 0 air, 1 soil, 2 girder, 3 masonry) with the kit.
+    """Paint a terrain cell mask (uint8 HxW, 0 air, 1 soil, 2 girder, 3 masonry, 4 scorch) with the kit.
 
     This is the exact per-cell rule set proposed for terrain_painter.rb, written
     with numpy so previews stay fast.  Returns an RGBA PIL image at cell size.
@@ -415,7 +449,7 @@ def paint(mask, biome, tufts=False):
     def load(name):
         return np.asarray(Image.open(ART / name).convert("RGBA"))
 
-    tex = {k: load(f"terrain/{biome}-{k}.png") for k in ("fill", "deep", "shade", "edge", "crust", "tufts", "masonry", "masonry-edge")}
+    tex = {k: load(f"terrain/{biome}-{k}.png") for k in ("fill", "deep", "shade", "edge", "scorch", "crust", "tufts", "masonry", "masonry-edge")}
     gird = load("terrain/girder.png")
     h, w = mask.shape
     solid = mask > 0
@@ -437,12 +471,16 @@ def paint(mask, biome, tufts=False):
     right = np.zeros_like(solid); right[:, :-1] = solid[:, 1:]; right[:, -1] = True
     side = solid & ~(left & right)
     ys, xs = np.mgrid[0:h, 0:w]
-    tx, ty = xs % (T * 2), ys % (T * 2)
-    tx, ty = np.minimum(tx, T * 2 - 1 - tx), np.minimum(ty, T * 2 - 1 - ty)
+    tx, ty = xs % T, ys % T
     out = np.where((up > DEEP)[..., None], tex["deep"][ty, tx], tex["fill"][ty, tx])
+    burnt = np.zeros((h, w), bool)        # charred soil above, since the last air
+    prev_b = np.zeros(w, bool)
+    for y in range(h):
+        prev_b = np.where(mask[y] == 4, True, np.where(solid[y], prev_b, False))
+        burnt[y] = prev_b
     crow = np.clip(up - 1, 0, CR - 1)
     crust = tex["crust"][crow, tx]
-    in_crust = (up >= 1) & (up <= CR)
+    in_crust = (up >= 1) & (up <= CR) & ~burnt
     ca = np.where(in_crust, crust[..., 3], 0)
     edge = (down <= 2) | side
     shade = ((ca > 0) & (ca < 255)) | (down <= 6)
@@ -454,6 +492,9 @@ def paint(mask, biome, tufts=False):
     mas = tex["masonry"][ys % 64, xs % 128]
     mas_edge = tex["masonry-edge"][ys % 64, xs % 128]
     out = np.where(m3[..., None], np.where(edge[..., None], mas_edge, mas), out)
+    # scorched soil: charred blast rims, no surface lip
+    m4 = mask == 4
+    out = np.where(m4[..., None], np.where(edge[..., None], tex["edge"][ty, tx], tex["scorch"][ty, tx]), out)
     # girder: row from its top
     m2 = mask == 2
     out = np.where(m2[..., None], gird[np.clip(up - 1, 0, 5), xs % 32], out)

@@ -11,10 +11,13 @@ module Burrow
     SIZE = W * H
     MAX_WIDTH = 4800
     MAX_HEIGHT = 1600
+    # Materials: 0 air, 1 soil, 2 girder, 3 masonry, 4 scorched soil (blast rims).
+    SOLID = "\x01-\x04"
+    SCORCH = 4
     attr_reader :data, :revision, :seed, :shape, :width, :height, :cols, :rows
 
-    def initialize(seed:, shape: "islands", data: nil, revision: 0, width: WIDTH, height: HEIGHT)
-      @seed, @shape, @revision = seed, shape, revision
+    def initialize(seed:, shape: "islands", data: nil, revision: 0, width: WIDTH, height: HEIGHT, biome: "meadow")
+      @seed, @shape, @revision, @biome = seed, shape, revision, biome
       unless width.is_a?(Integer) && height.is_a?(Integer) && width.between?(1440, MAX_WIDTH) && height.between?(720, MAX_HEIGHT) && width.even? && height.even?
         raise RuleError, "Invalid battlefield dimensions."
       end
@@ -45,23 +48,44 @@ module Burrow
       feet < water - 10 && free_body?(x, feet) ? feet : nil
     end
 
-    def carve(x, y, radius)
+    # Blasts char the soil around a crater (`scorch`); digging tools leave clean tunnels.
+    def carve(x, y, radius, scorch: true)
       return false if radius <= 0
-      changed = false
-      min_y, max_y = [(y - radius).div(CELL), 0].max, [(y + radius).div(CELL), rows - 1].min
+      changed = charred = false
+      rim = scorch ? (radius * 0.2).clamp(5.0, 12.0) : 0
+      outer = radius + rim
+      min_y, max_y = [(y - outer).div(CELL), 0].max, [(y + outer).div(CELL), rows - 1].min
       (min_y..max_y).each do |cy|
         dy = cy * CELL + 1 - y
-        next if dy.abs > radius
-        dx = Math.sqrt(radius * radius - dy * dy)
-        left = [[(x - dx).div(CELL), 0].max, cols - 1].min
-        right = [[(x + dx).div(CELL), 0].max, cols - 1].min
-        next if x + dx < 0 || x - dx >= width
-        offset, length = cy * cols + left, right - left + 1
-        next if @data.byteslice(offset, length).count("\x01-\x04").zero?
-        @data[offset, length] = "\0" * length
-        changed = true
+        next if dy.abs > outer
+        reach = Math.sqrt(outer * outer - dy * dy)
+        next if x + reach < 0 || x - reach >= width
+        if dy.abs <= radius
+          dx = Math.sqrt(radius * radius - dy * dy)
+          left = [[(x - dx).div(CELL), 0].max, cols - 1].min
+          right = [[(x + dx).div(CELL), 0].max, cols - 1].min
+          offset, length = cy * cols + left, right - left + 1
+          if x + dx >= 0 && x - dx < width && @data.byteslice(offset, length).count(SOLID).positive?
+            @data[offset, length] = "\0" * length
+            changed = true
+          end
+          segments = [[x - reach, x - dx], [x + dx, x + reach]]
+        else
+          segments = [[x - reach, x + reach]]
+        end
+        next unless scorch
+        segments.each do |from, to|
+          left = [[from.div(CELL), 0].max, cols - 1].min
+          right = [[to.div(CELL), 0].max, cols - 1].min
+          next if to < 0 || from >= width || right < left
+          offset, length = cy * cols + left, right - left + 1
+          segment = @data.byteslice(offset, length)
+          next unless segment.include?("\x01")
+          @data[offset, length] = segment.tr("\x01", "\x04")
+          charred = true
+        end
       end
-      touch! if changed
+      touch! if changed || charred
       changed
     end
 
@@ -119,7 +143,7 @@ module Burrow
 
     def generate
       require_relative "terrain_generator"
-      TerrainGenerator.new(seed: seed, shape: shape, width: width, height: height).generate
+      TerrainGenerator.new(seed: seed, shape: shape, width: width, height: height, biome: @biome).generate
     end
   end
 end

@@ -314,7 +314,7 @@ module Burrow
       end
       if @tool[:kind] == "dash"
         x = (active[:x] + @tool[:direction] * 9).clamp(12, world_width - 12)
-        terrain.carve(x, active[:y] - 10, 23)
+        terrain.carve(x, active[:y] - 10, 23, scorch: false)
         active[:x] = x
         worms.each do |w|
           next if w[:id] == active_id || w[:hp] <= 0 || @tool[:hits].include?(w[:id]) || Math.hypot(w[:x] - x, w[:y] - active[:y]) > 33
@@ -330,7 +330,7 @@ module Burrow
       x = active[:x] + (drilling ? 0 : @tool[:direction] * 9)
       lift = tick <= @tool.fetch(:input_until, 0) ? @tool.fetch(:lift, 0) : 0
       y = active[:y] + (drilling ? 8 : -10 - lift * 7)
-      terrain.carve(x, y, drilling ? 22 : 25)
+      terrain.carve(x, y, drilling ? 22 : 25, scorch: !drilling)
       active[:x] = x.clamp(12, world_width - 12) unless drilling
       active[:y] += 4 if drilling
       active[:y] -= lift * 4 unless drilling

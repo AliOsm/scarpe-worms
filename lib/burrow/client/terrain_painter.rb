@@ -9,7 +9,7 @@ module Burrow
       # Baked material kit (tools/build_art_terrain.py, docs/ART_DIRECTION.md).
       # Every texture is authored at cell resolution, so painting is table lookups only.
       KIT = File.join(Burrow::ROOT, "assets/art/terrain")
-      T = 512      # fill texture size (cells); mirrored repeat prevents material seams
+      T = 512      # fill texture size (cells); the baked fills wrap seamlessly
       CRUST = 20   # surface lip rows
       TUFT = 12    # fringe rows above the surface (optional, see TUFTS)
       DEEP = 24    # cells below the air above where the darker "deep" fill begins
@@ -24,14 +24,14 @@ module Burrow
       RIM_DOWN = TUFTS ? TUFT + 2 : SHADE + 2
       RIM_SIDE = 2
 
-      Kit = Struct.new(:fill, :deep, :shade, :edge, :crust, :tufts, :masonry, :girder, :masonry_edge)
+      Kit = Struct.new(:fill, :deep, :shade, :edge, :crust, :tufts, :masonry, :girder, :masonry_edge, :scorch)
 
       def self.kit(biome)
         @kits ||= {}
         @kits[biome] ||= begin
           read = ->(name) { ChunkyPNG::Image.from_file(File.join(KIT, name)).pixels.freeze }
           Kit.new(*%w[fill deep shade edge crust tufts masonry].map { |k| read.call("#{biome}-#{k}.png") },
-            read.call("girder.png"), read.call("#{biome}-masonry-edge.png")).freeze
+            read.call("girder.png"), read.call("#{biome}-masonry-edge.png"), read.call("#{biome}-scorch.png")).freeze
         end
       end
 
@@ -80,29 +80,28 @@ module Burrow
         {tiles: @tiles.values, overview: path, revision: terrain.revision, checksum: terrain.checksum}
       end
 
-      # Per cell: girder (2) and masonry (3) use their own textures; soil (1) takes the
-      # surface lip by depth below the air above, then a dark rim on undersides and
-      # walls, an occluded tone under the lip and over cave ceilings, and a slightly
-      # darker body deep inside. Colours are ChunkyPNG 0xRRGGBBAA integers.
+      # Per cell: girder (2) and masonry (3) use their own textures; scorched soil (4)
+      # is charred with no surface lip; soil (1) takes the surface lip by depth below
+      # the air above, then a dark rim on undersides and walls, an occluded tone under
+      # the lip and over cave ceilings, and a slightly darker body deep inside.
+      # Colours are ChunkyPNG 0xRRGGBBAA integers.
       def self.tile(terrain, ox, oy, width, height, kit)
         png = ChunkyPNG::Image.new(width, height, 0)
         out = png.pixels
         cols, rows, data = terrain.cols, terrain.rows, terrain.data
-        fill, deep, shade, edge, crust, tufts, masonry, girder, masonry_edge = kit.to_a
+        fill, deep, shade, edge, crust, tufts, masonry, girder, masonry_edge, scorch = kit.to_a
         last = cols - 1
-        texture_rows = Array.new(height) do |ly|
-          ty = (oy + ly) & (T * 2 - 1)
-          [ty, T * 2 - 1 - ty].min * T
-        end
+        texture_rows = Array.new(height) { |ly| ((oy + ly) & (T - 1)) * T }
         width.times do |lx|
           x = ox + lx
-          tx = x & (T * 2 - 1)
-          tx = T * 2 - 1 - tx if tx >= T
+          tx = x & (T - 1)
           # Cells since the air above, read upward only until the first air cell.
           up = 0
+          burnt = false # charred soil above this cell, since the last air: no surface lip
           cy = oy - 1
           floor = [oy - RIM_UP, 0].max
-          while cy >= floor && data.getbyte(cy * cols + x) != 0
+          while cy >= floor && (above = data.getbyte(cy * cols + x)) != 0
+            burnt ||= above == 4
             up += 1
             cy -= 1
           end
@@ -114,6 +113,7 @@ module Burrow
             material = data.getbyte(i)
             if material.zero?
               up = 0
+              burnt = false
               if TUFTS
                 k = 1
                 k += 1 while k <= TUFT && y + k < rows && data.getbyte((y + k) * cols + x).zero?
@@ -125,6 +125,7 @@ module Burrow
               next
             end
             up += 1
+            burnt ||= material == 4
             if air <= y
               # Scan forward to the next real air cell. Past `stop` every row of this
               # tile is more than SHADE cells above air, so stopping there is exact; the
@@ -141,8 +142,10 @@ module Burrow
               rim = dn <= EDGE || x.zero? || x == last || data.getbyte(i - 1).zero? || data.getbyte(i + 1).zero?
               if material == 3
                 (rim ? masonry_edge : masonry)[((y & 63) << 7) | (x & 127)]
+              elsif material == 4
+                rim ? edge[t] : scorch[t]
               else
-                lip = up <= CRUST ? crust[(up - 1) * T + tx] : 0
+                lip = up <= CRUST && !burnt ? crust[(up - 1) * T + tx] : 0
                 alpha = lip & 255
                 if alpha == 255 then lip
                 elsif rim then edge[t]

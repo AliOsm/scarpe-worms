@@ -342,7 +342,7 @@ module Burrow
         p[:life] = 0
         return
       end
-      terrain.carve(nx, ny, 17)
+      terrain.carve(nx, ny, 17, scorch: false)
       p[:dug] = true
       p[:x], p[:y] = nx, ny
       p[:life] = 0 if projectile_victim(p, nx, ny)
