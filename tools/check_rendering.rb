@@ -21,6 +21,8 @@ thread_cpu = -> { Process.clock_gettime(Process::CLOCK_THREAD_CPUTIME_ID) }
 # Optional diagnosis separates Ruby work from a descheduled GUI thread. This
 # instrumentation lives only in the benchmark, never in normal game updates.
 if ENV["BURROW_BENCH_PROFILE"] == "1"
+  require_relative "frame_profile"
+  FrameProfile.install
   profiling = Module.new
   %i[render render_camera render_backdrop update_terrain reconcile_actors
     reconcile_objects cache_frame render_aim render_effects render_navigation].each do |method|
@@ -124,7 +126,9 @@ Scarpe::Native.after_first_heartbeat do
     stage = lambda do |name, &action|
       phase = name
       first = Time.now.to_f
+      FrameProfile.start(name) if defined?(FrameProfile)
       action.call
+      FrameProfile.finish if defined?(FrameProfile)
       stages << {name: name, from: first, to: Time.now.to_f}
       phase = nil
     end
@@ -163,6 +167,7 @@ Scarpe::Native.after_first_heartbeat do
       motion_detection_version: 2,
       motion_detection: "Changed rounded visible actor/projectile positions and camera origin actually sent to the renderer; velocity-only gravity probes are not visible movement",
       profiled_slow_phases: slow_phases,
+      frame_profile: defined?(FrameProfile) && FrameProfile.report,
       audio: client.instance_variable_get(:@audio).available, projectile_ids: shots.to_a,
       terrain_revision: client.scene.terrain_revision}
     File.write(ENV.fetch("BURROW_BENCH_REPORT"), JSON.pretty_generate(report) + "\n")
