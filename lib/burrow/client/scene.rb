@@ -312,11 +312,13 @@ module Burrow
           position = (node[:world_position] ||= [0, 0])
           position[0], position[1] = x, y
           @positions[worm["id"]] = position
-          # Aim/turn markers use these bounds even when the actor is outside a
-          # manually explored viewport, including immediately after a resize.
-          resize_actor(node) if node[:scale] != @scale
           sx, sy = (x - camera.x) * camera.zoom, (y - camera.y) * camera.zoom
           visible = sx.between?(-90, 1530) && sy.between?(-90, 810)
+          # Only the active grub's bounds feed the aim marker off screen. Other
+          # hidden actors can adopt a zoom when they next enter the viewport.
+          if node[:scale] != @scale && (visible || worm["id"] == @state["active"])
+            resize_actor(node, x, y)
+          end
           if node[:visible] != visible
             visible ? node[:slot].show : node[:slot].hide
             node[:visible] = visible
@@ -412,6 +414,15 @@ module Burrow
       def render_hazards
         @state["hazards"].each do |h|
           node = @hazard_nodes[h["id"]]
+          # Hidden fire still belongs to the simulation, but cycling its image
+          # paths cannot contribute a pixel. Catch up to the current frame and
+          # geometry when it returns. Include the full gas/fire radius at edges.
+          sx, sy = (h["x"] - camera.x) * camera.zoom, (h["y"] - camera.y) * camera.zoom
+          radius = h["radius"]
+          margin = (radius && radius > 40 ? radius : 40) * camera.zoom + 2
+          visible = sx.between?(-margin, 1440 + margin) && sy.between?(-margin, 720 + margin)
+          show_if(node[:image], visible)
+          next unless visible
           if h["kind"] == "gas" || h["kind"] == "fire"
             radius = h["radius"]
             place(node[:image], px(h["x"] - radius), px(h["y"] - radius), px(radius * 2), px(radius * 2))
@@ -518,11 +529,13 @@ module Burrow
           size: [(15 * label_scale).round, 8].max, edge: [(1.5 * label_scale).round, 1].max}
       end
 
-      def resize_actor(node)
+      def resize_actor(node, x, y)
         node[:scale] = @scale
         m = actor_metrics
         node[:offset_x], node[:offset_y] = m[:width] / 2, m[:sprite_top] + px(54.4)
-        restyle(node[:slot], width: m[:width], height: m[:height])
+        left, top = px(x) - node[:offset_x], px(y) - node[:offset_y]
+        place(node[:slot], left, top, m[:width], m[:height])
+        node[:position] = [left, top]
         place(node[:image], node[:offset_x] - px(32), m[:sprite_top], px(64), px(64))
         place(node[:badge], m[:bx], 0, m[:bw], m[:bh])
       end

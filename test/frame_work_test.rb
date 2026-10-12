@@ -171,4 +171,56 @@ class FrameWorkTest < Minitest::Test
     scene.frame
     assert_match(%r{/grubs/left/0-idle-0.png\z}, node[:image].path)
   end
+
+  def test_offscreen_hazards_catch_up_without_cycling_invisible_images
+    scene = Burrow::Client::Scene.allocate
+    flame = {"id" => 1, "kind" => "flame", "x" => 2200.0, "y" => 500.0, "radius" => 8}
+    gas = {"id" => 2, "kind" => "gas", "x" => 1550.0, "y" => 500.0, "radius" => 200}
+    flame_image, gas_image = Drawable.new, Drawable.new
+    timeline = Struct.new(:tick).new(0)
+    camera = Burrow::Client::Camera.new(4800, 1600)
+    controller = Object.new
+    def controller.motion? = true
+    {scale: 1, camera: camera, controller: controller, timeline: timeline, state: {"hazards" => [flame, gas]},
+      hazard_nodes: {1 => {image: flame_image, bounds: [24, 32, 12, 30], phase: 0}, 2 => {image: gas_image}}}.each do |key, value|
+      scene.instance_variable_set("@#{key}", value)
+    end
+    scene.send(:render_hazards)
+    assert flame_image.hidden
+    refute gas_image.hidden, "a zone centre can be offscreen while its radius remains visible"
+    count = flame_image.writes.length
+    timeline.tick = 7.5
+    flame["x"] += 5
+    scene.send(:render_hazards)
+    assert_equal count, flame_image.writes.length
+    camera.pan(1000, 0)
+    scene.send(:render_hazards)
+    refute flame_image.hidden
+    assert_equal 2193, flame_image.left
+    assert_equal 470, flame_image.top
+    assert_equal Burrow::Client::Scene::FLAME_PATHS[3], flame_image.path
+    # Even a small collision radius must retain a sprite straddling the bottom.
+    flame["y"] = 745
+    scene.send(:render_hazards)
+    refute flame_image.hidden
+    assert_equal 715, flame_image.top
+  end
+
+  def test_zoom_batches_actor_bounds_and_keeps_offscreen_active_marker_metrics
+    worms = 2.times.map { |i| {"id" => i, "name" => "Grub", "hp" => 100, "facing" => 1,
+      "x" => 2500, "y" => 500, "vx" => 0, "vy" => 0} }
+    scene = ActorScene.new("worms" => worms, "active" => 0, "phase" => "aiming")
+    scene.frame
+    assert_equal 1, scene.actors[0][:scale]
+    assert_nil scene.actors[1][:scale], "hidden actors need no geometry until they are visible"
+    scene.camera.zoom_by(1)
+    scene.frame
+    assert_equal 1.25, scene.actors[0][:scale]
+    scene.camera.navigate(2500, 500)
+    scene.frame
+    assert_equal 1.25, scene.actors[1][:scale]
+    slot = scene.actors[1][:slot]
+    assert slot.writes.any? { |write| write.key?(:left) && write.key?(:width) }, "resize and move share a message"
+    assert_equal [slot.left, slot.top], scene.actors[1][:position]
+  end
 end
