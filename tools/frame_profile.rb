@@ -12,6 +12,9 @@ module FrameProfile
     def install
       @samples, @decodes, @props, @duplicates, @known = [], [], 0, 0, {}
       @stages = {}
+      if ENV["BURROW_BENCH_SCHED"] == "1" && RUBY_PLATFORM.include?("linux")
+        @schedstat = "/proc/self/task/#{Thread.current.native_thread_id}/schedstat"
+      end
       wrap(Burrow::Client::App, %i[update update_connection update_controls refresh_match_hud])
       wrap(Burrow::Client::Scene, %i[render render_camera render_backdrop render_actors render_projectiles render_hazards update_terrain reconcile_actors
         reconcile_objects build_label restyle_label render_aim render_effects render_navigation])
@@ -51,15 +54,23 @@ module FrameProfile
     end
 
     def measure(name)
+      queued = scheduler_wait if @schedstat && name == "App#update"
       at, cost = clock, cpu
       allocated, minor, major, gc = GC.stat(:total_allocated_objects), GC.stat(:minor_gc_count), GC.stat(:major_gc_count), GC.stat(:time)
       props, duplicates = @props, @duplicates
       result = yield
-      @samples << [Time.now.to_f, stage, name, (clock - at) * 1000, (cpu - cost) * 1000,
+      elapsed, used = (clock - at) * 1000, (cpu - cost) * 1000
+      waited = scheduler_wait - queued if queued
+      @samples << [Time.now.to_f, stage, name, elapsed, used,
         GC.stat(:total_allocated_objects) - allocated, @props - props, @duplicates - duplicates,
-        GC.stat(:minor_gc_count) - minor, GC.stat(:major_gc_count) - major, GC.stat(:time) - gc]
+        GC.stat(:minor_gc_count) - minor, GC.stat(:major_gc_count) - major, GC.stat(:time) - gc, waited]
       result
     end
+
+    # Optional Linux diagnosis of scheduler delays, distinct from sleeping for
+    # another Ruby thread's GVL. Reading procfs adds overhead: leave it off for
+    # the main before/after comparison.
+    def scheduler_wait = File.read(@schedstat).split[1].to_i / 1_000_000.0
 
     def message(message)
       id = message[:id]
@@ -96,7 +107,7 @@ module FrameProfile
     end
 
     def report
-      {columns: %w[at stage method wall_ms cpu_ms allocated_objects props duplicate_props minor_gc major_gc gc_ms],
+      {columns: %w[at stage method wall_ms cpu_ms allocated_objects props duplicate_props minor_gc major_gc gc_ms runqueue_ms],
         samples: @samples, decode_columns: %w[at stage type bytes wall_ms cpu_ms allocated_objects], decodes: @decodes,
         stages: @stages,
         caveats: "Opt-in hooks add overhead; nested totals overlap; allocation/GC counters include all GUI-process threads. ObjectSpace counts are live objects at stage boundaries, not allocation counts."}

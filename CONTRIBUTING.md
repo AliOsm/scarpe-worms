@@ -51,6 +51,31 @@ Add `--timer-slack-ms 100` to reproduce the old Mac timing failure on Linux.
 Run `python3 tools/test_rendering.py` when changing the timing analysis itself.
 See [validation](docs/VALIDATION.md) for scope and limits.
 
+For Ruby frame costs, add `BURROW_BENCH_PROFILE=1` to the rendering command.
+Its summary includes per-method CPU/wall time, allocations, native property
+messages (including unchanged messages), stage GC counts/time, and connection
+snapshot decode costs. The `.raw.json` retains individual samples. Counters for
+allocations and GC include all GUI-process threads; nested method totals overlap.
+Profiling adds overhead, so also capture ordinary runs. On Linux,
+`BURROW_BENCH_SCHED=1` with profiling records GUI run-queue waits to distinguish
+CPU contention from time spent waiting for another Ruby thread.
+
+A deterministic native workload isolates 36 grubs, 60 flames, HUD, pan and zoom:
+
+```sh
+nice -n 10 flock /tmp/burrow-bench.lock env \
+  SCARPE_DISPLAY_SERVICE=native SCARPE_NATIVE_HEADLESS=1 \
+  BURROW_FRAME_ALLOCATIONS=1 ./bin/scarpe tools/check_frame_work.rb
+```
+
+It writes `profile.json`, four native screenshots, and optional single-frame
+ObjectSpace allocation sites to `.cache/frame-work/`. Set `BURROW_FRAME_OUTPUT`
+to retain another run. This fixture supplies frozen presentation state and does
+not measure timeline interpolation, network playback, or presented cadence.
+Both tools accept `BURROW_BENCH_SOURCE` pointing to an archived source tree with
+its assets, so before/after comparisons can use the same instrumentation without
+switching branches. Do not tune packaged GC settings from a profiled run alone.
+
 ## Assets and framework patches
 
 Assets are committed so a clone runs without regeneration. Change the generator

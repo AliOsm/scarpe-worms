@@ -5,8 +5,9 @@
 #   BURROW_FRAME_OUTPUT=.cache/frame-work ./bin/scarpe tools/check_frame_work.rb
 require "scarpe"
 require "scarpe/native"
-require_relative "../lib/burrow"
-require_relative "../lib/burrow/client/app"
+source_root = File.expand_path(ENV.fetch("BURROW_BENCH_SOURCE", "."), File.expand_path("..", __dir__))
+require File.join(source_root, "lib/burrow")
+require File.join(source_root, "lib/burrow/client/app")
 require_relative "frame_profile"
 
 module FixtureClock

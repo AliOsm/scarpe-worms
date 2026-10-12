@@ -120,6 +120,18 @@ This is a preview, not a certified sales release.
 
 ## Next checks
 
+The owner reports dropped frames and lagging audio in packaged 0.5.0 on an M3 Pro.
+The Ruby frame workstream now suppresses unchanged native properties, reuses actor
+presentation data, builds at most two names per frame, and defers invisible hazard
+animation and actor resizes. The visible deterministic native fixtures are
+byte-identical before and after on Ruby 3.4.7 and 4.0.7. On Linux Ruby 3.4.7,
+the idle 36-grub/60-flame scene drops from 4,039 to 182 allocations per frame;
+animated flames drop from 4,711 to 825. Both core suites and seven native journeys
+pass. The [Ruby frame report](validation/ruby-frame-0.5.0-linux.json) records live
+measurements, failed captures under CPU contention, and remaining zoom bursts.
+These Ruby changes have not been tested on a Mac; they do not establish that
+every frame meets its deadline or that the reported audio lag is resolved.
+
 1. Play 0.5.0 with people: tune blast force, tumbling, fire damage and the new maps
    (island size, cave frequency, set-piece density) from their feedback.
 2. Run the packaged game on the M3 Pro and clean Apple silicon Macs, including

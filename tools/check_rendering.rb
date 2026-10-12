@@ -3,7 +3,8 @@
 require "tmpdir"
 require "scarpe"
 require "scarpe/native"
-source_root = ENV["BURROW_PACKAGE_RES"] ? File.join(ENV["BURROW_PACKAGE_RES"], "app") : File.expand_path("..", __dir__)
+source_root = ENV["BURROW_PACKAGE_RES"] ? File.join(ENV["BURROW_PACKAGE_RES"], "app") :
+  File.expand_path(ENV.fetch("BURROW_BENCH_SOURCE", "."), File.expand_path("..", __dir__))
 require File.join(source_root, "lib/burrow")
 require File.join(source_root, "lib/burrow/client/app")
 
