@@ -533,3 +533,82 @@ class WeaponsClosePresentationTest < Minitest::Test
     end
   end
 end
+
+class WeaponsCloseHazardsAndSuppliesTest < Minitest::Test
+  def arena(**options)
+    match = game({"wind" => 0, "retreat_seconds" => 0, "fall_damage" => false}.merge(options.transform_keys(&:to_s)))
+    terrain = match.terrain
+    data = "\0".b * (terrain.cols * terrain.rows)
+    floor = 900 / Burrow::Terrain::CELL
+    data[floor * terrain.cols..] = "\1" * ((terrain.rows - floor) * terrain.cols)
+    match.instance_variable_set(:@terrain, Burrow::Terrain.new(seed: 1, width: terrain.width, height: terrain.height, data: data))
+    match.worms.each_with_index { |w, i| w.merge!(x: 300.0 + i * 450, y: 900.0, vx: 0.0, vy: 0.0, facing: 1) }
+    match
+  end
+
+  def fire(match, weapon, **values)
+    match.command(match.team[:id], "fire", {weapon: weapon, angle: 0}.merge(values))
+  end
+
+  def restored(match)
+    Burrow::Match.restore(JSON.parse(JSON.generate(match.checkpoint)))
+  end
+
+  def pass_turn(match)
+    previous = match.turn
+    fire(match, "skip")
+    600.times do
+      match.step
+      break if match.turn > previous || match.finished?
+    end
+    assert_equal previous + 1, match.turn
+  end
+
+  def assert_placement_rolls_back(weapon)
+    %i[wall grub prop].each do |obstacle|
+      match = arena
+      case obstacle
+      when :wall then match.terrain.bridge(310, 870, width: 0, height: 30)
+      when :grub then match.worms[1][:x] = 324
+      when :prop
+        match.hazards << {id: "occupied", kind: "barrel", x: 324.0, y: 900.0, armed: 0, life: 10_000, hp: 24}
+      end
+      before = JSON.generate(match.checkpoint)
+      assert_raises(Burrow::RuleError, "#{weapon}: #{obstacle}") { fire(match, weapon) }
+      assert_equal before, JSON.generate(match.checkpoint), "rejected #{weapon} against #{obstacle} must not spend ammo or alter state"
+    end
+  end
+
+  def test_mine_placement_failure_preserves_ammo_and_turn
+    assert_placement_rolls_back("mine")
+  end
+
+  def test_mine_arms_once_respects_cover_and_restores_its_trigger_fuse
+    match = arena
+    fire(match, "mine")
+    mine = match.hazards.last
+    assert_in_delta 324, mine[:x], 0.01
+    assert_equal 30, mine[:armed]
+    assert_equal "hazard_place", match.events.last[:kind]
+    match.worms[0][:x] = 250
+    match.worms[1][:x] = 350
+    match.terrain.bridge(340, 870, width: 0, height: 30)
+    match.step(29)
+    refute mine[:arm_reported]
+    refute mine[:trigger]
+    match.step(10)
+    assert mine[:arm_reported]
+    assert_equal 1, match.events.count { |e| e[:kind] == "mine_arm" }
+    refute mine[:trigger], "the nearby grub is behind a solid wall"
+    match.terrain.carve(340, 885, 20)
+    match.step
+    assert_equal match.tick + 18, mine[:trigger]
+    assert_equal 1, match.events.count { |e| e[:kind] == "mine_trigger" }
+    recovered = restored(match)
+    18.times { match.step; recovered.step }
+    refute match.hazards.any? { |h| h[:id] == mine[:id] }
+    assert_equal 1, match.events.count { |e| e[:kind] == "explosion" && e[:style] == "mine" }
+    assert_operator match.worms[1][:hp], :<, 100
+    assert_equal JSON.generate(match.snapshot(terrain: true)), JSON.generate(recovered.snapshot(terrain: true))
+  end
+end
