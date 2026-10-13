@@ -459,6 +459,38 @@
         "log": "/tmp/munitions-lab/meteor/log.json",
         "sheet": "/tmp/munitions-lab/meteor-sheet.png"
       }
+    },
+    "earthquake": {
+      "defects_found": "Tremor did not detach ropes or move loose props and lacked camera feedback.",
+      "changes": "Seeded rope-detaching grub/prop impulses, ground dust, heavy cue and bounded reduced-motion-aware shake.",
+      "verification": [
+        "frozen-body protection",
+        "loose prop impulses",
+        "camera bounds and pointer conversion",
+        "native knockback and handover"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 12,
+        "start_turn": 1,
+        "final_turn": 2,
+        "event_counts": {
+          "fire": 1,
+          "damage": 4,
+          "quake": 1,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/earthquake/log.json",
+        "sheet": "/tmp/munitions-lab/earthquake-sheet.png"
+      }
     }
   }
 }
