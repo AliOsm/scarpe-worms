@@ -178,7 +178,9 @@ module Burrow
           "Step 1 of 2 · pick a target"
         elsif @selected_weapon == "shotgun"
           state["shots_left"] > 0 ? "Shot 2 of 2 · re-aim, then tap" : "Shot 1 of 2 · aim, then tap"
-        elsif %w[shield double_damage low_gravity wind_control].include?(@selected_weapon)
+        elsif @selected_weapon == "wind_control"
+          "Keeps your turn · wind #{wind.abs < 0.03 ? 'calm' : "#{arrow} #{(wind.abs * 10).round}"}"
+        elsif %w[shield double_damage low_gravity].include?(@selected_weapon)
           "Keeps your turn · #{supply_active? ? 'active' : 'ready'}"
         elsif %w[heal freeze skip].include?(@selected_weapon)
           "Uses your turn · tap to use"
