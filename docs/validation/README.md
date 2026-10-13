@@ -5,6 +5,7 @@ their scope; generic filenames are outputs of individual tools.
 
 | Evidence | Start here |
 | --- | --- |
+| 0.5.1 smooth zoom and stall attribution | [Linux A/B, Apple silicon, exact pixels and remaining limits](zoom-0.5.1.json) |
 | 0.5.0 Mac update cadence | [Mac and Linux comparisons, timer checks and limits](mac-cadence-0.5.0.json) |
 | 0.5.0 renderer per-frame investigation | [Linux before/after, Mac CI baseline, tests and limits](renderer-per-frame-0.5.0.json) |
 | 0.5.0 battlefield and blast physics (unreleased) | [battlefield-0.5.0-linux.json](battlefield-0.5.0-linux.json) |

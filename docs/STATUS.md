@@ -205,6 +205,28 @@ delivery: combat motion selection is heuristic, paint/update counts do not
 identify individual batches, and physical scanout, ProMotion/Retina and audible
 device output still require physical Mac validation.
 
+## Zoom and stall follow-up (2026-10-13)
+
+Round 3b keeps the elapsed-time camera zoom and continuous `zoom_sweep` journey,
+shares repeated native text shaping, records frame-stall phases, and culls fully
+clipped image resizes. Terrain presentation now defers offscreen tile geometry
+without show/hide messages; resize restores the last completed terrain result and
+keeps its worker and playback timeline. The package smoke resize check passed 36
+C-locale launches in the local repetition; the earlier CI failure was timing
+dependent and did not reproduce with diagnostics.
+
+The Apple silicon run 38329759710 measured combat 16.31/20.61/60.50 ms, pan
+16.99/19.72/123.26 ms, discrete zoom 24.13/51.92/119.28 ms, and the continuous
+zoom sweep 16.35/19.61/33.64 ms (mean/p95/max). The discrete zoom tail is mostly
+intentional idle time: its active intervals were 15.66/20.69/36.95 ms. A 60.07 ms
+GUI update used 0.76 ms CPU while native presentation used 58.74 ms wall time and
+1.04 ms CPU, so the outlier is waiting or descheduling rather than Ruby or paint
+work. Patch 0023 corrects coalesced-batch diagnostic attribution; no timer or
+pacing change is justified by this evidence.
+
+See [zoom validation](validation/zoom-0.5.1.json) for alternating Linux captures,
+Mac limits, and the kept/reverted change decisions.
+
 ## Next checks
 
 The owner reports dropped frames and lagging audio in packaged 0.5.0 on an M3 Pro.
