@@ -222,3 +222,19 @@ PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
 
 The ignored `repeated_label_zoom_shaping_timing` fixture measures 36 five-layer
 labels across 40 changing sizes; run it serially under `/tmp/burrow-bench.lock`.
+
+Frame-stall diagnostics (independent of game code):
+
+- `0021-native-frame-stall-diagnostics.patch`: retain bounded timestamps for
+  complete IPC batch receipt, event-loop settling and redraw start, including
+  the number of lines in each batch. Native phase totals and each frame now
+  report event-loop thread CPU time beside wall time, so a long interval can
+  distinguish renderer CPU work from time descheduled or waiting in the event
+  loop. Existing eight-column frame rows remain unchanged; CPU rows and batch
+  rows are additive JSON fields. The instrumentation is always bounded and
+  does not alter pacing, layout, painting or presentation.
+
+```sh
+PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
+  --manifest-path vendor/scarpe/native/Cargo.toml --lib runtime::stats::tests
+```
