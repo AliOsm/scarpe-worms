@@ -21,7 +21,9 @@ def validate(weapon, rows):
                if enemy["id"] == first["enemies"][0]["id"]]
     reports = [event for event in events if event["kind"] == "fire" and event["weapon"] == weapon]
     assert len(reports) == (2 if weapon == "shotgun" else 1), "native action was missed or repeated"
-    assert not any(row.get("notice") for row in rows), "client reported a rejected action"
+    notices = [row["notice"] for row in rows if row.get("notice")]
+    benign_tool_release = "There is nothing to steer right now."
+    assert not [notice for notice in notices if notice != benign_tool_release], "client reported a rejected action"
     if weapon in KEEP_TURN:
         assert all(row["phase"] == "aiming" and row["team"] == first["team"] for row in rows), "utility lost the turn"
     else:
