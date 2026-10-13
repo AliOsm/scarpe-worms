@@ -34,7 +34,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/rocket/log.json",
         "sheet": "/tmp/munitions-lab/rocket-sheet.png"
-      }
+      },
+      "validation_commit": "d0b5b62"
     },
     "mortar": {
       "defects_found": "Secondary fragments reused the shell silhouette; legacy fragment tracks lost their identity.",
@@ -52,7 +53,7 @@
       ],
       "native_lab": {
         "result": "passed",
-        "frames": 14,
+        "frames": 13,
         "start_turn": 1,
         "final_turn": 2,
         "event_counts": {
@@ -65,7 +66,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/mortar/log.json",
         "sheet": "/tmp/munitions-lab/mortar-sheet.png"
-      }
+      },
+      "validation_commit": "3ab8c9d"
     },
     "homing": {
       "defects_found": "Motor ignition/burnout was not reflected in the projectile art.",
@@ -97,7 +99,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/homing/log.json",
         "sheet": "/tmp/munitions-lab/homing-sheet.png"
-      }
+      },
+      "validation_commit": "720ec14"
     },
     "grenade": {
       "defects_found": "Inventory art and generic effects obscured thrown motion and fuse feedback.",
@@ -130,7 +133,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/grenade/log.json",
         "sheet": "/tmp/munitions-lab/grenade-sheet.png"
-      }
+      },
+      "validation_commit": "293bde0"
     },
     "cluster": {
       "defects_found": "Parent and secondary projectiles shared a silhouette and split feedback was weak.",
@@ -163,7 +167,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/cluster/log.json",
         "sheet": "/tmp/munitions-lab/cluster-sheet.png"
-      }
+      },
+      "validation_commit": "6a4fdf1"
     },
     "sticky": {
       "defects_found": "A body behind a wall could capture the attachment; final-tick motion could leave the blast behind its target.",
@@ -195,7 +200,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/sticky/log.json",
         "sheet": "/tmp/munitions-lab/sticky-sheet.png"
-      }
+      },
+      "validation_commit": "6b8871a"
     },
     "dynamite": {
       "defects_found": "Placement could cross a nearby wall or attach to the deploying grub.",
@@ -226,7 +232,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/dynamite/log.json",
         "sheet": "/tmp/munitions-lab/dynamite-sheet.png"
-      }
+      },
+      "validation_commit": "a2b0239"
     },
     "mega_bomb": {
       "defects_found": "Heavy explosive used generic art and impact feedback.",
@@ -258,7 +265,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/mega_bomb/log.json",
         "sheet": "/tmp/munitions-lab/mega_bomb-sheet.png"
-      }
+      },
+      "validation_commit": "f973cfb"
     },
     "banana": {
       "defects_found": "Fruit and secondary fruit lacked distinct flight/split presentation.",
@@ -291,7 +299,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/banana/log.json",
         "sheet": "/tmp/munitions-lab/banana-sheet.png"
-      }
+      },
+      "validation_commit": "a960391"
     },
     "holy_bomb": {
       "defects_found": "Expired airborne fuse could freeze the bomb; grand finale lacked a warning moment.",
@@ -309,7 +318,7 @@
       ],
       "native_lab": {
         "result": "passed",
-        "frames": 15,
+        "frames": 16,
         "start_turn": 1,
         "final_turn": 2,
         "event_counts": {
@@ -324,7 +333,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/holy_bomb/log.json",
         "sheet": "/tmp/munitions-lab/holy_bomb-sheet.png"
-      }
+      },
+      "validation_commit": "e0ff7e8"
     },
     "poison": {
       "defects_found": "Generic canister art failed to show leakage or a distinct cloud release.",
@@ -356,7 +366,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/poison/log.json",
         "sheet": "/tmp/munitions-lab/poison-sheet.png"
-      }
+      },
+      "validation_commit": "9436c50"
     },
     "airstrike": {
       "defects_found": "Drops appeared together; edge approaches could disappear; bomber vanished during zoom/rebuild.",
@@ -389,7 +400,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/airstrike/log.json",
         "sheet": "/tmp/munitions-lab/airstrike-sheet.png"
-      }
+      },
+      "validation_commit": "bd264b5"
     },
     "mine_strike": {
       "defects_found": "Dropped mines lacked a readable aircraft pass and landing feedback.",
@@ -424,7 +436,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/mine_strike/log.json",
         "sheet": "/tmp/munitions-lab/mine_strike-sheet.png"
-      }
+      },
+      "validation_commit": "c91ad1a"
     },
     "napalm": {
       "defects_found": "Firebombs and their aerial approach used generic feedback.",
@@ -457,7 +470,8 @@
         "peak_flames": 30,
         "log": "/tmp/munitions-lab/napalm/log.json",
         "sheet": "/tmp/munitions-lab/napalm-sheet.png"
-      }
+      },
+      "validation_commit": "aeca5f9"
     },
     "meteor": {
       "defects_found": "Simultaneous rocks were hard to read; edge spawns could leave the map before impact.",
@@ -490,7 +504,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/meteor/log.json",
         "sheet": "/tmp/munitions-lab/meteor-sheet.png"
-      }
+      },
+      "validation_commit": "455908a"
     },
     "earthquake": {
       "defects_found": "Tremor did not detach ropes or move loose props and lacked camera feedback.",
@@ -522,7 +537,8 @@
         "peak_flames": 0,
         "log": "/tmp/munitions-lab/earthquake/log.json",
         "sheet": "/tmp/munitions-lab/earthquake-sheet.png"
-      }
+      },
+      "validation_commit": "fcb13ac"
     }
   },
   "shared_changes": {
@@ -547,5 +563,268 @@
     ],
     "scope": "Sprite atlas thumbnail plus one selected native frame thumbnail per weapon; no full-size frames/contact sheets opened."
   },
-  "unfinished_implementation": []
+  "unfinished_implementation": [],
+  "verification": {
+    "ruby_4_0_7": {
+      "command": "bundle exec rake test",
+      "tests": 175,
+      "assertions": 7346,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "log": "/tmp/munitions-ruby4.log"
+    },
+    "ruby_3_4_7": {
+      "command": "PATH=\"$HOME/.local/share/mise/installs/ruby/3.4.7/bin:$PATH\" bundle exec rake test",
+      "tests": 175,
+      "assertions": 7346,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "log": "/tmp/munitions-ruby34.log"
+    },
+    "native": {
+      "command": "flock /tmp/burrow-bench.lock ./bin/check-native",
+      "cases": 7,
+      "assertions": 228,
+      "result": "passed",
+      "log": "/tmp/munitions-native.log"
+    },
+    "assets": {
+      "command": "uv run tools/check_assets.py",
+      "munition_frames": 162,
+      "runtime_pngs": 688,
+      "result": "passed",
+      "report": "/tmp/munitions-assets.json"
+    },
+    "art_rebuild": {
+      "command": "cd tools && nice -n 10 uv run build_art.py ordnance",
+      "rebuilds": 2,
+      "compared_asset_files": 755,
+      "changed_files": 0,
+      "result": "byte-identical",
+      "hashes": "/tmp/munitions-art-hashes.json"
+    },
+    "audio": {
+      "command": "bundle exec ruby tools/check_audio.rb",
+      "cues": 22,
+      "result": "passed; Linux OpenAL decode/mix/positioning/mute/resume/shutdown",
+      "log": "/tmp/munitions-audio.log"
+    },
+    "weapon_lab": {
+      "command": "flock /tmp/burrow-bench.lock env SCARPE_DISPLAY_SERVICE=native SCARPE_NATIVE_HEADLESS=1 BURROW_LAB_WEAPONS=\"rocket mortar homing grenade cluster sticky dynamite mega_bomb banana holy_bomb poison airstrike mine_strike napalm meteor earthquake\" BURROW_LAB_OUT=/tmp/munitions-lab ./bin/scarpe tools/weapon_lab.rb",
+      "validator": "python3 tools/check_munitions_lab.py /tmp/munitions-lab",
+      "passed": 16,
+      "total": 16,
+      "log": "/tmp/munitions-lab-validation.log"
+    },
+    "rendering": {
+      "command": "flock /tmp/burrow-bench.lock xvfb-run -a -s '-screen 0 3840x2400x24' python3 tools/check_rendering.py --scale 2 --size 1920x1200 --audio --output /tmp/munitions-rendering.json",
+      "result": "passed",
+      "surface": {
+        "surface_width": 3840,
+        "surface_height": 2400,
+        "surface_scale_milli": 2000,
+        "render_width": 1280,
+        "render_height": 800,
+        "render_scale_milli": 667,
+        "compositor_scaling": false
+      },
+      "audio_output": "Linux OpenAL null driver",
+      "scenarios": {
+        "combat": {
+          "presented_intervals": {
+            "count": 660,
+            "mean_ms": 16.218798270764168,
+            "p95_ms": 20.292525999999533,
+            "p99_ms": 22.918072999999595,
+            "max_ms": 25.77904600000025,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "paint": {
+            "count": 813,
+            "mean_ms": 2.686661364083641,
+            "p95_ms": 5.705805000000001,
+            "p99_ms": 8.262834,
+            "max_ms": 11.139816,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 813,
+            "mean_ms": 3.416779366543665,
+            "p95_ms": 5.395265,
+            "p99_ms": 8.725655,
+            "max_ms": 9.706384,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 1083,
+            "mean_ms": 16.666605691524396,
+            "p95_ms": 17.012184020131826,
+            "p99_ms": 17.94094406068325,
+            "max_ms": 20.226553082466125,
+            "over_33ms": 0,
+            "over_50ms": 0
+          }
+        },
+        "pan": {
+          "presented_intervals": {
+            "count": 360,
+            "mean_ms": 16.659097855555554,
+            "p95_ms": 19.590459999999865,
+            "p99_ms": 21.456168000000275,
+            "max_ms": 25.599444000000915,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "paint": {
+            "count": 361,
+            "mean_ms": 4.354078601108033,
+            "p95_ms": 5.947433,
+            "p99_ms": 7.989184,
+            "max_ms": 12.278583,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 361,
+            "mean_ms": 3.139201817174515,
+            "p95_ms": 3.6951,
+            "p99_ms": 4.191404,
+            "max_ms": 4.569151,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 361,
+            "mean_ms": 16.666761866494642,
+            "p95_ms": 17.026036977767944,
+            "p99_ms": 17.998330760747194,
+            "max_ms": 19.446428399533033,
+            "over_33ms": 0,
+            "over_50ms": 0
+          }
+        },
+        "zoom": {
+          "presented_intervals": {
+            "count": 350,
+            "mean_ms": 20.876000237142854,
+            "p95_ms": 41.69040899999743,
+            "p99_ms": 75.87008099999792,
+            "max_ms": 87.81135499999948,
+            "over_33ms": 37,
+            "over_50ms": 8
+          },
+          "paint": {
+            "count": 351,
+            "mean_ms": 1.131275905982906,
+            "p95_ms": 4.17517,
+            "p99_ms": 12.670838999999999,
+            "max_ms": 13.53959,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 351,
+            "mean_ms": 3.6716629971509973,
+            "p95_ms": 5.6172699999999995,
+            "p99_ms": 9.531649999999999,
+            "max_ms": 9.578438,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 441,
+            "mean_ms": 16.66850132694523,
+            "p95_ms": 17.167035955935717,
+            "p99_ms": 18.434390891343355,
+            "max_ms": 20.40043519809842,
+            "over_33ms": 0,
+            "over_50ms": 0
+          }
+        }
+      },
+      "report": "/tmp/munitions-rendering.json"
+    },
+    "action_first_attempt": {
+      "result": "failed; investigation ongoing",
+      "presented_intervals": {
+        "count": 515,
+        "mean_ms": 19.500787975718673,
+        "p95_ms": 34.74164009094238,
+        "max_ms": 119.00591850280762
+      },
+      "app_update_intervals": {
+        "count": 1082,
+        "mean_ms": 16.697323665473878,
+        "p95_ms": 16.968915704637766,
+        "max_ms": 47.11811803281307
+      },
+      "report": "/tmp/munitions-native-action-first.json"
+    },
+    "action_second_attempt": {
+      "result": "failed; investigation ongoing",
+      "presented_intervals": {
+        "count": 524,
+        "mean_ms": 19.236121013874317,
+        "p95_ms": 35.32528877258301,
+        "max_ms": 120.9561824798584
+      },
+      "app_update_intervals": {
+        "count": 1083,
+        "mean_ms": 16.66676903501263,
+        "p95_ms": 16.82198978960514,
+        "max_ms": 24.672464933246374
+      },
+      "report": "/tmp/munitions-native-action.json"
+    },
+    "action_baseline": {
+      "result": "passed",
+      "presented_intervals": {
+        "count": 527,
+        "mean_ms": 17.056970940142925,
+        "p95_ms": 23.223876953125,
+        "max_ms": 49.683570861816406
+      },
+      "app_update_intervals": {
+        "count": 1082,
+        "mean_ms": 16.68206787996972,
+        "p95_ms": 16.99944492429495,
+        "max_ms": 33.25937269255519
+      },
+      "report": "/tmp/munitions-native-action-baseline.json"
+    }
+  },
+  "implementation_commits": [
+    "3e11049 WIP: munitions sweep (agent interrupted; unvalidated)",
+    "9cb103e Validate every munition sprite and stage variant against its canvas contract",
+    "ddac9e2 Record isolated munitions lab evidence and validate native outcomes",
+    "22d8fe3 Keep strike aircraft through zoom and window rebuilds",
+    "6f06755 Restore legacy fragment identity for motion tracks",
+    "9075c48 Keep sparks and poison wisps attached to tumbling munitions",
+    "d0b5b62 Validate rocket mechanics and native turn completion",
+    "3ab8c9d Validate mortar mechanics and native turn completion",
+    "720ec14 Validate homing mechanics and native turn completion",
+    "293bde0 Validate grenade mechanics and native turn completion",
+    "6a4fdf1 Validate cluster mechanics and native turn completion",
+    "a2b0239 Validate dynamite mechanics and native turn completion",
+    "f973cfb Validate mega_bomb mechanics and native turn completion",
+    "a960391 Validate banana mechanics and native turn completion",
+    "e0ff7e8 Validate holy_bomb mechanics and native turn completion",
+    "9436c50 Validate poison mechanics and native turn completion",
+    "bd264b5 Validate airstrike mechanics and native turn completion",
+    "c91ad1a Validate mine_strike mechanics and native turn completion",
+    "aeca5f9 Validate napalm mechanics and native turn completion",
+    "455908a Validate meteor mechanics and native turn completion",
+    "fcb13ac Validate earthquake mechanics and native turn completion",
+    "8d76688 Sync sticky charges before terminal detonation",
+    "6b8871a Validate sticky mechanics and native turn completion",
+    "ee786d2 Document verified munition behavior and reproducible lab evidence",
+    "92c82a0 Check munition art sizes against the runtime sprite registry",
+    "49918d9 Record munition compatibility results and shared-file integration notes",
+    "83fbd7a Match choir burst manifest timing to its longer finale"
+  ]
 }
