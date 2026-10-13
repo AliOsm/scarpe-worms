@@ -325,6 +325,39 @@
         "log": "/tmp/munitions-lab/poison/log.json",
         "sheet": "/tmp/munitions-lab/poison-sheet.png"
       }
+    },
+    "airstrike": {
+      "defects_found": "Drops appeared together; edge approaches could disappear; bomber vanished during zoom/rebuild.",
+      "changes": "Visible retained bomber from chosen side, five 0.4-second releases spanning about 152 px, edge-entry allowance.",
+      "verification": [
+        "both approach directions",
+        "low-gravity edge targets",
+        "zoom/rebuild and playback synchronization",
+        "five lab impacts"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 19,
+        "start_turn": 1,
+        "final_turn": 2,
+        "event_counts": {
+          "fire": 1,
+          "strike": 1,
+          "explosion": 5,
+          "damage": 3,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/airstrike/log.json",
+        "sheet": "/tmp/munitions-lab/airstrike-sheet.png"
+      }
     }
   }
 }
