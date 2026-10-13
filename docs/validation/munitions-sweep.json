@@ -98,6 +98,39 @@
         "log": "/tmp/munitions-lab/homing/log.json",
         "sheet": "/tmp/munitions-lab/homing-sheet.png"
       }
+    },
+    "grenade": {
+      "defects_found": "Inventory art and generic effects obscured thrown motion and fuse feedback.",
+      "changes": "Dedicated pin-and-lever sprite, slow tumbling, readable fuse and proportional blast.",
+      "verification": [
+        "adjustable fuse across impacts",
+        "terrain/body bounce and rolling",
+        "support loss",
+        "turn completion"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 13,
+        "start_turn": 1,
+        "final_turn": 2,
+        "event_counts": {
+          "fire": 1,
+          "bounce": 5,
+          "explosion": 1,
+          "damage": 1,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/grenade/log.json",
+        "sheet": "/tmp/munitions-lab/grenade-sheet.png"
+      }
     }
   }
 }
