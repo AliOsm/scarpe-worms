@@ -90,7 +90,9 @@ module Burrow
           critter[:steer], critter[:input_until] = direction, tick + 12
         elsif @tool
           @tool[:lift], @tool[:input_until] = lift, tick + 12
-        else
+        # A neutral steer is a key release. It can arrive just after a tool or
+        # flight ends; releasing nothing is harmless, so only steering is refused.
+        elsif !direction.zero? || !lift.zero?
           raise RuleError, "There is nothing to steer right now."
         end
       else

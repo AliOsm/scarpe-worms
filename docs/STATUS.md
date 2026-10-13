@@ -1,8 +1,42 @@
 # Current status
 
-Updated **2026-10-13** · game **0.5.1 (unreleased)** · protocol **4** · macOS preview.
+Updated **2026-10-13** · game **0.5.2 (unreleased)** · protocol **4** · macOS preview.
 
-## Mobility weapons sweep (unreleased)
+## 0.5.2 weapons sweep (unreleased)
+
+The owner found 0.5.1's weapons broken or cheap: the jetpack would not fly, the
+grapple would not catch, and Captain wool spun while flying with loose steering.
+All 48 weapons were reworked one by one in four families, each with its own
+mechanics fixes, original in-world art, effects, audio cues, HUD hints and
+regression tests, then integrated on `weapons/integration`:
+
+- **Mobility.** Grapple fires a visible hook along the aim, swings and reels with
+  WASD/arrows and keeps momentum on release. The jetpack flies with WASD thrust and
+  five seconds of fuel burned only while thrusting. Soft landing, teleport and
+  girder placement show their result before committing.
+- **Munitions.** The 16 launchers, explosives and air strikes have dedicated flight
+  and fragment art, distinct blasts, bounded camera shake and fixes for fuse,
+  sticky, dynamite, strike and earthquake behaviour.
+- **Critters.** Upright, mirrored animation replaces spinning icons. Captain wool
+  keeps its heading art level, steers immediately with arrows or A/D, and a third
+  press detonates it; the sheep, mole, skunk and cows got stage hints and fixes.
+- **Close-up, hazards, tools and supplies.** Shotgun pellets, rifle tracers,
+  minigun bursts, a piercing laser and a persistent flamethrower stream; visible
+  melee poses with fixed launches; validated mine/sentry/barrel placement ahead of
+  the grub; deterministic drill and blowtorch with early stop; supplies that state
+  whether they keep the turn.
+
+Integration keeps munitions' terrain-first contact rule while a diving mole still
+strikes a grub at the surface, and merges every family's HUD labels, cues and lab
+scripts. Protocol 4 and version-one checkpoints remain supported.
+
+Integrated Linux evidence: Ruby 4.0.7 and 3.4.7 each pass 296 tests / 8,994
+assertions; all seven native journeys pass; assets pass and a full art rebuild is
+byte-identical. LAB_EVIDENCE The family reports below keep each branch's own
+measurements, including failed and retried captures. Feel, balance and audible
+output on the owner's Mac remain the acceptance check.
+
+### Mobility family
 
 Grapple line now fires a visible hook along the aim, swings and reels with WASD or
 arrows, and preserves momentum on release; airborne re-hooks share one cartridge
@@ -25,7 +59,7 @@ the final pass does not establish the cause of every earlier stall. Physical Mac
 play and audible output remain untested. Rope uses one anchor without corner
 wrapping; girders retain a fixed 140-pixel length.
 
-## Munitions sweep (`weapons/munitions`)
+### Munitions family
 
 The 16 munitions now have dedicated flight/fragment art, distinct impacts and
 existing-cue audio feedback. Corrections cover choir fuse expiry, close-wall
@@ -46,7 +80,7 @@ diagnostic comparison, with no relaxed budgets.
 The remaining product check is human feel/balance and audible
 output on the owner's Mac; this branch's native measurements run on Linux.
 
-## Critter weapon sweep (unreleased)
+### Critter family
 
 The critter family now has dedicated mirrored in-world animation instead of
 spinning arsenal icons. Captain wool uses immediate arrow/A/D steering intents,
@@ -68,6 +102,14 @@ cover all five weapons through turn completion. The final rendering gate passes
 (combat/pan means 16.54/16.71 ms); two earlier worst-frame failures and the
 scheduling profile are retained in the report rather than hidden by the retry.
 Physical Mac play and listening remain part of the owner acceptance checks.
+
+### Close-up, hazards, tools and supplies family
+
+The close-family branch validated each of its 22 weapons through native input
+with numeric acceptance checks (`tools/check_close_lab.py`) over the lab's
+authoritative logs, plus 44 focused tests. Its branch run passed both Rubies, all
+seven native journeys, the action cadence check (16.96 ms mean, 22.57 ms p95) and
+the rendering benchmark; the blowtorch lab script was tightened and rerun.
 
 ## 0.5.1 performance sweep (unreleased)
 

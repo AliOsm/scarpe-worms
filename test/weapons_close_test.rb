@@ -270,6 +270,17 @@ class WeaponsCloseTest < Minitest::Test
     assert_nil recovered.snapshot[:tool]
   end
 
+  def test_releasing_steer_after_the_torch_stops_is_not_a_rejection
+    match = arena("retreat_seconds" => 3)
+    fire(match, "blowtorch")
+    match.step(3)
+    match.command("p0", "activate")
+    match.step
+    assert_equal "retreat", match.phase
+    assert match.command("p0", "steer", direction: 0, lift: 0), "a key release after the stop is harmless"
+    assert_raises(Burrow::RuleError) { match.command("p0", "steer", lift: 1) }
+  end
+
   def test_old_saved_tool_without_damage_history_still_runs
     match = arena
     fire(match, "blowtorch")

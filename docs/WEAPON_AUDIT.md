@@ -1,4 +1,4 @@
-# Weapon, input, and presentation audit — 0.5.1
+# Weapon, input, and presentation audit — 0.5.2
 
 This is Burrow Brigade's implemented contract, first reviewed on 2026-10-09 and
 updated for 0.5.0 on 2026-10-12 (see [0.5.0 changes](#050-blast-physics-and-multi-step-weapons))
@@ -7,7 +7,7 @@ weapons have original names, art, and balance values. It is not a compatibility
 implementation of a particular Worms release. [WEAPONS.md](WEAPONS.md) lists
 all 48 entries, ammunition defaults, and their current in-game descriptions.
 
-The critter contracts below were refreshed on 2026-10-13 for the 0.5.1 weapons
+The critter contracts below were refreshed on 2026-10-13 for the 0.5.2 weapons
 sweep, including Captain wool's manual detonation and dedicated in-world art.
 
 ## Research and decisions
