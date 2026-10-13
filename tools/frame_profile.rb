@@ -15,9 +15,10 @@ module FrameProfile
       if ENV["BURROW_BENCH_SCHED"] == "1" && RUBY_PLATFORM.include?("linux")
         @schedstat = "/proc/self/task/#{Thread.current.native_thread_id}/schedstat"
       end
-      wrap(Burrow::Client::App, %i[update update_connection update_controls refresh_match_hud])
+      wrap(Burrow::Client::App, %i[update update_connection update_controls refresh_match_hud play_event])
       wrap(Burrow::Client::Scene, %i[render render_camera render_backdrop render_actors render_projectiles render_hazards update_terrain reconcile_actors
-        reconcile_objects build_label restyle_label render_aim render_effects render_navigation])
+        reconcile_objects build_label restyle_label render_aim render_effects render_navigation
+        resize_world resize_actor place_tile cache_frame event float_text sprite_effect add_particle])
       wrap(Burrow::Client::Timeline, %i[sample accept])
       Scarpe::Native::Child.prepend(Module.new do
         def post(message)

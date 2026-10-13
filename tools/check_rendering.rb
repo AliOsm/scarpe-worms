@@ -15,7 +15,7 @@ ENV.delete("BURROW_CONNECT")
 ENV.delete("BURROW_AUTOPLAY")
 failed, phase, pan = false, nil, false
 last_update, last_pan, last_camera = nil, nil, nil
-last_pixels, last_origin = nil, nil
+last_pixels, last_origin, last_zoom = nil, nil, nil
 samples, stages, shots, slow_phases = [], [], Set.new, []
 thread_cpu = -> { Process.clock_gettime(Process::CLOCK_THREAD_CPUTIME_ID) }
 
@@ -62,7 +62,8 @@ Burrow::Client::App.prepend(Module.new do
       end
       pixel_changes = last_pixels ? (pixels.keys | last_pixels.keys).count { |id| pixels[id] != last_pixels[id] } : 0
       camera_changed = last_origin && origin != last_origin
-      moving = pan || pixel_changes > 0 || camera_changed
+      zoom_changed = last_zoom && camera.zoom != last_zoom
+      moving = pan || pixel_changes > 0 || camera_changed || zoom_changed
       ui_scale = scene.instance_variable_get(:@ui_scale)
       visible_speed = (visual["worms"] + visual["projectiles"]).filter_map do |actor|
         sx, sy = camera.screen(actor["x"], actor["y"])
@@ -70,8 +71,8 @@ Burrow::Client::App.prepend(Module.new do
         Math.hypot(actor["vx"], actor["vy"]) * camera.zoom * ui_scale
       end.max || 0
       camera_speed = last_camera && last_update ? Math.hypot(camera.x-last_camera[0], camera.y-last_camera[1]) * camera.zoom * ui_scale / [at-last_update, 0.001].max : 0
-      samples << [Time.now.to_f, phase, last_update && (at - last_update) * 1000, (Burrow.clock - at) * 1000, !!moving, GC.stat(:time) - gc_time, visible_speed, camera_speed, (thread_cpu.call - cpu) * 1000, !!velocity_motion, pixel_changes, !!camera_changed]
-      last_pixels, last_origin = pixels, origin
+      samples << [Time.now.to_f, phase, last_update && (at - last_update) * 1000, (Burrow.clock - at) * 1000, !!moving, GC.stat(:time) - gc_time, visible_speed, camera_speed, (thread_cpu.call - cpu) * 1000, !!velocity_motion, pixel_changes, !!camera_changed, !!zoom_changed]
+      last_pixels, last_origin, last_zoom = pixels, origin, camera.zoom
       last_camera = [camera.x, camera.y]
       shots.merge(scene.timeline.seen_shots)
     end
@@ -154,6 +155,15 @@ Scarpe::Native.after_first_heartbeat do
       4.times { client.scene.camera.zoom_by(1); auto.advance(0.8) }
       4.times { client.scene.camera.zoom_by(-1); auto.advance(0.8) }
     end
+    # Retarget before each transition settles: this keeps the camera moving
+    # throughout the stage instead of mixing zoom work with long idle periods.
+    stage.call("zoom_sweep") do
+      3.times do
+        4.times { client.scene.camera.zoom_by(1); auto.advance(0.16) }
+        4.times { client.scene.camera.zoom_by(-1); auto.advance(0.16) }
+      end
+      auto.advance(0.2)
+    end
     raise "Weapons were not presented" unless shots.size >= 2 && client.scene.terrain_revision > 0
     raise "Native callback failed" if service.instance_variable_get(:@handler_errors)&.any?
     if ENV["BURROW_BENCH_SHOT"]
@@ -164,9 +174,9 @@ Scarpe::Native.after_first_heartbeat do
     report = {version: Burrow::VERSION, ruby: RUBY_VERSION, platform: RUBY_PLATFORM,
       window: [width, height], world: client.state.values_at("world_width", "world_height"),
       grubs: client.state["worms"].length, stages: stages, samples: samples,
-      sample_columns: %w[at phase update_interval_ms update_ms moving gc_ms visible_speed camera_speed update_cpu_ms velocity_motion actor_pixel_changes camera_pixel_changed],
-      motion_detection_version: 2,
-      motion_detection: "Changed rounded visible actor/projectile positions and camera origin actually sent to the renderer; velocity-only gravity probes are not visible movement",
+      sample_columns: %w[at phase update_interval_ms update_ms moving gc_ms visible_speed camera_speed update_cpu_ms velocity_motion actor_pixel_changes camera_pixel_changed camera_zoom_changed],
+      motion_detection_version: 3,
+      motion_detection: "Changed rounded visible actor/projectile positions, camera origin and zoom actually sent to the renderer; velocity-only gravity probes are not visible movement",
       profiled_slow_phases: slow_phases,
       frame_profile: defined?(FrameProfile) && FrameProfile.report,
       audio: client.instance_variable_get(:@audio).available, projectile_ids: shots.to_a,
