@@ -198,13 +198,17 @@ Scarpe::Native.after_first_heartbeat do
       FileUtils.rm_rf(folder)
       FileUtils.mkdir_p(folder)
       frames, log = 0, []
+      last_event = match.call.events.last&.fetch(:id) || 0
       capture = lambda do
         m = match.call
         a = m.active
+        captured_events = m.events.select { |event| event[:id] > last_event }
+        last_event = captured_events.last[:id] unless captured_events.empty?
         log << {t: frames, tick: m.tick, phase: m.phase, angle: client.instance_variable_get(:@angle),
+          turn: m.turn, team: m.team[:id], terrain_revision: m.terrain.revision, events: captured_events,
           wind: m.wind, shots_left: m.instance_variable_get(:@shots_left), tool: m.instance_variable_get(:@tool)&.dup,
           effects: {double_damage: m.instance_variable_get(:@damage_boost), low_gravity: m.instance_variable_get(:@low_gravity)},
-          active: a && a.slice(:x, :y, :vx, :vy, :hp, :rope, :jetpack, :fuel, :parachute, :launched, :poisoned, :shield, :frozen),
+          active: a && a.slice(:id, :team, :x, :y, :vx, :vy, :hp, :rope, :jetpack, :fuel, :parachute, :launched, :poisoned, :shield, :frozen),
           enemies: m.worms.reject { |w| w[:team] == a&.fetch(:team) }.map { |w| w.slice(:id, :x, :y, :hp) },
           projectiles: m.projectiles.map { |p| p.slice(:weapon, :kind, :stage, :x, :y, :vx, :vy, :life) },
           hazards: m.hazards.map { |h| h.slice(:kind, :x, :y, :armed, :trigger, :shots, :hp, :vx, :vy) }, notice: client.instance_variable_get(:@last_notice)}
