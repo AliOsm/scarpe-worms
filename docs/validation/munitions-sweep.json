@@ -66,6 +66,38 @@
         "log": "/tmp/munitions-lab/mortar/log.json",
         "sheet": "/tmp/munitions-lab/mortar-sheet.png"
       }
+    },
+    "homing": {
+      "defects_found": "Motor ignition/burnout was not reflected in the projectile art.",
+      "changes": "Coasting/powered sprites and motor trail; clear target-lock and launch hints.",
+      "verification": [
+        "native target-lock then launch",
+        "bounded steering and motor burnout",
+        "legacy cruise fallback",
+        "checkpoint determinism"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 20,
+        "start_turn": 1,
+        "final_turn": 2,
+        "event_counts": {
+          "fire": 1,
+          "explosion": 1,
+          "damage": 1,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/homing/log.json",
+        "sheet": "/tmp/munitions-lab/homing-sheet.png"
+      }
     }
   }
 }
