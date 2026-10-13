@@ -119,8 +119,7 @@ module Burrow
       effect_rule("strike") do |scene, event, _now|
         next false unless %w[airstrike mine_strike napalm].include?(event["weapon"])
         direction = event.fetch("side", event.fetch("direction", 1)).to_i < 0 ? -1 : 1
-        scene.fx_frames(MUNITION_BOMBERS.fetch(direction), event["x"], event["y"] - 13, 144, 72,
-          fps: 12, vx: event.fetch("vx", direction * 150), life: event.fetch("duration", 3.2), loop: true)
+        scene.fx_strike(MUNITION_BOMBERS.fetch(direction), event)
         true
       end
 
