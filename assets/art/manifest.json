@@ -1,6 +1,6 @@
 {
   "name": "BURROW BRIGADE art",
-  "version": "2026.10.09.3",
+  "version": "2026.10.13.1",
   "generator": "tools/build_art.py (procedural Cairo foregrounds and compiled painted backgrounds; see docs/ART_DIRECTION.md)",
   "license": "Original artwork created for BURROW BRIGADE; see docs/ART_DIRECTION.md",
   "palette": {
@@ -126,6 +126,34 @@
         "loop": false,
         "pattern": "grubs/{team}-blink-{frame}.png",
         "note": "optional extra: overlay occasionally during idle (half, closed)"
+      },
+      "tumble": {
+        "frames": 4,
+        "fps": 14,
+        "loop": true,
+        "pattern": "grubs/{team}-tumble-{frame}.png",
+        "note": "curled panic spin at 0/90/180/270 degrees about the visual centre; no ground shadow"
+      },
+      "dying": {
+        "frames": 6,
+        "fps": 10,
+        "loop": false,
+        "pattern": "grubs/{team}-dying-{frame}.png",
+        "note": "shock, tremble, 8/16/22/28 percent swelling, X eyes and white pop glint; play once then reactions/poof"
+      },
+      "drown": {
+        "frames": 4,
+        "fps": 8,
+        "loop": true,
+        "pattern": "grubs/{team}-drown-{frame}.png",
+        "note": "upright panic and waving tail; draw beneath opaque world water and sink in the client; no water or shadow baked in"
+      },
+      "grave": {
+        "frames": 4,
+        "fps": 12,
+        "loop": false,
+        "pattern": "grubs/{team}-grave-{frame}.png",
+        "note": "team gravestone drops, squashes with dust, rebounds and rests; hold frame 3; bottom ink at logical foot y=68"
       }
     }
   },
@@ -1652,6 +1680,269 @@
         }
       },
       "note": "Original deterministic Cairo source; status overlays anchor at grub feet; all rasters are 2\u00d7."
+    },
+    "reactions": {
+      "poof": {
+        "frames": 7,
+        "size": [
+          96,
+          96
+        ],
+        "anchor": [
+          48,
+          64
+        ],
+        "fps": 16,
+        "pattern": "ordnance/reactions/poof-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          192,
+          192
+        ],
+        "loop": false,
+        "note": "Round smoke puffs and four flying twinkles; frame 6 is fully transparent. Play once at the grub's feet.",
+        "transparent_frames": [
+          6
+        ]
+      },
+      "ghost": {
+        "frames": 6,
+        "size": [
+          48,
+          56
+        ],
+        "anchor": [
+          24,
+          40
+        ],
+        "fps": 10,
+        "pattern": "ordnance/reactions/ghost-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          96,
+          112
+        ],
+        "loop": false,
+        "note": "Happy white grub, halo and flapping wings. Loop frames 0\u20133 at 0.85 alpha; 4/5 repeat pose 3 at 0.55/0.28. Client supplies ascent.",
+        "loop_frames": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "alpha": [
+          0.85,
+          0.85,
+          0.85,
+          0.85,
+          0.55,
+          0.28
+        ]
+      },
+      "bubbles": {
+        "frames": 6,
+        "size": [
+          32,
+          48
+        ],
+        "anchor": [
+          16,
+          44
+        ],
+        "fps": 10,
+        "pattern": "ordnance/reactions/bubbles-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          64,
+          96
+        ],
+        "loop": false,
+        "note": "Five differently sized air bubbles rise from the lower anchor and pop; no water surface."
+      },
+      "dizzy": {
+        "frames": 6,
+        "size": [
+          56,
+          24
+        ],
+        "anchor": [
+          28,
+          12
+        ],
+        "fps": 12,
+        "pattern": "ordnance/reactions/dizzy-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          112,
+          48
+        ],
+        "loop": true,
+        "note": "Three gold stars orbit a flat ellipse. Place the anchor just above a stunned grub's head."
+      },
+      "sweat": {
+        "frames": 3,
+        "size": [
+          16,
+          20
+        ],
+        "anchor": [
+          8,
+          10
+        ],
+        "fps": 8,
+        "pattern": "ordnance/reactions/sweat-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          32,
+          40
+        ],
+        "loop": true,
+        "note": "A blue nervous drop slides down and fades. Place beside a low-health grub's face."
+      },
+      "burst-pow": {
+        "frames": 4,
+        "size": [
+          128,
+          80
+        ],
+        "anchor": [
+          64,
+          40
+        ],
+        "fps": 16,
+        "pattern": "ordnance/reactions/burst-pow-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          256,
+          160
+        ],
+        "loop": false,
+        "note": "Yellow jagged punch/bonk burst with an orange rim; no lettering. Client overlays the word.",
+        "scales": [
+          0.45,
+          1.15,
+          1.0,
+          0.97
+        ],
+        "rotations": [
+          -3,
+          -3,
+          -3,
+          0
+        ],
+        "text_safe_size": [
+          83.2,
+          17.6
+        ]
+      },
+      "burst-boom": {
+        "frames": 4,
+        "size": [
+          176,
+          112
+        ],
+        "anchor": [
+          88,
+          56
+        ],
+        "fps": 16,
+        "pattern": "ordnance/reactions/burst-boom-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          352,
+          224
+        ],
+        "loop": false,
+        "note": "Red and hot-orange explosion burst with a calm yellow core; no lettering. Client overlays the word.",
+        "scales": [
+          0.45,
+          1.15,
+          1.0,
+          0.97
+        ],
+        "rotations": [
+          -3,
+          -3,
+          -3,
+          0
+        ],
+        "text_safe_size": [
+          114.4,
+          24.64
+        ]
+      },
+      "burst-splash": {
+        "frames": 4,
+        "size": [
+          128,
+          80
+        ],
+        "anchor": [
+          64,
+          40
+        ],
+        "fps": 16,
+        "pattern": "ordnance/reactions/burst-splash-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          256,
+          160
+        ],
+        "loop": false,
+        "note": "Pale aqua splash burst with a blue rim and three droplets; no lettering. Client overlays the word.",
+        "scales": [
+          0.45,
+          1.15,
+          1.0,
+          0.97
+        ],
+        "rotations": [
+          -3,
+          -3,
+          -3,
+          0
+        ],
+        "text_safe_size": [
+          83.2,
+          17.6
+        ]
+      },
+      "burst-spirit": {
+        "frames": 4,
+        "size": [
+          128,
+          80
+        ],
+        "anchor": [
+          64,
+          40
+        ],
+        "fps": 16,
+        "pattern": "ordnance/reactions/burst-spirit-{frame}.png",
+        "raster_scale": 2,
+        "source_size": [
+          256,
+          160
+        ],
+        "loop": false,
+        "note": "Soft lilac/white cloud farewell burst; no lettering. Client overlays the word.",
+        "scales": [
+          0.45,
+          1.15,
+          1.0,
+          0.97
+        ],
+        "rotations": [
+          -3,
+          -3,
+          -3,
+          0
+        ],
+        "text_safe_size": [
+          83.2,
+          17.6
+        ]
+      }
     }
   },
   "extras": {

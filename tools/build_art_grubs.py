@@ -57,6 +57,10 @@ class Pose:
     tails: bool = True
     blush: float = 0.45
     shadow: float = 0.0       # soft contact shadow strength (grounded poses only)
+    pivot: tuple | None = None  # None preserves the original foot-pivot rendering
+    cheeks: float = 0.0      # inflated cheeks in the about-to-pop sequence
+    gravestone: bool = False
+    scarf_length: float = 1.0  # extra streaming length for airborne tumble
 
 
 # --------------------------------------------------------------------------
@@ -136,6 +140,7 @@ def draw_scarf_tails(ctx, pose, samples, team, lw):
     lift = pose.scarf_lift
     knot = (-r - 0.5, 1.0)
     for j, (length, base_ang, wid) in enumerate(((17.0, 0.30, 6.2), (13.0, 0.80, 5.4))):
+        length *= pose.scarf_length
         pts = []
         segs = 6
         for k in range(segs + 1):
@@ -534,7 +539,10 @@ def draw_extra(ctx, ex, team, lw):
 # --------------------------------------------------------------------------
 
 def draw_grub(ctx, pose: Pose, team: int, lw: float = LW, under_extras=True):
-    ax, ay = ANCHOR
+    if pose.gravestone:
+        draw_grave(ctx, pose, team)
+        return
+    ax, ay = pose.pivot or ANCHOR
     ctx.save()
     ctx.translate(ax + pose.dx, ay + pose.dy)
     ctx.rotate(math.radians(pose.rot))
@@ -630,6 +638,10 @@ def draw_grub(ctx, pose: Pose, team: int, lw: float = LW, under_extras=True):
     fill(ctx, lambda c: ellipse(c, 3.5, -9.5, 4.5, 2.6, -0.35), WHITE, 0.55)
     if pose.blush > 0:
         fill(ctx, lambda c: ellipse(c, 4.4, 2.6, 3.4, 1.9), BLUSH, pose.blush)
+    if pose.cheeks:
+        # The near cheek bulges beyond the head; the eyes still overlap its top.
+        inked(ctx, lambda c: ellipse(c, 13.4, 5.0, 4.0 * pose.cheeks, 3.1), SKIN, hlw * 0.65)
+        fill(ctx, lambda c: ellipse(c, 14.1, 4.5, 2.3 * pose.cheeks, 1.5), BLUSH, pose.blush)
     draw_mouth(ctx, pose, hlw)
     draw_headgear(ctx, pose, team, hlw)
     # eyes: far first, then near
@@ -642,6 +654,38 @@ def draw_grub(ctx, pose: Pose, team: int, lw: float = LW, under_extras=True):
     for ex in pose.extras:
         if ex[0] not in ("dust", "speed"):
             draw_extra(ctx, ex, team, lw)
+
+
+def draw_grave(ctx, pose, team):
+    """Reuse the prop, aligning its bottom ink edge to the grub's foot anchor.
+
+    The caller applies the legacy 0.88 grub scale and two-pixel ground lift.
+    Undo those here so the prop's ground contact stays at logical y=68 through
+    squash/stretch; its original prop canvas has its bottom ink edge at 63.2.
+    """
+    from build_art_props import LW as PROP_LW, grave
+
+    ctx.save()
+    ctx.translate(ANCHOR[0], ANCHOR[1] + GROUND_LIFT / SPRITE_SCALE)
+    ctx.scale(1 / SPRITE_SCALE, 1 / SPRITE_SCALE)
+    if pose.shadow:
+        ctx.save()
+        ctx.translate(0, -0.6)
+        ctx.scale(1, 0.14)
+        ctx.set_source(rad_grad(0, 0, 0, 29, [(0, INK, 0.3), (0.65, INK, 0.16), (1, INK, 0)]))
+        circle(ctx, 0, 0, 29)
+        ctx.fill()
+        ctx.restore()
+    ctx.save()
+    ctx.translate(pose.dx, pose.dy)
+    ctx.scale(1.045 * pose.sx, 1.045 * pose.sy)
+    ctx.translate(-32, -(62 + PROP_LW / 2))
+    grave(ctx, team)
+    ctx.restore()
+    # Puffs stay on the ground while the stone squashes.
+    for ex in pose.extras:
+        draw_extra(ctx, ex, team, LW)
+    ctx.restore()
 
 
 # --------------------------------------------------------------------------
@@ -759,6 +803,64 @@ def dead_frames():
     return [p]
 
 
+def tumble_frames():
+    # Compact curl keeps even the pom-pom/propeller inside the canvas at 180°.
+    pts = [(29, 43), (23, 51), (27, 59), (37, 60), (44, 54), (45, 47), (44, 39)]
+    return [Pose(pts, [2.6, 5.8, 8.4, 10.0, 10.0, 9.2, 14.0],
+                 pivot=(40, 46), rot=k * 90, eyes="wide", pupil=0.85,
+                 look=(0.35, -0.2), mouth="o", brow=-0.8, brow_lift=0.7,
+                 head_angle=0.0, scarf_lift=0.7, scarf_phase=k * math.pi / 2,
+                 scarf_length=1.85, prop=k * 1.4,
+                 extras=[("speed", 12, 34, 6), ("speed", 11, 39, 4)])
+            for k in range(4)]
+
+
+def dying_frames():
+    out = []
+    for k, swell in enumerate((1.0, 1.0, 1.08, 1.16, 1.22, 1.28)):
+        # Inflate the tube, keeping its underside planted and making room above
+        # the head for every team's hat. This reads as swelling, not a zoom.
+        head_drop = (0, 0.3, 2.1, 4.2, 6.0, 7.5)[k]
+        pts = [(x, y - r * (swell - 1) * ground + head_drop * head)
+               for (x, y), r, ground, head in zip(
+                   BASE_PTS, BASE_R, (0.5, 1, 0.7, 0.3, 0, 0, 0), (0, 0, 0, 0, 0.15, 0.55, 1))]
+        extras = [("sweat", 69, 21, 1.0)] if k < 2 else []
+        if k in (1, 2):
+            extras += [("speed", 10, 42, -4), ("speed", 69, 46, 4)]
+        if k == 5:
+            extras = [("sparkle", 69, 28, 9.5, WHITE), ("sparkle", 18, 38, 3.0, GOLD)]
+        out.append(Pose(pts, [r * swell for r in BASE_R],
+                        eyes=("wide", "wide", "wide", "squeeze", "x", "x")[k],
+                        mouth=("o", "wavy", "o", "o", "tongue", "tongue")[k],
+                        pupil=0.8 if k < 2 else 0.95, look=(0.0, -0.15),
+                        brow=-0.8, dx=1.4 if k == 1 else 0,
+                        rot=-1.2 if k == 1 else 0, head_angle=0.04 if k == 1 else 0,
+                        blush=min(0.95, 0.4 + k * 0.13), cheeks=1.0 if k >= 3 else 0,
+                        scarf_phase=k * 1.8, scarf_lift=0.15 * k, prop=k * 0.6,
+                        extras=extras))
+    return out
+
+
+def drown_frames():
+    out = []
+    for k, tilt in enumerate((-8, 9, -10, 7)):
+        wave = (0, 7, -2, 5)[k]
+        pts = [(17 + wave, 40 - wave * 0.5), (18 + wave * 0.5, 51), (29, 60),
+               (39, 55), (43, 47), (44, 40), (44, 33)]
+        out.append(Pose(pts, BASE_R, rot=tilt, eyes="wide", pupil=0.9,
+                        mouth="o" if k % 2 == 0 else "wavy", look=(0.2, -0.5),
+                        brow=-1.0, head_angle=0, scarf_phase=k * 2.2, scarf_lift=0.7,
+                        prop=k * 1.6, extras=[("sweat", 68 - k % 2 * 7, 24 + k % 2 * 5, 1.0)]))
+    return out
+
+
+def grave_frames():
+    return [Pose([], [], gravestone=True, sx=sx, sy=sy, dy=dy, shadow=shadow,
+                 extras=[("dust", -30, -3.6, 3.5, 0.95), ("dust", 29, -3.6, 3.5, 0.95)] if k == 1 else [])
+            for k, (sx, sy, dy, shadow) in enumerate(
+                ((0.9, 1.12, -0.8, 0), (1.18, 0.84, 0, 1), (0.95, 1.06, 0, 1), (1, 1, 0, 1)))]
+
+
 STATES = {
     "idle": idle_frames,
     "walk": walk_frames,
@@ -767,14 +869,18 @@ STATES = {
     "victory": None,
     "dead": dead_frames,
     "blink": blink_frames,
+    "tumble": tumble_frames,
+    "dying": dying_frames,
+    "drown": drown_frames,
+    "grave": grave_frames,
 }
-STATE_ORDER = ["idle", "walk", "jump", "hurt", "victory", "dead", "blink"]
+STATE_ORDER = ["idle", "walk", "jump", "hurt", "victory", "dead", "blink", "tumble", "dying", "drown", "grave"]
 
 
-SHADOW = {"idle": 1.0, "walk": 1.0, "blink": 1.0, "victory": 1.0, "dead": 0.8}
+SHADOW = {"idle": 1.0, "walk": 1.0, "blink": 1.0, "victory": 1.0, "dead": 0.8, "dying": 1.0}
 
 
 def frames_for(state, team):
     frames = victory_frames(team) if state == "victory" else STATES[state]()
     # jump/hurt can be airborne in play, so they carry no ground shadow
-    return [replace(p, shadow=SHADOW.get(state, 0.0)) for p in frames]
+    return [replace(p, shadow=SHADOW.get(state, p.shadow)) for p in frames]

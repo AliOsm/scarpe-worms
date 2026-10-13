@@ -85,6 +85,17 @@ its own headgear, so teams stay readable even for colour-blind players:
 | victory | 6      | 10  | yes  | hop-dance with happy eyes, confetti and sparkles |
 | dead    | 1      | –   | no   | flopped out, X eyes, tongue, halo (non-gory) |
 | blink   | 2      | 12  | no   | optional: show briefly every few seconds of idle |
+| tumble  | 4      | 14  | yes  | curled panic spin, 0°/90°/180°/270° around the visual centre; streaming scarf, no shadow |
+| dying   | 6      | 10  | no   | shock, tremble, then 8/16/22/28% swelling; squeezed/X eyes, tongue and white pop glint; replace with `reactions/poof` |
+| drown   | 4      | 8   | yes  | upright panic, alternating tilt and waving tail; sink beneath the client's opaque water; no baked water or shadow |
+| grave   | 4      | 12  | no   | team-ribbon prop drops, contact squash with dust, rebound, rest; hold frame 3; bottom ink edge at logical y=68 |
+
+The four reaction states retain the same 80×80 logical canvas, 160×160 PNG,
+logical foot anchor (40,68), 64×64 game draw size and all six team/facing variants.
+`dying` has the idle contact shadow; `grave` has a shadow on frames 1–3. The grave
+reuses the original prop artwork and compensates for the legacy grub scale/lift
+so its base stays planted through squash and rebound. The existing seven states
+remain byte-identical.
 
 Grounded states (idle, walk, blink, victory and dead) carry a **soft contact shadow**
 under the anchor. It is drawn in sprite space, so it stays on the ground while the body
@@ -232,6 +243,32 @@ platform sizes. FX metadata retains logical `size`/`anchor` and separately recor
 `manifest.json` lists every asset with its path, size, frame counts, fps and anchor, plus
 a static `terrain` block that describes the kit and its alpha contract.
 
+### Character reactions
+
+`tools/build_ordnance_reactions.py` emits `ordnance/reactions/{effect}-{frame}.png`.
+`manifest.ordnance.reactions` records logical sizes/anchors, fps, loops, notes and
+2× `source_size`/`raster_scale`. These effects are team-neutral; complete fills
+and outlines fade together. All burst lettering belongs to the client.
+
+| effect | frames / fps | logical size | anchor | intended use |
+|---|---|---|---|---|
+| `poof` | 7 / 16 | 96×96 | (48,64) | death pop: round smoke puffs and four flying twinkles; frame 6 is explicitly transparent |
+| `ghost` | 6 / 10 | 48×56 | (24,40) | happy grub ghost, gold halo and wings; loop 0–3 at 0.85 alpha, then same pose 3 fades at 0.55/0.28 in 4/5; client supplies ascent |
+| `bubbles` | 6 / 10 | 32×48 | (16,44) | five rising, popping air bubbles; no water surface |
+| `dizzy` | 6 / 12 | 56×24 | (28,12) | loop three gold stars just above a stunned head |
+| `sweat` | 3 / 8 | 16×20 | (8,10) | loop a sliding nervous drop beside a low-health face |
+| `burst-pow` | 4 / 16 | 128×80 | (64,40) | yellow punch/bonk starburst with orange rim |
+| `burst-boom` | 4 / 16 | 176×112 | (88,56) | red/orange explosion burst with a yellow core |
+| `burst-splash` | 4 / 16 | 128×80 | (64,40) | pale aqua drowning burst, blue rim, droplets |
+| `burst-spirit` | 4 / 16 | 128×80 | (64,40) | lilac/white cloud farewell burst |
+
+Bursts pop at scales 0.45 → 1.15 → 1 → 0.97, with a final 3° wobble. The manifest
+also records these scales/rotations and the calm central `text_safe_size` at
+normal scale (65% of canvas width); use the same transform for client lettering.
+The asset checker covers every reactions PNG and rejects undeclared files,
+wrong source dimensions and clipped edges. Only the declared poof terminal frame
+may be empty; the checker requires it to be fully transparent.
+
 ## Review previews
 
 `tools/build_art_previews/` holds review output only:
@@ -248,6 +285,13 @@ The preview build exports `terrain-mask-{islands,cavern}.png` from the real Ruby
 generator at seed 314159 and 4800×1600 world pixels. Masks are stored as visible
 greys (material id × 80); the resulting boards are review composites, not native
 game screenshots. Actual native captures live under `docs/evidence/`.
+
+For the reaction art, run `uv run tools/review_reactions.py --output /tmp/fx-art-review`.
+It writes `sheet.png`, individual animation PNG panels, and GIFs at the declared
+average fps. Every frame appears over sky `#7ea4b3` and meadow soil `#986d4a`, at
+game size and 2×; grubs use 64px canvases. Teams 0 and 3 are shown, including both
+tumble facings. GIFs repeat even one-shot animations for review; their balanced
+centisecond delays preserve 12/14/16 fps. Review output stays outside the repository.
 
 ## Provenance & licensing
 

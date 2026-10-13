@@ -30,11 +30,11 @@ from build_art_core import ART, TEAM_NAMES, TEAMS, ensure_dirs, rel, save, surfa
 
 SECTIONS = ["grubs", "portraits", "icons", "props", "terrain", "scenes", "ordnance", "previews"]
 # Weapon art per family: tools/build_ordnance_<family>.py -> assets/art/ordnance/<family>/.
-ORDNANCE = ["critters", "munitions", "mobility", "status"]
+ORDNANCE = ["critters", "munitions", "mobility", "status", "reactions"]
 
 # Bump by hand when the art changes.  Not derived from the clock, so that a
 # rebuild of unchanged sources is byte-for-byte identical (reproducible builds).
-ART_VERSION = "2026.10.09.3"
+ART_VERSION = "2026.10.13.1"
 
 
 def build_grubs():
@@ -169,13 +169,19 @@ def write_manifest(meta):
 
     # Grubs
     states = {}
-    fps = {"idle": 6, "walk": 12, "jump": 10, "hurt": 10, "victory": 10, "dead": 1, "blink": 12}
-    loop = {"idle": True, "walk": True, "jump": False, "hurt": False, "victory": True, "dead": False, "blink": False}
+    fps = {"idle": 6, "walk": 12, "jump": 10, "hurt": 10, "victory": 10, "dead": 1, "blink": 12,
+           "tumble": 14, "dying": 10, "drown": 8, "grave": 12}
+    loop = {"idle": True, "walk": True, "jump": False, "hurt": False, "victory": True, "dead": False, "blink": False,
+            "tumble": True, "dying": False, "drown": True, "grave": False}
     notes = {
         "jump": "0 crouch (pre-jump), 1 launch (rising), 2 apex/tuck, 3 falling; pick by vertical velocity",
         "hurt": "0 recoil, 1 squash, 2 dizzy; hold last frame while stunned",
         "blink": "optional extra: overlay occasionally during idle (half, closed)",
         "dead": "knocked-out pose; swap to props grave.png after a beat if desired",
+        "tumble": "curled panic spin at 0/90/180/270 degrees about the visual centre; no ground shadow",
+        "dying": "shock, tremble, 8/16/22/28 percent swelling, X eyes and white pop glint; play once then reactions/poof",
+        "drown": "upright panic and waving tail; draw beneath opaque world water and sink in the client; no water or shadow baked in",
+        "grave": "team gravestone drops, squashes with dust, rebounds and rests; hold frame 3; bottom ink at logical foot y=68",
     }
     for st in STATE_ORDER:
         n = len(frames_for(st, 0))

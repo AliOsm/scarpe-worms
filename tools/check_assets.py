@@ -40,12 +40,15 @@ def require(condition, detail):
         raise ValueError(detail)
 
 
-def check_image(path, size, *, opaque=False, interior=False):
+def check_image(path, size, *, opaque=False, interior=False, transparent=False):
     require(path.is_file(), f"Missing image: {path.relative_to(ROOT)}")
     with Image.open(path) as im:
         require(im.size == size, f"Wrong size: {path.relative_to(ROOT)}: {im.size}, expected {size}")
         rgba = im.convert("RGBA")
         alpha = rgba.getchannel("A")
+        if transparent:
+            require(alpha.getbbox() is None, f"Expected transparent terminal frame: {path}")
+            return  # No painted pixels can touch an edge.
         require(alpha.getbbox() is not None, f"Empty image: {path}")
         if opaque:
             require(alpha.getextrema() == (255, 255), f"Unexpected transparency: {path}")
@@ -102,6 +105,25 @@ def main():
                 ordnance_paths.add(path)
     require(ordnance_paths == set((ART / "ordnance/munitions").glob("*.png")),
             "Munition manifest must cover every generated frame")
+
+    reaction_paths = set()
+    for name, spec in manifest["ordnance"]["reactions"].items():
+        require(spec["raster_scale"] == 2 and spec["source_size"] == [v * 2 for v in spec["size"]],
+                f"Reaction raster scale mismatch: {name}")
+        require(len(spec["anchor"]) == 2 and all(0 <= a <= size for a, size in zip(spec["anchor"], spec["size"])),
+                f"Reaction anchor outside canvas: {name}")
+        require(spec["frames"] > 0 and spec["fps"] > 0 and bool(spec["note"]), f"Incomplete reaction metadata: {name}")
+        transparent_frames = spec.get("transparent_frames", [])
+        require(transparent_frames == ([spec["frames"] - 1] if name == "poof" else []),
+                f"Only the poof's terminal frame may be transparent: {name}")
+        for frame in range(spec["frames"]):
+            path = ART / spec["pattern"].format(frame=frame)
+            require(path.parent == ART / "ordnance/reactions", f"Reaction path outside family: {path}")
+            require(path not in reaction_paths, f"Duplicate reaction frame: {path}")
+            check_image(path, tuple(spec["source_size"]), interior=True, transparent=frame in transparent_frames)
+            reaction_paths.add(path)
+    require(reaction_paths == set((ART / "ordnance/reactions").rglob("*.png")),
+            "Reaction manifest must cover every generated frame")
 
     sprite_count = 0
     for team in range(manifest["grubs"]["teams"]):
@@ -169,6 +191,7 @@ def main():
         "weapons": len(runtime["weapons"]), "animation_frames": sprite_count,
         "directional_combat_sprites": len(manifest["combat"]["held"]) * 2 + len(manifest["combat"]["projectiles"]),
         "munition_frames_verified": len(ordnance_paths),
+        "reaction_frames_verified": len(reaction_paths),
         "portraits": 12, "biomes": 4, "painting_sources_verified": 5,
         "material_sources_verified": len(materials["assets"]),
         "licensed_audio_masters_verified": len(audio_manifest["cues"]),
