@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-13",
+  "version": "0.5.1",
+  "branch": "weapons/munitions",
+  "platform": "Linux x86_64; native headless lab and Xvfb benchmarks",
+  "scope": "Simulation, native input, presentation and asset validation. Mac sound/display and human feel/balance require device playtesting.",
+  "weapons": {
+    "rocket": {
+      "defects_found": "Generic flight/blast feedback lacked a distinct rocket presentation.",
+      "changes": "Dedicated heading-aligned rocket, motor trail, warm burst and bounded shake.",
+      "verification": [
+        "charge and wind",
+        "first-tick and swept thin-wall impact",
+        "launch prediction",
+        "turn completion"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 12,
+        "start_turn": 2,
+        "final_turn": 3,
+        "event_counts": {
+          "fire": 1,
+          "explosion": 1,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/rocket/log.json",
+        "sheet": "/tmp/munitions-lab/rocket-sheet.png"
+      }
+    }
+  }
+}
