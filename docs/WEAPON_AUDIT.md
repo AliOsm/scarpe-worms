@@ -65,7 +65,7 @@ are recorded in [ART_DIRECTION.md](ART_DIRECTION.md).
 | Tick-tock | Exact 1–5s fuse through body/ground bounces; surface-normal rolling and support loss verified. Pin/lever grenade art, slow tumble, readable fuse and blast. |
 | Party popper | Timed bouncing shell and five distinct small bomblets. Fragments retain horizontal momentum and boosted damage, settle before handover and never fragment recursively. |
 | Fruit salad | Owner-only Fire split spends no extra ammo; six distinct bananettes, boosted damage and inherited momentum; yellow burst and locally predicted split sound. |
-| Velcro bomb | Terrain takes priority over a body behind a wall. Body attachment follows the grub and releases on death; terrain attachment falls if support disappears. Dedicated adhesive bomb and violet-tinted blast. |
+| Velcro bomb | Terrain takes priority over a body behind a wall. Body attachment follows the grub through the final fuse tick and releases on death; terrain attachment falls if support disappears. Dedicated adhesive bomb and violet-tinted blast. |
 | Short fuse | Swept near-foot placement cannot cross a close wall or attach to its deploying owner. Fixed 4s fuse, retreat controls, animated sparks, heavy blast and immediate fuse-tick sound. |
 | Big trouble | Adjustable fuse and heavy restitution verified; oversized original bomb, sparking fuse, larger flash/smoke/debris and bounded shake. |
 | Choir bomb | Corrected airborne freeze at fuse expiry. Keeps falling after 5s, rests, then emits one 0.6s chord/glow before its huge blast; 12s total safety lifetime. Rest/chord badges and checkpoint recovery verified. |
@@ -79,7 +79,7 @@ are recorded in [ART_DIRECTION.md](ART_DIRECTION.md).
 | Little nudge | Zero-damage shove; terrain obstruction respected. |
 | Home run | Angle-sensitive knockback; frozen bodies stay still. |
 | Half measure | Halves current health before configured damage modifiers. |
-| Special delivery | Visible bomber pass; five delayed drops follow the selected side and span about 152px at the target. Off-map approach releases survive long enough to enter, including low gravity. Dedicated impact bombs, launch cue and blasts. |
+| Special delivery | Visible bomber pass survives zoom/window rebuilds and follows playback time; five delayed drops follow the selected side and span about 152px at the target. Off-map approach releases survive long enough to enter, including low gravity. Dedicated impact bombs, launch cue and blasts. |
 | Rain check | Same timed approach; dedicated dropped mines land, arm for 40 ticks, then trigger after 18 ticks near a grub. Persistent mines and pending releases restore exactly. |
 | Spicy forecast | Same timed approach; original firebomb sprites, orange fire bursts and bounded loose flames. Turn waits for fire to burn out. |
 | Bad astronomy | Six seeded, staggered flaming rocks cover the battlefield; launch positions compensate horizontal fall so edge rocks do not disappear. Fiery trails and rock blasts; no target needed; cavern restriction. |
@@ -162,12 +162,17 @@ momentum, strikes widen from 120 to 152 pixels, and meteors arrive in waves.
 Version-one checkpoints and protocol 4 remain supported. Optional projectile
 fields (`sky_drop`, `choir_at`) use absent-field defaults; pending releases use
 the existing saved delay. Motion samples append age/rest state while old samples
-still render; fragment metadata selects distinct art. No fire acknowledgement or
+still render; restored legacy tracks recover fragment identity from the host's
+projectile list. Fragment metadata selects distinct art. No fire acknowledgement or
 charge-source gate was relaxed. One prior Choir test was updated intentionally:
 a resting expired bomb now warns for 18 ticks before it disappears.
 
-Before/after lab sheets are retained in `/tmp/munitions-before` and
-`/tmp/munitions-after` as `<weapon>-sheet.png`, with authoritative per-frame logs.
+Baseline sheets are in the original checkout's `.cache/weapon-lab/`; this sweep's
+new sheets are in `/tmp/munitions-lab/<weapon>-sheet.png`, with authoritative
+per-frame logs at `/tmp/munitions-lab/<weapon>/log.json`. The committed
+[munitions report](validation/munitions-sweep.json) records each weapon's defects,
+changes and evidence. `python3 tools/check_munitions_lab.py /tmp/munitions-lab`
+checks all 16 using isolated event IDs, accepted fire, ammo and real turn handover.
 The revised scripts wait through handover, demonstrate a real homing target and
 sticky body attachment, and return to Follow for the aerial pass. These are
 Linux native input captures; audible Mac output and the owner's feel/balance

@@ -84,7 +84,8 @@ activation can be sent. The server validates ownership, parameters, phase, and a
 
 Air support spends one charge for an entire pass. The bomber releases five objects
 at 0.4-second intervals in the chosen approach direction, covering about 152 world
-pixels around the clicked point. Mines take 40 ticks (1.33 seconds) to arm after
+pixels around the clicked point. Zooming or resizing preserves the ongoing pass.
+Mines take 40 ticks (1.33 seconds) to arm after
 landing; nearby grubs then trigger an 18-tick warning. Napalm waits for its loose
 flames to burn out before handing over the turn. Bad astronomy scatters six
 meteors across the map in 0.3-second intervals. All four sky attacks are blocked
@@ -102,6 +103,11 @@ weapons have dedicated in-flight art, slow tumbling, readable countdowns and
 weapon-specific blasts. Rocket, homing and meteor trails follow their flight;
 Choir bomb glows and dynamite sparks. Camera shake is bounded and disabled by
 the reduced-motion preference.
+
+Velcro bomb follows an attached grub through the final fuse tick, so a moving
+target carries the blast with it. It drops free when its target dies or its
+terrain support disappears. Fuse sparks and canister wisps rotate with their
+source rather than floating beside a tumbling bomb.
 
 ## Match options
 
