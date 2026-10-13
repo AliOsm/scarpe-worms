@@ -297,19 +297,35 @@ class FrameWorkTest < Minitest::Test
     end
   end
 
-  def test_hidden_terrain_defers_geometry_then_places_exact_edges_before_revealing
+  def terrain_tile(x, y, width: 384, height: 384, scale: 8.0 / 9, **values)
+    {x: x, y: y, width: width, height: height, scale: scale,
+      node: Drawable.new(left: (x * scale).round, top: (y * scale).round,
+        width: ((x + width) * scale).round - (x * scale).round,
+        height: ((y + height) * scale).round - (y * scale).round,
+        path: values[:path])}.merge(values)
+  end
+
+  def apply_terrain_result(scene, specs)
+    results = [{tiles: specs, overview: "map-new.png", revision: 2}]
+    worker = Object.new
+    worker.define_singleton_method(:poll) { results.shift }
+    shoes = Object.new
+    def shoes.image(path, **styles) = Drawable.new(path: path, **styles)
+    {terrain_art: worker, shoes: shoes, terrain_layer: Drawable.new, minimap: Drawable.new,
+      loading_label: Drawable.new(hidden: false)}.each { |key, value| scene.instance_variable_set("@#{key}", value) }
+    scene.send(:update_terrain)
+  end
+
+  def test_offscreen_terrain_defers_geometry_then_places_exact_edges_on_reentry
     camera = Struct.new(:x, :y, :zoom).new(3000.3, 250.4, 1.0)
-    tiles = [0, 3072, 3456].to_h do |x|
-      [x, {x: x, y: 384, width: 384, height: 384, node: Drawable.new(hidden: true)}]
-    end
+    tiles = [0, 3072, 3456].to_h { |x| [x, terrain_tile(x, 384)] }
+    tiles[:below] = terrain_tile(3072, 768)
     scene = terrain_scene(camera, tiles)
     scene.send(:render_terrain)
     far = tiles.fetch(3072)
-    refute far[:node].hidden
     initial_bounds = [far[:node].left, far[:node].top, far[:node].width, far[:node].height]
     camera.x = 0.3
     scene.send(:render_terrain)
-    assert far[:node].hidden
     writes = far[:node].writes.length
     camera.zoom = 0.55
     scale = camera.zoom * 8.0 / 9
@@ -319,65 +335,109 @@ class FrameWorkTest < Minitest::Test
     assert_equal initial_bounds, [far[:node].left, far[:node].top, far[:node].width, far[:node].height]
     camera.x = 2000.7
     scene.send(:render_terrain)
-    refute far[:node].hidden
     assert_equal scale, far[:scale]
     assert_equal((3072 * scale).round, far[:node].left)
     assert_equal((3456 * scale).round - (3072 * scale).round, far[:node].width)
     assert_equal far[:node].left + far[:node].width, tiles.fetch(3456)[:node].left, "adjacent tiles share the same rounded edge"
-    assert_equal({hidden: false}, far[:node].writes.last)
-    assert far[:node].writes[-2].key?(:width), "restore stale bounds before showing the tile"
+    assert_equal far[:node].top + far[:node].height, tiles.fetch(:below)[:node].top, "vertically adjacent tiles share the same rounded edge"
     writes = tiles.values.sum { |tile| tile[:node].writes.length }
     scene.send(:render_terrain)
     assert_equal writes, tiles.values.sum { |tile| tile[:node].writes.length }, "a retained camera sends no tile properties"
+    assert tiles.values.all? { |tile| tile[:node].writes.none? { |write| write.key?(:hidden) } }, "terrain never sends show/hide properties"
   end
 
-  def test_terrain_culling_keeps_a_margin_on_all_fractional_viewport_edges
+  def test_terrain_refreshes_stale_pixel_bounds_entering_the_viewport_during_zoom
+    # At the old zoom these tiles are offscreen. The new camera origin brings
+    # their old pixels onscreen even though their correct world bounds stay out.
+    [[3072, 384, 500, 0], [384, 1536, 0, 300]].each do |x, y, camera_x, camera_y|
+      camera = Struct.new(:x, :y, :zoom).new(0, 0, 0.55)
+      tile = terrain_tile(x, y, scale: camera.zoom * 8.0 / 9)
+      scene = terrain_scene(camera, {far: tile})
+      scene.send(:render_terrain)
+      assert_empty tile[:node].writes
+      camera.x, camera.y, camera.zoom = camera_x, camera_y, 1.0
+      scale = 8.0 / 9
+      scene.instance_variable_set(:@scale, scale)
+      scene.send(:render_terrain)
+      assert_equal scale, tile[:scale], "stale pixels must be moved offscreen before painting"
+      assert_equal [(x * scale).round, (y * scale).round], [tile[:node].left, tile[:node].top]
+      assert_equal 1, tile[:node].writes.length
+      refute tile[:node].writes.first.key?(:hidden)
+    end
+  end
+
+  def test_terrain_deferral_keeps_a_margin_on_all_fractional_viewport_edges
     camera = Struct.new(:x, :y, :zoom).new(1000, 400, 0.7)
     positions = {left_edge: [987, 500], left_out: [986, 500], top_edge: [1100, 387], top_out: [1100, 386],
       right_edge: [3060, 500], right_out: [3061, 500], bottom_edge: [1100, 1431], bottom_out: [1100, 1432]}
     tiles = positions.to_h do |id, (x, y)|
-      [id, {x: x, y: y, width: 10, height: 10, node: Drawable.new(hidden: true)}]
+      # Retained pixels are elsewhere, so this isolates desired world bounds.
+      [id, {x: x, y: y, width: 10, height: 10,
+        node: Drawable.new(left: 10_000, top: 10_000, width: 10, height: 10)}]
     end
     scene = terrain_scene(camera, tiles)
     scene.send(:render_terrain)
     %i[left top right bottom].each do |edge|
-      refute tiles.fetch(:"#{edge}_edge")[:node].hidden, "retain the #{edge} tile within two logical pixels"
-      assert tiles.fetch(:"#{edge}_out")[:node].hidden, "defer the #{edge} tile beyond the conservative margin"
+      assert_equal (8.0 / 9) * camera.zoom, tiles.fetch(:"#{edge}_edge")[:scale], "refresh the #{edge} tile within two logical pixels"
+      assert_empty tiles.fetch(:"#{edge}_out")[:node].writes, "defer the #{edge} tile beyond the conservative margin"
     end
   end
 
-  def test_hidden_terrain_replacement_retains_latest_path_and_geometry_before_reentry
+  def test_retained_terrain_pixels_keep_a_margin_at_the_new_rounded_world_origin
+    camera = Struct.new(:x, :y, :zoom).new(1000.3, 400.4, 0.7)
+    scale = (8.0 / 9) * camera.zoom
+    ox, oy = (-camera.x * scale).round, (-camera.y * scale).round
+    positions = {left_edge: [-12, 100], left_out: [-13, 100], top_edge: [100, -12], top_out: [100, -13],
+      right_edge: [1282, 100], right_out: [1283, 100], bottom_edge: [100, 642], bottom_out: [100, 643]}
+    tiles = positions.to_h do |id, (x, y)|
+      # Desired bounds stay offscreen; only retained pixels can need updating.
+      [id, {x: 10_000, y: 10_000, width: 10, height: 10,
+        node: Drawable.new(left: x - ox, top: y - oy, width: 10, height: 10)}]
+    end
+    scene = terrain_scene(camera, tiles)
+    scene.send(:render_terrain)
+    %i[left top right bottom].each do |edge|
+      assert_equal scale, tiles.fetch(:"#{edge}_edge")[:scale], "refresh retained pixels at the #{edge} margin"
+      assert_empty tiles.fetch(:"#{edge}_out")[:node].writes, "defer retained pixels outside the #{edge} margin"
+    end
+  end
+
+  def test_offscreen_terrain_replacement_retains_latest_path_and_geometry_before_reentry
     camera = Struct.new(:x, :y, :zoom).new(0, 0, 1.0)
-    old = {id: "far", x: 3072, y: 384, width: 384, height: 384, path: "old.png", scale: 8.0 / 9,
-      node: Drawable.new(path: "old.png", hidden: true)}
+    old = terrain_tile(3072, 384, id: "far", path: "old.png")
     tiles = {"far" => old}
     scene = terrain_scene(camera, tiles)
     replacement = {id: "far", x: 3100, y: 390, width: 400, height: 380, path: "new.png"}
-    results = [{tiles: [replacement, {id: "new", x: 3600, y: 384, width: 384, height: 384, path: "new-tile.png"}],
-      overview: "map-new.png", revision: 2}]
-    worker = Object.new
-    worker.define_singleton_method(:poll) { results.shift }
-    shoes = Object.new
-    def shoes.image(path, **styles) = Drawable.new(path: path, **styles)
-    {terrain_art: worker, shoes: shoes, terrain_layer: Drawable.new, minimap: Drawable.new,
-      loading_label: Drawable.new(hidden: false)}.each { |key, value| scene.instance_variable_set("@#{key}", value) }
-    scene.send(:update_terrain)
+    apply_terrain_result(scene, [replacement, {id: "new", x: 3600, y: 384, width: 384, height: 384, path: "new-tile.png"}])
     scene.send(:render_terrain)
     assert_same old[:node], tiles.fetch("far")[:node]
-    assert_equal [{path: "new.png"}], old[:node].writes, "hidden replacement must not resize or reveal the tile"
+    assert_equal [{path: "new.png"}], old[:node].writes, "an offscreen replacement must not resize the tile"
     assert_nil old[:scale], "changed worker geometry must invalidate the retained scale"
-    assert tiles.fetch("new")[:node].hidden
+    refute tiles.fetch("new")[:node].hidden, "new tiles are visible and rely on native clipping"
     assert_equal 2, scene.terrain_revision
     camera.x, camera.y, camera.zoom = 2900, 200, 0.7
     scale = camera.zoom * 8.0 / 9
     scene.instance_variable_set(:@scale, scale)
     scene.send(:render_terrain)
-    refute old[:node].hidden
     assert_equal "new.png", old[:node].path
     assert_equal [(3100 * scale).round, (390 * scale).round, (3500 * scale).round - (3100 * scale).round,
       (770 * scale).round - (390 * scale).round], old[:node].then { |node| [node.left, node.top, node.width, node.height] }
-    assert_equal({hidden: false}, old[:node].writes.last)
-    refute tiles.fetch("new")[:node].hidden
     assert_equal scale, tiles.fetch("new")[:scale]
+    assert tiles.values.all? { |tile| tile[:node].writes.none? { |write| write.key?(:hidden) } }
+  end
+
+  def test_replaced_terrain_geometry_moves_retained_pixels_out_of_view_at_unchanged_zoom
+    camera = Struct.new(:x, :y, :zoom).new(0.3, 0.4, 1.0)
+    old = terrain_tile(100, 200, id: "moving", path: "old.png")
+    scene = terrain_scene(camera, {"moving" => old})
+    apply_terrain_result(scene, [{id: "moving", x: 3072, y: 384, width: 400, height: 380, path: "new.png"}])
+    scene.send(:render_terrain)
+    scale = 8.0 / 9
+    assert_equal [(3072 * scale).round, (384 * scale).round, (3472 * scale).round - (3072 * scale).round,
+      (764 * scale).round - (384 * scale).round], old[:node].then { |node| [node.left, node.top, node.width, node.height] }
+    assert_equal "new.png", old[:node].path
+    assert_equal scale, old[:scale]
+    assert_equal 2, old[:node].writes.length, "replacement updates its path and bounds without visibility changes"
+    refute old[:node].writes.any? { |write| write.key?(:hidden) }
   end
 end

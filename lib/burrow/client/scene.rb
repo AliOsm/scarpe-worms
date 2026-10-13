@@ -46,6 +46,12 @@ module Burrow
           @camera = presentation[:camera]
           @terrain_packet = presentation[:terrain_packet]
           @restored_terrain_result = presentation[:terrain_result]
+          # Keep the last completed worker result authoritative while the rebuilt
+          # scene waits for its first heartbeat. This makes resize state visible
+          # immediately and avoids a transient blank revision when no new packet
+          # is needed.
+          @terrain_revision = @restored_terrain_result[:revision] if @restored_terrain_result
+          @terrain_result = @restored_terrain_result
           @last_turn, @finished_at = presentation.values_at(:last_turn, :finished_at)
           @hurt_until = presentation[:hurt_until]
           @impact_focus = presentation[:impact_focus]
@@ -563,25 +569,28 @@ module Burrow
         tile[:scale] = @scale
       end
 
-      # A hidden tile can retain its previous scale. Restore both rounded edges
-      # before revealing it, so adjacent tiles still share exactly the same
-      # pixel boundary. The margin covers rounding of the world origin, tile
-      # edges and viewport at fractional UI scales.
+      # Native clipping keeps offscreen tiles out of the paint without visibility
+      # changes. Defer their geometry only while both the desired bounds and the
+      # retained pixel bounds remain outside: a new world origin can otherwise
+      # bring stale geometry onscreen. Keep the same rounded adjacent edges and
+      # a margin for fractional world-origin, tile and viewport rounding.
       def render_terrain
         margin = 2.0 / @scale
         left, top = camera.x - margin, camera.y - margin
         right = camera.x + Camera::VIEW_WIDTH / camera.zoom + margin
         bottom = camera.y + Camera::VIEW_HEIGHT / camera.zoom + margin
+        ox, oy = px(-camera.x), px(-camera.y)
+        pixel_left, pixel_top = -ox - 2, -oy - 2
+        pixel_right = (Camera::VIEW_WIDTH * @ui_scale).round - ox + 2
+        pixel_bottom = (Camera::VIEW_HEIGHT * @ui_scale).round - oy + 2
         @tiles.each_value do |tile|
+          next if tile[:scale] == @scale
           node = tile[:node]
           visible = tile[:x] <= right && tile[:x] + tile[:width] >= left &&
             tile[:y] <= bottom && tile[:y] + tile[:height] >= top
-          if visible
-            place_tile(tile) if tile[:scale] != @scale
-            node.show if node.hidden
-          else
-            node.hide unless node.hidden
-          end
+          retained_visible = node.left <= pixel_right && node.left + node.width >= pixel_left &&
+            node.top <= pixel_bottom && node.top + node.height >= pixel_top
+          place_tile(tile) if visible || retained_visible
         end
       end
 
@@ -599,7 +608,7 @@ module Burrow
             existing.merge!(tile)
           else
             @terrain_layer.append do
-              tile[:node] = @shoes.image(tile[:path], left: px(tile[:x]), top: px(tile[:y]), width: px(tile[:x] + tile[:width]) - px(tile[:x]), height: px(tile[:y] + tile[:height]) - px(tile[:y]), alt: "Destructible landscape", hidden: true)
+              tile[:node] = @shoes.image(tile[:path], left: px(tile[:x]), top: px(tile[:y]), width: px(tile[:x] + tile[:width]) - px(tile[:x]), height: px(tile[:y] + tile[:height]) - px(tile[:y]), alt: "Destructible landscape")
             end
             tile[:scale] = @scale
             @tiles[tile[:id]] = tile
