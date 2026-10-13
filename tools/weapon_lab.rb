@@ -189,6 +189,14 @@ Scarpe::Native.after_first_heartbeat do
       auto.advance(0.4)
       client.equip_weapon(id) or raise "#{id} could not be equipped"
       client.scene.camera.follow
+      initial = match.call
+      start_tick, start_turn, start_team = initial.tick, initial.turn, initial.team[:id]
+      start_ammo = initial.team[:inventory].fetch(id)
+      # Events survive course resets. Use IDs, not a tail of the shared ring, to
+      # attribute accepted fire/activation and effects to this weapon alone.
+      event_floor = initial.events.last&.fetch(:id) || 0
+      event_cursor, lost_events, weapon_events = event_floor, 0, []
+      script_action = {type: "ready"}
       folder = File.join(OUT, id)
       FileUtils.rm_rf(folder)
       FileUtils.mkdir_p(folder)
@@ -196,10 +204,22 @@ Scarpe::Native.after_first_heartbeat do
       capture = lambda do
         m = match.call
         a = m.active
-        log << {t: frames, tick: m.tick, phase: m.phase, active: a && a.slice(:x, :y, :vx, :vy, :hp, :rope, :jetpack, :fuel, :parachute, :launched),
-          enemies: m.worms.reject { |w| w[:team] == a&.fetch(:team) }.map { |w| w.slice(:id, :x, :y, :hp) },
-          projectiles: m.projectiles.map { |p| p.slice(:weapon, :kind, :stage, :x, :y, :vx, :vy, :life) },
-          hazards: m.hazards.map { |h| h.slice(:kind, :x, :y) }, notice: client.instance_variable_get(:@last_notice)}
+        fresh_events = m.events.select { |event| event[:id] > event_cursor }.map(&:dup)
+        if fresh_events.any?
+          lost_events += [fresh_events.first[:id] - event_cursor - 1, 0].max
+          event_cursor = fresh_events.last[:id]
+          weapon_events.concat(fresh_events)
+        end
+        log << {t: frames, tick: m.tick, turn: m.turn, phase: m.phase, script_action: script_action,
+          ammo: m.teams.find { |team| team[:id] == start_team }[:inventory].fetch(id),
+          active: a && a.slice(:id, :team, :x, :y, :vx, :vy, :hp, :rope, :jetpack, :fuel, :parachute, :launched, :poisoned),
+          enemies: m.worms.reject { |w| w[:team] == start_team }.map { |w| w.slice(:id, :x, :y, :vx, :vy, :hp, :launched, :poisoned) },
+          projectiles: m.projectiles.map { |p| p.slice(:id, :weapon, :kind, :stage, :x, :y, :vx, :vy, :age, :delay, :life,
+            :fragment, :stuck, :bounce, :sticky, :homing, :target_x, :target_y, :cruise, :choir_at, :remote, :drop_mine, :fire) },
+          hazards: m.hazards.map { |h| h.slice(:id, :kind, :x, :y, :vx, :vy, :life, :armed, :trigger, :radius, :launched, :owner) },
+          flame_count: m.hazards.count { |h| h[:kind] == "flame" },
+          pending_salvos: m.instance_variable_get(:@salvos).to_a.size,
+          events: fresh_events, notice: client.instance_variable_get(:@last_notice)}
         auto.snapshot(File.join(folder, format("frame-%02d.png", frames)))
         frames += 1
       end
@@ -222,6 +242,7 @@ Scarpe::Native.after_first_heartbeat do
       end
       capture.call
       script.each do |action, arg, extra|
+        script_action = {type: action, argument: arg, duration: extra}.compact
         case action
         when :place then nil
         when :aim
@@ -254,12 +275,33 @@ Scarpe::Native.after_first_heartbeat do
         when :wait then run.call(arg)
         end
       end
+      script_action = {type: "complete"}
+      capture.call
       File.write(File.join(folder, "log.json"), JSON.pretty_generate(log))
-      events = match.call.events.last(40).map { |e| e[:kind] }
-      summary[id] = {frames: frames, notice: client.instance_variable_get(:@last_notice), phase: match.call.phase, recent_events: events.last(12)}
+      final = match.call
+      fired = weapon_events.find { |event| event[:kind] == "fire" && event[:weapon] == id }
+      handed_over = fired && weapon_events.any? { |event| event[:kind] == "turn" && event[:id] > fired[:id] }
+      pending_hazards = final.hazards.count do |hazard|
+        hazard[:kind] == "flame" || hazard[:trigger] ||
+          (!hazard[:chute] && (hazard.fetch(:vx, 0).abs > 4 || hazard.fetch(:vy, 0).abs > 4))
+      end
+      moving_worms = final.worms.count { |worm| worm[:hp] > 0 && (worm[:vx].abs > 4 || worm[:vy].abs > 4) }
+      clean = final.projectiles.empty? && final.instance_variable_get(:@salvos).to_a.empty? &&
+        !final.instance_variable_get(:@tool) && pending_hazards.zero? && moving_worms.zero?
+      summary[id] = {evidence_version: 2, frames: frames, notice: client.instance_variable_get(:@last_notice),
+        start_tick: start_tick, final_tick: final.tick, start_turn: start_turn, final_turn: final.turn, phase: final.phase,
+        start_ammo: start_ammo, final_ammo: final.teams.find { |team| team[:id] == start_team }[:inventory].fetch(id),
+        event_floor: event_floor, lost_events: lost_events, fire_event_id: fired && fired[:id],
+        turn_completed: !!(handed_over && final.turn > start_turn && final.phase == "aiming" && clean),
+        remaining_projectiles: final.projectiles.size, pending_hazards: pending_hazards, moving_worms: moving_worms,
+        peak_flames: log.map { |frame| frame[:flame_count] }.max,
+        events: weapon_events, recent_events: weapon_events.last(12).map { |event| event[:kind] }}
       client.instance_variable_set(:@last_notice, nil)
-      puts "#{id}: #{frames} frames, phase #{match.call.phase}, events #{events.uniq.join(',')}"
+      puts "#{id}: #{frames} frames, turn #{start_turn}→#{final.turn}, completed #{summary[id][:turn_completed]}, " \
+        "events #{weapon_events.map { |event| event[:kind] }.uniq.join(',')}"
       $stdout.flush
+      # Preserve completed weapons even if a later native input journey fails.
+      File.write(File.join(OUT, "lab.json"), JSON.pretty_generate(summary))
     end
     File.write(File.join(OUT, "lab.json"), JSON.pretty_generate(summary))
   rescue Exception => error
