@@ -4,6 +4,7 @@ On Linux: xvfb-run -a python3 tools/check_action.py. No headless paint shortcuts
 """
 from pathlib import Path
 import json, os, statistics, subprocess, tempfile
+from check_rendering import frame_unix, moving_intervals
 ROOT = Path(__file__).resolve().parents[1]
 
 def stats(values):
@@ -16,24 +17,18 @@ with tempfile.TemporaryDirectory(prefix='burrow-frames-') as directory:
     subprocess.run([str(ROOT/'bin/scarpe'), str(ROOT/'tools/check_action.rb')], cwd=ROOT, env=env, check=True)
     report = json.loads((Path(directory)/'action.json').read_text())
     native = json.loads((Path(directory)/'rust.json').read_text())
+    # Preserve diagnostic rows before the temporary native logs disappear.
+    raw = ROOT/'.cache/native-action.raw.json'
+    raw.parent.mkdir(parents=True, exist_ok=True)
+    raw.write_text(json.dumps(dict(report=report, native=native))+'\n')
     samples = report.pop('motion_samples')
-    periods = []
-    start = None
-    for at, moving in samples:
-        if moving and start is None: start = at
-        if not moving and start is not None:
-            if at-start >= .25: periods.append((start, at))
-            start = None
-    if start is not None: periods.append((start, samples[-1][0]))
-    frames = [native['started_unix']+row[0] for row in native['frames']]
-    intervals = []
-    counts = []
-    for start, end in periods:
-        selected = [at for at in frames if start+.05 <= at <= end]
-        intervals += [(b-a)*1000 for a,b in zip(selected,selected[1:])]
-        counts.append({'seconds': end-start, 'frames': len(selected)})
+    rows = [row for row in native['frames']
+            if samples[0][0] <= frame_unix(row, native['started_unix']) <= samples[-1][0]]
+    intervals = moving_intervals(rows, samples, native['started_unix'])
+    assert intervals, 'No sustained visible motion was measured'
     report['native_motion_frame_intervals'] = stats(intervals)
-    report['motion_periods'] = counts
+    report['motion_analysis_version'] = 3
+    report['raw_capture'] = str(raw)
     report['native_phases'] = native['phases']
     report['native_repaints'] = native['counters']
     report['measurement'] = 'Native window on Xvfb' if os.environ.get('DISPLAY') else 'Native desktop window'

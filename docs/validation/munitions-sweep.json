@@ -552,7 +552,8 @@
     "lib/burrow/catalog.rb and lib/burrow/client/match_ui.rb": "Munition descriptions, hints, fixed-fuse labels and Fire labels; input acknowledgement and charge-source gating remain unchanged.",
     "assets/art/manifest.json and tools/check_assets.py": "Declared stage variants and all 162 munitions frames; runtime canvas, raster scale, anchor, clipping and full coverage validation.",
     "tools/weapon_lab.rb": "Munition scripts plus additive isolated event/turn/ammo/projectile/hazard evidence; completed summaries persist after each weapon.",
-    "test/weapon_physics_test.rb": "Prior resting-choir assertion now waits for the intentional 18-tick warning before detonation."
+    "test/weapon_physics_test.rb": "Prior resting-choir assertion now waits for the intentional 18-tick warning before detonation.",
+    "tools/check_action.rb and tools/check_action.py": "Action benchmark now measures visible rounded positions/camera after completed updates using check_rendering.py moving_intervals/frame_unix; gives Xvfb focus; retains .cache/native-action.raw.json. Fixes measured idle-gap false failures without changing budgets or game scheduling."
   },
   "image_review": {
     "images_opened": 3,
@@ -779,7 +780,7 @@
         "p95_ms": 16.82198978960514,
         "max_ms": 24.672464933246374
       },
-      "report": "/tmp/munitions-native-action.json"
+      "report": "/tmp/munitions-native-action-second.json"
     },
     "action_baseline": {
       "result": "passed",
@@ -796,6 +797,28 @@
         "max_ms": 33.25937269255519
       },
       "report": "/tmp/munitions-native-action-baseline.json"
+    },
+    "action_diagnosis": {
+      "legacy": {
+        "count": 524,
+        "mean_ms": 19.141768226186738,
+        "p95_ms": 33.757686614990234,
+        "max_ms": 115.9048080444336
+      },
+      "visible": {
+        "count": 499,
+        "mean_ms": 16.29607434205203,
+        "p95_ms": 20.430560000001208,
+        "p99_ms": 23.692521999999272,
+        "max_ms": 29.44448700000102,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "false_motion_samples": 154,
+      "samples": 1082,
+      "conclusion": "The original action checker demanded frames for 154 updates without any visible position changes. Replaying the existing rendering selector on the SAME capture passes; the 115.9 ms gap has zero visible movement. Action checker now shares that selector, samples completed updates, grants Xvfb focus, and retains raw evidence; numerical budgets are unchanged.",
+      "raw": "/tmp/munitions-action-diagnostic-raw.json",
+      "analysis_tests": "python3 tools/test_rendering.py: 13 passed, including stalled GUI and pending-movement gap regressions"
     }
   },
   "implementation_commits": [
