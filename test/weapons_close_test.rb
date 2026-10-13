@@ -702,4 +702,24 @@ class WeaponsCloseHazardsAndSuppliesTest < Minitest::Test
     assert_equal 84, recovered.worms[1][:hp]
     assert recovered.hazards.last[:aim_angle].finite?
   end
+
+  def test_first_aid_restores_health_cures_poison_and_ends_the_turn
+    match = arena
+    actor = match.active
+    actor.merge!(hp: 62, poisoned: true)
+    before_turn = match.turn
+    fire(match, "heal")
+    assert_equal 97, actor[:hp]
+    refute actor[:poisoned]
+    assert_equal "settling", match.phase
+    heal = match.events.reverse.find { |event| event[:kind] == "heal" }
+    assert_equal 35, heal[:amount]
+    assert_equal true, heal[:cured]
+    600.times do
+      match.step
+      break if match.turn > before_turn
+    end
+    assert_equal before_turn + 1, match.turn
+    assert_equal "p1", match.team[:id]
+  end
 end
