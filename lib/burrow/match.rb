@@ -302,11 +302,17 @@ module Burrow
 
     def spawn_obstacles
       {"mine" => config["mines"], "barrel" => config["barrels"]}.each do |kind, count|
+        # A starting mine keeps well beyond its trigger radius, so a grub's first
+        # steps cannot set it off before anyone has had a turn.
+        clearance = kind == "mine" ? Physics::MINE_PROXIMITY * 2.5 : 38
         count.times do
           50.times do
             x = @rng.rand(70..world_width - 70)
             y = terrain.landing(x, config["terrain"] == "cavern" ? 160 : 0, water: water)
-            next unless y && worms.none? { |w| Math.hypot(w[:x] - x, w[:y] - y) < 38 }
+            # Landing finds footing for a grub's width; a prop rests on its centre
+            # alone and would slide off an overhang tip onto whoever is below.
+            next unless y && terrain.solid?(x, y + 1)
+            next unless worms.none? { |w| Math.hypot(w[:x] - x, w[:y] - y) < clearance }
             hazards << {id: next_object_id, kind: kind, x: x.to_f, y: y.to_f, owner: nil, armed: 90, life: 100_000, hp: 20}
             break
           end

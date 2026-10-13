@@ -18,12 +18,14 @@
     "Critter first-frame effect test supplies coordinates now that effects re-place on zoom.",
     "Hazard placement validation merged with the mobility parachute/jetpack rules.",
     "Fire labels keep sky and critter verbs alongside close-family labels; tool HUD timers coexist with critter stage readouts.",
-    "A neutral steer after a tool stops is a no-op instead of a rejection notice (found by the integrated lab)."
+    "A neutral steer after a tool stops is a no-op instead of a rejection notice (found by the integrated lab).",
+    "Starting mines and barrels need ground under their centre and mines start 90 px from grubs. Before, 345 of 1,260 starting props across 180 seeded maps slid off overhang tips and 4 mines went off with no input; after, none (found when the Mac workflow's package smoke saw a mine blast mid-check)."
   ],
   "tests": {
     "ruby_4.0.7": "296 runs, 8994 assertions, 0 failures",
     "ruby_3.4.7": "296 runs, 8994 assertions, 0 failures",
-    "note": "Counted before the steer regression test was added; weapons_close_test then ran 45 runs / 425 assertions."
+    "note": "Counted before the steer regression test was added; weapons_close_test then ran 45 runs / 425 assertions.",
+    "after_spawn_fix": "Ruby 4.0.7 and 3.4.7: 298 runs, 9483 assertions, 0 failures; native journeys 7/7"
   },
   "native_journeys": {
     "result": "7/7 passed",

@@ -206,6 +206,23 @@ class BattlefieldPhysicsTest < Minitest::Test
     refute match.terrain.solid?(crate[:x], crate[:y]), "the crate starts in open air"
   end
 
+  def test_starting_props_rest_where_placed_and_mines_start_clear_of_grubs
+    %w[islands archipelago cavern].each do |terrain|
+      6.times do |seed|
+        match = game({"terrain" => terrain, "seed" => "props-#{seed}", "mines" => 6, "barrels" => 4}, players: 3)
+        placed = match.hazards.map { |h| [h, h[:x], h[:y]] }
+        placed.each do |h, x, y|
+          assert match.terrain.solid?(x, y + 1), "#{terrain} #{h[:kind]} spawned without ground beneath its centre"
+          next unless h[:kind] == "mine"
+          assert match.worms.all? { |w| Math.hypot(w[:x] - x, w[:y] - y) >= Burrow::Physics::MINE_PROXIMITY * 2 }
+        end
+        150.times { match.step }
+        placed.each { |h, x, y| assert_in_delta 0, Math.hypot(h[:x] - x, h[:y] - y), 1, "#{terrain} #{h[:kind]} slid off its spawn" }
+        refute match.events.any? { |e| e[:kind] == "mine_trigger" }, "#{terrain}: a starting mine went off on its own"
+      end
+    end
+  end
+
   def test_new_physics_state_survives_a_checkpoint
     match = arena
     victim = match.worms[1]

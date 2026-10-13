@@ -260,6 +260,7 @@ module Burrow
     end
 
     PROP_MASS = {"mine" => 0.8, "barrel" => 1.7, "crate" => 1.4, "turret" => 1.6, "flame" => 2.5}.freeze
+    MINE_PROXIMITY = 36
 
     # A blast also moves the battlefield's loose objects: resting bombs roll away,
     # mines and barrels fly, close mines arm a short fuse and barrels rupture.
@@ -611,7 +612,7 @@ module Burrow
             h[:arm_reported] = true
             emit("mine_arm", hazard_id: h[:id], style: "mine", hazard_kind: "mine", x: h[:x], y: h[:y], owner: h[:owner], fuse: 0)
           end
-          proximity = h[:kind] == "mine" ? 36 : 25
+          proximity = h[:kind] == "mine" ? MINE_PROXIMITY : 25
           near = worms.select do |w|
             w[:hp] > 0 && Math.hypot(w[:x] - h[:x], w[:y] - h[:y]) < proximity &&
               (h[:kind] != "mine" || clear_line?(h[:x], h[:y] - 4, w[:x], w[:y] - 10))

@@ -28,7 +28,9 @@ regression tests, then integrated on `weapons/integration`:
 
 Integration keeps munitions' terrain-first contact rule while a diving mole still
 strikes a grub at the surface, and merges every family's HUD labels, cues and lab
-scripts. Protocol 4 and version-one checkpoints remain supported.
+scripts. Starting mines and barrels now need ground under their centre and mines
+start well clear of grubs: about a quarter of starting props used to slide off overhang
+tips at match start, occasionally onto a grub, and a few mines went off untouched. Protocol 4 and version-one checkpoints remain supported.
 
 Integrated Linux evidence: Ruby 4.0.7 and 3.4.7 each pass 296 tests / 8,994
 assertions; all seven native journeys pass; assets pass and a full art rebuild is
