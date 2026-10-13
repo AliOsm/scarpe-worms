@@ -3,6 +3,7 @@
 require_relative "terrain_art"
 require_relative "camera"
 require_relative "timeline"
+require_relative "sprites"
 
 module Burrow
   module Client
@@ -71,6 +72,8 @@ module Burrow
             @terrain_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) {}
             @props_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) {}
             @actor_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) {}
+            # Pictures attached to grubs (Sprites.overlay_rule): packs, canopies, shields.
+            @overlay_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) {}
             @shot_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) {}
             # Deep, nearly opaque water hides the islands' roots, under a pale crest.
             # It runs on past the world's bottom edge, which a zoomed-out camera can show.
@@ -182,6 +185,7 @@ module Burrow
         @timeline.events.each { |e| event(e); @controller.play_event(e) }
         @finished_at ||= started if @state["phase"] == "finished" && @timeline.tick >= @state["tick"]
         render_actors(started)
+        render_overlays
         render_projectiles
         render_hazards
         render_aim(started)
@@ -202,6 +206,30 @@ module Burrow
         @max_frame_ms = [@max_frame_ms, elapsed].max
       end
 
+      # Effect helpers for Sprites.effect_rule blocks (world coordinates).
+      def fx_sprite(name, x, y, scale = 1.0) = sprite_effect(name, x, y, scale)
+      def fx_particle(x, y, color:, life:, size:, vx: 0, vy: 0) = add_particle(x, y, color: color, life: life, size: size, vx: vx, vy: vy)
+
+      # A short-lived image animation: `paths` are full frame paths (Sprites.frames).
+      def fx_frames(paths, x, y, width, height, fps:, anchor_x: width / 2.0, anchor_y: height / 2.0, rotation: nil)
+        return if @effects.length >= 100 || !@controller.motion?
+        @effect_layer.append do
+          node = @shoes.image(paths.first, left: px(x - anchor_x), top: px(y - anchor_y), width: px(width), height: px(height), alt: "")
+          if rotation
+            node.transform(:center)
+            node.rotate(rotation.round)
+          end
+          retain_effect(node: node, born: Burrow.clock, life: paths.length.fdiv(fps), kind: :frames, paths: paths, fps: fps, frame: 0)
+        end
+      end
+
+      def fx_line(x, y, x2, y2, color:, width: 2, life: 0.15)
+        return if @effects.length >= 100
+        @effect_layer.append do
+          retain_effect(node: line(x, y, x2, y2, color: color, width: width), born: Burrow.clock, life: life, kind: :line)
+        end
+      end
+
       def performance
         sorted = @frame_times.sort
         {frames: frame_count, mean_ruby_scene_ms: sorted.empty? ? 0 : sorted.sum / sorted.length,
@@ -210,6 +238,8 @@ module Burrow
 
       def event(event)
         now = Burrow.clock
+        # Weapon families can add to, or replace, the default effect (Sprites.effect_rule).
+        return if Sprites.effect(self, event, now)
         x, y = event.values_at("x", "y")
         if event["kind"] == "damage"
           @hurt_until[event["worm"]] = now + 0.35
@@ -384,14 +414,49 @@ module Burrow
         end
       end
 
+      # Grub-attached pictures. Each grub keeps a small pool of image nodes; a
+      # pool slot is hidden only when that grub has fewer overlays than before.
+      def render_overlays
+        tick = @timeline.tick
+        @overlay_nodes ||= {}
+        @state["worms"].each do |worm|
+          pool = (@overlay_nodes[worm["id"]] ||= [])
+          looks = worm["hp"] > 0 && @actors[worm["id"]]&.fetch(:visible, false) ? Sprites.overlays(worm, tick) : []
+          next if looks.empty? && pool.empty?
+          x, y = worm.values_at("x", "y")
+          looks.each_with_index do |look, i|
+            unless (node = pool[i])
+              @overlay_layer.append do
+                image = @shoes.image(look.path, left: 0, top: 0, width: 1, height: 1, alt: "").tap { |img| img.transform(:center) }
+                node = pool[i] = {image: image, path: look.path}
+              end
+            end
+            if node[:path] != look.path
+              node[:image].path = look.path
+              node[:path] = look.path
+            end
+            place(node[:image], px(x - look.anchor_x), px(y - look.anchor_y), px(look.width), px(look.height))
+            rotation = look.rotation ? (look.rotation / 3).round * 3 : 0
+            node[:image].rotate(rotation) if (node[:image].rotate_angle || 0) != rotation
+            show_if(node[:image], true)
+          end
+          pool.drop(looks.length).each { |node| show_if(node[:image], false) }
+        end
+      end
+
       def render_projectiles
+        tick = @timeline.tick
         @state["projectiles"].each do |p|
           node = @projectile_nodes[p["id"]]
           x, y = p["x"], p["y"]
-          place(node[:image], px(x - 14), px(y - 14), px(28), px(28))
-          if !p["walker"] && Math.hypot(p["vx"], p["vy"]) > 25
-            rotation = COMBAT["projectiles"].include?(p["weapon"]) ? Math.atan2(p["vy"], p["vx"]) * 180 / Math::PI : @timeline.tick * 7
-            rotation = (rotation / 6).round * 6
+          look = Sprites.projectile(p, tick)
+          if node[:path] != look.path
+            node[:image].path = look.path
+            node[:path] = look.path
+          end
+          place(node[:image], px(x - look.anchor_x), px(y - look.anchor_y), px(look.width), px(look.height))
+          if look.rotation
+            rotation = (look.rotation / 6).round * 6
             node[:image].rotate(rotation) if node[:image].rotate_angle != rotation
           end
           if node[:fuse]
@@ -501,7 +566,7 @@ module Burrow
 
       def resize_world
         @world_scale = @scale
-        [@world, @terrain_layer, @props_layer, @actor_layer, @shot_layer, @effect_layer, @aim_layer].each { |layer| layer.style(width: px(@width)) }
+        [@world, @terrain_layer, @props_layer, @actor_layer, @overlay_layer, @shot_layer, @effect_layer, @aim_layer].each { |layer| layer.style(width: px(@width)) }
         @tiles.each_value { |tile| place_tile(tile) }
         @aim_dots.each { |dot| dot.style(width: px(4), height: px(4), strokewidth: [px(1), 1].max) }
         @reticle.style(width: px(24), height: px(24))
@@ -669,9 +734,10 @@ module Burrow
             kind = p["kind"]
             bounds = {"mine" => [34, 34, 17, 27.625], "barrel" => [32, 38.4, 16, 36.8],
                       "crate" => [34, 34, 17, 31.875], "flame" => [24, 32, 12, 30]}.fetch(kind, [32, 32, 16, 29])
+            look = projectile ? Sprites.projectile(p, @timeline.tick) : nil
             picture = if projectile
-              folder = COMBAT["projectiles"].include?(p["weapon"]) ? "projectiles" : "weapons"
-              image("#{folder}/#{p['weapon']}", p["x"] - 14, p["y"] - 14, 28, 28).tap { |shot| shot.transform(:center) }
+              @shoes.image(look.path, left: px(p["x"] - look.anchor_x), top: px(p["y"] - look.anchor_y),
+                width: px(look.width), height: px(look.height), alt: "").tap { |shot| shot.transform(:center) }
             elsif %w[fire gas].include?(kind)
               @shoes.oval(px(p["x"] - p["radius"]), px(p["y"] - p["radius"]), px(p["radius"] * 2),
                 fill: kind == "gas" ? "#a3b56366" : "#f57c4966", strokewidth: 0)
@@ -687,7 +753,7 @@ module Burrow
               width, height, ax, ay = bounds
               image(art, p["x"] - ax, p["y"] - ay, width, height)
             end
-            nodes[p["id"]] = {image: picture, bounds: bounds, phase: p["id"].to_s.sum % 4}
+            nodes[p["id"]] = {image: picture, bounds: bounds, phase: p["id"].to_s.sum % 4, path: look&.path}
             if projectile && p["fused"]
               nodes[p["id"]][:fuse_plate] = box(0, 0, 34, 22, color: "#071731eb", radius: 11, stroke: Theme::YELLOW)
               nodes[p["id"]][:fuse] = label("", 0, 0, 34, size: 12, color: Theme::WHITE, font: Theme.display, weight: 700, align: "center")
@@ -863,6 +929,12 @@ module Burrow
             true
           else
             case effect[:kind]
+            when :frames
+              frame = [(age * effect[:fps]).floor, effect[:paths].length - 1].min
+              if frame != effect[:frame]
+                effect[:node].path = effect[:paths][frame]
+                effect[:frame] = frame
+              end
             when :sprite
               frame = (age * effect[:fps]).floor
               if frame != effect[:frame]

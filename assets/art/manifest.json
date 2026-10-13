@@ -550,6 +550,12 @@
     },
     "source": "source/materials/provenance.json"
   },
+  "ordnance": {
+    "critters": {},
+    "munitions": {},
+    "mobility": {},
+    "status": {}
+  },
   "extras": {
     "fx": [
       "fx/dust-0.png",

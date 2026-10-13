@@ -28,7 +28,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from build_art_core import ART, TEAM_NAMES, TEAMS, ensure_dirs, rel, save, surface  # noqa: E402
 
-SECTIONS = ["grubs", "portraits", "icons", "props", "terrain", "scenes", "previews"]
+SECTIONS = ["grubs", "portraits", "icons", "props", "terrain", "scenes", "ordnance", "previews"]
+# Weapon art per family: tools/build_ordnance_<family>.py -> assets/art/ordnance/<family>/.
+ORDNANCE = ["critters", "munitions", "mobility", "status"]
 
 # Bump by hand when the art changes.  Not derived from the clock, so that a
 # rebuild of unchanged sources is byte-for-byte identical (reproducible builds).
@@ -101,6 +103,22 @@ def _terrain_meta():
 def build_scenes():
     from build_art_scenes import build_all
     return build_all()
+
+
+def build_ordnance():
+    import importlib
+    for family in ORDNANCE:
+        importlib.import_module(f"build_ordnance_{family}").build_all()
+    return {}
+
+
+def _ordnance_meta():
+    import importlib
+    meta = {}
+    for family in ORDNANCE:
+        module = importlib.import_module(f"build_ordnance_{family}")
+        meta[family] = module.metadata() if hasattr(module, "metadata") else {}
+    return meta
 
 
 def build_previews():
@@ -218,6 +236,7 @@ def write_manifest(meta):
                          **_props_meta())
     if (ART / "terrain").exists():
         m["terrain"] = _terrain_meta()
+    m["ordnance"] = _ordnance_meta()
     extra_dirs = {}
     for d in ("fx", "ui"):
         dd = ART / d
