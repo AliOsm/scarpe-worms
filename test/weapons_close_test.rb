@@ -611,4 +611,67 @@ class WeaponsCloseHazardsAndSuppliesTest < Minitest::Test
     assert_operator match.worms[1][:hp], :<, 100
     assert_equal JSON.generate(match.snapshot(terrain: true)), JSON.generate(recovered.snapshot(terrain: true))
   end
+
+  def test_turret_placement_failure_preserves_ammo_and_turn
+    assert_placement_rolls_back("turret")
+  end
+
+  def test_turret_tracks_left_and_fires_exactly_five_visible_shots
+    match = arena
+    match.active.merge!(x: 600.0, facing: -1)
+    match.worms[1][:x] = 450
+    fire(match, "turret")
+    sentry = match.hazards.last
+    assert_in_delta 576, sentry[:x], 0.01
+    assert_equal 5, sentry[:shots]
+    match.step(35)
+    assert_equal(-1, sentry[:facing])
+    assert_equal match.worms[1][:id], sentry[:target_id]
+    assert_equal 84, match.worms[1][:hp]
+    recovered = restored(match)
+    180.times { match.step; recovered.step }
+    assert_equal 0, sentry[:shots]
+    assert_equal 20, match.worms[1][:hp]
+    shots = match.events.select { |e| e[:kind] == "beam" && e[:style] == "turret" }
+    assert_equal [4, 3, 2, 1, 0], shots.map { |e| e[:shots] }
+    assert shots.all? { |e| e[:hazard] == sentry[:id] && e[:x2] < e[:x] }
+    assert_equal 100, match.worms[0][:hp], "the owner is never selected as a target"
+    assert_equal JSON.generate(match.snapshot(terrain: true)), JSON.generate(recovered.snapshot(terrain: true))
+  end
+
+  def test_turret_does_not_spend_ammo_on_covered_frozen_or_distant_targets
+    match = arena
+    match.worms[1][:x] = 500
+    match.worms[2][:x] = 400 # An ally in range must not attract fire.
+    fire(match, "turret")
+    sentry = match.hazards.last
+    match.terrain.bridge(460, 865, width: 4, height: 35)
+    match.step(35)
+    assert_equal 5, sentry[:shots]
+    match.terrain.carve(460, 880, 25)
+    match.worms[1][:frozen] = true
+    match.step(35)
+    assert_equal 5, sentry[:shots]
+    match.worms[1].merge!(frozen: false, x: sentry[:x] + 430)
+    match.step(35)
+    assert_equal 5, sentry[:shots]
+    match.worms[1][:x] = 500
+    match.step(35)
+    assert_equal 4, sentry[:shots]
+    assert_equal 84, match.worms[1][:hp]
+    assert_equal 100, match.worms[2][:hp]
+  end
+
+  def test_legacy_turret_checkpoint_supplies_missing_ammo_and_aim_fields
+    match = arena
+    match.worms[1][:x] = 500
+    fire(match, "turret")
+    saved = JSON.parse(JSON.generate(match.checkpoint))
+    %w[shots facing angle aim_angle hp].each { |key| saved["hazards"].last.delete(key) }
+    recovered = Burrow::Match.restore(saved)
+    recovered.step(35)
+    assert_equal 4, recovered.hazards.last[:shots]
+    assert_equal 84, recovered.worms[1][:hp]
+    assert recovered.hazards.last[:aim_angle].finite?
+  end
 end
