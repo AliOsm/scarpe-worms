@@ -164,6 +164,37 @@
         "log": "/tmp/munitions-lab/cluster/log.json",
         "sheet": "/tmp/munitions-lab/cluster-sheet.png"
       }
+    },
+    "dynamite": {
+      "defects_found": "Placement could cross a nearby wall or attach to the deploying grub.",
+      "changes": "Swept near-foot placement, shooter clearance, fixed four-second label/cue and sparks anchored to sprite rotation.",
+      "verification": [
+        "near-wall placement",
+        "fixed 120-tick fuse",
+        "retreat movement",
+        "heavy blast and handover"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 14,
+        "start_turn": 1,
+        "final_turn": 2,
+        "event_counts": {
+          "fire": 1,
+          "explosion": 1,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/dynamite/log.json",
+        "sheet": "/tmp/munitions-lab/dynamite-sheet.png"
+      }
     }
   }
 }
