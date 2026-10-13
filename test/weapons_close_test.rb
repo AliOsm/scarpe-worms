@@ -793,4 +793,24 @@ class WeaponsCloseHazardsAndSuppliesTest < Minitest::Test
     assert_in_delta normal_gravity, match.send(:gravity), 0.001
     assert_equal false, match.snapshot[:effects][:low_gravity]
   end
+
+  def test_weather_vane_shows_a_bounded_change_and_restores_the_wind
+    match = arena("scheme" => "sandbox", "wind" => 1)
+    match.instance_variable_set(:@wind, 0.0)
+    fire(match, "wind_control")
+    assert_in_delta 1.0, match.wind, 0.001
+    first = match.events.reverse.find { |event| event[:kind] == "wind" }
+    assert_equal 0.0, first[:previous]
+    assert_equal 1.0, first[:wind]
+    fire(match, "wind_control")
+    assert_in_delta(-2.0, match.wind, 0.001)
+    second = match.events.reverse.find { |event| event[:kind] == "wind" }
+    assert_equal 1.0, second[:previous]
+    assert_equal(-2.0, second[:wind])
+    recovered = restored(match)
+    assert_in_delta match.wind, recovered.wind, 0.001
+    assert_equal JSON.generate(match.snapshot(terrain: true)), JSON.generate(recovered.snapshot(terrain: true))
+    pass_turn(match)
+    assert_operator match.wind.abs, :<=, 1
+  end
 end
