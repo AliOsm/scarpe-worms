@@ -1,6 +1,30 @@
 # Current status
 
-Updated **2026-10-13** · game **0.5.0 (unreleased)** · protocol **4** · macOS preview.
+Updated **2026-10-13** · game **0.5.1 (unreleased)** · protocol **4** · macOS preview.
+
+## 0.5.1 performance sweep (unreleased)
+
+The owner found 0.5.0 stuttering, with lagging audio, on an M3 Pro. Measured on a
+GitHub Apple silicon runner (packaged app, 1280×656 at 1×, 60 Hz), the fixes moved combat
+from 21.6 to 16.0–16.2 ms mean presented intervals (p95 29.9 → 18.8–22.1 ms) and pan
+from 21.9 to 16.7 ms: the Mac now presents nearly every 60 Hz update. Linux combat and
+pan stay at 16.5/16.7 ms with 25–30% cheaper painting.
+
+- Native pacing no longer adds a software refresh wait on macOS (patch 0018); deadlines
+  are taken before AppKit drains redraws (0016). Static HUD pixels survive large
+  partial repaints (0014), animation frames stay cached (0015), and parsed property
+  maps move instead of cloning (0017). Patch 0019 corrects Mac timing diagnostics.
+- The Ruby frame loop skips unchanged properties, reuses actor data, builds names
+  lazily and animates only visible flames. A zoom regression from hiding offscreen
+  hazards was found and removed.
+- Your own fire, jump and activation sounds play as soon as the input is accepted
+  (≈200 ms → <1 ms to OpenAL); loopback snapshots run at 30 Hz with incremental
+  motion history (≈41 → 18 KB), and adaptive playback buffers 50–150 ms instead of a
+  fixed 150 ms, cutting Fire→visible projectile from ≈199 to ≈72 ms locally.
+
+Zoom remains the weakest motion (Mac 21.8–31.1 ms mean; Linux 19.7–23.1 ms), and
+occasional single stalls still exceed 50 ms. ProMotion/Retina, physical display output
+and audible latency still need the owner's Mac.
 
 ## Implemented
 
