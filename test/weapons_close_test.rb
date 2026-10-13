@@ -828,4 +828,23 @@ class WeaponsCloseHazardsAndSuppliesTest < Minitest::Test
     refute_equal previous_active, match.active_id
     assert_equal "aiming", match.phase
   end
+
+  def test_barrel_is_thrown_by_a_blast_then_ruptures_into_fire
+    match = arena
+    match.active[:x] = 100.0
+    barrel = {id: "close-barrel", kind: "barrel", x: 340.0, y: 900.0, owner: "p1",
+      armed: 0, life: 10_000, hp: 24, vx: 0.0, vy: 0.0}
+    match.hazards << barrel
+    match.send(:explode, 300, 890, damage: 140, radius: 56, owner: "p0")
+    assert_operator barrel[:vx], :>, 20
+    assert_operator barrel[:vy], :<, 0
+    assert barrel[:trigger], "the blast schedules a delayed rupture"
+    recovered = restored(match)
+    20.times { match.step; recovered.step }
+    assert_empty match.hazards.select { |hazard| hazard[:id] == barrel[:id] }
+    assert match.events.any? { |event| event[:kind] == "barrel_rupture" && event[:hazard_id] == barrel[:id] }
+    assert match.events.any? { |event| event[:kind] == "explosion" && event[:style] == "barrel" }
+    assert_operator match.hazards.count { |hazard| hazard[:kind] == "flame" }, :>, 0
+    assert_equal JSON.generate(match.snapshot(terrain: true)), JSON.generate(recovered.snapshot(terrain: true))
+  end
 end
