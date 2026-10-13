@@ -14,7 +14,13 @@ The [munition validation report](validation/munitions-sweep.json) records each
 weapon's findings, tests, native lab evidence and shared-file integration notes.
 Ruby 4.0.7 and 3.4.7 each pass 175 tests / 7,346 assertions; all seven native
 journeys pass. The art checker covers all 162 new frames and rebuilds are
-byte-identical. The remaining product check is human feel/balance and audible
+byte-identical. All 16 native lab cases pass. Action cadence passes at 16.09ms
+mean / 20.83ms p95; scale-2 rendering with audio passes with combat/pan means
+of 16.22/16.66ms. The action checker now uses the existing rendering analysis to
+exclude measured idle gaps; the report retains its original failures and the
+diagnostic comparison, with no relaxed budgets.
+
+The remaining product check is human feel/balance and audible
 output on the owner's Mac; this branch's native measurements run on Linux.
 
 ## 0.5.1 performance sweep (unreleased)

@@ -178,6 +178,16 @@ sticky body attachment, and return to Follow for the aerial pass. These are
 Linux native input captures; audible Mac output and the owner's feel/balance
 judgment require device playtesting.
 
+The action-cadence checker exposed a measurement defect during this sweep: it
+counted global velocity after visible positions stopped changing. A diagnostic
+capture contained 154 such updates; the old selector reported 19.14ms mean /
+33.76ms p95, while the rendering benchmark's existing visible-motion selector
+measured the same capture at 16.30ms / 20.43ms. The action checker now shares that
+selector, records completed updates, grants Xvfb focus for scripted controls,
+and retains raw evidence in `.cache/native-action.raw.json`. Frame budgets are
+unchanged; timing-analysis regressions still require real pending motion and
+blocked GUI intervals to count as stalls.
+
 ## Automated evidence
 
 - `test/weapons_munitions_test.rb`: all 16 munitions, exact fuses, impacts, staged

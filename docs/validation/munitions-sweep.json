@@ -751,7 +751,7 @@
       "report": "/tmp/munitions-rendering.json"
     },
     "action_first_attempt": {
-      "result": "failed; investigation ongoing",
+      "result": "failed with legacy velocity-based analysis; diagnosed as idle-gap false positives (see action_diagnosis)",
       "presented_intervals": {
         "count": 515,
         "mean_ms": 19.500787975718673,
@@ -767,7 +767,7 @@
       "report": "/tmp/munitions-native-action-first.json"
     },
     "action_second_attempt": {
-      "result": "failed; investigation ongoing",
+      "result": "failed with legacy velocity-based analysis; diagnosed as idle-gap false positives (see action_diagnosis)",
       "presented_intervals": {
         "count": 524,
         "mean_ms": 19.236121013874317,
@@ -819,6 +819,25 @@
       "conclusion": "The original action checker demanded frames for 154 updates without any visible position changes. Replaying the existing rendering selector on the SAME capture passes; the 115.9 ms gap has zero visible movement. Action checker now shares that selector, samples completed updates, grants Xvfb focus, and retains raw evidence; numerical budgets are unchanged.",
       "raw": "/tmp/munitions-action-diagnostic-raw.json",
       "analysis_tests": "python3 tools/test_rendering.py: 13 passed, including stalled GUI and pending-movement gap regressions"
+    },
+    "action": {
+      "command": "flock /tmp/burrow-bench.lock xvfb-run -a python3 tools/check_action.py",
+      "result": "passed",
+      "presented_intervals": {
+        "count": 653,
+        "mean_ms": 16.09447663525738,
+        "p95_ms": 20.825781999999293,
+        "max_ms": 38.81010599999968
+      },
+      "app_update_intervals": {
+        "count": 1082,
+        "mean_ms": 16.666658627654318,
+        "p95_ms": 16.998481936752796,
+        "max_ms": 22.39472884684801
+      },
+      "report": "/tmp/munitions-native-action.json",
+      "raw": "/home/alifadel/repositories/worms-scarpe-weapons-munitions/.cache/native-action.raw.json",
+      "motion_analysis_version": 3
     }
   },
   "implementation_commits": [
@@ -848,6 +867,13 @@
     "ee786d2 Document verified munition behavior and reproducible lab evidence",
     "92c82a0 Check munition art sizes against the runtime sprite registry",
     "49918d9 Record munition compatibility results and shared-file integration notes",
-    "83fbd7a Match choir burst manifest timing to its longer finale"
+    "83fbd7a Match choir burst manifest timing to its longer finale",
+    "07bd695 Record final lab and rendering results with action-cadence investigation",
+    "a023bfb Measure visible action motion without charging idle repaint gaps"
+  ],
+  "required_checks_result": "All passed; no budget changes. Original action-check failures and their same-capture diagnosis are retained.",
+  "remaining_product_validation": [
+    "Human feel and balance playtesting on the owner's Mac",
+    "Audible Mac output and physical display latency; Linux OpenAL null/Xvfb do not measure these"
   ]
 }
