@@ -35,6 +35,37 @@
         "log": "/tmp/munitions-lab/rocket/log.json",
         "sheet": "/tmp/munitions-lab/rocket-sheet.png"
       }
+    },
+    "mortar": {
+      "defects_found": "Secondary fragments reused the shell silhouette; legacy fragment tracks lost their identity.",
+      "changes": "Separate small fragments, inherited horizontal momentum and boosted damage; restore legacy fragment metadata.",
+      "verification": [
+        "fixed power and no wind",
+        "five one-generation fragments",
+        "legacy checkpoint playback",
+        "six lab blasts"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 14,
+        "start_turn": 1,
+        "final_turn": 2,
+        "event_counts": {
+          "fire": 1,
+          "explosion": 6,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/mortar/log.json",
+        "sheet": "/tmp/munitions-lab/mortar-sheet.png"
+      }
     }
   }
 }
