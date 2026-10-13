@@ -2,6 +2,21 @@
 
 Updated **2026-10-13** · game **0.5.1 (unreleased)** · protocol **4** · macOS preview.
 
+## Munitions sweep (`weapons/munitions`)
+
+The 16 munitions now have dedicated flight/fragment art, distinct impacts and
+existing-cue audio feedback. Corrections cover choir fuse expiry, close-wall
+dynamite placement, terminal sticky attachment, legacy fragment playback, staged
+air support, edge-entry drops and earthquake rope/prop impulses. Aircraft survive
+zoom and window rebuilds; bounded camera shake respects reduced motion.
+
+The [munition validation report](validation/munitions-sweep.json) records each
+weapon's findings, tests, native lab evidence and shared-file integration notes.
+Ruby 4.0.7 and 3.4.7 each pass 175 tests / 7,346 assertions; all seven native
+journeys pass. The art checker covers all 162 new frames and rebuilds are
+byte-identical. The remaining product check is human feel/balance and audible
+output on the owner's Mac; this branch's native measurements run on Linux.
+
 ## 0.5.1 performance sweep (unreleased)
 
 The owner found 0.5.0 stuttering, with lagging audio, on an M3 Pro. Measured on a
