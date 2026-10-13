@@ -72,7 +72,7 @@ class AudioTest < Minitest::Test
       [:fire, "grenade", {"kind" => "fire", "weapon" => "grenade"}, "throw"],
       [:fire, "shotgun", {"kind" => "beam", "style" => "shotgun"}, "shot"],
       [:fire, "laser", {"kind" => "beam", "style" => "laser"}, "beam"],
-      [:fire, "flamethrower", {"kind" => "beam", "style" => "flame"}, "shot"],
+      [:fire, "flamethrower", {"kind" => "beam", "style" => "flame"}, "launch"],
       [:jump, nil, {"kind" => "jump"}, "jump"],
       [:activate, nil, {"kind" => "activate", "stage" => "flying"}, "launch"]].each do |type, weapon, event, cue|
       audio = Recorder.new

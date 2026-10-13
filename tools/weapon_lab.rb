@@ -63,6 +63,7 @@ module LabCourse
       w.merge!(x: x, y: y.to_f, vx: 0.0, vy: 0.0, hp: 100, max_hp: 100, facing: w[:id] == "w1" || w[:id] == "w3" ? 1 : -1,
         rope: nil, fuel: 0, jetpack: false, parachute: false, launched: false, poisoned: false, shield: false, frozen: false,
         input: 0.0, lift: 0.0, input_until: 0)
+      w.merge!(setup.fetch(:grub, {})) if w[:id] == "w1"
     end
     teams.each { |t| t[:inventory] = Burrow::Catalog.inventory("sandbox") }
     @team_index = 0
@@ -71,6 +72,13 @@ module LabCourse
     @deadline = tick + 90 * Burrow::TICK_RATE
     @shots_left, @shot_weapon, @damage_boost, @low_gravity = 0, nil, false, false
     @wind = setup.fetch(:wind, 0.0)
+    if setup[:barrel_blast]
+      # A fuse already burning on the course exercises the placed barrel's
+      # blast throw, rupture and fuel spill while the player retreats normally.
+      bomb = Burrow::Catalog.fetch("mega_bomb")
+      projectile(bomb, x: 324, y: GROUND - 8, vx: 0, vy: 0, damage: bomb[:damage],
+        life: 5 * Burrow::TICK_RATE, bounce: true, owner: teams[1][:id])
+    end
     # Alternate turns 1 and 2: a new turn for the client, never sudden death.
     @turn = @turn == 1 ? 2 : 1
     @bot_at = tick + 1_000_000
@@ -94,16 +102,16 @@ SCRIPTS = {
   "banana" => [[:press, "5"], [:aim, [620, 520]], [:charge, 0.5], [:wait, 0.6], [:press, " "], [:wait, 7.0]],
   "holy_bomb" => [[:aim, [620, 640]], [:charge, 0.5], [:wait, 8.0]],
   "poison" => [[:press, "3"], [:aim, [620, 640]], [:charge, 0.55], [:wait, 10.0]],
-  "shotgun" => [[:aim, ENEMY], [:press, " "], [:wait, 0.8], [:press, " "], [:wait, 1.2]],
-  "rifle" => [[:aim, ENEMY], [:press, " "], [:wait, 1.4]],
+  "shotgun" => [[:aim, ENEMY], [:press, " "], [:wait, 0.45], [:click, [790, GROUND - 22]], [:wait, 1.4]],
+  "rifle" => [[:click, ENEMY], [:wait, 1.4]],
   "minigun" => [[:aim, ENEMY], [:press, " "], [:wait, 1.6]],
-  "laser" => [[:aim, ENEMY], [:press, " "], [:wait, 1.4]],
-  "flamethrower" => [[:aim, ENEMY], [:press, " "], [:wait, 2.6]],
+  "laser" => [[:click, ENEMY], [:wait, 1.4]],
+  "flamethrower" => [[:place, [640, GROUND]], [:aim, ENEMY], [:press, " "], [:wait, 3.8]],
   "fire_punch" => [[:place, [725, GROUND]], [:aim, [800, GROUND - 40]], [:press, " "], [:wait, 2.0]],
   "dragon_punch" => [[:place, [700, GROUND]], [:aim, [800, GROUND - 12]], [:press, " "], [:wait, 2.0]],
-  "prod" => [[:place, [730, GROUND]], [:aim, [800, GROUND - 12]], [:press, " "], [:wait, 1.6]],
+  "prod" => [[:place, [730, GROUND]], [:click, [800, GROUND - 12]], [:wait, 1.6]],
   "bat" => [[:place, [730, GROUND]], [:aim, [820, GROUND - 60]], [:press, " "], [:wait, 2.4]],
-  "axe" => [[:place, [730, GROUND]], [:aim, [800, GROUND - 12]], [:press, " "], [:wait, 1.6]],
+  "axe" => [[:place, [730, GROUND]], [:click, [800, GROUND - 12]], [:wait, 1.6]],
   "airstrike" => [[:press, "left"], [:click, [1700, GROUND - 10]], [:press, "f"], [:wait, 9.0]],
   "mine_strike" => [[:press, "right"], [:click, [1700, GROUND - 10]], [:press, "f"], [:wait, 10.0]],
   "napalm" => [[:press, "left"], [:click, [1700, GROUND - 10]], [:press, "f"], [:wait, 13.0]],
@@ -115,9 +123,9 @@ SCRIPTS = {
   "mole" => [[:press, " "], [:wait, 1.0], [:press, " "], [:wait, 1.4], [:press, " "], [:wait, 1.4]],
   "skunk" => [[:press, " "], [:wait, 1.6], [:press, " "], [:wait, 5.0]],
   "cow" => [[:press, " "], [:wait, 10.0]],
-  "mine" => [[:press, " "], [:hold, "a", 1.0], [:wait, 2.0]],
-  "turret" => [[:press, " "], [:wait, 4.5]],
-  "barrel" => [[:press, " "], [:wait, 2.0]],
+  "mine" => [[:place, [701, GROUND]], [:press, " "], [:hold, "a", 0.8], [:wait, 2.0]],
+  "turret" => [[:place, [430, GROUND]], [:click, ENEMY], [:wait, 6.8]],
+  "barrel" => [[:setup, {barrel_blast: true}], [:click, [400, GROUND - 12]], [:hold, "a", 1.4], [:wait, 5.0]],
   "rope" => [[:aim, [380, 470]], [:press, " "], [:wait, 0.5], [:hold, "w", 1.2], [:hold, "d", 0.5],
     [:press, "enter"], [:aim, [500, 470]], [:press, " "], [:wait, 0.2], [:hold, "a", 0.2], [:hold, "s", 0.1],
     [:press, " "], [:wait, 1.6]],
@@ -125,15 +133,15 @@ SCRIPTS = {
   "parachute" => [[:place, [560, 690]], [:press, "w"], [:wait, 0.35], [:press, " "], [:hold, "d", 1.4], [:wait, 2.6]],
   "teleport" => [[:aim, [760, GROUND - 10]], [:wait, 0.3], [:aim, [1100, GROUND - 10]], [:wait, 0.35], [:press, " "], [:wait, 1.6]],
   "girder" => [[:press, "right"], [:aim, [560, 700]], [:wait, 0.3], [:aim, [520, 760]], [:wait, 0.35], [:press, " "], [:wait, 1.2]],
-  "drill" => [[:press, " "], [:wait, 2.6]],
-  "blowtorch" => [[:aim, [800, GROUND - 12]], [:press, " "], [:hold, "up", 0.6], [:wait, 2.2]],
-  "heal" => [[:press, " "], [:wait, 1.4]],
-  "shield" => [[:press, " "], [:wait, 1.4]],
-  "freeze" => [[:press, " "], [:wait, 1.4]],
+  "drill" => [[:press, " "], [:wait, 0.3], [:press, " "], [:wait, 1.2]],
+  "blowtorch" => [[:click, [800, GROUND - 12]], [:hold, "down", 0.03], [:press, " "], [:wait, 1.2]],
+  "heal" => [[:setup, {grub: {hp: 65, poisoned: true}}], [:press, " "], [:wait, 1.4]],
+  "shield" => [[:click, [400, GROUND - 12]], [:hold, "d", 0.4], [:wait, 1.0]],
+  "freeze" => [[:click, [400, GROUND - 12]], [:wait, 1.4]],
   "double_damage" => [[:press, " "], [:wait, 1.2]],
   "low_gravity" => [[:press, " "], [:hold, "w", 0.2], [:wait, 1.6]],
-  "wind_control" => [[:press, " "], [:wait, 1.2]],
-  "skip" => [[:press, " "], [:wait, 1.2]]
+  "wind_control" => [[:setup, {wind: 0.55}], [:press, " "], [:wait, 1.2]],
+  "skip" => [[:click, [400, GROUND - 12]], [:wait, 1.2]]
 }.freeze
 
 failed = false
@@ -180,9 +188,10 @@ Scarpe::Native.after_first_heartbeat do
     weapons.each do |id|
       script = SCRIPTS.fetch(id)
       place = script.find { |step| step[0] == :place }
+      setup = script.find { |step| step[0] == :setup }
       # Every reset installs a fresh course, so the terrain revision marks it.
       before = match.call.terrain.revision
-      $lab_reset = {at: place && place[1]}
+      $lab_reset = {at: place && place[1]}.merge(setup ? setup[1] : {})
       wait.call do
         revision = client.state["terrain_revision"]
         revision > before && client.scene.terrain_revision == revision && client.my_turn? && client.state["phase"] == "aiming"
@@ -190,6 +199,9 @@ Scarpe::Native.after_first_heartbeat do
       auto.advance(0.4)
       client.equip_weapon(id) or raise "#{id} could not be equipped"
       client.scene.camera.follow
+      # Let follow finish framing the reset course before converting the first
+      # world-space aim into native pointer coordinates.
+      auto.advance(0.6)
       initial = match.call
       start_tick, start_turn, start_team = initial.tick, initial.turn, initial.team[:id]
       start_ammo = initial.team[:inventory].fetch(id)
@@ -211,13 +223,16 @@ Scarpe::Native.after_first_heartbeat do
           event_cursor = fresh_events.last[:id]
           weapon_events.concat(fresh_events)
         end
-        log << {t: frames, tick: m.tick, turn: m.turn, phase: m.phase, script_action: script_action,
+        log << {t: frames, tick: m.tick, turn: m.turn, phase: m.phase, team: m.team[:id], script_action: script_action,
           ammo: m.teams.find { |team| team[:id] == start_team }[:inventory].fetch(id),
-          active: a && a.slice(:id, :team, :x, :y, :vx, :vy, :hp, :rope, :jetpack, :fuel, :parachute, :launched, :poisoned),
+          angle: client.instance_variable_get(:@angle), terrain_revision: m.terrain.revision, wind: m.wind,
+          shots_left: m.instance_variable_get(:@shots_left), tool: m.instance_variable_get(:@tool)&.dup,
+          effects: {double_damage: m.instance_variable_get(:@damage_boost), low_gravity: m.instance_variable_get(:@low_gravity)},
+          active: a && a.slice(:id, :team, :x, :y, :vx, :vy, :hp, :rope, :jetpack, :fuel, :parachute, :launched, :poisoned, :shield, :frozen),
           enemies: m.worms.reject { |w| w[:team] == start_team }.map { |w| w.slice(:id, :x, :y, :vx, :vy, :hp, :launched, :poisoned) },
           projectiles: m.projectiles.map { |p| p.slice(:id, :weapon, :kind, :stage, :x, :y, :vx, :vy, :age, :delay, :life,
             :fragment, :stuck, :bounce, :sticky, :homing, :target_x, :target_y, :cruise, :choir_at, :remote, :drop_mine, :fire) },
-          hazards: m.hazards.map { |h| h.slice(:id, :kind, :x, :y, :vx, :vy, :life, :armed, :trigger, :radius, :launched, :owner) },
+          hazards: m.hazards.map { |h| h.slice(:id, :kind, :x, :y, :vx, :vy, :life, :armed, :trigger, :radius, :launched, :owner, :shots, :hp) },
           flame_count: m.hazards.count { |h| h[:kind] == "flame" },
           pending_salvos: m.instance_variable_get(:@salvos).to_a.size,
           events: fresh_events, notice: client.instance_variable_get(:@last_notice)}
@@ -245,9 +260,14 @@ Scarpe::Native.after_first_heartbeat do
       script.each do |action, arg, extra|
         script_action = {type: action, argument: arg, duration: extra}.compact
         case action
-        when :place then nil
+        when :place, :setup then nil
         when :aim
           reveal.call(arg)
+          x, y = world_point.call(*arg)
+          # A reset may leave the native cursor at this exact screen point.
+          # Move first so a real motion event re-aims the new turn's grub.
+          auto.mouse(:move, x - 2, y - 2)
+          auto.advance(0.03)
           x, y = world_point.call(*arg)
           auto.mouse(:move, x, y)
           auto.advance(0.1)

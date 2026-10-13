@@ -268,6 +268,18 @@ module Burrow
 
       def event(event)
         now = Burrow.clock
+        # Close-range poses are presentation state only.  Keeping the short
+        # window here means a snapshot/reconnect never changes simulation while
+        # an authoritative melee report still gives the grub a readable swing.
+        if event["kind"] == "melee" && event["worm"]
+          @close_poses ||= {}
+          prior = @close_poses[event["worm"]]
+          @close_poses[event["worm"]] = {
+            tick: event["continuing"] && prior ? prior[:tick] : @timeline.tick,
+            style: event["style"], facing: event.fetch("facing", 1),
+            angle: event.fetch("angle", event.fetch("facing", 1).negative? ? Math::PI : 0)
+          }
+        end
         # Weapon families can add to, or replace, the default effect (Sprites.effect_rule).
         return if Sprites.effect(self, event, now)
         x, y = event.values_at("x", "y")
@@ -450,9 +462,27 @@ module Burrow
       def render_overlays
         tick = @timeline.tick
         @overlay_nodes ||= {}
+        if @close_poses && !@close_poses.empty?
+          live_ids = @state["worms"].map { |entry| entry["id"] }
+          @close_poses.delete_if { |id, pose| !live_ids.include?(id) || tick - pose[:tick] >= 12 }
+        end
+        effects = @state.fetch("effects", {})
         @state["worms"].each do |worm|
           pool = (@overlay_nodes[worm["id"]] ||= [])
-          looks = worm["hp"] > 0 && @actors[worm["id"]]&.fetch(:visible, false) ? Sprites.overlays(worm, tick) : []
+          # Effects and tools are match-level state.  Add short-lived display
+          # fields to a dup so Sprites rules stay independent of protocol shape.
+          active = worm["id"] == @state["active"]
+          pose = @close_poses && @close_poses[worm["id"]]
+          tool = active && @state["tool"]
+          needs_display = pose || tool || (active && (effects["double_damage"] || effects["low_gravity"]))
+          display_worm = needs_display ? worm.dup : worm
+          if needs_display
+            display_worm["_close_boost"] = effects["double_damage"] if active
+            display_worm["_close_moon"] = effects["low_gravity"] if active
+            display_worm["_close_tool"] = tool if tool
+            display_worm["_close_pose"] = pose if pose
+          end
+          looks = worm["hp"] > 0 && @actors[worm["id"]]&.fetch(:visible, false) ? Sprites.overlays(display_worm, tick) : []
           next if looks.empty? && pool.empty?
           x, y = worm.values_at("x", "y")
           looks.each_with_index do |look, i|
@@ -528,6 +558,15 @@ module Burrow
             radius = h["radius"]
             place(node[:image], px(h["x"] - radius), px(h["y"] - radius), px(radius * 2), px(radius * 2))
           else
+            if h["kind"] == "mine" || h["kind"] == "barrel" || h["kind"] == "turret"
+              look = Sprites.close_hazard(h, @timeline.tick, motion: @controller.motion?)
+              if look
+                node[:image].path = look.path if node[:image].path != look.path
+                place(node[:image], px(h["x"] - look.anchor_x), px(h["y"] - look.anchor_y),
+                  px(look.width), px(look.height))
+                next
+              end
+            end
             width, height, ax, ay = node[:bounds]
             # Props rest most of the time: restyle only those that moved or rescaled.
             place(node[:image], px(h["x"] - ax), px(h["y"] - ay), px(width), px(height))
