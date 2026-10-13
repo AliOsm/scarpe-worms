@@ -197,8 +197,17 @@
     "fix": "restore the last completed terrain result and revision immediately when rebuilding a match scene; defer offscreen terrain geometry without visibility toggles"
   },
   "tests": {
+    "verify_scarpe": "passed",
+    "ruby": "bundle exec rake test: 148 runs, 6,165 assertions, 0 failures",
+    "native_rust": "cargo test --release --locked: all 368 tests passed (11 ignored)",
+    "native_journeys": "./bin/check-native: 7 cases passed; 228 assertions",
+    "action_journey": "tools/check_action.py: passed (527 action samples)",
+    "rendering_analysis": "tools/test_rendering.py: 13 tests passed",
+    "timer_regressions": "tools/check_waits.rb: TimerFD deadline descriptor passed under 100 ms timer slack",
+    "rendering_normal": "check_rendering.py: passed in the final ordinary capture",
+    "rendering_timer_slack": "check_rendering.py: passed on the third serialized 100 ms-slack capture; two earlier captures had expected scheduling outliers",
+    "package": "check_package.py default and --locale c: passed locally; workflow runs 38343883985 and 38345368622 package jobs passed both checks",
     "frame_work_focused": "15 runs, 121 assertions",
-    "native_diagnostic_focused": "12 Rust tests passed, including coalesced, fragmented and bounded batch attribution",
-    "additional": "verify_scarpe passed; full required suite is recorded at handoff"
+    "native_diagnostic_focused": "12 Rust stats tests passed"
   }
 }
