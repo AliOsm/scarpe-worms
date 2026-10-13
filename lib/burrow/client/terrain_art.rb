@@ -65,6 +65,8 @@ module Burrow
             line = io.gets
             raise IOError, "Terrain renderer exited" unless line
             value = JSON.parse(line, symbolize_names: true)
+            collision = value.delete(:collision)
+            value[:preview_terrain] = Terrain.new(**collision.except(:path), data: File.binread(collision[:path]).freeze)
             @mutex.synchronize { @result = value }
           end
         end

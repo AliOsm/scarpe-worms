@@ -11,7 +11,7 @@ module Burrow
       EVENT_CUES = {"damage" => "hurt", "jump" => "jump", "bounce" => "bounce",
         "splash" => "splash", "turn" => "turn", "pickup" => "pickup", "heal" => "pickup",
         "victory" => "victory", "teleport" => "teleport", "build" => "equip",
-        "melee" => "impact", "quake" => "explosion-heavy"}.freeze
+        "melee" => "impact", "quake" => "explosion-heavy", "rope_hook" => "equip"}.freeze
       attr_reader :available, :error
 
       # RIFF allows ancillary chunks between fmt and data. Read the chunk table
@@ -164,14 +164,29 @@ module Burrow
           kind = Catalog::WEAPONS[weapon]&.fetch(:kind)
           if %w[beam laser shotgun burst flame].include?(kind)
             {"kind" => "beam", "style" => kind}
+          elsif kind == "teleport"
+            # Teleport reports a paired in/out event. Predict that event shape
+            # so its authoritative receipt suppresses exactly one local cue.
+            {"kind" => "teleport"}
           else
             {"kind" => "fire", "weapon" => weapon}
           end
-        when "jump" then {"kind" => "jump"}
+        when "jump"
+          worm = state["worms"]&.find { |candidate| candidate["id"] == state["active"] }
+          worm && worm["rope"] ? {"kind" => "activate", "stage" => "released"} : {"kind" => "jump"}
         when "activate", "detonate"
           projectile = state["projectiles"].find { |p| p["owner"] == player && p["remote"] && p["life"] > 0 }
-          flying = projectile && projectile["kind"] == "guided" && projectile["stage"] == "walking"
-          {"kind" => "activate", "stage" => flying ? "flying" : nil}
+          worm = state["worms"]&.find { |candidate| candidate["id"] == state["active"] }
+          if projectile
+            flying = projectile["kind"] == "guided" && projectile["stage"] == "walking"
+            {"kind" => "activate", "stage" => flying ? "flying" : nil}
+          elsif worm && worm["rope"]
+            {"kind" => "activate", "stage" => "released"}
+          elsif worm && worm["jetpack"]
+            {"kind" => "activate", "stage" => "parachute"}
+          else
+            {"kind" => "activate"}
+          end
         end
         cue = event && event_cue(event)
         return unless cue && play(cue, immediate: true)
@@ -187,6 +202,8 @@ module Burrow
           case kind
           when "projectile", "homing" then "launch"
           when "bounce", "cluster", "sticky", "gas" then "throw"
+          when "rope" then "throw"
+          when "jetpack" then "launch"
           # Beam, melee, healing and teleport events supply their own report.
           when "beam", "laser", "shotgun", "burst", "flame", "melee", "dash", "heal", "teleport", "skip" then nil
           when "shield", "freeze", "boost", "gravity", "wind" then "pickup"
@@ -194,7 +211,12 @@ module Burrow
           end
         when "beam" then event["style"] == "laser" ? "beam" : "shot"
         when "explosion" then event.fetch("radius", 0) >= 70 ? "explosion-heavy" : "explosion"
-        when "activate" then event["stage"] == "flying" ? "launch" : "equip"
+        when "activate"
+          case event["stage"]
+          when "flying" then "launch"
+          when "released" then "throw"
+          else "equip"
+          end
         else EVENT_CUES[event["kind"]]
         end
       end

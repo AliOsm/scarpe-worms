@@ -196,7 +196,8 @@ class WeaponPhysicsTest < Minitest::Test
   def test_rope_reels_detaches_without_spending_another_charge_and_loses_destroyed_anchor
     match = arena
     match.terrain.bridge(250, 300, width: 90)
-    launch(match, "rope", x: 250, y: 300)
+    launch(match, "rope", angle: Math.atan2(300 - match.active[:y] + 12, 250 - match.active[:x]) * 180 / Math::PI)
+    match.step(6)
     initial_length = match.active[:rope][:length]
     ammo = match.team[:inventory]["rope"]
     match.command("p0", "move", direction: 1, lift: 1)
@@ -206,7 +207,8 @@ class WeaponPhysicsTest < Minitest::Test
     match.command("p0", "activate")
     assert_nil match.active[:rope]
     assert_equal ammo, match.team[:inventory]["rope"]
-    launch(match, "rope", x: 250, y: 300)
+    launch(match, "rope", angle: Math.atan2(300 - match.active[:y] + 12, 250 - match.active[:x]) * 180 / Math::PI)
+    match.step(6)
     anchor = match.active[:rope].dup
     match.terrain.carve(anchor[:x], anchor[:y], 45)
     match.step
@@ -217,10 +219,10 @@ class WeaponPhysicsTest < Minitest::Test
     match = arena
     launch(match, "jetpack")
     match.step(10)
-    assert_equal 120, match.active[:fuel]
+    assert_equal 150, match.active[:fuel]
     match.command("p0", "move", direction: 1, lift: 1)
     match.step(6)
-    assert_equal 114, match.active[:fuel]
+    assert_equal 144, match.active[:fuel]
     assert_operator match.active[:vx], :>, 0
     assert_operator match.active[:vy], :<, 0
     match.command("p0", "activate")

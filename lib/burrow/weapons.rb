@@ -7,7 +7,7 @@ module Burrow
       weapon = Catalog.fetch(id)
       kind = weapon[:kind]
       inventory = team[:inventory]
-      raise RuleError, "That weapon is out of ammo." if inventory.fetch(id).zero? && !(@shots_left > 0 && id == @shot_weapon)
+      raise RuleError, "That weapon is out of ammo." if inventory.fetch(id).zero? && !(@shots_left > 0 && id == @shot_weapon) && !(kind == "rope" && active[:rope_use])
       raise RuleError, "Take your second Double tap shot first." if @shots_left > 0 && id != @shot_weapon
       raise RuleError, "Air support cannot reach this cavern." if config["terrain"] == "cavern" && Catalog::SKY.include?(kind)
       angle = number(values.fetch("angle", -45), -180..180) * Math::PI / 180
@@ -17,6 +17,9 @@ module Burrow
       # Air support approaches from a chosen side; girders take a chosen tilt.
       side = values.key?("direction") ? (number(values["direction"], -1..1) < 0 ? -1 : 1) : (x >= active[:x] ? 1 : -1)
       tilt = number(values.fetch("rotation", 0), -90..90)
+      # Grapple shots are a utility chain: a miss retracts without spending a
+      # cartridge, while an airborne re-hook keeps the same cartridge alive.
+      return use_rope(angle) if kind == "rope"
       validate_tool(kind, x, y, tilt: tilt)
       # Spend only after complete validation. The second shotgun shot shares its cartridge.
       inventory[id] -= 1 if inventory[id] > 0 && @shots_left.zero?
@@ -97,18 +100,20 @@ module Burrow
       when "mine", "barrel", "turret"
         hazards << {id: next_object_id, kind: kind, x: active[:x] + active[:facing] * 23, y: active[:y] - 2,
           owner: team[:id], armed: tick + TICK_RATE, life: 100_000, hp: 20, shots: 5}
-      when "rope"
-        active[:jetpack], active[:fuel] = false, 0
-        point = terrain.ray(active[:x], active[:y] - 12, x - active[:x], y - active[:y] + 12, limit: 460)
-        active[:rope] = {x: point[0], y: point[1], length: Math.hypot(point[0] - active[:x], point[1] - active[:y] + 12)}
-        active[:vy] = -55
       when "jetpack"
         active[:rope] = nil
-        active[:fuel] = 4 * TICK_RATE
+        active[:rope_use] = active[:rope_airborne] = false
+        active[:parachute] = active[:parachute_open] = false
+        # Five seconds of powered flight; idle controls conserve the supply.
+        active[:fuel] = 5 * TICK_RATE
         active[:jetpack] = true
+        active[:launched] = false
+        active[:thrusting] = false
         active[:vy] = -80
       when "parachute"
+        active[:launched] = false
         active[:parachute] = true
+        active[:parachute_open] = active[:vy] > 0 && !grounded?(active)
       when "teleport"
         landing = terrain.landing(x, y, water: water)
         emit("teleport", x: active[:x], y: active[:y], x2: x, y2: landing)
@@ -142,28 +147,40 @@ module Burrow
 
     def validate_tool(kind, x, y, tilt: 0)
       if kind == "teleport"
-        landing = terrain.landing(x, y, water: water)
-        if !landing || worms.any? { |w| w[:id] != active_id && w[:hp] > 0 && Math.hypot(w[:x] - x, w[:y] - landing) < 25 }
-          raise RuleError, "Choose clear ground above the water."
-        end
+        preview = Placement.teleport(terrain, x, y, water: water, worms: worms, active_id: active_id)
+        raise RuleError, preview[:message] unless preview[:valid]
       elsif kind == "girder"
-        # Sample the tilted beam's centre line and both faces.
-        ux, uy = Math.cos(tilt * Math::PI / 180), Math.sin(tilt * Math::PI / 180)
-        points = (-70..70).step(10).map { |d| [x + ux * d, y + 6 + uy * d] }
-        if !x.between?(80, world_width - 80) || !y.between?(100, water - 30) ||
-            points.any? { |px, py| !py.between?(60, water - 20) || [-6, 0, 6].any? { |o| terrain.solid?(px - uy * o, py + ux * o) } } ||
-            worms.any? { |w| w[:hp] > 0 && points.any? { |px, py| (w[:x] - px).abs < 13 && (w[:y] - 10 - py).abs < 21 } }
-          raise RuleError, "A bridge needs clear space above water, away from grubs."
-        end
-      elsif kind == "rope"
-        if y >= active[:y] - 20 || !terrain.ray(active[:x], active[:y] - 12, x - active[:x], y - active[:y] + 12, limit: 460)
-          raise RuleError, "Aim the grapple at solid ground above you, within 460 pixels."
-        end
+        preview = Placement.girder(terrain, x, y, water: water, worms: worms, rotation: tilt)
+        raise RuleError, preview[:message] unless preview[:valid]
       elsif kind == "heal" && active[:hp] == active[:max_hp] && !active[:poisoned]
         raise RuleError, "This grub is already healthy."
       elsif kind == "jetpack" && active[:jetpack]
         raise RuleError, "Your jetpack is already active."
+      elsif kind == "parachute" && active[:parachute]
+        raise RuleError, "Your parachute is already equipped for this turn."
       end
+    end
+
+    def use_rope(angle)
+      raise RuleError, "Release the current grapple before firing again." if active[:rope]
+      ux, uy = Math.cos(angle), Math.sin(angle)
+      raise RuleError, "Aim the grapple sideways or upward, away from straight down." if uy > 0.985
+      active[:jetpack], active[:fuel], active[:thrusting] = false, 0, false
+      active[:parachute] = active[:parachute_open] = false
+      active[:facing] = ux < 0 ? -1 : 1
+      # Collision and ammo are resolved as the hook travels, never from the
+      # pointer's destination. A miss returns the complete cartridge.
+      active[:rope] = {stage: "shooting", x: active[:x], y: active[:y] - 12,
+        ux: ux, uy: uy, travel: 0.0, length: 0.0}
+      emit("fire", weapon: "rope", worm: active_id, x: active[:x], y: active[:y] - 12)
+    end
+
+    def release_rope
+      active[:rope] = nil
+      if grounded?(active) && active[:vy] >= 0
+        active[:rope_use] = active[:rope_airborne] = false
+      end
+      emit("activate", weapon: "rope", x: active[:x], y: active[:y] - 12, stage: "released")
     end
 
     # Start inside the body, then sweep to the muzzle. A wall beside the grub
@@ -208,11 +225,13 @@ module Burrow
       elsif @tool
         @tool = nil
       elsif active[:rope]
-        active[:rope] = nil
+        release_rope
       elsif active[:jetpack]
-        active[:jetpack] = false
+        active[:jetpack] = active[:thrusting] = false
         active[:fuel] = 0
         active[:parachute] = true
+        active[:parachute_open] = active[:vy] > 0 && !grounded?(active)
+        emit("activate", weapon: "jetpack", x: active[:x], y: active[:y] - 12, stage: "parachute")
       else
         raise RuleError, "There is no active weapon to control."
       end

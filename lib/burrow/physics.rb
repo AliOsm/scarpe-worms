@@ -8,7 +8,12 @@ module Burrow
     def update_worms
       worms.each do |w|
         next if w[:hp] <= 0
+        update_rope_hook(w) if w[:rope] && w[:rope].fetch(:stage, "attached") != "attached"
         was_grounded = grounded?(w) && w[:vy] >= 0
+        w[:thrusting] = false
+        attached = w[:rope] && w[:rope].fetch(:stage, "attached") == "attached"
+        w[:parachute_open] = !!(w[:parachute] && !was_grounded && w[:vy] >= 0 && !w[:jetpack] && !attached && !w[:frozen])
+        w[:launched] = false if w[:jetpack] || attached || w[:parachute_open]
         tumbling = w[:launched]
         controlled = w[:id] == active_id && %w[aiming retreat].include?(phase) && tick <= w[:input_until] && !w[:frozen] && !@tool && !tumbling
         direction = controlled ? w[:input] : 0
@@ -16,19 +21,34 @@ module Burrow
         if w[:frozen]
           w[:vx] = 0.0
           w[:vy] = was_grounded ? 0.0 : w[:vy] + gravity * DT
-        elsif w[:fuel] > 0
-          w[:fuel] -= 1 if !direction.zero? || !lift.zero?
-          w[:vx] = w[:vx] * 0.92 + direction * 14
-          w[:vy] += gravity * DT - lift * 23
-          w[:vy] = w[:vy].clamp(-130, 170)
+        elsif w[:jetpack] && w[:fuel] > 0
+          thrusting = !direction.zero? || lift > 0
+          w[:thrusting] = thrusting
+          w[:fuel] -= 1 if thrusting
+          w[:vx] = (w[:vx] * 0.96 + direction * 620 * DT).clamp(-210, 210)
+          w[:vy] = (w[:vy] + gravity * DT - [lift, 0].max * 980 * DT) * 0.995
+          w[:vy] = w[:vy].clamp(-220, 180)
           if w[:fuel] <= 0
             w[:jetpack] = false
+            w[:thrusting] = false
             w[:parachute] = true
           end
-        elsif w[:rope]
+        elsif attached
           w[:rope][:length] = (w[:rope][:length] - lift * 105 * DT).clamp(28, 460)
-          w[:vx] = w[:vx] * 0.995 + direction * 5
-          w[:vy] += gravity * DT
+          # Apply input tangentially to the rope so pumping creates a real
+          # pendulum instead of sliding along the anchor radius.
+          dxr, dyr = w[:x] - w[:rope][:x], w[:y] - 12 - w[:rope][:y]
+          distance = [Math.hypot(dxr, dyr), 1.0].max
+          nx, ny = dxr / distance, dyr / distance
+          w[:vx] += ny * ny * direction * 320 * DT
+          w[:vy] += -nx * ny * direction * 320 * DT + gravity * DT
+          w[:vx] *= 0.998
+          w[:vy] *= 0.998
+          speed = Math.hypot(w[:vx], w[:vy])
+          if speed > 360
+            w[:vx] *= 360 / speed
+            w[:vy] *= 360 / speed
+          end
         elsif tumbling
           # A blasted grub keeps its momentum, rebounds and slides to a stop.
           w[:vx] *= was_grounded ? 0.86 : 0.995
@@ -42,9 +62,9 @@ module Burrow
           w[:vy] = 0
         else
           w[:vx] *= was_grounded ? 0.68 : 0.985
-          w[:vx] += direction * 3 if w[:parachute] && !was_grounded
+          w[:vx] = (w[:vx] + (direction * 130 + wind * 18) * DT).clamp(-100, 100) if w[:parachute_open]
           w[:vy] += gravity * DT unless was_grounded
-          w[:vy] = [w[:vy], 65].min if w[:parachute]
+          w[:vy] = [w[:vy], 65].min if w[:parachute_open]
         end
         w[:vx] = 0.0 if w[:vx].abs < 0.3
         dx, dy = w[:vx] * DT, w[:vy] * DT
@@ -72,7 +92,7 @@ module Burrow
             else
               w[:vy] = 0.0
               # Blast flights end in a tumble, not a fall: only drops hurt.
-              if config["fall_damage"] && impact > 225 && !w[:parachute] && !w[:rope] && !tumbling
+              if config["fall_damage"] && impact > 225 && !w[:parachute_open] && !attached && !tumbling
                 hurt(w, ((impact - 225) * 0.16).round, source: nil)
               end
             end
@@ -84,7 +104,7 @@ module Burrow
             w[:y] = ny
           end
         end
-        if (rope = w[:rope])
+        if attached && (rope = w[:rope])
           unless terrain.solid?(rope[:x], rope[:y])
             w[:rope] = nil
             kill(w, "water") if w[:y] >= water + 10 || w[:y] > world_height
@@ -109,7 +129,67 @@ module Burrow
             end
           end
         end
+        landed = grounded?(w) && w[:vy] >= 0
+        if landed
+          w[:parachute_open] = false
+          if w[:rope_use] && w[:rope_airborne]
+            w[:rope] = nil if attached
+            w[:rope_use] = w[:rope_airborne] = false
+          end
+        elsif w[:rope_use]
+          w[:rope_airborne] = true
+        end
         kill(w, "water") if w[:y] >= water + 10 || w[:y] > world_height
+      end
+    end
+
+    # Hook flight is swept in short steps, including through single-cell terrain.
+    # Its finite flight/retraction and paid airborne chain all live in checkpoints.
+    def update_rope_hook(w)
+      rope = w[:rope]
+      if rope[:stage] == "retracting"
+        dx, dy = w[:x] - rope[:x], w[:y] - 12 - rope[:y]
+        distance = Math.hypot(dx, dy)
+        step = 1600 * DT
+        if distance <= step
+          w[:rope] = nil
+        else
+          rope[:x] += dx / distance * step
+          rope[:y] += dy / distance * step
+          rope[:length] = distance - step
+        end
+        return
+      end
+      travel = [1150 * DT, 460 - rope[:travel]].min
+      steps = [(travel / 1.0).ceil, 1].max
+      steps.times do
+        rope[:x] += rope[:ux] * travel / steps
+        rope[:y] += rope[:uy] * travel / steps
+        rope[:travel] += travel / steps
+        distance = Math.hypot(rope[:x] - w[:x], rope[:y] - w[:y] + 12)
+        rope[:length] = distance
+        if terrain.solid?(rope[:x], rope[:y]) && distance <= 460
+          inventory = teams.find { |t| t[:id] == w[:team] }[:inventory]
+          unless w[:rope_use]
+            if inventory["rope"].zero?
+              rope[:stage] = "retracting"
+              return
+            end
+            inventory["rope"] -= 1 if inventory["rope"] > 0
+            w[:rope_use] = true
+            w[:rope_airborne] = !grounded?(w) || w[:vy] < 0
+          end
+          rope[:stage] = "attached"
+          w[:launched] = false
+          rope[:length] = distance.clamp(28, 460)
+          emit("rope_hook", worm: w[:id], x: rope[:x], y: rope[:y])
+          return
+        end
+        if rope[:travel] >= 460 - 0.001 || !rope[:x].between?(0, world_width) || rope[:y] >= water
+          rope[:stage] = "retracting"
+          emit("rope_miss", worm: w[:id], x: rope[:x], y: rope[:y])
+          return
+        end
       end
     end
 
@@ -139,6 +219,7 @@ module Burrow
       w[:hp] = 0
       w[:vx] = w[:vy] = 0.0
       w[:rope] = nil
+      w[:rope_use] = w[:rope_airborne] = w[:thrusting] = w[:parachute_open] = false
       w[:fuel], w[:jetpack] = 0, false
       w[:launched] = false
       w[:input] = w[:lift] = 0.0

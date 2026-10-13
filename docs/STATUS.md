@@ -2,6 +2,29 @@
 
 Updated **2026-10-13** · game **0.5.1 (unreleased)** · protocol **4** · macOS preview.
 
+## Mobility weapons sweep (unreleased)
+
+Grapple line now fires a visible hook along the aim, swings and reels with WASD or
+arrows, and preserves momentum on release; airborne re-hooks share one cartridge
+until landing. Personal cloud supports WASD thrust, five seconds of fuel burned
+only while thrusting, a fuel readout, and animated equipment. Soft landing has a
+visible canopy that opens during descent after arming, with steering and safe falls.
+Here to there and Bridge builder share host/preview placement checks, show invalid
+targets, and complete their turns. Original equipment art, teleport effects, local
+audio receipts, input acknowledgement gates, and old-checkpoint defaults accompany
+the mechanics.
+
+Linux evidence: 156 tests / 6,115 assertions on both Ruby 4.0.7 and 3.4.7; seven
+native journeys / 237 assertions; a final controls rerun; all five native weapon
+labs with 53 captures and no notices; asset/audio checks and byte-identical art
+rebuilds. The action benchmark and final rendering capture passed: combat mean /
+p95 / max 16.64 / 20.26 / 46.09 ms, pan 16.66 / 19.71 / 25.20 ms. The
+[mobility report](validation/weapons-mobility-linux.json) retains earlier failed
+captures and a foundation comparison that recorded CPU scheduling contention;
+the final pass does not establish the cause of every earlier stall. Physical Mac
+play and audible output remain untested. Rope uses one anchor without corner
+wrapping; girders retain a fixed 140-pixel length.
+
 ## 0.5.1 performance sweep (unreleased)
 
 The owner found 0.5.0 stuttering, with lagging audio, on an M3 Pro. Measured on a

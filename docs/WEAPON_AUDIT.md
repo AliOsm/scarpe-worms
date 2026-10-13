@@ -41,12 +41,26 @@ is a fixed-power impact shell with fragments; Moon mortar now does that.
 fuse and secondary fragments. Damage boosts now apply to the fragments too.
 
 [Jet Pack](https://wormopedia.worms2d.info/Jet_Pack) emphasizes fuel conservation.
-Fuel now drains during thrust, and the HUD displays its remaining thrust time.
-Exhaustion or manual shutdown deploys a parachute. The
+Personal cloud carries five seconds of fuel, burned only by upward or horizontal
+thrust; the HUD displays the remaining supply. W/Up lifts, A/D or Left/Right
+thrusts sideways, and S/Down coasts under gravity without fuel burn. Upward and
+sideways speeds are capped at 220 and 210 pixels/s. The pack and animated exhaust
+show its state. Exhaustion or Space shutdown arms a parachute. Soft landing can
+also be equipped with Space or a click: its canopy opens automatically on descent
+for the rest of the turn, sways with drift, caps falls at 65 pixels/s, and prevents
+fall damage while open. A/D or Left/Right steers alongside wind drift. Automatic
+opening after equipping is the deliberate control contract for this game. The
 [Ninja Rope reference](https://wormopedia.worms2d.info/Ninja_Rope) informs swinging
-and firing from a suspended position. Our grapple has one anchor, a 460-unit
-reach, and 28–460-unit reeling; it does not implement corner wrapping or a
-competitive rope-racing ruleset. Reeling cannot pull a body through solid ground.
+and firing from a suspended position. Our aimed grapple launches a visible hook
+up to 460 pixels and catches the first terrain or girder on its ray, in directions
+away from straight down. A miss retracts without spending ammo. The first hook
+spends one cartridge; re-hooking while airborne shares it, including the final
+cartridge, until landing. A/D or Left/Right pumps the pendulum; W/S or Up/Down
+reels between 28 and 460 pixels. Space, Enter, or B releases with velocity intact.
+It retains one anchor and no corner wrapping or competitive rope-racing ruleset.
+Reeling cannot pull a body through solid ground, and destroying an anchor releases
+the grub. Bridge builder deliberately retains one 140-pixel length, with no
+short/long toggle.
 
 The requested [WMD Steam reference](https://store.steampowered.com/app/327030/Worms_WMD/)
 and [Team17's WMD presentation](https://www.team17.com/games/worms-w-m-d)
@@ -89,11 +103,11 @@ are recorded in [ART_DIRECTION.md](ART_DIRECTION.md).
 | Mind your step | Arms after deployment; delayed proximity trigger; persistent hazard; blasts throw it and close blasts arm a short fuse. |
 | Sentry sprout | Five shots, range and line-of-sight limits, enemy selection. |
 | Red barrel | Persistent explosive; blasts throw and dent it, and a ruptured barrel explodes after a short delay, spilling flames. |
-| Grapple line | Validated overhead attachment; swing/reel/release; destroyed anchors detach; no extra ammo for releasing. |
-| Personal cloud | Directional thrust; fuel conservation; mutually exclusive with rope; graceful fuel exhaustion. |
-| Soft landing | Slows descent; suppresses fall damage; directional drift. |
-| Here to there | Clear landing and occupied-body validation before spending ammo; ends turn. |
-| Bridge builder | ← → tilts the beam in 22.5° steps up to vertical; tilted preview; collision and bounds validation along the beam before spending ammo. |
+| Grapple line | Visible aimed hook catches first solid terrain within 460 pixels; free retracting misses; cartridge spent on attachment and shared by airborne re-hooks until landing; pendulum pumping, reeling, momentum-preserving release, and destroyed-anchor recovery. |
+| Personal cloud | WASD and arrow thrust; five seconds of fuel burned only by upward/horizontal input; 220 pixels/s up and 210 sideways; fuel HUD, pack and exhaust; shutdown/exhaustion arms a canopy; mutually exclusive with rope. |
+| Soft landing | Equips for the turn and automatically opens on descent; visible swaying canopy, 65 pixels/s fall cap, wind and player steering, no fall damage while open; closes on landing. |
+| Here to there | Landing ghost and red invalid marker use the same geometry as host body-clearance, occupied-grub and water checks; validates before spending ammo; in/out effects; ends turn. |
+| Bridge builder | ← → tilts a fixed 140-pixel beam in 22.5° steps up to vertical; red invalid preview and host share collision, grub and bounds checks before spending ammo; tilted beam becomes ground; ends turn. |
 | Down we go, Side hustle | Bounded-duration terrain tools; early stop; steerable torch slope; checkpoint recovery. |
 | First aid | Health cap, poison cure, rejects wasted use without spending ammo. |
 | Bubble wrap, Ice break | Protection lifetime through the team's next turn; frozen grubs resist weapon knockback. |
@@ -112,6 +126,12 @@ fires once. Focus loss, menus, weapon changes, disconnects, and turn expiry canc
 charging. Steering is independent of cursor motion; focus loss sends a neutral
 input. The server applies a bounded input lease when packets stop arriving.
 
+A/D or Left/Right walks; W/Enter jumps and B backflips. Active ropes and jetpacks
+repurpose W/S for reeling and thrust, leaving W as jump when neither is active.
+Enter/B releases an active rope without adding a jump impulse. Air-strike approach
+and girder tilt still use arrow keys while A/D remains movement. Mobility tools
+restore control when equipped after blast tumbling.
+
 Fire/activation waits for a snapshot's command-sequence acknowledgement before
 another activation. This prevents rapid clicks against an old snapshot from
 skipping stages or spending another cartridge. Invalid commands remain rejected
@@ -122,7 +142,9 @@ re-enables Start.
 
 Protocol 4 is required on both ends. Existing checkpoint formats remain readable;
 legacy in-flight critters gain explicit stages during restore, and fire zones from
-older saves keep burning as static zones.
+older saves keep burning as static zones. Legacy attached ropes receive safe
+stage and airborne-use defaults; hook flight, retraction, attachment, fuel, and
+canopy states survive checkpoints deterministically.
 
 ## 0.5.0 blast physics and multi-step weapons
 
@@ -149,6 +171,19 @@ older saves keep burning as static zones.
 
 ## Automated evidence
 
+- Mobility sweep (2026-10-13): `test/weapons_mobility_test.rb` covers visible hook
+  flight and first contact, free misses, last-cartridge re-hooks, pendulum/reeling
+  collision, momentum-preserving release, fuel/input expiry, automatic canopies,
+  placement rejection, tilted ground, blast recovery, and old/new checkpoints.
+  `test/client_mobility_test.rb` covers WASD, focus loss, release, acknowledgement
+  gating, and shared teleport/girder previews. `test/weapons_mobility_audio_test.rb`
+  covers predicted cues, authoritative receipts, and hook/release stages. Both
+  Ruby suites passed (156 tests / 6,115 assertions each), as did seven native
+  journeys (237 assertions), a final controls rerun, asset/audio checks, and
+  byte-identical art rebuilds. All five final weapon labs completed with 53
+  captures and no error notices. The [Linux mobility report](validation/weapons-mobility-linux.json)
+  records the checks, lab outcomes, rendering captures and retained limits;
+  these checks do not establish Mac runtime or audible-output validation.
 - `test/match_test.rb`: every catalog entry launches, spends the right ammo, and
   completes its action; deterministic six-team matches; validation and recovery.
 - `test/weapon_physics_test.rb`: controlled impact geometry, first-tick hits,

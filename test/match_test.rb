@@ -142,7 +142,7 @@ class MatchTest < Minitest::Test
       target = match.worms.last
       params = {weapon: id, angle: -35, power: 0.4, fuse: 2, x: target[:x], y: 170}
       params.merge!(x: 720, y: 180) if id == "girder"
-      params.merge!(x: actor[:x], y: 15) if id == "rope"
+      params.merge!(angle: -90) if id == "rope"
       if id == "teleport"
         destination = (60..1380).step(12).find do |x|
           feet = match.terrain.landing(x, 160, water: match.water)
@@ -152,6 +152,7 @@ class MatchTest < Minitest::Test
       end
       before_ammo = match.team[:inventory][id]
       match.command("p0", "fire", params)
+      match.step(15) if id == "rope" # the cartridge is spent when the travelling hook attaches
       assert_equal before_ammo - (before_ammo > 0 ? 1 : 0), match.teams.first[:inventory][id], id
       match.command("p0", "fire", params) if id == "shotgun"
       match.step(20)
