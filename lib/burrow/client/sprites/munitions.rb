@@ -34,6 +34,7 @@ module Burrow
       MUNITION_BOMBERS = {1 => frames("ordnance/munitions/bomber-right-%d", 4).freeze,
                          -1 => frames("ordnance/munitions/bomber-left-%d", 4).freeze}.freeze
       MUNITION_CHOIR_GLOW = frames("ordnance/munitions/choir-glow-%d", 6).freeze
+      MUNITION_EMITTERS = {"dynamite" => [5, -11], "mega_bomb" => [5, -16], "poison" => [2, -12]}.freeze
 
       def self.munition_motor?(shot)
         age = shot["age"].to_f
@@ -67,17 +68,23 @@ module Burrow
 
       # Called at the scene's bounded trail cadence, replacing its generic dot.
       # No emitter arrays, RNG, state caches or node creation per display frame.
-      def self.munition_trail(scene, shot)
+      def self.munition_trail(scene, shot, rotation: 0)
         weapon = shot["weapon"]
         return false unless MUNITION_BLASTS.key?(weapon)
         return true if shot["fragment"] || !scene.fx_motion?
         vx, vy = shot["vx"].to_f, shot["vy"].to_f
         speed = Math.hypot(vx, vy)
         x, y = shot["x"], shot["y"]
+        if (offset = MUNITION_EMITTERS[weapon])
+          angle = rotation.to_f * Math::PI / 180
+          dx, dy = offset
+          x += dx * Math.cos(angle) - dy * Math.sin(angle)
+          y += dx * Math.sin(angle) + dy * Math.cos(angle)
+        end
         if weapon == "poison"
-          scene.fx_particle(x + 2, y - 10, color: "#bad48c88", life: 0.35, size: 5, vx: 3, vy: -30)
+          scene.fx_particle(x, y, color: "#bad48c88", life: 0.35, size: 5, vx: 3, vy: -30)
         elsif weapon == "dynamite" || weapon == "mega_bomb"
-          scene.fx_particle(x + 5, y - 15, color: "#ffe6a5", life: 0.16, size: 2, vx: 8, vy: -40)
+          scene.fx_particle(x, y, color: "#ffe6a5", life: 0.16, size: 2, vx: 8, vy: -40)
         elsif speed > 40 && (weapon == "rocket" || weapon == "meteor" || (weapon == "homing" && munition_motor?(shot)))
           offset = weapon == "meteor" ? 22 : 15
           scene.fx_particle(x - vx / speed * offset, y - vy / speed * offset,

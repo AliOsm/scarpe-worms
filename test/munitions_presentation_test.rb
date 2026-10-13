@@ -34,6 +34,23 @@ class MunitionsPresentationTest < Minitest::Test
 
   Controller = Struct.new(:motion) { def motion? = motion }
   Timeline = Struct.new(:tick, :events)
+  class TrailRecorder
+    attr_reader :point
+    def fx_motion? = true
+    def fx_particle(x, y, **) = @point = [x, y]
+  end
+
+  def test_fuse_sparks_and_poison_wisps_follow_the_drawn_rotation_even_at_rest
+    # These are the vent/fuse positions in the generator's logical canvases,
+    # turned a quarter-turn about the centre, at world position (100, 200).
+    {"dynamite" => [111, 205], "mega_bomb" => [116, 205], "poison" => [112, 202]}.each do |weapon, point|
+      recorder = TrailRecorder.new
+      shot = {"weapon" => weapon, "x" => 100, "y" => 200, "vx" => 0, "vy" => 0, "stuck" => true}
+      Burrow::Client::Sprites.munition_trail(recorder, shot, rotation: 90)
+      assert_in_delta point[0], recorder.point[0], 0.001, weapon
+      assert_in_delta point[1], recorder.point[1], 0.001, weapon
+    end
+  end
 
   def test_bomber_survives_zoom_at_its_current_position_from_either_side
     [-1, 1].each do |side|

@@ -492,7 +492,7 @@ module Burrow
           end
           if @controller.motion? && !p["walker"]
             if Sprites::MUNITION_BLASTS.key?(p["weapon"])
-              Sprites.munition_trail(self, p) if @frame_count % 6 == 0
+              Sprites.munition_trail(self, p, rotation: node[:image].rotate_angle) if @frame_count % 6 == 0
             elsif @frame_count % 4 == 0 && Math.hypot(p["vx"], p["vy"]) > 40
               add_particle(x, y, color: "#ffefc188", life: 0.35, size: 7, vx: 0, vy: -8)
             end
