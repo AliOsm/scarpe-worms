@@ -221,11 +221,11 @@ module Burrow
       when "barrel"
         emit("barrel_rupture", hazard_id: h[:id], style: "barrel", hazard_kind: "barrel", x: h[:x], y: h[:y], owner: h[:blame] || h[:owner])
         weapon = Catalog.fetch("barrel")
-        explode(h[:x], h[:y] - 14, damage: weapon[:damage], radius: weapon[:radius], owner: h[:blame] || h[:owner], kind: "barrel")
+        explode(h[:x], h[:y] - 14, damage: h.fetch(:damage, weapon[:damage]), radius: weapon[:radius], owner: h[:blame] || h[:owner], kind: "barrel")
         # Spilled fuel keeps burning.
         7.times { |i| flame(h[:x], h[:y] - 18, h[:blame] || h[:owner], vx: (i - 3) * 38 + @rng.rand(-12.0..12.0), vy: -110 - @rng.rand(90.0)) }
       when "mine"
-        explode(h[:x], h[:y] - 4, damage: 48, radius: 44, owner: h[:blame] || h[:owner], kind: "mine")
+        explode(h[:x], h[:y] - 4, damage: h.fetch(:damage, 48), radius: 44, owner: h[:blame] || h[:owner], kind: "mine")
       when "crate"
         explode(h[:x], h[:y] - 12, damage: 24, radius: 34, owner: h[:blame])
       when "turret"
@@ -510,7 +510,7 @@ module Burrow
               h[:angle] = Math.atan2(target[:y] - 10 - (h[:y] - 20), target[:x] - h[:x])
               h[:aim_angle] = h[:angle]
               h[:target_id], h[:target_x], h[:target_y] = target[:id], target[:x], target[:y]
-              hurt(target, 16, source: h[:owner])
+              hurt(target, h.fetch(:damage, 16), source: h[:owner])
               emit("beam", x: h[:x], y: h[:y] - 20, x2: target[:x], y2: target[:y] - 10,
                 style: "turret", hazard: h[:id], facing: h[:facing], angle: h[:angle], shots: h[:shots] - 1)
               h[:shots] -= 1

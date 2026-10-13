@@ -99,7 +99,7 @@ module Burrow
         # grub.  Validation runs before inventory is spent, so a wall or a
         # crowded ledge gives useful feedback and leaves the action available.
         px, py = hazard_place_point
-        hazard = {id: next_object_id, kind: kind, x: px, y: py, owner: team[:id],
+        hazard = {id: next_object_id, kind: kind, x: px, y: py, owner: team[:id], damage: damage,
           armed: tick + (kind == "mine" ? TICK_RATE : 8), life: 100_000, hp: kind == "barrel" ? 24 : 20,
           shots: kind == "turret" ? 5 : 0, facing: active[:facing], angle: active[:facing].negative? ? Math::PI : 0.0,
           aim_angle: active[:facing].negative? ? Math::PI : 0.0}
