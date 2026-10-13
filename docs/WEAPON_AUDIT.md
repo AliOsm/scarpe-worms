@@ -6,6 +6,9 @@ weapons have original names, art, and balance values. It is not a compatibility
 implementation of a particular Worms release. [WEAPONS.md](WEAPONS.md) lists
 all 48 entries, ammunition defaults, and their current in-game descriptions.
 
+The critter contracts below were refreshed on 2026-10-13 for the 0.5.1 weapons
+sweep, including Captain wool's manual detonation and dedicated in-world art.
+
 ## Research and decisions
 
 The [Team17 World Party manual](https://cdn.akamai.steamstatic.com/steam/apps/270910/manuals/Worms_World_Party_Remastered_MANUAL.pdf)
@@ -19,8 +22,12 @@ contracts with regression and native input coverage.
 The archived Team17 Wormopedia describes [Super Sheep](https://wormopedia.worms2d.info/Super_Sheep_%26_Aqua_Sheep)
 as a runner that launches upward on its second activation, then turns using
 Left/Right. Captain wool now follows those stages instead of chasing the cursor.
-Its third activation drops it into a gravity-driven flight. Turning preserves
-speed, and a lost or released steering input expires.
+Its third activation now detonates it in flight (the sweep replaces the previous
+manual drop). Turning preserves a 260 px/s speed at 2.7 rad/s. Takeoff starts a
+separate eight-second flight timer, then it falls for up to four seconds and can
+still be detonated. Steering changes are sent on key transitions as well as the
+12 Hz refresh; a lost input expires after 12 host ticks. Presentation interpolates
+velocity for smooth heading changes without predicting collision or damage.
 
 The [Mole Bomb reference](https://wormopedia.worms2d.info/Mole_Bomb) describes
 running, a player-triggered jump, then digging and detonation. Tunnel buddy now
@@ -81,11 +88,11 @@ are recorded in [ART_DIRECTION.md](ART_DIRECTION.md).
 | Special delivery, Rain check, Spicy forecast | ← → chooses the bombers' approach; five objects are released upwind so they land in a line across the target; normal blasts, armed mines, or spreading flames; cavern restrictions exposed before equipping. |
 | Bad astronomy | Random six-meteor shower, activated without a meaningless target selection; cavern restriction. |
 | Rumble button | Bounded seeded impulses; respects frozen bodies. |
-| Woolly menace | Hops at obstacles/ledges; manual or timed detonation. |
-| Captain wool | Walking → upward launch → directional flight → falling; collision and lifetime termination. |
-| Tunnel buddy | Walking → dive → digging → detonation; tunnel exit detection probes ahead of carved material. |
-| Stink express | Walking → activated spray → final gas and small blast. |
-| Cattle call | Three timed releases; pending cows are invisible and do not collide before release. |
+| Woolly menace | Eight-second runner; hops small obstacles and ledges, turns away from tall walls after twelve blocked ticks; Space/click detonates. Upright mirrored walk/hop/fall art and wool blast accents. |
+| Captain wool | Walking → upward launch → eight-second directional flight → falling; Space/click detonates in flight or while falling. Immediate A/D and arrow steering intents, leased by the host; cape follows interpolated heading and stays upright when flying left; wool/sparkle trail. Late takeoff extends settlement through the remaining flight. |
+| Tunnel buddy | Walking → dive → digging → detonation; dirt follows the visible tunnel, exit detection probes ahead of carved material, and grub contact wins over entering terrain. Space/click also detonates while diving or digging. |
+| Stink express | Walking → four seconds of activated spray → final gas and small blast; late activation retains the full spray. Animated upright runner, visible green puffs, and passive spray status in the HUD. |
+| Cattle call | Three releases 24 ticks apart; pending cows stay invisible and inert. Swept body contact or a wall detonates each cow; eight-second fallback per runner. Mirrored walking art and a low cartoon call reuse the existing voiced cue. |
 | Mind your step | Arms after deployment; delayed proximity trigger; persistent hazard; blasts throw it and close blasts arm a short fuse. |
 | Sentry sprout | Five shots, range and line-of-sight limits, enemy selection. |
 | Red barrel | Persistent explosive; blasts throw and dent it, and a ruptured barrel explodes after a short delay, spilling flames. |
@@ -151,6 +158,9 @@ older saves keep burning as static zones.
 
 - `test/match_test.rb`: every catalog entry launches, spends the right ammo, and
   completes its action; deterministic six-team matches; validation and recovery.
+- `test/weapons_critters_test.rb`: obstacle/ledge running, remote stages, flight
+  timeout and late takeoff, instant steering intents, poison spray, staggered
+  cows, sprite orientation, and deterministic/legacy checkpoint continuation.
 - `test/weapon_physics_test.rb`: controlled impact geometry, first-tick hits,
   terrain normals, fuse timing, moving attachments, critical weapon stages,
   ownership, fuel/reeling, fragments, animated dash, and recovery within actions.

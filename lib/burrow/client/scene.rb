@@ -207,6 +207,7 @@ module Burrow
       end
 
       # Effect helpers for Sprites.effect_rule blocks (world coordinates).
+      def fx_motion? = @controller.motion?
       def fx_sprite(name, x, y, scale = 1.0) = sprite_effect(name, x, y, scale)
       def fx_particle(x, y, color:, life:, size:, vx: 0, vy: 0) = add_particle(x, y, color: color, life: life, size: size, vx: vx, vy: vy)
 
@@ -456,7 +457,9 @@ module Burrow
           end
           place(node[:image], px(x - look.anchor_x), px(y - look.anchor_y), px(look.width), px(look.height))
           if look.rotation
-            rotation = (look.rotation / 6).round * 6
+            # Keep the guided critter's interpolated heading at presentation
+            # cadence; six-degree buckets visibly step through a smooth turn.
+            rotation = p["weapon"] == "super_sheep" ? look.rotation.round : (look.rotation / 6).round * 6
             node[:image].rotate(rotation) if node[:image].rotate_angle != rotation
           end
           if node[:fuse]
@@ -923,7 +926,9 @@ module Burrow
 
       def render_effects(now)
         @effects.delete_if do |effect|
-          age = now - effect[:born]
+          # Events create effects after this update's timestamp was captured.
+          # Start at frame zero instead of requesting a missing negative frame.
+          age = [now - effect[:born], 0].max
           if age >= effect[:life]
             effect[:node].remove
             true

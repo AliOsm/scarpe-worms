@@ -1,0 +1,296 @@
+{
+  "date": "2026-10-13",
+  "version": "0.5.1",
+  "protocol": 4,
+  "branch": "weapons/critters",
+  "base": "966d2c0",
+  "scope": "Linux source checkout; native input through Scarpe automation and X11/Xvfb rendering. No macOS execution or human listening claim.",
+  "core": {
+    "rubies": [
+      "4.0.7",
+      "3.4.7"
+    ],
+    "runs_per_version": 172,
+    "assertions_per_version": 6883,
+    "failures": 0,
+    "errors": 0,
+    "critter_regressions": 39,
+    "coverage": [
+      "walking/obstacle/ledge behavior",
+      "all remote stages and timers",
+      "late takeoff retains turn",
+      "leased steering, immediate key intents and focus cancellation",
+      "fire acknowledgement gating",
+      "poison and staggered herd impacts",
+      "current and legacy checkpoint continuation",
+      "directional sprites and native rotation writes",
+      "stage sound prediction and voice pitch reset",
+      "new effects start at frame zero"
+    ]
+  },
+  "native": {
+    "result": "passed",
+    "journeys": 7,
+    "assertions": 229,
+    "critter_controls_assertions": 51
+  },
+  "assets": {
+    "result": "passed",
+    "runtime_pngs": 604,
+    "audio_cues": 22,
+    "new_critter_pngs": 78,
+    "byte_identical_rebuild_files": 79,
+    "rebuild_command": "cd tools && uv run build_art.py ordnance",
+    "audio_mixer": "All 22 existing cues mixed via tools/check_audio.rb; cow reuses hurt at pitch 0.65."
+  },
+  "action": {
+    "result": "passed",
+    "command": "flock /tmp/burrow-bench.lock xvfb-run -a python3 tools/check_action.py",
+    "native_motion_frame_intervals": {
+      "count": 526,
+      "mean_ms": 17.004860218033592,
+      "p95_ms": 22.889375686645508,
+      "max_ms": 51.889896392822266
+    },
+    "raw_report": "/tmp/critters-native-action.json"
+  },
+  "rendering": {
+    "result": "passed_final_run_with_prior_outliers_recorded",
+    "command": "nice -n 10 flock /tmp/burrow-bench.lock xvfb-run -a -s '-screen 0 3840x2400x24' python3 tools/check_rendering.py --scale 2 --size 1920x1200 --audio",
+    "first_attempt": {
+      "result": "failed_combat_maximum",
+      "combat": {
+        "count": 881,
+        "mean_ms": 16.926348862331672,
+        "p95_ms": 22.486917000001938,
+        "p99_ms": 36.90468000000102,
+        "max_ms": 96.33984600000112,
+        "over_33ms": 12,
+        "over_50ms": 4
+      },
+      "pan": {
+        "count": 357,
+        "mean_ms": 16.80390800560224,
+        "p95_ms": 21.004103999999302,
+        "p99_ms": 24.99139400000061,
+        "max_ms": 42.25856700000108,
+        "over_33ms": 2,
+        "over_50ms": 0
+      },
+      "report": "/tmp/critters-rendering.json",
+      "analysis": "Mean/p95 budgets passed; maximum combat interval was 96.34 ms. The corresponding GUI update interval was 82.61 ms but its update work took 1.39 ms. Other Ruby tests were running; retry scheduled after they finished. This is not proof of the stall cause."
+    },
+    "second_attempt": {
+      "result": "failed_combat_maximum",
+      "combat": {
+        "count": 930,
+        "mean_ms": 16.8004585108976,
+        "p95_ms": 21.382396999999997,
+        "p99_ms": 32.815875000000716,
+        "max_ms": 75.75634800000053,
+        "over_33ms": 8,
+        "over_50ms": 2
+      },
+      "pan": {
+        "count": 347,
+        "mean_ms": 17.279155357348703,
+        "p95_ms": 24.659324999998233,
+        "p99_ms": 33.857261000001415,
+        "max_ms": 39.50988600000116,
+        "over_33ms": 4,
+        "over_50ms": 0
+      },
+      "report": "/tmp/critters-rendering-final.json",
+      "analysis": "Combat GUI update intervals peaked at 29.20 ms; the 75.76 ms presentation gap did not coincide with comparable Ruby work. The later foundation and ordinary acceptance runs passed; the profile provides scheduling-delay evidence. No benchmark budgets were changed."
+    },
+    "foundation": {
+      "result": "passed",
+      "combat": {
+        "count": 906,
+        "mean_ms": 16.470644633976796,
+        "p95_ms": 20.863284000000704,
+        "p99_ms": 26.369582999999253,
+        "max_ms": 40.90267099999956,
+        "over_33ms": 3,
+        "over_50ms": 0
+      },
+      "pan": {
+        "count": 359,
+        "mean_ms": 16.70588521727019,
+        "p95_ms": 19.013368999999614,
+        "p99_ms": 21.548477000003174,
+        "max_ms": 40.11173999999684,
+        "over_33ms": 1,
+        "over_50ms": 0
+      },
+      "report": "/tmp/critters-rendering-foundation.json"
+    },
+    "profile": {
+      "result": "record_only",
+      "combat": {
+        "count": 780,
+        "mean_ms": 16.830120290262922,
+        "p95_ms": 23.232006000000638,
+        "p99_ms": 33.18731399999919,
+        "max_ms": 74.71616400000158,
+        "over_33ms": 7,
+        "over_50ms": 1
+      },
+      "pan": {
+        "count": 343,
+        "mean_ms": 17.502824002915453,
+        "p95_ms": 23.63089099999982,
+        "p99_ms": 40.33301200000139,
+        "max_ms": 102.05500400000034,
+        "over_33ms": 5,
+        "over_50ms": 1
+      },
+      "report": "/tmp/critters-rendering-profile.json",
+      "analysis": "Profiling is diagnostic, not an acceptance pass. Its slowest GUI update spent 25.57 ms in the run queue out of 28.01 ms wall time (2.43 ms CPU). The next spent 21.78 ms queued out of 23.01 ms. This supports scheduling contention as a contributor, but does not establish every earlier spike cause."
+    },
+    "acceptance": {
+      "result": "passed",
+      "combat": {
+        "count": 903,
+        "mean_ms": 16.54070546246559,
+        "p95_ms": 20.391913000000983,
+        "p99_ms": 26.35679900000021,
+        "max_ms": 58.94777199999979,
+        "over_33ms": 5,
+        "over_50ms": 1
+      },
+      "pan": {
+        "count": 359,
+        "mean_ms": 16.71226104178273,
+        "p95_ms": 19.172682000000663,
+        "p99_ms": 23.552697999999594,
+        "max_ms": 46.53092899999933,
+        "over_33ms": 2,
+        "over_50ms": 0
+      },
+      "zoom_paint": {
+        "count": 373,
+        "mean_ms": 0.8793018820375335,
+        "p95_ms": 2.860305,
+        "p99_ms": 11.714364,
+        "max_ms": 13.736312,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "report": "/tmp/critters-rendering-acceptance.json"
+    }
+  },
+  "lab": {
+    "before_root": "/tmp/critters-before",
+    "final_root": "/tmp/critters-final",
+    "sheep_completion_root": "/tmp/critters-sheep-final",
+    "notes": "Final captures review mirrored poses, upright Captain flight, wool trail, mole tunnel/explosion, skunk gas and the herd. The first final sheep script stopped during normal post-blast settling; extending its post-blast wait to three seconds produced /tmp/critters-sheep-final/sheep-sheet.png and an aiming summary. Summaries below combine that sheep completion run with the other four final captures.",
+    "white_rectangle": "The mole capture exposed shared negative-age effect animation selecting explosion--1.png. A regression reproduced it, the effect age clamp fixed it, and /tmp/critters-final/mole/frame-08.png confirms the correct first blast frame.",
+    "result": "passed",
+    "summaries": {
+      "sheep": {
+        "frames": 13,
+        "notice": null,
+        "phase": "aiming",
+        "recent_events": [
+          "turn",
+          "turn",
+          "fire",
+          "activate",
+          "explosion",
+          "damage",
+          "turn"
+        ]
+      },
+      "super_sheep": {
+        "frames": 11,
+        "notice": null,
+        "phase": "aiming",
+        "recent_events": [
+          "critter_trail",
+          "critter_trail",
+          "critter_trail",
+          "critter_trail",
+          "critter_trail",
+          "critter_trail",
+          "critter_trail",
+          "critter_trail",
+          "critter_trail",
+          "activate",
+          "explosion",
+          "turn"
+        ]
+      },
+      "mole": {
+        "frames": 12,
+        "notice": null,
+        "phase": "aiming",
+        "recent_events": [
+          "critter_dive",
+          "critter_dirt",
+          "critter_dirt",
+          "critter_dirt",
+          "critter_dirt",
+          "critter_dirt",
+          "critter_dirt",
+          "critter_dirt",
+          "critter_dirt",
+          "activate",
+          "explosion",
+          "turn"
+        ]
+      },
+      "skunk": {
+        "frames": 14,
+        "notice": null,
+        "phase": "aiming",
+        "recent_events": [
+          "gas",
+          "gas",
+          "gas",
+          "gas",
+          "gas",
+          "gas",
+          "gas",
+          "gas",
+          "gas",
+          "explosion",
+          "damage",
+          "turn"
+        ]
+      },
+      "cow": {
+        "frames": 17,
+        "notice": null,
+        "phase": "aiming",
+        "recent_events": [
+          "damage",
+          "turn",
+          "turn",
+          "fire",
+          "critter_release",
+          "critter_release",
+          "explosion",
+          "damage",
+          "explosion",
+          "bounce",
+          "explosion",
+          "turn"
+        ]
+      }
+    }
+  },
+  "integration": [
+    "gas_cloud accepts optional weapon metadata for skunk event effects",
+    "Audio#play has optional pitch with default reset on every reused voice",
+    "Scene adds fx_motion?, one-degree Captain heading and nonnegative effect ages",
+    "Only critter lab scripts, controls assertions and catalog rows changed",
+    "Captain drop assertions intentionally changed to detonate; flight speed assertions now 260 px/s",
+    "New flight_ticks has a deterministic legacy-save fallback; protocol/checkpoint versions unchanged"
+  ],
+  "remaining_acceptance": [
+    "Physical Mac keyboard/controller feel and display performance",
+    "Human Mac listening and art/feel acceptance"
+  ],
+  "result": "passed_with_rendering_outliers_retained"
+}

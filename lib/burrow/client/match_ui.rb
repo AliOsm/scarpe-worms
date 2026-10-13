@@ -166,14 +166,18 @@ module Burrow
         ammo = (my_inventory || {}).fetch(@selected_weapon, 0)
         set_text(@weapon_ammo, "#{weapon[:group]} · #{ammo < 0 ? 'Unlimited' : "#{ammo} remaining"}")
         control = special_control
+        critter = deployed_critter if my_turn?
         charged = Catalog.charged?(@selected_weapon) && !control
         aiming = my_turn? && state["phase"] == "aiming" && active["hp"] > 0
         detail = if active["jetpack"]
           "Fuel #{(active['fuel'].fdiv(TICK_RATE)).round(1)}s · arrows fly"
         elsif active["rope"]
           "Line #{active['rope']['length'].round} · ↑↓ reel"
+        elsif critter
+          remaining = critter["stage"] == "flying" ? critter.fetch("flight_ticks", critter["life"]) : critter["life"]
+          "#{critter['stage'].capitalize} · #{remaining.fdiv(TICK_RATE).ceil}s"
         elsif control
-          remote_critter ? "#{remote_critter['stage'].capitalize} · #{(remote_critter['life'].fdiv(TICK_RATE)).ceil}s" : "Tool active"
+          "Tool active"
         elsif @selected_weapon == "homing" && !@locked_target
           "Step 1 of 2 · pick a target"
         elsif charged
@@ -190,13 +194,19 @@ module Burrow
         @power_minus.state = @power_plus.state = aiming && charged ? nil : "disabled"
         set_text(@fuse_button, @selected_weapon == "holy_bomb" ? "Fixed 5s" : Catalog::FUSED.include?(@selected_weapon) ? "Fuse #{@fuse}s" : "No fuse")
         @fuse_button.state = aiming && Catalog::FUSED.include?(@selected_weapon) && !control ? nil : "disabled"
-        set_text(@fire_button, @pending_action ? "Sending…" : control ? control[0] : @charge_started ? "Charging…" : state["shots_left"] > 0 ? "Second shot" : @selected_weapon == "homing" && !@locked_target ? "1 · Lock target" : @selected_weapon == "homing" ? "2 · Launch" : "Fire · Space")
+        set_text(@fire_button, @pending_action ? "Sending…" : control ? control[0] : critter ? (critter["kind"] == "herd" ? "Stampeding…" : "#{critter['stage'].capitalize}…") : @charge_started ? "Charging…" : state["shots_left"] > 0 ? "Second shot" : @selected_weapon == "homing" && !@locked_target ? "1 · Lock target" : @selected_weapon == "homing" ? "2 · Launch" : weapon[:group] == "Critters" ? "Release · Space" : "Fire · Space")
         @fire_button.state = my_turn? && !@pending_action && (control || (aiming && can_equip?(@selected_weapon))) ? nil : "disabled"
         @pass_button.state = aiming && state["shots_left"].zero? && !@pending_action ? nil : "disabled"
         hint = if !my_turn?
           "Watching the action · G map · F follow · Q / R zoom · E browse arsenal"
         elsif control
           control[1]
+        elsif critter
+          case critter["kind"]
+          when "poisoner" then "Stink express is spraying as it runs · finishes with gas and a small blast"
+          when "herd" then "Cattle call · three runners explode on walls or grubs · F follows the herd"
+          else "Captain wool is falling · collision or timeout ends the flight"
+          end
         elsif state["phase"] == "retreat"
           "Retreat! A / D moves · W jumps · B backflips · watch where the shot lands"
         elsif state["phase"] != "aiming"
@@ -214,12 +224,18 @@ module Burrow
         state && state["projectiles"].find { |p| p["owner"] == my_id && p["remote"] && p["life"] > 0 }
       end
 
+      def deployed_critter
+        state && state["projectiles"].find { |p| p["owner"] == my_id && %w[walker guided digger poisoner herd].include?(p["kind"]) && p["life"] > 0 }
+      end
+
       def special_control
         if (p = remote_critter)
           case [p["kind"], p["stage"]]
           when ["guided", "walking"] then ["Launch · Space", "Captain wool is running · tap Space to take flight"]
-          when ["guided", "flying"] then ["Drop · Space", "Left / Right turns Captain wool · Space drops it onto the target"]
+          when ["guided", "flying"] then ["Detonate · Space", "← / → or A / D steers Captain wool · Space or click explodes · after 8s it falls"]
+          when ["guided", "falling"] then ["Detonate · Space", "Captain wool's flight is over · Space or click explodes before impact"]
           when ["digger", "walking"] then ["Dive · Space", "Tunnel buddy is running · Space starts the dive"]
+          when ["digger", "diving"], ["digger", "digging"] then ["Detonate · Space", "Tunnel buddy digs through the ground · Space or click explodes · grubs and tunnel exits detonate"]
           when ["poisoner", "walking"] then ["Spray · Space", "Stink express is running · Space releases the poison"]
           when ["cluster", "thrown"] then ["Split · Space", "Fruit salad is in the air · Space splits it now"]
           else ["Detonate · Space", "Tap Space or click to detonate the critter"]
@@ -315,12 +331,14 @@ module Burrow
           action("jump", backflip: key == "b") if my_turn? && active_worm["hp"] > 0 && !(remote_critter && remote_critter["kind"] != "cluster") && !state["tool"] && %w[aiming retreat].include?(state["phase"])
         when " " then begin_fire(:keyboard)
         end
+        update_controls(force: true) if %w[left right a d].include?(key) && remote_critter&.fetch("stage", nil) == "flying"
       end
 
       def key_up(key)
         key = normalize_key(key)
         @keys.delete(key)
         release_charge(source: :keyboard) if key == " " && @charge_started
+        update_controls(force: true) if %w[left right a d].include?(key) && remote_critter&.fetch("stage", nil) == "flying"
       end
 
       def pointer(x, y)
@@ -393,7 +411,7 @@ module Burrow
         end
       end
 
-      def update_controls
+      def update_controls(force: false)
         return unless my_turn? && !overlay? && @window_active
         now = Burrow.clock
         if @charge_started
@@ -404,7 +422,7 @@ module Burrow
             release_charge if @power >= 1
           end
         end
-        return unless now - (@last_input_at || 0) > 0.08
+        return unless force || now - (@last_input_at || 0) > 0.08
         @last_input_at = now
         arrows = !arrow_targeting?
         direction = (@keys.intersect?(arrows ? Set["d", "right"] : Set["d"]) ? 1 : 0) - (@keys.intersect?(arrows ? Set["a", "left"] : Set["a"]) ? 1 : 0)

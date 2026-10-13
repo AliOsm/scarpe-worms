@@ -121,6 +121,16 @@ Some design choices keep these icons clearly original:
 - `heal` is a heart with a white plus. It does not use the protected red-cross emblem.
 - `sheep` and `cow` are original character designs.
 
+## In-world critters
+
+`tools/build_ordnance_critters.py` builds the original procedural cast under
+`ordnance/critters/`, with 2× rasters and logical sizes/anchors in the manifest.
+These are separate from arsenal icons. `client/sprites/critters.rb` selects
+cached mirrored walk cycles, hop/fall poses, Captain wool's cape and the mole's
+digging pose. Grounded bodies stay upright; the flying cape uses interpolated
+velocity with left-facing art to avoid upside-down flight. Limited wool,
+sparkle, dirt and green poison effects follow authoritative events.
+
 ## Backdrops
 
 Each backdrop is **1600×800**. It contains distant scenery, never playable

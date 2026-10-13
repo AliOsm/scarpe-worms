@@ -2,6 +2,29 @@
 
 Updated **2026-10-13** · game **0.5.1 (unreleased)** · protocol **4** · macOS preview.
 
+## Critter weapon sweep (unreleased)
+
+The critter family now has dedicated mirrored in-world animation instead of
+spinning arsenal icons. Captain wool uses immediate arrow/A/D steering intents,
+a separate eight-second flight timer, and a third press to detonate. Late
+launches retain the turn through flight and falling. Sheep turnarounds use
+blocked simulation ticks; Tunnel buddy has digging feedback; Stink express
+keeps four seconds of spray after late activation; cows have contact sweeps and
+staggered low calls using an existing cue. Stage hints and Fire labels match.
+The lab also exposed a shared first-frame effect bug: newly created explosions
+could request frame −1 and flash a missing-image rectangle. Effect age now
+starts at zero, covered by a renderer regression.
+
+Protocol 4 and version-one checkpoints remain supported. See the critter rows
+in [the weapon audit](WEAPON_AUDIT.md) for the controls and regression coverage.
+Linux validation is recorded in [the critter report](validation/weapons-critters-linux.json).
+Both Ruby versions pass 172 tests / 6,883 assertions; all seven native journeys
+pass (229 assertions). Assets and byte-identical rebuilds pass, and lab captures
+cover all five weapons through turn completion. The final rendering gate passes
+(combat/pan means 16.54/16.71 ms); two earlier worst-frame failures and the
+scheduling profile are retained in the report rather than hidden by the retry.
+Physical Mac play and listening remain part of the owner acceptance checks.
+
 ## 0.5.1 performance sweep (unreleased)
 
 The owner found 0.5.0 stuttering, with lagging audio, on an M3 Pro. Measured on a
