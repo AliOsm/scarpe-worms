@@ -49,7 +49,7 @@ pause = lambda do |seconds|
   wait_real.call { Burrow.clock >= until_at }
 end
 wait_real.call { client.connection.status == "online" }
-client.action("create", name: "Controls course", config: {"worms" => 2, "health" => 200, "scheme" => "sandbox", "mines" => 0, "barrels" => 0, "crates" => false, "retreat_seconds" => 0, "turn_seconds" => 90, "fall_damage" => false, "ammo" => {"shotgun" => 1}})
+client.action("create", name: "Controls course", config: {"worms" => 2, "health" => 200, "scheme" => "sandbox", "mines" => 0, "barrels" => 0, "crates" => false, "retreat_seconds" => 0, "turn_seconds" => 90, "fall_damage" => false, "ammo" => {"shotgun" => 1, "rope" => 1}})
 wait_real.call { client.page == :lobby }
 $controls_friend = Burrow::Client::Connection.new(endpoint: ENV["BURROW_CONNECT"], name: "Observer", fingerprint: $controls_server.fingerprint).connect
 wait_real.call { $controls_friend.status == "online" }
@@ -147,24 +147,43 @@ x, y = world_point.call(400, 695)
 auto.mouse(:move, x, y)
 auto.mouse(:down, x, y)
 auto.mouse(:up, x, y)
-wait_real.call { client.active_worm["rope"] }
+wait_real.call { client.active_worm.dig("rope", "stage") == "attached" }
+assert_equal 0, client.my_inventory["rope"]
 length = client.active_worm["rope"]["length"]
-auto.key_down("up")
-wait_real.call { client.active_worm["rope"]["length"] < length - 15 }
-auto.key_up("up")
+auto.key_down("w")
+wait_real.call { client.active_worm.dig("rope", "length").to_f < length - 60 }
+auto.key_up("w")
+assert client.active_worm["rope"], "W reels instead of jumping off the rope"
+acknowledged.call
+press_key "enter"
+wait_real.call { !client.active_worm["rope"] }
+assert client.active_worm["rope_use"], "Enter releases into an airborne rope chain"
+x, y = world_point.call(400, 695)
+auto.mouse(:move, x, y)
+acknowledged.call
+press_key " "
+wait_real.call { client.active_worm.dig("rope", "stage") == "attached" }
+assert_equal 0, client.my_inventory["rope"], "an airborne re-hook spends no second cartridge"
 acknowledged.call
 press_key " "
 wait_real.call { !client.active_worm["rope"] }
 assert_equal "aiming", client.state["phase"]
-# The jetpack responds to arrows and shows fuel; focus loss releases thrust.
+# The jetpack responds to WASD as well as arrows and shows fuel; focus loss releases thrust.
 equip.call("jetpack")
 press_key " "
 wait_real.call { client.active_worm["jetpack"] }
-auto.key_down("up")
-auto.key_down("right")
-wait_real.call { client.active_worm["fuel"] < 110 && client.active_worm["vy"] < -30 }
-auto.key_up("up")
-auto.key_up("right")
+auto.key_down("w")
+auto.key_down("d")
+wait_real.call { client.active_worm["fuel"] < 140 && client.active_worm["vy"] < -30 }
+auto.key_up("w")
+auto.key_up("d")
+auto.window_focus(false)
+wait_real.call do
+  worm = $controls_server.rooms.values.first.match.active
+  worm[:input] == 0 && worm[:lift] == 0
+end
+auto.window_focus(true)
+snapshot "jetpack-wasd-flight"
 acknowledged.call
 press_key " "
 wait_real.call { !client.active_worm["jetpack"] && client.active_worm["parachute"] }
@@ -204,9 +223,12 @@ start_x = client.active_worm["x"]
 press_key "right"
 press_key "right"
 assert_equal 45.0, client.girder_rotation
+x, y = world_point.call(400, 690)
+auto.mouse(:move, x, y)
+wait_real.call { client.placement_preview && client.placement_preview[:valid] == false }
 x, y = world_point.call(620, 760)
 auto.mouse(:move, x, y)
-pause.call(0.1)
+wait_real.call { client.placement_preview && client.placement_preview[:valid] }
 snapshot "girder-tilted"
 auto.mouse(:down, x, y)
 auto.mouse(:up, x, y)
@@ -215,6 +237,22 @@ match = $controls_server.rooms.values.first.match
 assert match.terrain.solid?(client.target[0] + 40, client.target[1] + 46), "the beam runs diagonally"
 refute match.terrain.solid?(client.target[0] + 40, client.target[1] + 6)
 assert_in_delta start_x, client.active_worm["x"], 1
+reset.call
+# A teleport marks its actual landing and refuses occupied ground.
+equip.call("teleport")
+x, y = world_point.call(850, 890)
+auto.mouse(:move, x, y)
+wait_real.call { client.placement_preview && client.placement_preview[:valid] == false }
+x, y = world_point.call(620, 850)
+auto.mouse(:move, x, y)
+wait_real.call { client.placement_preview && client.placement_preview[:valid] }
+assert_equal 900, client.placement_preview[:y]
+snapshot "teleport-landing-ghost"
+auto.mouse(:down, x, y)
+auto.mouse(:up, x, y)
+wait_real.call { client.state["phase"] != "aiming" }
+assert_in_delta 620, client.active_worm["x"], 1
+assert_in_delta 900, client.active_worm["y"], 1
 reset.call
 # Arrow keys choose the bombers' approach for an air strike.
 equip.call("airstrike")

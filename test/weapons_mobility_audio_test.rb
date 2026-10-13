@@ -55,6 +55,17 @@ class WeaponsMobilityAudioTest < Minitest::Test
     assert_equal %w[equip throw equip], audio.heard.map(&:first)
   end
 
+  def test_jump_releases_rope_and_remote_activation_takes_precedence
+    audio = Recorder.new
+    predict(audio, "jump", {}, state(active: {"rope" => {}}), 7)
+    audio.event({"kind" => "activate", "stage" => "released", "input" => receipt(7)})
+    assert_equal ["throw"], audio.heard.map(&:first)
+    critter = {"owner" => "p0", "remote" => true, "life" => 90, "kind" => "guided", "stage" => "walking"}
+    predict(audio, "activate", {}, state(active: {"rope" => {}}, projectiles: [critter]), 8)
+    audio.event({"kind" => "activate", "stage" => "flying", "input" => receipt(8)})
+    assert_equal %w[throw launch], audio.heard.map(&:first)
+  end
+
   def test_other_players_and_unrelated_events_still_sound
     audio = Recorder.new
     predict(audio, "fire", {weapon: "rope"}, state, 5)

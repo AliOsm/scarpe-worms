@@ -171,17 +171,21 @@ module Burrow
           else
             {"kind" => "fire", "weapon" => weapon}
           end
-        when "jump" then {"kind" => "jump"}
-        when "activate", "detonate"
+        when "jump"
           worm = state["worms"]&.find { |candidate| candidate["id"] == state["active"] }
-          if worm && worm["rope"]
+          worm && worm["rope"] ? {"kind" => "activate", "stage" => "released"} : {"kind" => "jump"}
+        when "activate", "detonate"
+          projectile = state["projectiles"].find { |p| p["owner"] == player && p["remote"] && p["life"] > 0 }
+          worm = state["worms"]&.find { |candidate| candidate["id"] == state["active"] }
+          if projectile
+            flying = projectile["kind"] == "guided" && projectile["stage"] == "walking"
+            {"kind" => "activate", "stage" => flying ? "flying" : nil}
+          elsif worm && worm["rope"]
             {"kind" => "activate", "stage" => "released"}
           elsif worm && worm["jetpack"]
             {"kind" => "activate", "stage" => "parachute"}
           else
-            projectile = state["projectiles"].find { |p| p["owner"] == player && p["remote"] && p["life"] > 0 }
-            flying = projectile && projectile["kind"] == "guided" && projectile["stage"] == "walking"
-            {"kind" => "activate", "stage" => flying ? "flying" : nil}
+            {"kind" => "activate"}
           end
         end
         cue = event && event_cue(event)

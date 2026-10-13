@@ -37,11 +37,11 @@ module Burrow
       ["mine", "Mind your step", "Hazards", "mine", 48, 44, 3, "Arms after one second, then reacts to nearby grubs."],
       ["turret", "Sentry sprout", "Hazards", "turret", 16, 8, 1, "A five-shot sentry fires at enemies within sight."],
       ["barrel", "Red barrel", "Hazards", "barrel", 62, 56, 2, "An explosive obstacle. Blasts can start a chain reaction."],
-      ["rope", "Grapple line", "Mobility", "rope", 0, 0, 4, "Click ground above to attach. Left / Right swings; Up / Down reels; Fire releases."],
-      ["jetpack", "Personal cloud", "Mobility", "jetpack", 0, 0, 2, "Four seconds of thrust. Arrows fly; Fire stops. Fuel only burns while thrusting."],
-      ["parachute", "Soft landing", "Mobility", "parachute", 0, 0, 2, "Slows this turn's falls and prevents fall damage."],
-      ["teleport", "Here to there", "Mobility", "teleport", 0, 0, 2, "Click clear ground to relocate. Uses the turn."],
-      ["girder", "Bridge builder", "Tools", "girder", 0, 0, 3, "Tilt with ← →, then click open space to build a 140-pixel beam. Uses the turn."],
+      ["rope", "Grapple line", "Mobility", "rope", 0, 0, 4, "Aim in any direction except straight down. The hook catches the first solid surface; A/D swings, W/S reels, Fire releases."],
+      ["jetpack", "Personal cloud", "Mobility", "jetpack", 0, 0, 2, "W/↑ thrusts and A/D or ←/→ strafe. Release keys to save five seconds of fuel; Fire opens a parachute."],
+      ["parachute", "Soft landing", "Mobility", "parachute", 0, 0, 2, "Space equips a canopy that opens whenever you fall this turn. A/D steers; open canopies prevent fall damage."],
+      ["teleport", "Here to there", "Mobility", "teleport", 0, 0, 2, "Choose clear ground; a red marker means the host will reject the landing. Uses the turn."],
+      ["girder", "Bridge builder", "Tools", "girder", 0, 0, 3, "Tilt with ← →, then click open space. Red preview segments are blocked; a 140-pixel beam becomes ground."],
       ["drill", "Down we go", "Tools", "drill", 20, 24, 2, "Bore downward for two seconds. Fire again stops early."],
       ["blowtorch", "Side hustle", "Tools", "torch", 24, 28, 2, "Dig forward; Up / Down changes slope. Fire again stops early."],
       ["heal", "First aid", "Supplies", "heal", 35, 0, 2, "Restore 35 health and clear poison. Uses the turn."],
@@ -57,7 +57,7 @@ module Burrow
       [id, {id: id, name: name, group: group, kind: kind, damage: damage, radius: radius, ammo: ammo, description: description}.freeze]
     end.freeze
     GROUPS = DATA.map { |row| row[2] }.uniq.freeze
-    TARGETED = %w[homing strike mines napalm rope teleport girder].freeze
+    TARGETED = %w[homing strike mines napalm teleport girder].freeze
     UTILITY = %w[rope jetpack parachute shield boost gravity wind].freeze
     SKY = %w[strike mines napalm meteor].freeze
     CHARGED = %w[projectile bounce cluster sticky homing gas].freeze
@@ -72,12 +72,12 @@ module Burrow
       kind = fetch(id)[:kind]
       return "Aim · tap Space or click · fixed launch power" if id == "mortar"
       return "Step 1: click to lock a target · Step 2: aim, hold Space or the mouse, release to launch" if kind == "homing"
-      return "Click open space to build · ← → tilts the beam" if kind == "girder"
+      return "Click open space to build · ← → tilts the beam · red means blocked" if kind == "girder"
       return "Click the target · ← → picks the bombers' approach" if %w[strike mines napalm].include?(kind)
       return "Aim · hold Space or mouse, release to throw · 1–5 sets fuse · Space mid-air splits it" if id == "banana"
       return "Aim · hold Space or mouse, release to throw · 1–5 sets fuse" if FUSED.include?(id)
       return "Aim · hold Space or mouse, release to launch" if CHARGED.include?(kind)
-      return fetch(id)[:description] if %w[walker guided digger poisoner herd rope jetpack drill torch].include?(kind)
+      return fetch(id)[:description] if %w[walker guided digger poisoner herd rope jetpack parachute teleport drill torch].include?(kind)
       return "Click a destination · Space or click deploys" if TARGETED.include?(kind)
       return "Aim · tap Space or click to fire · re-aim for your second shot" if kind == "shotgun"
       return "Aim · tap Space or click to fire" if AIMED.include?(kind)

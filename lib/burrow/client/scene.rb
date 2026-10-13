@@ -25,7 +25,7 @@ module Burrow
       COMBAT = JSON.parse(File.read(File.join(Theme::ART, "manifest.json"), encoding: Encoding::UTF_8)).fetch("combat").freeze
       # Everything here repaints with the battlefield: no gradients (Widgets#shade).
       def flat_ui? = true
-      attr_reader :terrain_revision, :terrain_packet, :actors, :frame_count, :max_frame_ms, :last_frame_ms, :camera, :timeline, :positions
+      attr_reader :terrain_revision, :terrain_packet, :preview_terrain, :actors, :frame_count, :max_frame_ms, :last_frame_ms, :camera, :timeline, :positions
 
       # Inspection tools can request the full collision grid. Normal rendering
       # forwards its compressed packet to the worker without decoding/hashing it
@@ -88,11 +88,19 @@ module Burrow
               @lock_caption = label("LOCKED", 0, 0, 90, size: 12, color: "#ff5a45", font: Theme.display, weight: 700, align: "center")
               @strike_arrow = image("ui/wind-arrow", 0, 0, 64, 32).tap { |arrow| arrow.transform(:center) }
               @placement = line(0, 0, 140, 0, color: "#f2c46ddd", width: 12)
+              @teleport_ghost = image("ordnance/mobility/teleport-ghost", 0, 0, 64, 64, alt: "Teleport landing preview")
+              @placement_caption = label("", 0, 0, 340, size: 12, color: Theme::WHITE, font: Theme.display, weight: 700, align: "center")
               # Turning sprites pivot on their centres, not their top-left corners.
               @held_weapon = image("weapons/rocket", 0, 0, 30, 30).tap { |held| held.transform(:center) }
               @active_arrow = label("▼", 0, 0, 30, size: 22, color: Theme::ORANGE, align: "center")
+              # Two strokes keep the grapple readable against both sky and
+              # painted terrain. The hook rotates along the final rope segment.
+              @rope_outline = line(0, 0, 0, 0, color: "#182d35", width: 5)
               @rope_line = line(0, 0, 0, 0, color: "#eac386", width: 2)
+              @rope_hook = image("ordnance/mobility/grapple-hook", 0, 0, 24, 24, alt: "Grapple hook").tap { |hook| hook.transform(:center) }
+              @rope_outline.hide unless @rope_outline.hidden
               @rope_line.hide unless @rope_line.hidden
+              @rope_hook.hide unless @rope_hook.hidden
             end
             @cache = @shoes.stack(left: 0, top: 0, width: 1, height: 1) {}
             @cache.hide
@@ -571,6 +579,8 @@ module Burrow
         @aim_dots.each { |dot| dot.style(width: px(4), height: px(4), strokewidth: [px(1), 1].max) }
         @reticle.style(width: px(24), height: px(24))
         @placement.style(strokewidth: px(12))
+        @rope_outline.style(strokewidth: [px(5), 2].max)
+        @rope_line.style(strokewidth: [px(2), 1].max)
         @active_arrow.style(width: px(30), size: [px(22), 10].max)
         @effects.each { |effect| effect[:node].remove }
         @effects.clear
@@ -631,6 +641,7 @@ module Burrow
         return unless (result = @terrain_art.poll || @restored_terrain_result)
         @restored_terrain_result = nil
         @terrain_result = result
+        @preview_terrain = result[:preview_terrain]
         result[:tiles].each do |spec|
           # Worker results contain only serializable texture metadata, never UI
           # nodes from the previous window layout.
@@ -802,12 +813,33 @@ module Burrow
           end
         end
         targeted = can_aim && Catalog::TARGETED.include?(weapon[:kind]) && !@controller.special_control
+        placement = @controller.placement_preview if targeted && %w[teleport girder].include?(weapon[:kind])
+        placement_color = placement && placement[:valid] == false ? "#ff5a45" : placement && placement[:valid] ? "#7ee35a" : "#f2c46d"
         if targeted
           tx, ty = @controller.target
+          ty = placement[:y] if weapon[:kind] == "teleport" && placement && placement[:valid]
           move_to(@reticle, px(tx - 12), px(ty - 12))
+          restyle(@reticle, stroke: placement ? placement_color : Theme::INK)
           @reticle.show if @reticle.hidden
         else
           @reticle.hide unless @reticle.hidden
+        end
+        if placement
+          tx, ty = @controller.target
+          ty = placement[:y] if weapon[:kind] == "teleport" && placement[:valid]
+          set_text(@placement_caption, placement[:message])
+          restyle(@placement_caption, left: px(tx) - (170 * marker_scale).round, top: px(ty) + (20 * marker_scale).round,
+            width: (340 * marker_scale).round, size: (12 * marker_scale).round, stroke: placement_color)
+          @placement_caption.show if @placement_caption.hidden
+        else
+          @placement_caption.hide unless @placement_caption.hidden
+        end
+        if targeted && weapon[:kind] == "teleport" && placement && placement[:valid]
+          tx = @controller.target[0]
+          place(@teleport_ghost, px(tx - 32), px(placement[:y] - 54.4), px(64), px(64))
+          @teleport_ghost.show if @teleport_ghost.hidden
+        else
+          @teleport_ghost.hide unless @teleport_ghost.hidden
         end
         # A homing rocket's destination stays marked from lock-on until impact.
         locked = (@controller.locked_target if can_aim && weapon[:id] == "homing") ||
@@ -844,7 +876,8 @@ module Burrow
           tx, ty = @controller.target
           tilt = @controller.girder_rotation * Math::PI / 180
           dx, dy = Math.cos(tilt) * 70, Math.sin(tilt) * 70
-          restyle(@placement, left: px(tx - dx), top: px(ty + 6 - dy), x2: px(tx + dx), y2: px(ty + 6 + dy))
+          restyle(@placement, left: px(tx - dx), top: px(ty + 6 - dy), x2: px(tx + dx), y2: px(ty + 6 + dy),
+            stroke: "#{placement_color}dd")
           @placement.show if @placement.hidden
         else
           @placement.hide unless @placement.hidden
@@ -868,10 +901,24 @@ module Burrow
           @held_weapon.hide unless @held_weapon.hidden
         end
         if (rope = active["rope"])
-          restyle(@rope_line, left: px(x), top: px(y - 12), x2: px(rope['x']), y2: px(rope['y']))
+          endpoint_x, endpoint_y = rope.values_at("x", "y")
+          endpoint_x ||= x
+          endpoint_y ||= y - 12
+          hand_x = x + (active["facing"].to_f >= 0 ? 8 : -8)
+          hand_y = y - 14
+          restyle(@rope_outline, left: px(hand_x), top: px(hand_y), x2: px(endpoint_x), y2: px(endpoint_y))
+          restyle(@rope_line, left: px(hand_x), top: px(hand_y), x2: px(endpoint_x), y2: px(endpoint_y))
+          angle = Math.atan2(endpoint_y - hand_y, endpoint_x - hand_x) * 180 / Math::PI
+          size = (24 * marker_scale).round
+          place(@rope_hook, px(endpoint_x) - size / 2, px(endpoint_y) - size / 2, size, size)
+          @rope_hook.rotate(angle.round) if @rope_hook.rotate_angle != angle.round
+          @rope_outline.show if @rope_outline.hidden
           @rope_line.show if @rope_line.hidden
+          @rope_hook.show if @rope_hook.hidden
         else
+          @rope_outline.hide unless @rope_outline.hidden
           @rope_line.hide unless @rope_line.hidden
+          @rope_hook.hide unless @rope_hook.hidden
         end
       end
 

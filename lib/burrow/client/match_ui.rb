@@ -169,9 +169,13 @@ module Burrow
         charged = Catalog.charged?(@selected_weapon) && !control
         aiming = my_turn? && state["phase"] == "aiming" && active["hp"] > 0
         detail = if active["jetpack"]
-          "Fuel #{(active['fuel'].fdiv(TICK_RATE)).round(1)}s · arrows fly"
+          "Fuel #{(active['fuel'].to_f / TICK_RATE).round(1)}s · W/↑ thrust"
         elsif active["rope"]
-          "Line #{active['rope']['length'].round} · ↑↓ reel"
+          rope = active["rope"]
+          stage = rope["stage"] || "attached"
+          stage == "shooting" ? "Hook flying…" : stage == "retracting" ? "Miss · retracting" : "Line #{rope['length'].to_f.round}px · W/S reels"
+        elsif active["parachute"]
+          active["parachute_open"] ? "Canopy open · A/D steers" : "Canopy armed · auto opens"
         elsif control
           remote_critter ? "#{remote_critter['stage'].capitalize} · #{(remote_critter['life'].fdiv(TICK_RATE)).ceil}s" : "Tool active"
         elsif @selected_weapon == "homing" && !@locked_target
@@ -186,7 +190,7 @@ module Burrow
           Catalog::AIMED.include?(weapon[:kind]) ? "Aim #{@angle.abs.round}° · tap to fire" : "Ready to deploy"
         end
         set_text(@aim_label, detail)
-        restyle(@power_bar, width: px(168 * (charged ? @power : active["jetpack"] ? active["fuel"].fdiv(4 * TICK_RATE) : 0)))
+        restyle(@power_bar, width: px(168 * (charged ? @power : active["jetpack"] ? active["fuel"].fdiv(5 * TICK_RATE).clamp(0, 1) : 0)))
         @power_minus.state = @power_plus.state = aiming && charged ? nil : "disabled"
         set_text(@fuse_button, @selected_weapon == "holy_bomb" ? "Fixed 5s" : Catalog::FUSED.include?(@selected_weapon) ? "Fuse #{@fuse}s" : "No fuse")
         @fuse_button.state = aiming && Catalog::FUSED.include?(@selected_weapon) && !control ? nil : "disabled"
@@ -227,9 +231,14 @@ module Burrow
         elsif state && state["tool"]
           ["Stop · Space", state["tool"]["kind"] == "torch" ? "Up / Down changes tunnel slope · Space stops digging" : "Space stops drilling early"]
         elsif @selected_weapon == "rope" && active_worm && active_worm["rope"]
-          ["Detach · Space", "Left / Right swings · Up / Down reels · Space or Jump releases"]
+          rope = active_worm["rope"]
+          if rope && %w[shooting retracting].include?(rope["stage"])
+            ["Cancel · Space", "Hook flying · Space or Enter recalls · a miss costs no ammo"]
+          else
+            ["Detach · Space", "A/D or ←/→ swings · W/S or ↑/↓ reels · Space/Enter releases · fire again before landing"]
+          end
         elsif @selected_weapon == "jetpack" && active_worm && active_worm["jetpack"]
-          ["Land · Space", "Arrow keys fly · release keys to save fuel · Space deploys a parachute"]
+          ["Land · Space", "W/↑ thrust · A/D or ←/→ flies sideways · S/↓ descends · release keys saves fuel · Space parachutes"]
         end
       end
 
@@ -274,7 +283,7 @@ module Burrow
         return false unless my_turn? && state["phase"] == "aiming" && !@pending_action
         return false if state["shots_left"] > 0 && id != "shotgun"
         return false if state.dig("config", "terrain") == "cavern" && Catalog::SKY.include?(Catalog.fetch(id)[:kind])
-        (my_inventory || {}).fetch(id, 0) != 0 || (id == "shotgun" && state["shots_left"] > 0)
+        (my_inventory || {}).fetch(id, 0) != 0 || (id == "shotgun" && state["shots_left"] > 0) || (id == "rope" && active_worm["rope_use"])
       end
 
       def normalize_key(key)
@@ -312,7 +321,14 @@ module Burrow
         when "backspace", "delete"
           retarget
         when "w", "enter", "b"
-          action("jump", backflip: key == "b") if my_turn? && active_worm["hp"] > 0 && !(remote_critter && remote_critter["kind"] != "cluster") && !state["tool"] && %w[aiming retreat].include?(state["phase"])
+          # W/S become thrust and reel controls while mobility tools own the grub.
+          # Outside those tools W remains the familiar jump key.
+          mobility = active_worm && (active_worm["jetpack"] || active_worm["rope"])
+          if !(key == "w" && mobility) && my_turn? && active_worm["hp"] > 0 && !(remote_critter && remote_critter["kind"] != "cluster") && !state["tool"] && %w[aiming retreat].include?(state["phase"])
+            # Detachment changes the Fire stage, so Jump releases use the same
+            # snapshot acknowledgement gate as a Space release.
+            active_worm["rope"] ? submit_weapon("jump", backflip: key == "b") : action("jump", backflip: key == "b")
+          end
         when " " then begin_fire(:keyboard)
         end
       end
@@ -408,7 +424,11 @@ module Burrow
         @last_input_at = now
         arrows = !arrow_targeting?
         direction = (@keys.intersect?(arrows ? Set["d", "right"] : Set["d"]) ? 1 : 0) - (@keys.intersect?(arrows ? Set["a", "left"] : Set["a"]) ? 1 : 0)
-        lift = (@keys.include?("up") ? 1 : 0) - (@keys.include?("down") ? 1 : 0)
+        # Mobility tools accept both the arrow cluster and WASD. W is upward
+        # thrust for the jetpack and reel-in for the rope; S is gentle down/reel-out.
+        mobility = active_worm && (active_worm["jetpack"] || active_worm["rope"])
+        lift = ((@keys.include?("up") || (mobility && @keys.include?("w"))) ? 1 : 0) -
+          ((@keys.include?("down") || (mobility && @keys.include?("s"))) ? 1 : 0)
         # Critters take over the controls; a thrown fruit salad leaves the grub free to retreat.
         if (p = remote_critter) && p["kind"] != "cluster"
           action("steer", direction: direction) if p["stage"] == "flying"
@@ -442,6 +462,25 @@ module Burrow
 
       def bounded_target
         [@target[0].clamp(0, state.fetch("world_width", WIDTH)), @target[1].clamp(0, state.fetch("world_height", HEIGHT))]
+      end
+
+      # The worker supplies the same collision mask used to paint the visible
+      # landscape. Cache expensive placement geometry for each host snapshot.
+      def placement_preview
+        kind = Catalog.fetch(@selected_weapon)[:kind]
+        return nil unless %w[teleport girder].include?(kind) && state
+        terrain = scene.preview_terrain
+        return {valid: nil, message: "Checking ground…"} unless terrain && terrain.revision == state["terrain_revision"]
+        x, y = bounded_target
+        key = [state["tick"], terrain.object_id, kind, x, y, girder_rotation]
+        return @placement_preview if @placement_preview_key == key
+        @placement_preview_key = key
+        options = {water: state["water"], worms: state["worms"]}
+        @placement_preview = if kind == "teleport"
+          Placement.teleport(terrain, x, y, **options, active_id: state["active"])
+        else
+          Placement.girder(terrain, x, y, **options, rotation: girder_rotation)
+        end
       end
 
       def submit_weapon(type, **values)

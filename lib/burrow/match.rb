@@ -69,8 +69,7 @@ module Burrow
           raise RuleError, "Backflip must be true or false."
         end
         if active[:rope]
-          active[:rope] = nil
-          active[:vy] -= 100
+          release_rope
         elsif grounded?(active) && !active[:launched]
           active[:vx] = active[:facing] * (values["backflip"] ? -68 : 100)
           active[:vy] = values["backflip"] ? -220 : -178
@@ -177,6 +176,11 @@ module Burrow
       match.worms.each do |w|
         w[:rope] = w[:rope].transform_keys(&:to_sym) if w[:rope]
         w[:jetpack] = w[:fuel].to_i > 0 unless w.key?(:jetpack)
+        w[:rope][:stage] ||= "attached" if w[:rope]
+        w[:rope_use] = !!w[:rope] unless w.key?(:rope_use)
+        w[:rope_airborne] = !!(w[:rope] && !match.grounded?(w)) unless w.key?(:rope_airborne)
+        w[:parachute_open] = false unless w.key?(:parachute_open)
+        w[:thrusting] = false unless w.key?(:thrusting)
       end
       # Version-one checkpoints predate the explicit critter stages.
       match.projectiles.each do |p|
@@ -267,7 +271,8 @@ module Burrow
         worms << {id: "w#{i + 1}", team: t[:id], name: GRUB_NAMES[(i / teams.length + t[:color] * 2) % GRUB_NAMES.length],
           x: spot[0], y: spot[1], vx: 0.0, vy: 0.0, hp: config["health"], max_hp: config["health"],
           facing: spot[0] < world_width / 2 ? 1 : -1, input: 0.0, lift: 0.0, input_until: 0,
-          poisoned: false, shield: false, frozen: false, parachute: false, jetpack: false, fuel: 0, rope: nil}
+          poisoned: false, shield: false, frozen: false, parachute: false, jetpack: false, fuel: 0, rope: nil,
+          rope_use: false, rope_airborne: false, thrusting: false, parachute_open: false}
       end
     end
 
@@ -298,9 +303,12 @@ module Burrow
       worms.each do |w|
         w[:input] = w[:lift] = 0.0
         w[:rope] = nil
+        w[:rope_use] = w[:rope_airborne] = false
+        w[:parachute_open] = false
         w[:fuel] = 0
         w[:jetpack] = false
         w[:parachute] = false
+        w[:thrusting] = false
         if w[:team] == team[:id]
           w[:shield] = w[:frozen] = false
           hurt(w, 5, source: nil, poison: true) if w[:poisoned] && w[:hp] > 1
@@ -331,8 +339,11 @@ module Burrow
       @quiet_ticks = 0
       @phase = @retreat_until > tick ? "retreat" : "settling"
       active[:rope] = nil
+      active[:rope_use] = active[:rope_airborne] = false
+      active[:parachute] = true if active[:jetpack]
       active[:fuel] = 0
       active[:jetpack] = false
+      active[:thrusting] = false
     end
 
     def check_victory

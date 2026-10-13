@@ -50,4 +50,5 @@ end
 require_relative "burrow/catalog"
 require_relative "burrow/config"
 require_relative "burrow/terrain"
+require_relative "burrow/placement"
 require_relative "burrow/match"
