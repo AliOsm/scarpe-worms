@@ -136,7 +136,13 @@ module Burrow
         restyle(@clock_label, stroke: counting && (remaining <= 10 || phase == "retreat") ? "#ff5a45" : Theme::WHITE)
         cue = [state["turn"], phase, remaining]
         if @timer_cue != cue
-          @audio&.play("tick", volume: 0.35) if counting && my_turn? && @window_active && remaining.between?(1, 5)
+          if counting && my_turn? && @window_active && remaining.between?(1, 5)
+            @audio&.play("tick", volume: 0.35)
+            if remaining == 5 && phase == "aiming"
+              mine = state["teams"].find { |team| team["id"] == my_id }
+              @audio&.voice_line("hurry-up", mine["color"]) if mine
+            end
+          end
           @timer_cue = cue
         end
         wind = state["wind"]

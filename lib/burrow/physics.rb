@@ -8,7 +8,10 @@ module Burrow
     def update_worms
       interrupt_displaced_tool
       worms.each do |w|
-        next if w[:hp] <= 0
+        if w[:hp] <= 0
+          settle_grave(w)
+          next
+        end
         update_rope_hook(w) if w[:rope] && w[:rope].fetch(:stage, "attached") != "attached"
         was_grounded = grounded?(w) && w[:vy] >= 0
         w[:thrusting] = false
@@ -228,7 +231,21 @@ module Burrow
       w[:fuel], w[:jetpack] = 0, false
       w[:launched] = false
       w[:input] = w[:lift] = 0.0
+      w[:sunk] = true if reason == "water"
       emit(reason == "water" ? "splash" : "defeat", worm: w[:id], x: w[:x], y: [w[:y], water].min, text: "#{w[:name]} is out")
+    end
+
+    # A fallen grub leaves a gravestone: it drops to the ground, flies from later
+    # blasts and sinks in the sea. It never hurts, blocks or delays a turn.
+    def settle_grave(w)
+      return if w[:sunk]
+      if w[:y] > water + 5 || w[:y] > world_height
+        w[:sunk] = true
+        emit("splash", x: w[:x].clamp(0, world_width), y: water) if w[:vy] > 0
+        w[:vx] = w[:vy] = 0.0
+        return
+      end
+      prop_motion(w)
     end
 
     def explode(x, y, damage:, radius:, owner:, kind: "blast", knock: 1.0)
@@ -259,11 +276,12 @@ module Burrow
       body[:launched] = true
     end
 
+    GRAVE_MASS = 1.5
     PROP_MASS = {"mine" => 0.8, "barrel" => 1.7, "crate" => 1.4, "turret" => 1.6, "flame" => 2.5}.freeze
     MINE_PROXIMITY = 36
 
     # A blast also moves the battlefield's loose objects: resting bombs roll away,
-    # mines and barrels fly, close mines arm a short fuse and barrels rupture.
+    # mines, barrels and gravestones fly, close mines arm a short fuse and barrels rupture.
     def shove(x, y, reach, strength, owner)
       projectiles.each do |p|
         next unless p[:bounce] && !p[:attached_to] && p[:life] > 0
@@ -272,6 +290,15 @@ module Burrow
         ratio = (1 - distance / (reach + 1)).clamp(0.15, 1)
         throw_body(p, x, y, strength * ratio * 0.8, lift: 50 * ratio)
         p[:stuck], p[:support_x], p[:support_y] = false, nil, nil
+      end
+      worms.each do |w|
+        next if w[:hp] > 0 || w[:sunk]
+        distance = Math.hypot(w[:x] - x, w[:y] - 10 - y)
+        next if distance > reach
+        ratio = (1 - distance / (reach + 1)).clamp(0.15, 1)
+        nx, ny = distance < 1 ? [0.0, -1.0] : [(w[:x] - x) / distance, (w[:y] - 10 - y) / distance]
+        w[:vx] += nx * strength * ratio / GRAVE_MASS
+        w[:vy] += (ny * strength * ratio - 70 * ratio) / GRAVE_MASS
       end
       hazards.each do |h|
         mass = PROP_MASS[h[:kind]]
@@ -672,7 +699,7 @@ module Burrow
       grounded = terrain.solid?(h[:x], h[:y] + 1)
       if grounded && vy >= 0 && vx.abs < 8
         h[:vx] = h[:vy] = 0.0 if vx != 0 || vy != 0
-        h[:chute] = false
+        h[:chute] = false if h[:chute]
         return
       end
       if h[:chute]
@@ -693,7 +720,7 @@ module Burrow
         if vy > 0 && terrain.solid?(h[:x], ny)
           vy = vy > 90 && !h[:chute] ? -vy * 0.3 : 0.0
           vx *= 0.8
-          h[:chute] = false
+          h[:chute] = false if h[:chute]
           break
         elsif vy < 0 && terrain.solid?(h[:x], ny - 14)
           vy = 0.0

@@ -17,6 +17,14 @@ Host events carry match/player/sequence receipts to suppress the matching report
 when they reach playback. Receipts are bounded and saved with room metadata;
 they never change deterministic simulation or ammunition. Rejected intents may
 already have sounded, but never predict a projectile, damage or a turn change.
+Grub reactions follow host events only: the victim's squeak, a dying grub's swell,
+pop, ghost and gravestone, drowning, tumbling and dizzy stars, comic word bursts
+and voice lines. Each team colour has its own voice and pitch. A roll on the event
+id picks optional lines, so every player hears the same ones. Delayed cues use a
+24-entry queue flushed each frame; optional chatter never talks over a line in
+progress, and at most three squeaks start within 0.12 s. Gravestones are dead
+grubs that the host keeps simulating as inert props: they fall, fly from blasts
+and sink, but never hurt, block or delay a turn.
 Terrain decompression, checksum validation and rasterization run in a separate
 Ruby process; the GUI forwards compressed packets without expanding the mask.
 The worker caches 384-world-pixel tiles. Only changed tiles and their bevel neighbors are rerendered. Initial

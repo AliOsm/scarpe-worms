@@ -1,0 +1,141 @@
+{
+  "title": "0.5.3 grub reactions: sound effects and animations",
+  "date": "2026-10-13",
+  "version": "0.5.3",
+  "protocol": 4,
+  "branch": "fx/reactions (merging fx/audio and fx/art)",
+  "platform": "x86_64-linux workstation; headless native Scarpe; OpenAL null output",
+  "scope": "Hits, deaths, gravestones, drowning, tumbling, dizzy stars, comic bursts, grub voices, announcer and weapon cues. Presentation only, except host gravestone physics.",
+  "assets": {
+    "audio": {
+      "new_cues": 54,
+      "total_cues": 76,
+      "recorded_kenney_cc0": 29,
+      "original_synthesis": 25,
+      "packs_added": [
+        "Voiceover Pack",
+        "Voiceover Pack (Fighter)"
+      ],
+      "existing_cues_byte_identical": true,
+      "two_builds_byte_identical": true
+    },
+    "art": {
+      "art_version": "2026.10.13.1",
+      "new_pngs": 260,
+      "new_grub_states": [
+        "tumble",
+        "dying",
+        "drown",
+        "grave"
+      ],
+      "reactions_family": [
+        "poof",
+        "ghost",
+        "bubbles",
+        "dizzy",
+        "sweat",
+        "burst-pow",
+        "burst-boom",
+        "burst-splash",
+        "burst-spirit"
+      ],
+      "existing_pngs_and_svgs_byte_identical": 1001,
+      "two_full_builds_byte_identical": true,
+      "text_baked_into_art": false
+    }
+  },
+  "checks": {
+    "core_ruby_4.0.7": {
+      "runs": 313,
+      "assertions": 9822,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "core_ruby_3.4.7": {
+      "runs": 313,
+      "assertions": 9822,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "native_journeys": {
+      "cases": 7,
+      "passed": 7,
+      "seconds": 168.7
+    },
+    "assets": {
+      "result": "passed",
+      "grub_frames": 552,
+      "reaction_frames": 44,
+      "licensed_audio_masters": 41,
+      "runtime_pngs": 1167
+    },
+    "openal_mixer": "decoded and mixed 76 cues; positioning, mute, resume and shutdown passed",
+    "container_host": "six-team TLS match, restart recovery, session and certificate preserved, healthcheck passed",
+    "rendering_scale2_1920x1200_audio": {
+      "combat": {
+        "count": 734,
+        "mean_ms": 16.56,
+        "p95_ms": 21.05,
+        "p99_ms": 28.39,
+        "max_ms": 53.12,
+        "over_33ms": 3,
+        "over_50ms": 1
+      },
+      "pan": {
+        "count": 360,
+        "mean_ms": 16.67,
+        "p95_ms": 19.23,
+        "p99_ms": 21.68,
+        "max_ms": 25.37,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "zoom": {
+        "count": 376,
+        "mean_ms": 19.54,
+        "p95_ms": 34.21,
+        "p99_ms": 61.78,
+        "max_ms": 69.08,
+        "over_33ms": 24,
+        "over_50ms": 6
+      },
+      "zoom_sweep": {
+        "count": 229,
+        "mean_ms": 21.22,
+        "p95_ms": 27.72,
+        "p99_ms": 34.3,
+        "max_ms": 36.44,
+        "over_33ms": 3,
+        "over_50ms": 0
+      }
+    },
+    "rendering_0.5.2_reference_means_ms": {
+      "combat": 16.55,
+      "pan": 16.7,
+      "zoom": 20.6
+    }
+  },
+  "native_lab": {
+    "tool": "tools/weapon_lab.rb with BURROW_LAB_ENEMY_HP=30, BURROW_LAB_PIT=1, BURROW_LAB_EVERY and BURROW_LAB_TAIL",
+    "observed": [
+      "bat on a 30 hp grub: BONK burst, dying swell, poof with BYE BYE cloud, team gravestone drop, ghost rising",
+      "bat on a full-health grub: tumble pose with dizzy stars in flight",
+      "nudge into a shaft to the sea: SPLOOSH burst, head above water, bubbles, sinking beneath the water",
+      "mega bomb: KABOOM burst over the crater"
+    ],
+    "evidence": {
+      "docs/evidence/reactions/knockout.png": "f832b8637f558d344dc5793a5c7a399627e651a1119a2b13c986400114beb9a2",
+      "docs/evidence/reactions/tumble-dizzy.png": "f11e690588f614811734f589924456cf9cb5b78c3e3eea1b416c179ee9f1b84a",
+      "docs/evidence/reactions/drowning.png": "eec2b5a0de4fe97e53c8f9158b75045fdf4aa51743c40a76687dfacbf27d301c",
+      "docs/evidence/reactions/kaboom.png": "8fa5f8e8f818651d85dd93f8be5617f0170878886e18e533f67dc90039cf1eb6"
+    },
+    "note": "Strips are crops of unedited 1280x800 native frames, enlarged 2x with nearest-neighbour scaling."
+  },
+  "not_run": [
+    "Listening: no human has heard the new cues or judged their humour, intelligibility or mix",
+    "Any macOS run, packaged archive or audible Mac output",
+    "A match between players on separate internet connections"
+  ]
+}

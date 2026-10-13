@@ -475,10 +475,12 @@ class WeaponsMunitionsTest < Minitest::Test
       audio.local_action("fire", values: {weapon: id}, state: state,
         player: "p0", sequence: 7, match_id: "ordnance")
       cue = if id == "dynamite"
-        "tick"
+        "fuse"
       elsif id == "earthquake"
         "explosion-heavy"
-      elsif %w[rocket mortar homing airstrike mine_strike napalm meteor].include?(id)
+      elsif %w[airstrike mine_strike napalm].include?(id)
+        "plane"
+      elsif %w[rocket mortar homing meteor].include?(id)
         "launch"
       else
         "throw"
@@ -519,7 +521,7 @@ class WeaponsMunitionsTest < Minitest::Test
     audio = AudioRecorder.new
     [{"kind" => "choir"}, {"kind" => "explosion", "style" => "holy_bomb", "radius" => 84},
       {"kind" => "gas", "weapon" => "poison"}, {"kind" => "mine_land"}].each { |event| audio.event(event) }
-    assert_equal %w[pickup explosion-heavy impact impact], audio.heard.map(&:first)
+    assert_equal %w[choir explosion-heavy impact impact], audio.heard.map(&:first)
   end
 
   def test_fragment_identity_and_animation_age_survive_host_timeline_playback

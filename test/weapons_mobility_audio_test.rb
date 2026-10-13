@@ -52,7 +52,7 @@ class WeaponsMobilityAudioTest < Minitest::Test
     audio.event({"kind" => "activate", "stage" => "released", "input" => receipt(3)})
     predict(audio, "activate", {}, state(active: {"jetpack" => true, "fuel" => 42}), 4)
     audio.event({"kind" => "activate", "stage" => "parachute", "input" => receipt(4)})
-    assert_equal %w[equip throw equip], audio.heard.map(&:first)
+    assert_equal %w[thwip throw equip], audio.heard.map(&:first)
   end
 
   def test_jump_releases_rope_and_remote_activation_takes_precedence
@@ -71,6 +71,6 @@ class WeaponsMobilityAudioTest < Minitest::Test
     predict(audio, "fire", {weapon: "rope"}, state, 5)
     audio.event({"kind" => "fire", "weapon" => "rope", "input" => {"match" => "m", "player" => "p1", "seq" => 5}})
     audio.event({"kind" => "rope_hook", "worm" => "w1"})
-    assert_equal %w[throw throw equip], audio.heard.map(&:first)
+    assert_equal %w[throw throw thwip], audio.heard.map(&:first)
   end
 end

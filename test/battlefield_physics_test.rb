@@ -234,6 +234,47 @@ class BattlefieldPhysicsTest < Minitest::Test
     assert_equal JSON.generate(match.snapshot(terrain: true)), JSON.generate(restored.snapshot(terrain: true))
   end
 
+  def test_gravestones_fall_fly_from_blasts_and_sink_without_holding_the_turn
+    match = arena
+    victim = match.worms[1]
+    victim[:y] = 380.0
+    match.send(:kill, victim, "blast")
+    45.times { match.step }
+    assert_in_delta 500, victim[:y], 2, "a grave drops onto the ground below"
+    assert_equal 0, victim[:hp]
+    match.send(:explode, victim[:x] - 30, victim[:y] - 6, damage: 30, radius: 40, owner: "p0")
+    assert_operator victim[:vx], :>, 60, "a later blast throws the grave"
+    assert_operator victim[:vy], :<, 0
+    assert_operator match.worms[0][:hp], :>, 0, "graves cannot be hurt again or hurt anyone"
+    match.instance_variable_set(:@phase, "settling")
+    match.instance_variable_set(:@settle_limit, match.tick + 1_000)
+    match.instance_variable_set(:@quiet_ticks, 0)
+    3.times { match.step }
+    assert_operator victim[:vx].abs, :>, 4, "the grave is still flying"
+    assert_equal 3, match.instance_variable_get(:@quiet_ticks), "graves never delay the next turn"
+
+    victim.merge!(x: 760.0, y: 500.0, vx: 0.0, vy: 0.0)
+    match.instance_variable_set(:@water, 494.0)
+    match.step
+    assert victim[:sunk], "rising water claims the grave"
+    assert_equal 0, match.events.count { |event| event[:kind] == "splash" }, "a submerged resting grave makes no splash"
+    assert match.worms.all? { |w| w[:id] == victim[:id] || w[:hp] > 0 }
+  end
+
+  def test_drowned_grubs_leave_no_grave
+    match = arena
+    victim = match.worms[1]
+    victim.merge!(y: match.water + 12, vy: 120.0)
+    match.step
+    assert_equal 0, victim[:hp]
+    assert victim[:sunk]
+    assert_equal 1, match.events.count { |event| event[:kind] == "splash" && event[:worm] == victim[:id] }
+    assert_equal 0, victim[:vy]
+    restored = Burrow::Match.restore(JSON.parse(JSON.generate(match.checkpoint)))
+    5.times { match.step; restored.step }
+    assert_equal JSON.generate(match.snapshot), JSON.generate(restored.snapshot)
+  end
+
   private
 
   def launch(match, id, **values)

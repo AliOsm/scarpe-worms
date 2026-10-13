@@ -33,6 +33,7 @@ class FrameWorkTest < Minitest::Test
   class ActorScene < Burrow::Client::Scene
     def initialize(state)
       @state, @positions, @hurt_until = state, {}, {}
+      @deaths, @struck_at, @dizzy_until = {}, {}, {}
       @scale = @ui_scale = 1
       @camera = Burrow::Client::Camera.new(4800, 1600)
       @controller = Struct.new(:target) { def motion? = false }.new([-1000, -1000])

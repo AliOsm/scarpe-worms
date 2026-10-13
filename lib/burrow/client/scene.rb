@@ -16,7 +16,19 @@ module Burrow
       # names per frame so discovering a crowd leaves time for motion and input.
       LABELS_PER_FRAME = 2
       ANIMATIONS = {"idle" => [4, 6], "walk" => [8, 12], "jump" => [4, 8], "hurt" => [3, 9],
-        "victory" => [6, 8], "dead" => [1, 1]}.transform_values(&:freeze).freeze
+        "victory" => [6, 8], "dead" => [1, 1], "tumble" => [4, 14], "dying" => [6, 10],
+        "grave" => [4, 12], "drown" => [4, 8]}.transform_values(&:freeze).freeze
+      # A fallen grub swells for this long (its six dying frames), then pops into
+      # a ghost and leaves its gravestone. Audio::DYING times the pop to match.
+      DYING = 0.6
+      # A blasted grub spins while it flies, for this long after the hit.
+      TUMBLE_SECONDS = 3.0
+      DROWN_FRAMES = Array.new(6) do |color|
+        ["", "left/"].map { |side| Sprites.frames("grubs/#{side}#{color}-drown-%d", 4).freeze }.freeze
+      end.freeze
+      # Fill and outline of the word drawn over each comic burst.
+      BURST_COLORS = {"pow" => ["#ef3b2c", Theme::INK], "boom" => [Theme::YELLOW, Theme::INK],
+        "splash" => [Theme::WHITE, "#1f5bb5"], "spirit" => [Theme::WHITE, "#6a4bb3"]}.freeze
       FLAME_PATHS = Array.new(4) { |i| File.join(Theme::ART, "fx/flame-#{i}.png").freeze }.freeze
       MINE_PATH = File.join(Theme::ART, "mine-prop.png").freeze
       LIT_MINE_PATH = File.join(Theme::ART, "mine-prop-lit.png").freeze
@@ -35,6 +47,7 @@ module Burrow
       def initialize(shoes, controller, scale: 1, presentation: nil)
         @shoes, @controller, @scale = shoes, controller, scale
         @actors, @projectile_nodes, @hazard_nodes, @frame_cache, @hurt_until = {}, {}, {}, {}, {}
+        @deaths, @struck_at, @dizzy_until = {}, {}, {}
         @effects = []
         @positions = {}
         @frame_count, @max_frame_ms = 0, 0.0
@@ -55,6 +68,7 @@ module Burrow
           @terrain_result = @restored_terrain_result
           @last_turn, @finished_at = presentation.values_at(:last_turn, :finished_at)
           @hurt_until = presentation[:hurt_until]
+          @deaths, @struck_at, @dizzy_until = presentation.values_at(:deaths, :struck_at, :dizzy_until).map { |table| table || {} }
           @impact_focus = presentation[:impact_focus]
           @strike_focus = presentation[:strike_focus]
           @tracked_projectile = presentation[:tracked_projectile]
@@ -82,6 +96,8 @@ module Burrow
             # Pictures attached to grubs (Sprites.overlay_rule): packs, canopies, shields.
             @overlay_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) {}
             @shot_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) {}
+            # Drowning grubs sink beneath the opaque water drawn over this layer.
+            @sink_layer = @shoes.stack(left: 0, top: 0, width: px(@width)) {}
             # Deep, nearly opaque water hides the islands' roots, under a pale crest.
             # It runs on past the world's bottom edge, which a zoomed-out camera can show.
             @water = box(0, @height - 96, @width, 96 + SEA_BELOW, color: "#236f88f4", radius: 0)
@@ -228,7 +244,6 @@ module Burrow
       def fx_motion? = @controller.motion?
       def fx_sprite(name, x, y, scale = 1.0) = sprite_effect(name, x, y, scale)
       def fx_particle(x, y, color:, life:, size:, vx: 0, vy: 0) = add_particle(x, y, color: color, life: life, size: size, vx: vx, vy: vy)
-      def fx_motion? = @controller.motion?
       def fx_shake(strength, duration: 0.3) = camera.shake(strength, duration: duration, motion: @controller.motion?)
 
       # Aircraft belong to a strike's presentation, not the disposable effect
@@ -239,17 +254,26 @@ module Burrow
       end
 
       # A short-lived image animation: `paths` are full frame paths (Sprites.frames).
-      def fx_frames(paths, x, y, width, height, fps:, anchor_x: width / 2.0, anchor_y: height / 2.0, rotation: nil)
+      # It may drift (vx/vy, world px per second), loop its frames for `life`
+      # seconds and finish on `tail` frames, 0.15 s each (a ghost fading away).
+      def fx_frames(paths, x, y, width, height, fps:, anchor_x: width / 2.0, anchor_y: height / 2.0, rotation: nil,
+        vx: 0, vy: 0, life: nil, loop: false, tail: [], layer: nil)
         return if @effects.length >= 100 || !@controller.motion?
-        @effect_layer.append do
+        (layer || @effect_layer).append do
           node = @shoes.image(paths.first, left: px(x - anchor_x), top: px(y - anchor_y), width: px(width), height: px(height), alt: "")
           if rotation
             node.transform(:center)
             node.rotate(rotation.round)
           end
-          retain_effect(node: node, born: Burrow.clock, life: paths.length.fdiv(fps), kind: :frames, paths: paths, fps: fps, frame: 0,
-            x: x - anchor_x, y: y - anchor_y, width: width, height: height)
+          retain_effect(node: node, born: Burrow.clock, life: life || paths.length.fdiv(fps), kind: :frames, paths: paths, fps: fps,
+            frame: 0, x: x - anchor_x, y: y - anchor_y, width: width, height: height, vx: vx, vy: vy, loop: loop, tail: tail)
         end
+        true
+      end
+
+      # A word that stays put over its comic burst, readable at any zoom.
+      def fx_caption(text, x, y, life:, size:, colors:)
+        outlined_effect(text, x, y, colors, size: [px(size), (13 * @ui_scale).round].max, life: life, kind: :caption)
       end
 
       def fx_line(x, y, x2, y2, color:, width: 2, life: 0.15)
@@ -280,6 +304,7 @@ module Burrow
             angle: event.fetch("angle", event.fetch("facing", 1).negative? ? Math::PI : 0)
           }
         end
+        react(event, now)
         # Weapon families can add to, or replace, the default effect (Sprites.effect_rule).
         return if Sprites.effect(self, event, now)
         x, y = event.values_at("x", "y")
@@ -331,6 +356,9 @@ module Burrow
 
       def finished_presented? = @finished_at && Burrow.clock - @finished_at > 0.8
 
+      # The state sampled for this frame: the moment its events happened.
+      def presented = @state
+
       def toggle_map
         camera.overview? ? camera.follow : camera.overview
       end
@@ -360,6 +388,7 @@ module Burrow
           terrain_result: @terrain_result || @restored_terrain_result,
           camera: camera, timeline: timeline, last_turn: @last_turn,
           finished_at: @finished_at, hurt_until: @hurt_until,
+          deaths: @deaths, struck_at: @struck_at, dizzy_until: @dizzy_until,
           impact_focus: @impact_focus, strike_focus: @strike_focus, tracked_projectile: @tracked_projectile,
           turn_notice_data: @turn_notice_data, turn_notice_pending: @turn_notice_pending}
         @terrain_art = nil
@@ -374,11 +403,19 @@ module Burrow
         @positions.clear
         @state["worms"].each do |worm|
           node = @actors.fetch(worm["id"])
-          if worm["hp"] <= 0
-            node[:dead_since] ||= started
-            if started - node[:dead_since] > 0.8
+          dead = worm["hp"] <= 0
+          if dead
+            # A grub already gone when this view began rests in its grave.
+            death = (@deaths[worm["id"]] ||= {at: started - 10, popped: true})
+            if death[:drowned] || worm["sunk"] || worm["y"] >= @state["water"]
               node[:slot].hide unless node[:slot].hidden
+              node[:visible] = false
               next
+            end
+            age = started - death[:at]
+            if !death[:popped] && age >= DYING
+              death[:popped] = true
+              pop(worm["x"], worm["y"], started)
             end
           end
           x, y = worm["x"], worm["y"]
@@ -402,12 +439,15 @@ module Burrow
             node[:slot].move(left, top)
             node[:position] = [left, top]
           end
-          state = if worm["hp"] <= 0
-            "dead"
+          state = if dead
+            !@controller.motion? || age >= DYING ? "grave" : "dying"
           elsif @state["phase"] == "finished" && worm["team"] == @state["winner"]
             "victory"
           elsif @hurt_until.fetch(worm["id"], 0) > started
             "hurt"
+          elsif @struck_at.fetch(worm["id"], -TUMBLE_SECONDS) > started - TUMBLE_SECONDS &&
+              (worm["vy"].abs > 40 || Math.hypot(worm["vx"], worm["vy"]) > 110)
+            "tumble"
           elsif worm["vy"].abs > 15
             "jump"
           elsif worm["vx"].abs > 8
@@ -417,7 +457,11 @@ module Burrow
           end
           count, fps = ANIMATIONS.fetch(state)
           frame = if !@controller.motion?
-            0
+            state == "grave" ? 3 : 0
+          elsif state == "dying"
+            [(age * 10).floor, 5].min
+          elsif state == "grave"
+            [((age - DYING) * 12).floor, 3].min
           elsif state == "hurt"
             [((started - (@hurt_until[worm["id"]] - 0.35)) * fps).floor, 2].min.clamp(0, 2)
           elsif state == "jump"
@@ -425,7 +469,8 @@ module Burrow
           else
             (started * fps).to_i % count
           end
-          facing_left = worm["facing"] < 0
+          # Gravestones are carved to be read from the front.
+          facing_left = worm["facing"] < 0 && state != "grave"
           if node[:pose] != state || node[:frame] != frame || node[:facing_left] != facing_left
             path = "grubs/#{facing_left ? 'left/' : ''}#{node[:team]}-#{state}-#{frame}"
             cache_frame(path)
@@ -474,9 +519,11 @@ module Burrow
           active = worm["id"] == @state["active"]
           pose = @close_poses && @close_poses[worm["id"]]
           tool = active && @state["tool"]
-          needs_display = pose || tool || (active && (effects["double_damage"] || effects["low_gravity"]))
+          dizzy = @dizzy_until.fetch(worm["id"], 0) > @last_render
+          needs_display = pose || tool || dizzy || (active && (effects["double_damage"] || effects["low_gravity"]))
           display_worm = needs_display ? worm.dup : worm
           if needs_display
+            display_worm["_dizzy"] = true if dizzy
             display_worm["_close_boost"] = effects["double_damage"] if active
             display_worm["_close_moon"] = effects["low_gravity"] if active
             display_worm["_close_tool"] = tool if tool
@@ -537,6 +584,11 @@ module Burrow
               p["life"] ? "#{(p['life'].fdiv(TICK_RATE)).ceil}s" : ""
             end
             set_text(node[:fuse], fuse_text)
+            # A lit fuse spits sparks until it blows.
+            if @controller.motion? && @frame_count % 5 == 0 && p["life"].to_i > 0
+              add_particle(x + 2, y - 15, color: @frame_count % 10 == 0 ? "#ffe27a" : "#ff9d3b", life: 0.3, size: 3,
+                vx: (@frame_count / 5 % 3 - 1) * 24, vy: -40)
+            end
             color = p["life"].to_f <= TICK_RATE ? Theme::ORANGE : Theme::WHITE
             node[:fuse].style(stroke: color) if node[:fuse_color] != color
             node[:fuse_color] = color
@@ -682,7 +734,7 @@ module Burrow
 
       def resize_world
         @world_scale = @scale
-        [@world, @terrain_layer, @props_layer, @actor_layer, @overlay_layer, @shot_layer, @effect_layer, @aim_layer].compact.each { |layer| layer.style(width: px(@width)) }
+        [@world, @terrain_layer, @props_layer, @actor_layer, @overlay_layer, @shot_layer, @sink_layer, @effect_layer, @aim_layer].compact.each { |layer| layer.style(width: px(@width)) }
         @aim_dots.each { |dot| restyle(dot, width: px(4), height: px(4), strokewidth: [px(1), 1].max) }
         restyle(@reticle, width: px(24), height: px(24))
         restyle(@placement, strokewidth: px(12))
@@ -1066,14 +1118,18 @@ module Burrow
       end
 
       def float_text(text, x, y, color)
-        size = [px(22), (15 * @ui_scale).round].max
+        outlined_effect(text, x, y, color, size: [px(22), (15 * @ui_scale).round].max, life: 1.15, kind: :text)
+      end
+
+      def outlined_effect(text, x, y, color, size:, life:, kind:)
         # The text stays readable in overview; its bounds must retain the same
         # display-space padding and width instead of shrinking with the world.
         width = [(text.length * size * 0.7 + 20 * @ui_scale).round, (260 * @ui_scale).round].min
         padding = [(4 * @ui_scale).round, 3].max
         edge = [(2 * @ui_scale).round, 1].max
         height = (size * 1.4).ceil + padding * 2
-        left, top = x - width.fdiv(@scale * 2), y - 20 - height.fdiv(@scale)
+        left = x - width.fdiv(@scale * 2)
+        top = kind == :caption ? y - height.fdiv(@scale * 2) : y - 20 - height.fdiv(@scale)
         fill, outline = color
         @effect_layer.append do
           node = @shoes.stack(left: px(left), top: px(top), width: width, height: height) do
@@ -1082,7 +1138,79 @@ module Burrow
                 stroke: dx.zero? && dy.zero? ? fill : outline, font: Theme.display, weight: 700, align: "center", margin: 0)
             end
           end
-          retain_effect(node: node, born: Burrow.clock, life: 1.15, kind: :text, x: x, y: y, width: width, height: height)
+          retain_effect(node: node, born: Burrow.clock, life: life, kind: kind, x: x, y: y, width: width, height: height)
+        end
+      end
+
+      # Presentation-only reactions to the host's reports: who reels, who spins,
+      # who is about to pop. They never feed back into play.
+      def react(event, now)
+        id = event["worm"]
+        case event["kind"]
+        when "damage"
+          @struck_at[id] = now
+          victim = @state["worms"].find { |w| w["id"] == id }
+          if victim && victim["hp"] > 0 && event["amount"].to_i >= 25
+            @dizzy_until[id] = now + 2.4
+            comic("pow", "OUCH!", event["x"], event["y"] - 36, now) if event["amount"].to_i >= 40
+          end
+        when "defeat"
+          @deaths[id] = {at: now} if id
+        when "splash"
+          drown(event, now) if id
+        when "melee"
+          unless Array(event["hits"]).empty?
+            word = Sprites::MELEE_WORDS.fetch(event["style"], "POW!")
+            comic("pow", word, event["x"] + event.fetch("facing", 1) * 34, event["y"] - 30, now)
+          end
+        when "explosion"
+          radius = event.fetch("radius", 0)
+          comic("boom", radius >= 70 ? "KABOOM!" : "BOOM!", event["x"], event["y"] - radius * 0.5 - 30, now) if radius >= 56
+        end
+      end
+
+      # Comic words are a garnish: at most one starts every 0.3 s.
+      def comic(style, word, x, y, now)
+        return if now - (@comic_at || -1) < 0.3
+        @comic_at = now if Sprites.burst(self, style, word, x, y, colors: BURST_COLORS.fetch(style))
+      end
+
+      # The swollen grub bursts into a puff and its little ghost floats away.
+      def pop(x, y, now)
+        Sprites.reaction(self, "poof", x, y - 18)
+        ghost = Sprites::REACTION_FRAMES.fetch("ghost")
+        fx_frames(ghost.first(4), x, y - 28, 48, 56, fps: 10, anchor_x: 24, anchor_y: 40, vy: -46, life: 1.7,
+          loop: true, tail: ghost.last(2))
+        comic("spirit", "BYE BYE!", x, y - 78, now)
+      end
+
+      # The grub flails at the surface, then sinks under the opaque water.
+      def drown(event, now)
+        id = event["worm"]
+        @deaths[id] = {at: now, drowned: true, popped: true}
+        worm = @state["worms"].find { |w| w["id"] == id }
+        team = worm && @state["teams"].find { |t| t["id"] == worm["team"] }
+        x, water = event["x"], @state["water"]
+        if team
+          paths = DROWN_FRAMES.fetch(team["color"])[worm["facing"].to_i.negative? ? 1 : 0]
+          # Head and shoulders show above the surface for about a second.
+          fx_frames(paths, x, water + 10, 64, 64, fps: 8, anchor_x: 32, anchor_y: 54.4, vy: 30, life: 1.6,
+            loop: true, layer: @sink_layer)
+        end
+        Sprites.reaction(self, "bubbles", x, water + 2)
+        comic("splash", "SPLOOSH!", x, water - 58, now)
+      end
+
+      # Frames past the end of `paths` index the fading `tail`.
+      def effect_frame(effect, age)
+        paths, tail = effect[:paths], effect.fetch(:tail, [])
+        fading = tail.empty? ? -1 : age - (effect[:life] - tail.length * 0.15)
+        if fading >= 0
+          paths.length + [(fading / 0.15).floor, tail.length - 1].min
+        elsif effect[:loop]
+          (age * effect[:fps]).floor % paths.length
+        else
+          [(age * effect[:fps]).floor, paths.length - 1].min
         end
       end
 
@@ -1114,10 +1242,12 @@ module Burrow
           else
             case effect[:kind]
             when :frames
-              place(effect[:node], px(effect[:x]), px(effect[:y]), px(effect[:width]), px(effect[:height]))
-              frame = [(age * effect[:fps]).floor, effect[:paths].length - 1].min
+              place(effect[:node], px(effect[:x] + effect.fetch(:vx, 0) * age), px(effect[:y] + effect.fetch(:vy, 0) * age),
+                px(effect[:width]), px(effect[:height]))
+              frame = effect_frame(effect, age)
               if frame != effect[:frame]
-                effect[:node].path = effect[:paths][frame]
+                paths = effect[:paths]
+                effect[:node].path = frame < paths.length ? paths[frame] : effect[:tail][frame - paths.length]
                 effect[:frame] = frame
               end
             when :sprite
@@ -1135,6 +1265,8 @@ module Burrow
               # A floating caption keeps its readable screen size while its
               # world anchor follows a zoom; do not erase damage on camera input.
               move_to(effect[:node], px(effect[:x]) - effect[:width] / 2, px(effect[:y] - 20 - age * 24) - effect[:height])
+            when :caption
+              move_to(effect[:node], px(effect[:x]) - effect[:width] / 2, px(effect[:y]) - effect[:height] / 2)
             when :line
               restyle(effect[:node], left: px(effect[:x]), top: px(effect[:y]), x2: px(effect[:x2]), y2: px(effect[:y2]), strokewidth: px(effect[:width]))
             when :ring

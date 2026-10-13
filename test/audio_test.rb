@@ -103,13 +103,13 @@ class AudioTest < Minitest::Test
     assert_equal %w[explosion launch], audio.heard.map(&:first)
   end
 
-  def test_build_events_cannot_repeat_the_local_equip_report
+  def test_build_events_cannot_repeat_the_local_girder_report
     audio = Recorder.new
     audio.local_action("fire", values: {weapon: "girder"}, state: {"team" => "p0"}, player: "p0", sequence: 1, match_id: "m")
     receipt = {"match" => "m", "player" => "p0", "seq" => 1}
     audio.event({"kind" => "fire", "weapon" => "girder", "input" => receipt})
     audio.event({"kind" => "build", "input" => receipt})
-    assert_equal ["equip"], audio.heard.map(&:first)
+    assert_equal ["clank"], audio.heard.map(&:first)
   end
 
   class InputHarness < Burrow::Client::App

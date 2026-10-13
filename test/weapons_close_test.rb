@@ -526,8 +526,8 @@ class WeaponsClosePresentationTest < Minitest::Test
   end
 
   def test_local_sound_predictions_match_authority_without_duplicate_reports
-    cases = [["fire_punch", {"kind" => "melee"}, "impact"],
-      ["dragon_punch", {"kind" => "melee"}, "impact"],
+    cases = [["fire_punch", {"kind" => "melee", "style" => "fire_punch", "hits" => []}, "whoosh"],
+      ["dragon_punch", {"kind" => "melee", "style" => "dragon_punch", "hits" => []}, "whoosh"],
       ["heal", {"kind" => "heal"}, "pickup"],
       ["flamethrower", {"kind" => "beam", "style" => "flame"}, "launch"],
       ["mine", {"kind" => "hazard_place"}, "equip"],

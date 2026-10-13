@@ -1,6 +1,47 @@
 # Current status
 
-Updated **2026-10-13** · game **0.5.2 (unreleased)** · protocol **4** · macOS preview.
+Updated **2026-10-13** · game **0.5.3 (unreleased)** · protocol **4** · macOS preview.
+
+## 0.5.3 grub reactions: sounds and animations (unreleased)
+
+The owner asked for simple, funny sound effects and animations for weapons and
+for grubs being hit and dying, without music. Grubs now react to every hit:
+
+- **Hits.** The victim squeaks "oof", "ow" or "yaaah" in its team's voice; big
+  hits add dizzy stars, a slide whistle and an "OUCH!" burst, and a blasted grub
+  spins while it flies. A badly hurt grub may call for a medic; a grub on its
+  last 20 health sweats.
+- **Deaths.** A fallen grub says "buh-bye", swells for 0.6 s, pops into a puff
+  with a "BYE BYE!" cloud while its winged ghost floats up, and leaves its team's
+  gravestone. The host keeps the gravestone as an inert prop: it falls, flies from
+  later blasts and sinks, but never hurts, blocks or delays a turn. Drowning grubs
+  wail, flail and sink under a "SPLOOSH!" with bubbles.
+- **Weapons and match.** Bonk, pow, whoosh and boop melee hits with comic words;
+  BOOM/KABOOM bursts for big blasts; fuse sparks and sizzle; a prop plane and
+  falling-bomb whistle for strikes; sheep baa, cows moo, skunks blow raspberries;
+  the choir bomb sings; girders clank and the grapple goes "thwip".
+- **Voices.** Kenney's CC0 soldier lines, sped up per team into squeaky voices:
+  "fire in the hole", "get down", "medic", "target destroyed", "hurry up" at five
+  seconds, turn-start chatter and "you win". An announcer calls the fight, sudden
+  death, multi-kills, flawless victories and draws. The last grub of a team gets
+  a sad trombone. Optional lines use a roll on the event id, so everyone hears the
+  same ones, and chatter never talks over another line.
+
+Two Astra 6 Max subagents made the assets in parallel: 54 new mono cues (29 Kenney
+CC0 recordings, 25 original syntheses; [notes](ART_RESEARCH.md)) and 260 new frames
+(four grub states for six teams and both facings, and a `reactions` effects family;
+[art direction](ART_DIRECTION.md)). Burst words are drawn by the game, not baked
+into art. Existing cues, music and art are byte-identical, and both builds are
+reproducible. Protocol 4 and version-one checkpoints remain compatible: an older
+host simply leaves gravestones where grubs fell.
+
+Linux evidence: Ruby 4.0.7 and 3.4.7 each pass 313 tests / 9,822 assertions; all
+seven native journeys, the asset and OpenAL checks and the container host check
+pass. Scale-2 rendering with audio measured combat/pan means of 16.56/16.67 ms
+and zoom 19.5 ms, in line with 0.5.2. The weapon lab captured knockouts, graves,
+tumbling, drowning and bursts in the native window ([report](validation/reactions-0.5.3-linux.json),
+[screenshots](evidence/README.md)). Nobody has listened to the new sounds yet: their
+humour, intelligibility and mix, and anything on a Mac, remain unverified.
 
 ## Server deployment (unreleased)
 
@@ -380,12 +421,14 @@ audio lag is resolved.
    (island size, cave frequency, set-piece density) from their feedback.
 2. Run the packaged game on the M3 Pro and clean Apple silicon Macs, including
    Retina/external displays, Finder launch, focus, resizing and sleep/wake.
-3. Listen to the mixed audio and complete two-to-six-person internet matches.
+3. Listen to the mixed audio, including the 0.5.3 voices, squeaks and announcer
+   (`ruby tools/build_audio.rb` rebuilds them; tune pitches in `Audio::VOICES`),
+   and complete two-to-six-person internet matches.
    Collect human feedback on aiming, camera, balance and small-window legibility.
 4. Launch the 0.5.0 archive on Macs and run the 30-minute soak; profile the isolated
    timing outlier if it reproduces, preserving the 0.2.4 precise-wait/playback fixes.
 5. Complete the [release requirements](RELEASE.md) before sales.
-6. Configure the deploy server and secrets, push `v0.5.2`, and connect from
+6. Configure the deploy server and secrets, push `v0.5.3`, and connect from
    another network to confirm the published host.
 
 ## Repository handoff
@@ -397,7 +440,7 @@ added 0020–0023. Protocol 4 hosts and clients must upgrade together.
 Runtime assets live in the source tree, so running the game needs no image service or
 asset download. Generated bundles, raw captures and player data remain ignored.
 No publishing or deployment was performed; the server deploy workflow awaits
-the owner's first `v0.5.2` tag.
+the owner's first `v0.5.3` tag.
 
 The [clean-checkout bootstrap report](validation/repository-bootstrap.json)
 belongs to the preceding 0.3.0 baseline, not a fresh 0.4.0 clone. Current checks

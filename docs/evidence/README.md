@@ -1,5 +1,11 @@
 # Native screenshots
 
+The unreleased 0.5.3 grub reactions, cropped from headless native Linux weapon-lab
+frames: a [bat knockout](reactions/knockout.png) (BONK, the pop and BYE BYE cloud,
+the team gravestone and the rising ghost), a [blasted grub spinning with dizzy
+stars](reactions/tumble-dizzy.png), [drowning](reactions/drowning.png) and a
+[KABOOM](reactions/kaboom.png). Hashes are in the [0.5.3 report](../validation/reactions-0.5.3-linux.json).
+
 The unreleased 0.5.0 battlefield, from headless native Linux captures:
 [glacier islands](battlefield/glacier-islands-overview.png),
 [volcano cavern](battlefield/volcano-cavern-overview.png),

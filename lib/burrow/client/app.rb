@@ -81,7 +81,8 @@ module Burrow
         else
           WIDTH / 2
         end
-        @audio.event(event, screen_x: screen_x)
+        # The scene's sampled state matches the event's tick: who was hit, by whom.
+        @audio.event(event, screen_x: screen_x, state: @scene&.presented || state)
       end
       def motion? = preferences["motion"]
       def overlay? = !!@overlay
@@ -126,6 +127,7 @@ module Burrow
           @toast.hide
           @toast_until = nil
         end
+        @audio.update(started)
         @audio.refresh if @frame % 120 == 0
       ensure
         @frame_log.record(started, page: @page, focused: @window_active, state: @state, scene: @scene, activity: @activity) if started

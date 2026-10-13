@@ -638,7 +638,7 @@ class WeaponsCrittersTest < Minitest::Test
     assert_match(/explosion/, audio.heard.last.first)
   end
 
-  def test_each_cow_release_reuses_the_low_pitched_call_and_damage_keeps_normal_pitch
+  def test_each_cow_release_moos_on_its_own_note_and_damage_keeps_normal_pitch
     match = arena
     audio = SoundRecorder.new
     state = JSON.parse(JSON.generate(match.snapshot))
@@ -652,11 +652,11 @@ class WeaponsCrittersTest < Minitest::Test
     delayed = match.events.select { |event| event[:kind] == "critter_release" && event[:weapon] == "cow" }
     assert_equal [24, 48], delayed.map { |event| event[:tick] }
     delayed.each { |event| audio.event(JSON.parse(JSON.generate(event))) }
-    assert_equal %w[hurt hurt hurt], audio.heard.map(&:first)
-    assert_equal [0.65, 0.65, 0.65], audio.heard.map { |entry| entry.last[:pitch] }
-    audio.event({"kind" => "damage"})
-    assert_equal "hurt", audio.heard.last.first
-    assert_equal 1.0, audio.heard.last.last[:pitch]
+    assert_equal %w[moo moo moo], audio.heard.map(&:first)
+    pitches = audio.heard.map { |entry| entry.last[:pitch] }
+    assert pitches.all? { |pitch| pitch.between?(0.85, 1.2) }, pitches.inspect
+    refute_equal pitches[1], pitches[2], "each cow in the herd has its own note"
+    assert_equal 1.0, audio.event_pitch({"kind" => "damage"})
   end
 
   def test_reusing_a_native_audio_voice_resets_the_cow_pitch

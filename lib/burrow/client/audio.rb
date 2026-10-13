@@ -17,12 +17,19 @@ module Burrow
         vo-look-out-f vo-look-out-m vo-medic-f vo-medic-m vo-target-destroyed-f
         vo-target-destroyed-m vo-watch-my-back-f vo-watch-my-back-m vo-you-win-f
         vo-you-win-m whoosh].freeze
-      EVENT_CUES = {"damage" => "hurt", "jump" => "jump", "bounce" => "bounce",
+      EVENT_CUES = {"jump" => "jump",
         "splash" => "splash", "turn" => "turn", "pickup" => "pickup", "heal" => "pickup",
-        "victory" => "victory", "teleport" => "teleport", "build" => "equip",
-        "melee" => "impact", "dig" => "impact", "turret_shot" => "shot",
+        "victory" => "victory", "teleport" => "teleport", "dig" => "impact", "turret_shot" => "shot",
         "hazard_place" => "equip", "mine_arm" => "tick", "mine_trigger" => "tick",
-        "barrel_rupture" => "impact", "quake" => "explosion-heavy", "rope_hook" => "equip"}.freeze
+        "barrel_rupture" => "impact", "quake" => "explosion-heavy", "rope_hook" => "thwip",
+        "freeze" => "ice"}.freeze
+      # Each team colour has its own voice: Kenney's soldier lines recorded at
+      # speaking pitch, played faster so grubs sound like squeaky little troops.
+      VOICES = [["m", 1.45], ["f", 1.3], ["m", 1.62], ["f", 1.42], ["m", 1.3], ["f", 1.55]].freeze
+      SQUEAK_PITCH = [1.0, 1.12, 0.9, 1.06, 0.84, 1.18].freeze
+      # Matches Scene::DYING: the grub swells for this long, then pops into its grave.
+      DYING = 0.6
+      QUEUE_LIMIT = 24
       attr_reader :available, :error
 
       # RIFF allows ancillary chunks between fmt and data. Read the chunk table
@@ -115,6 +122,7 @@ module Burrow
         return unless available
         @gains.each { |source, gain| @al.alSourcef(source, 0x100a, gain * @preferences["volume"]) }
         if @preferences["muted"]
+          @queue&.clear
           @sources.each { |source| @al.alSourceStop(source) }
         elsif @preferences["music"]
           unless @music_started
@@ -152,18 +160,31 @@ module Burrow
         nil
       end
 
-      def event(event, screen_x: WIDTH / 2)
+      def event(event, screen_x: WIDTH / 2, state: nil)
         cue = event_cue(event)
-        if cue && (receipt = event["input"])
-          key = receipt.values_at("match", "player", "seq")
-          # A single command can emit two reports (fire + build, for example).
-          # Keep the bounded receipt so neither repeats the local cue.
-          return if @predicted && @predicted[key] == cue
+        receipt = event["input"]
+        # A single command can emit two reports (fire + build, for example).
+        # Keep the bounded receipt so neither repeats the local cue.
+        predicted = cue && receipt && @predicted && @predicted[receipt.values_at("match", "player", "seq")] == cue
+        if cue && !predicted
+          # Timeline already emits each event once. Valid reports in a burst can
+          # arrive less than 65 ms apart during catch-up; do not discard them.
+          report = %w[fire beam jump activate].include?(event["kind"])
+          play(cue, x: screen_x, throttle: !report, pitch: event_pitch(event))
         end
-        # Timeline already emits each event once. Valid reports in a burst can
-        # arrive less than 65 ms apart during catch-up; do not discard them.
-        report = %w[fire beam jump activate].include?(event["kind"])
-        play(cue, x: screen_x, throttle: !report, pitch: event_pitch(event)) if cue
+        react(event, screen_x, state)
+      end
+
+      # Delayed cues: a grave's thud after the pop, a voice line after a shot.
+      def update(now = Burrow.clock)
+        return if !@queue || @queue.empty?
+        due, @queue = @queue.partition { |entry| entry[0] <= now }
+        due.each { |at, name, options| speak(name, **options) if now - at < 0.5 }
+      end
+
+      # A short line in a team colour's voice (the HUD's "hurry up").
+      def voice_line(line, color, x: WIDTH / 2, chatter: true)
+        say(line, color, x: x, chatter: chatter)
       end
 
       # Called only after an input passes the UI gate and enters the connection
@@ -175,7 +196,8 @@ module Burrow
           weapon = values[:weapon]
           kind = Catalog::WEAPONS[weapon]&.fetch(:kind)
           if %w[melee dash].include?(kind)
-            {"kind" => "melee"}
+            # The swing is certain; the host's report adds the hit.
+            {"kind" => "melee", "hits" => []}
           elsif kind == "heal"
             {"kind" => "heal"}
           elsif %w[beam laser shotgun burst flame].include?(kind)
@@ -217,18 +239,20 @@ module Burrow
         case event["kind"]
         when "fire"
           kind = Catalog::WEAPONS[event["weapon"]]&.fetch(:kind)
-          return "tick" if event["weapon"] == "dynamite"
+          return "fuse" if event["weapon"] == "dynamite"
           return "explosion-heavy" if event["weapon"] == "earthquake"
           case kind
           when "projectile", "homing" then "launch"
-          when "strike", "mines", "napalm", "meteor" then "launch"
+          when "strike", "mines", "napalm" then "plane"
+          when "meteor" then "launch"
           when "bounce", "cluster", "sticky", "gas" then "throw"
           when "rope" then "throw"
           when "jetpack" then "launch"
           # Beam, melee, healing and teleport events supply their own report.
           when "beam", "laser", "shotgun", "burst", "flame", "melee", "dash", "heal", "teleport", "skip" then nil
           when "shield", "freeze", "boost", "gravity", "wind" then "pickup"
-          when "herd" then "hurt"
+          when "herd" then "moo"
+          when "girder" then "clank"
           else "equip"
           end
         when "beam"
@@ -247,20 +271,29 @@ module Burrow
             else "equip"
             end
           end
-        when "choir" then "pickup"
+        when "choir" then "choir"
         when "mine_land" then "impact"
         when "gas" then "impact" if event["weapon"] == "poison"
-        when "critter_release" then "hurt"
+        when "critter_release" then "moo"
         when "critter_dive" then "impact"
         when "critter_fall" then "throw"
+        when "melee" then melee_cue(event)
+        when "build" then "clank"
+        when "bounce" then event["worm"] ? "boing" : "bounce"
+        when "defeat" then event["worm"] ? nil : "clank"
+        when "damage" then nil # the victim's own squeak (#react) is the hurt sound
         else EVENT_CUES[event["kind"]]
         end
       end
 
-      # A low cartoon call reuses the original voiced cue for each cow release.
-      # Reset pitch on every voice use so later damage reports sound normal.
+      # Each cow in a herd moos a little differently; bouncing grubs boing on
+      # their own note. Every voice resets its pitch, so later cues sound normal.
       def event_pitch(event)
-        event["weapon"] == "cow" && %w[fire critter_release].include?(event["kind"]) ? 0.65 : 1.0
+        if event["kind"] == "critter_release" || (event["kind"] == "bounce" && event["worm"])
+          0.88 + roll(event, 7) * 0.003
+        else
+          1.0
+        end
       end
 
       def close
@@ -286,6 +319,177 @@ module Burrow
 
       private
 
+      def melee_cue(event)
+        hits = Array(event["hits"])
+        return if event["continuing"] && hits.empty?
+        return "whoosh" if event.key?("hits") && hits.empty?
+        case event["style"]
+        when "bat", "axe" then "bonk"
+        when "prod" then "boing"
+        when "fire_punch", "dragon_punch" then "pow"
+        else "impact"
+        end
+      end
+
+      # The grubs' own voices and cartoon extras. These follow authoritative
+      # events only (never local prediction), and a deterministic roll on the
+      # event id makes every player hear the same lines.
+      def react(event, x, state)
+        case event["kind"]
+        when "damage" then hurt_voice(event, x, state)
+        when "defeat" then farewell(event, x, state, drowned: false) if event["worm"]
+        when "splash" then farewell(event, x, state, drowned: true) if event["worm"]
+        when "turn" then turn_chatter(event, x, state)
+        when "fire" then battle_cry(event, x, state)
+        when "victory" then cheer(event, state)
+        when "flood"
+          unless @flooded
+            @flooded = true
+            later("ann-sudden-death", 0.4)
+          end
+        when "strike" then later("bomb-whistle", 0.7, x: x, volume: 0.8)
+        when "mine_trigger"
+          grub = nearest(state, event, 80)
+          squeak("eek", color_of(state, grub), x) if grub
+        when "critter_trail"
+          if event["weapon"] == "sheep" && roll(event, 3) < 12 && Burrow.clock - (@baa_at || 0) > 2.2
+            @baa_at = Burrow.clock
+            play("baa", x: x, volume: 0.6, pitch: 0.95 + roll(event, 5) * 0.002)
+          end
+        end
+      end
+
+      def hurt_voice(event, x, state)
+        victim = worm(state, event["worm"])
+        return unless victim && victim["hp"].to_i > 0 # a fatal hit says goodbye instead
+        color = color_of(state, victim)
+        amount = event["amount"].to_i
+        squeak(amount < 15 ? "oof" : amount < 35 ? "ow" : "yelp", color, x)
+        later("slide-whistle-up", 0.05, x: x, volume: 0.5) if amount >= 30
+        if victim["hp"].to_i <= 25 && roll(event, 1) < 50
+          say("medic", color, x: x, delay: 0.75)
+        elsif state && victim["team"] == state["team"] && %w[retreat settling].include?(state["phase"]) && roll(event, 2) < 50
+          # Hurting your own grub earns a snicker from the next team along.
+          rival = state["teams"]&.find { |team| team["id"] != victim["team"] }
+          later("squeak-giggle", 0.7, x: x, pitch: SQUEAK_PITCH[rival["color"].to_i % 6], voice: true, chatter: true) if rival
+        end
+      end
+
+      def farewell(event, x, state, drowned:)
+        victim = worm(state, event["worm"])
+        color = color_of(state, victim)
+        if drowned
+          squeak("wah", color, x)
+          later("blub", 0.4, x: x)
+        else
+          squeak("byebye", color, x)
+          later("pop", DYING, x: x)
+          later("poof", DYING + 0.02, x: x, volume: 0.7)
+          later("thud", DYING + 0.1, x: x)
+        end
+        return unless victim && state
+        shooter = state["team"]
+        if shooter && victim["team"] != shooter && roll(event, 4) < 50
+          say("target-destroyed", color_of(state, {"team" => shooter}), x: WIDTH / 2, delay: 1.25)
+        end
+        survivors = state["worms"]&.count { |w| w["team"] == victim["team"] && w["id"] != victim["id"] && w["hp"].to_i > 0 }
+        later("sad-trombone", 1.3, volume: 0.8) if survivors&.zero?
+        now = Burrow.clock
+        (@kills ||= []) << now
+        @kills.select! { |at| now - at < 0.75 }
+        if @kills.length >= 2 && now - (@multi_kill_at || -10) > 3
+          @multi_kill_at = now
+          later("ann-multi-kill", 1.0)
+        end
+      end
+
+      def turn_chatter(event, x, state)
+        if state && state["turn"].to_i <= 1
+          @flooded = false
+          later("ann-fight", 0.3)
+        elsif roll(event, 6) < 35
+          line = %w[go-go-go cover-me watch-my-back][roll(event, 8) % 3]
+          say(line, color_of(state, {"team" => event["team"]}), x: x, delay: 0.7)
+        end
+      end
+
+      def battle_cry(event, x, state)
+        kind = Catalog::WEAPONS[event["weapon"]]&.fetch(:kind)
+        color = color_of(state, worm(state, event["worm"]))
+        case kind
+        when "bounce", "cluster", "sticky", "place"
+          say("fire-in-the-hole", color, x: x, delay: 0.15) if roll(event, 9) < 45
+        when "strike", "mines", "napalm", "meteor"
+          say("get-down", color, x: x, delay: 0.2) if roll(event, 9) < 60
+        when "walker", "guided"
+          later("baa", 0.25, x: x)
+        when "poisoner"
+          later("pfft", 0.3, x: x)
+        when "digger"
+          squeak("eek", color, x)
+        end
+      end
+
+      def cheer(event, state)
+        team = event["team"]
+        unless team
+          later("ann-its-a-tie", 0.8)
+          return
+        end
+        color = color_of(state, {"team" => team})
+        say("you-win", color, delay: 0.5, chatter: false)
+        squeak("yay", color, WIDTH / 2, delay: 1.5)
+        members = state && state["worms"]&.select { |w| w["team"] == team }
+        later("ann-flawless-victory", 2.0) if members && !members.empty? && members.all? { |w| w["hp"].to_i > 0 }
+      end
+
+      def say(line, color, x: WIDTH / 2, delay: 0, chatter: true)
+        return unless color
+        voice, pitch = VOICES[color.to_i % VOICES.length]
+        later("vo-#{line}-#{voice}", delay, x: x, pitch: pitch, voice: true, chatter: chatter)
+      end
+
+      def squeak(kind, color, x, delay: 0)
+        return unless color
+        later("squeak-#{kind}", delay, x: x, pitch: SQUEAK_PITCH[color.to_i % SQUEAK_PITCH.length], voice: true)
+      end
+
+      def later(name, delay, **options)
+        return speak(name, **options) if delay <= 0
+        (@queue ||= []) << [Burrow.clock + delay, name, options]
+        @queue.shift while @queue.length > QUEUE_LIMIT
+      end
+
+      # Voices never talk over a line already in progress unless they react to
+      # a hit. Several grubs caught in one blast may all squeak, up to three.
+      def speak(name, x: WIDTH / 2, volume: 1, pitch: 1.0, voice: false, chatter: false)
+        return play(name, x: x, volume: volume, pitch: pitch) unless voice
+        now = Burrow.clock
+        return if chatter && now < (@voice_until || 0)
+        (@squeaks ||= []).select! { |at| now - at < 0.12 }
+        return if @squeaks.length >= 3
+        @squeaks << now
+        return unless play(name, x: x, volume: volume, pitch: pitch, throttle: false)
+        length = (@seconds && @seconds[name]) || 0.8
+        @voice_until = [@voice_until || 0, now + length / pitch].max
+      end
+
+      def roll(event, salt) = ((event["id"].to_i + 1) * 2_654_435_761 + salt * 40_503) % 4_294_967_296 % 100
+
+      def worm(state, id) = id && state && state["worms"]&.find { |w| w["id"] == id }
+
+      def color_of(state, worm)
+        return unless worm && state
+        state["teams"]&.find { |team| team["id"] == worm["team"] }&.fetch("color", nil)
+      end
+
+      def nearest(state, event, reach)
+        return unless state && event["x"] && event["y"]
+        state["worms"]&.select { |w| w["hp"].to_i > 0 }
+          &.min_by { |w| Math.hypot(w["x"] - event["x"], w["y"] - event["y"]) }
+          &.then { |w| w if Math.hypot(w["x"] - event["x"], w["y"] - event["y"]) <= reach }
+      end
+
       def voice(immediate)
         # Prefer finished voices. When all twelve are busy, protect a fresh
         # local report from a same-frame burst of authoritative impact effects.
@@ -307,6 +511,7 @@ module Burrow
           wav = File.binread(File.join(ROOT, "#{name}.wav"))
           data = self.class.decode_wave(wav)
           pcm = data.fetch(:pcm)
+          (@seconds ||= {})[name] = pcm.bytesize.fdiv(data[:channels] * 2 * data[:rate])
           memory = FFI::MemoryPointer.new(:char, pcm.bytesize)
           memory.put_bytes(0, pcm)
           id = FFI::MemoryPointer.new(:uint)

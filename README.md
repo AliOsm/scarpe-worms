@@ -5,7 +5,10 @@ Up to six teams, destructible random maps, 48 weapons and tools, and self-hosted
 
 ![Burrow Brigade battlefield](docs/evidence/battlefield/glacier-islands-overview.png)
 
-**Status: 0.5.0 preview (unreleased).** Organic islands with caves, overhangs, sea
+**Status: 0.5.3 preview (unreleased).** Grubs squeak when hit, call for a medic,
+say "buh-bye" and pop into a little ghost, leaving their team's gravestone; big hits
+land with comic POW!, BONK! and KABOOM! bursts, and sheep baa while cows moo.
+0.5.2 reworked all 48 weapons, and 0.5.0 brought organic islands with caves, overhangs, sea
 arches and ruins; blasts that fling grubs, mines and barrels; spreading fire; and
 two-step weapons such as a homing rocket you lock on, then aim and charge. This builds
 on 0.4.0's painted environments and the glossy arcade interface

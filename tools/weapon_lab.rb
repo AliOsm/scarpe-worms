@@ -4,6 +4,11 @@
 #
 #   SCARPE_DISPLAY_SERVICE=native SCARPE_NATIVE_HEADLESS=1 [BURROW_LAB_WEAPONS="rope jetpack"] ./bin/scarpe tools/weapon_lab.rb
 #
+# For reactions (hits, deaths, graves, drowning): BURROW_LAB_ENEMY_HP=30 leaves
+# the near enemy that weak, BURROW_LAB_PIT=1 opens a shaft to the sea beyond it,
+# BURROW_LAB_EVERY=0.1 captures more often (default 0.25 s), and BURROW_LAB_TAIL=2
+# keeps capturing that many seconds after each script ends.
+#
 # Writes BURROW_LAB_OUT (default .cache/weapon-lab)/<weapon>/frame-NN.png plus a
 # log.json of the authoritative state at every capture, and lab.json overall.
 # The host runs in this process on loopback TLS; between weapons the course is
@@ -29,6 +34,10 @@ module LabCourse
     terrain = match.terrain
     data = "\0".b * (terrain.cols * terrain.rows)
     data[(GROUND / 2) * terrain.cols..] = "\1" * ((terrain.rows - GROUND / 2) * terrain.cols)
+    if ENV["BURROW_LAB_PIT"] == "1"
+      # A shaft to the sea at x 800..980: a grub nudged right falls in.
+      (GROUND / 2...terrain.rows).each { |row| data[row * terrain.cols + 400, 90] = "\0" * 90 }
+    end
     course = Burrow::Terrain.new(seed: terrain.seed, width: terrain.width, height: terrain.height, data: data, revision: terrain.revision + 1)
     course.bridge(560, 430, width: 760, height: 46)   # ceiling slab x 180..940, y 430..476
     course.bridge(1320, 700, width: 40, height: 200)   # wall x 1300..1340
@@ -64,6 +73,8 @@ module LabCourse
         rope: nil, fuel: 0, jetpack: false, parachute: false, launched: false, poisoned: false, shield: false, frozen: false,
         input: 0.0, lift: 0.0, input_until: 0)
       w.merge!(setup.fetch(:grub, {})) if w[:id] == "w1"
+      w[:hp] = ENV["BURROW_LAB_ENEMY_HP"].to_i if w[:id] == "w2" && ENV["BURROW_LAB_ENEMY_HP"]
+      w.delete(:sunk)
     end
     teams.each { |t| t[:inventory] = Burrow::Catalog.inventory("sandbox") }
     @team_index = 0
@@ -240,7 +251,7 @@ Scarpe::Native.after_first_heartbeat do
         frames += 1
       end
       # Advance while capturing every `every` seconds.
-      run = lambda do |seconds, every: 0.25|
+      run = lambda do |seconds, every: ENV.fetch("BURROW_LAB_EVERY", "0.25").to_f|
         finish = Burrow.clock + seconds
         while Burrow.clock < finish
           step = [every, finish - Burrow.clock].min
@@ -295,6 +306,11 @@ Scarpe::Native.after_first_heartbeat do
           auto.key_up(arg)
         when :wait then run.call(arg)
         end
+      end
+      tail = ENV.fetch("BURROW_LAB_TAIL", "0").to_f
+      if tail.positive?
+        script_action = {type: "tail"}
+        run.call(tail)
       end
       script_action = {type: "complete"}
       capture.call
