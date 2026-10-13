@@ -16,6 +16,7 @@ presented = Set.new
 recording = false
 last_at = nil
 last_work = nil
+last_pixels, last_origin = nil, nil
 stalls = []
 Burrow::Client::App.prepend(Module.new do
   define_method(:update) do
@@ -28,6 +29,25 @@ Burrow::Client::App.prepend(Module.new do
     last_at = at
     super()
     last_work = (Burrow.clock - at) * 1000
+    if recording && scene
+      current = scene.instance_variable_get(:@state)
+      origin = scene.instance_variable_get(:@origin)
+      # Match the rendering journey: offscreen movement and gravity probes
+      # that leave rounded draw positions unchanged do not require a repaint.
+      pixels = scene.actors.filter_map { |id, node| [id, node[:position]] if node[:visible] }.to_h
+      scene.instance_variable_get(:@projectile_nodes).each do |id, node|
+        shot = current["projectiles"].find { |p| p["id"] == id }
+        next unless shot && scene.camera.screen(shot["x"], shot["y"]).zip([1440, 720]).all? { |pos, limit| pos.between?(-30, limit + 30) }
+        pixels[id] = [node[:image].left, node[:image].top]
+      end
+      changed = last_pixels && pixels != last_pixels
+      moving = changed || (last_origin && origin != last_origin)
+      # The shared interval selector expects completed-update samples with
+      # their motion flag at index four, as in check_rendering.rb.
+      motion_samples << [Time.now.to_f, "action", nil, nil, !!moving]
+      last_pixels, last_origin = pixels, origin
+      presented.merge(scene.timeline.seen_shots)
+    end
   end
 end)
 Burrow::Client::Scene.prepend(Module.new do
@@ -35,13 +55,6 @@ Burrow::Client::Scene.prepend(Module.new do
     at = Burrow.clock
     super()
     preparation << (Burrow.clock - at) * 1000
-    if recording
-      current = instance_variable_get(:@state)
-      moving = current && (current["projectiles"].any? { |p| p["vx"].abs + p["vy"].abs > 8 } || current["worms"].any? { |w| w["hp"] > 0 && w["vx"].abs + w["vy"].abs > 8 })
-      motion_samples << [Time.now.to_f, !!moving]
-      # The timeline forgets finished flights, so collect them as they are shown.
-      presented.merge(timeline.seen_shots)
-    end
   end
 end)
 at_exit { FileUtils.remove_entry(directory) if File.directory?(directory); exit(1) if failed }
@@ -63,6 +76,8 @@ Scarpe::Native.after_first_heartbeat do
     wait.call { client.room["members"].size == 6 && client.room.dig("config", "worms") == 6 }
     auto.click({text: "Start the mischief"})
     wait.call { client.scene && client.scene.terrain_revision >= 0 }
+    auto.window_focus(true) # Xvfb has no window manager to grant activation.
+    wait.call { client.instance_variable_get(:@window_active) }
     auto.advance(2)
     intervals.clear
     preparation.clear
@@ -83,6 +98,8 @@ Scarpe::Native.after_first_heartbeat do
     report = {ruby: RUBY_VERSION, platform: RUBY_PLATFORM, headless: ENV["SCARPE_NATIVE_HEADLESS"] == "1",
       world: [client.state["world_width"], client.state["world_height"]],
       motion_samples: motion_samples, stalls: stalls,
+      motion_detection_version: 2,
+      motion_detection: "Changed rounded visible actor/projectile positions and camera origin, sampled after completed App updates",
       presented_shots: presented.to_a, terrain_revision: client.scene.terrain_revision,
       scenario: "18 seconds of walking, jumping, cluster flight/explosions and bot turns with 36 grubs in a native window",
       app_update_intervals: stats.call(intervals), ruby_scene_preparation: stats.call(preparation)}

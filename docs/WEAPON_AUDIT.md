@@ -73,15 +73,16 @@ are recorded in [ART_DIRECTION.md](ART_DIRECTION.md).
 
 | Entries | Contract checked or corrected |
 | --- | --- |
-| Pocket rocket | Charged, wind-sensitive ballistic flight; terrain/body collision; swept muzzle and thin-wall collision. |
-| Moon mortar | Instant fixed-power launch; five secondary fragments on impact. |
-| Love letter | Two steps: lock a target, then aim and charge (mouse or Space); Backspace re-targets. Ballistic launch, then bounded homing at a cruise speed set by launch power; the motor burns out after 4.5 s and the rocket falls. |
-| Tick-tock | Variable fuse; bounces on ground and grubs; surface-normal reflection; rolls down slopes steeper than about 35°; falls if support disappears; blasts knock it away. |
-| Party popper, Fruit salad | Timed parent explosion; five/six fragments; boosted fragment damage; fragments settle before handover. Fruit salad splits early on a second Fire press while airborne. |
-| Velcro bomb | Timed attachment to terrain or a grub; follows the attached grub; falls after support destruction. |
-| Short fuse | Placement and four-second countdown; full retreat window. |
-| Big trouble | Charged bouncing explosive with adjustable fuse and larger radius. |
-| Choir bomb | Fixed five-second fuse; waits for rest, bounded by a twelve-second safety lifetime. |
+| Pocket rocket | Charge/wind and swept impacts verified; dedicated heading-aligned rocket, motor trail, warm flash and debris. |
+| Moon mortar | Fixed-power impact shell; five distinct small fragments inherit 30% horizontal momentum and damage boost; no recursive split or fragment fuse badges. |
+| Love letter | Lock → aim/charge; half-second ballistic launch, bounded powered steering through age 4.5s, then gravity. Powered/coasting sprites and trails follow motor age; legacy saves retain cruise defaults. |
+| Tick-tock | Exact 1–5s fuse through body/ground bounces; surface-normal rolling and support loss verified. Pin/lever grenade art, slow tumble, readable fuse and blast. |
+| Party popper | Timed bouncing shell and five distinct small bomblets. Fragments retain horizontal momentum and boosted damage, settle before handover and never fragment recursively. |
+| Fruit salad | Owner-only Fire split spends no extra ammo; six distinct bananettes, boosted damage and inherited momentum; yellow burst and locally predicted split sound. |
+| Velcro bomb | Terrain takes priority over a body behind a wall. Body attachment follows the grub through the final fuse tick and releases on death; terrain attachment falls if support disappears. Dedicated adhesive bomb and violet-tinted blast. |
+| Short fuse | Swept near-foot placement cannot cross a close wall or attach to its deploying owner. Fixed 4s fuse, retreat controls, animated sparks, heavy blast and immediate fuse-tick sound. |
+| Big trouble | Adjustable fuse and heavy restitution verified; oversized original bomb, sparking fuse, larger flash/smoke/debris and bounded shake. |
+| Choir bomb | Corrected airborne freeze at fuse expiry. Keeps falling after 5s, rests, then emits one 0.6s chord/glow before its huge blast; 12s total safety lifetime. Rest/chord badges and checkpoint recovery verified. |
 | Double tap | Two separately aimed shots per cartridge, including the final cartridge; switching locked between shots. |
 | Long goodbye | Instant terrain-blocked ray; no muzzle gap through close walls. |
 | Peashooter | Eight visible rounds over time; saved burst queue survives host recovery. |
@@ -92,9 +93,11 @@ are recorded in [ART_DIRECTION.md](ART_DIRECTION.md).
 | Little nudge | Zero-damage shove; terrain obstruction respected. |
 | Home run | Angle-sensitive knockback; frozen bodies stay still. |
 | Half measure | Halves current health before configured damage modifiers. |
-| Special delivery, Rain check, Spicy forecast | ← → chooses the bombers' approach; five objects are released upwind so they land in a line across the target; normal blasts, armed mines, or spreading flames; cavern restrictions exposed before equipping. |
-| Bad astronomy | Random six-meteor shower, activated without a meaningless target selection; cavern restriction. |
-| Rumble button | Bounded seeded impulses; respects frozen bodies. |
+| Special delivery | Visible bomber pass survives zoom/window rebuilds and follows playback time; five delayed drops follow the selected side and span about 152px at the target. Off-map approach releases survive long enough to enter, including low gravity. Dedicated impact bombs, launch cue and blasts. |
+| Rain check | Same timed approach; dedicated dropped mines land, arm for 40 ticks, then trigger after 18 ticks near a grub. Persistent mines and pending releases restore exactly. |
+| Spicy forecast | Same timed approach; original firebomb sprites, orange fire bursts and bounded loose flames. Turn waits for fire to burn out. |
+| Bad astronomy | Six seeded, staggered flaming rocks cover the battlefield; launch positions compensate horizontal fall so edge rocks do not disappear. Fiery trails and rock blasts; no target needed; cavern restriction. |
+| Rumble button | Seeded impulses detach ropes and move loose props without prematurely igniting them; frozen grubs and terrain remain intact. Bounded camera shake, ground dust and immediate heavy report; reduced motion disables shake. |
 | Woolly menace | Hops at obstacles/ledges; manual or timed detonation. |
 | Captain wool | Walking → upward launch → directional flight → falling; collision and lifetime termination. |
 | Tunnel buddy | Walking → dive → digging → detonation; tunnel exit detection probes ahead of carved material. |
@@ -111,7 +114,7 @@ are recorded in [ART_DIRECTION.md](ART_DIRECTION.md).
 | Down we go, Side hustle | Bounded-duration terrain tools; early stop; steerable torch slope; checkpoint recovery. |
 | First aid | Health cap, poison cure, rejects wasted use without spending ammo. |
 | Bubble wrap, Ice break | Protection lifetime through the team's next turn; frozen grubs resist weapon knockback. |
-| Stink bomb | Timed bouncing gas canister, no premature body-impact explosion. |
+| Stink bomb | Exact bouncing fuse; drifting poison cloud changes status without a crater or premature body-impact blast. Leaking canister, toxic bloom and release impact cue. |
 | Extra spicy, Moon boots, Weather vane | Attack damage, current-turn gravity, and bounded wind changes; utility actions preserve the turn. |
 | Pass the turn | Settles safely before handover; unavailable between shotgun shots. |
 
@@ -169,6 +172,44 @@ canopy states survive checkpoints deterministically.
   and an approach; girders take a target and a tilt; Fruit salad splits on command.
   Arrow keys (not A/D) steer approach and tilt, so the grub does not walk meanwhile.
 
+## Munitions sweep (2026-10-13)
+
+The munitions family adds dedicated original Cairo art and runtime rules in
+`sprites/munitions.rb`, compiled by `build_ordnance_munitions.py`. Cached frame
+paths and the existing 100-effect cap bound presentation work. The shared
+`explode`, `shove` and `throw_body` damage/knockback formulas are unchanged.
+No base damage or radius values changed; fragments inherit 30% horizontal launch
+momentum, strikes widen from 120 to 152 pixels, and meteors arrive in waves.
+
+Version-one checkpoints and protocol 4 remain supported. Optional projectile
+fields (`sky_drop`, `choir_at`) use absent-field defaults; pending releases use
+the existing saved delay. Motion samples append age/rest state while old samples
+still render; restored legacy tracks recover fragment identity from the host's
+projectile list. Fragment metadata selects distinct art. No fire acknowledgement or
+charge-source gate was relaxed. One prior Choir test was updated intentionally:
+a resting expired bomb now warns for 18 ticks before it disappears.
+
+Baseline sheets are in the original checkout's `.cache/weapon-lab/`; this sweep's
+new sheets are in `/tmp/munitions-lab/<weapon>-sheet.png`, with authoritative
+per-frame logs at `/tmp/munitions-lab/<weapon>/log.json`. The committed
+[munitions report](validation/munitions-sweep.json) records each weapon's defects,
+changes and evidence. `python3 tools/check_munitions_lab.py /tmp/munitions-lab`
+checks all 16 using isolated event IDs, accepted fire, ammo and real turn handover.
+The revised scripts wait through handover, demonstrate a real homing target and
+sticky body attachment, and return to Follow for the aerial pass. These are
+Linux native input captures; audible Mac output and the owner's feel/balance
+judgment require device playtesting.
+
+The action-cadence checker exposed a measurement defect during this sweep: it
+counted global velocity after visible positions stopped changing. A diagnostic
+capture contained 154 such updates; the old selector reported 19.14ms mean /
+33.76ms p95, while the rendering benchmark's existing visible-motion selector
+measured the same capture at 16.30ms / 20.43ms. The action checker now shares that
+selector, records completed updates, grants Xvfb focus for scripted controls,
+and retains raw evidence in `.cache/native-action.raw.json`. Frame budgets are
+unchanged; timing-analysis regressions still require real pending motion and
+blocked GUI intervals to count as stalls.
+
 ## Automated evidence
 
 - Mobility sweep (2026-10-13): `test/weapons_mobility_test.rb` covers visible hook
@@ -184,6 +225,10 @@ canopy states survive checkpoints deterministically.
   captures and no error notices. The [Linux mobility report](validation/weapons-mobility-linux.json)
   records the checks, lab outcomes, rendering captures and retained limits;
   these checks do not establish Mac runtime or audible-output validation.
+
+- `test/weapons_munitions_test.rb`: all 16 munitions, exact fuses, impacts, staged
+  releases, fragments, mine arming, fire cleanup, earthquake props, legacy saves
+  and recovery during actions; every action finishes before emergency settling.
 - `test/match_test.rb`: every catalog entry launches, spends the right ammo, and
   completes its action; deterministic six-team matches; validation and recovery.
 - `test/weapon_physics_test.rb`: controlled impact geometry, first-tick hits,

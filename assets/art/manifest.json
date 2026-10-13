@@ -552,7 +552,545 @@
   },
   "ordnance": {
     "critters": {},
-    "munitions": {},
+    "munitions": {
+      "raster_scale": 2,
+      "facing": "right",
+      "projectiles": {
+        "rocket": {
+          "pattern": "ordnance/munitions/rocket-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            48,
+            28
+          ],
+          "source_size": [
+            96,
+            56
+          ],
+          "anchor": [
+            24.0,
+            14.0
+          ]
+        },
+        "homing": {
+          "pattern": "ordnance/munitions/homing-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            48,
+            28
+          ],
+          "source_size": [
+            96,
+            56
+          ],
+          "anchor": [
+            24.0,
+            14.0
+          ]
+        },
+        "mortar": {
+          "pattern": "ordnance/munitions/mortar-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            34,
+            26
+          ],
+          "source_size": [
+            68,
+            52
+          ],
+          "anchor": [
+            17.0,
+            13.0
+          ]
+        },
+        "mortar-fragment": {
+          "pattern": "ordnance/munitions/mortar-fragment-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            18,
+            18
+          ],
+          "source_size": [
+            36,
+            36
+          ],
+          "anchor": [
+            9.0,
+            9.0
+          ]
+        },
+        "grenade": {
+          "pattern": "ordnance/munitions/grenade-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            30,
+            34
+          ],
+          "source_size": [
+            60,
+            68
+          ],
+          "anchor": [
+            15.0,
+            17.0
+          ]
+        },
+        "cluster": {
+          "pattern": "ordnance/munitions/cluster-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            34,
+            34
+          ],
+          "source_size": [
+            68,
+            68
+          ],
+          "anchor": [
+            17.0,
+            17.0
+          ]
+        },
+        "cluster-fragment": {
+          "pattern": "ordnance/munitions/cluster-fragment-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            20,
+            22
+          ],
+          "source_size": [
+            40,
+            44
+          ],
+          "anchor": [
+            10.0,
+            11.0
+          ]
+        },
+        "sticky": {
+          "pattern": "ordnance/munitions/sticky-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            34,
+            34
+          ],
+          "source_size": [
+            68,
+            68
+          ],
+          "anchor": [
+            17.0,
+            17.0
+          ]
+        },
+        "dynamite": {
+          "pattern": "ordnance/munitions/dynamite-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            32,
+            40
+          ],
+          "source_size": [
+            64,
+            80
+          ],
+          "anchor": [
+            16.0,
+            20.0
+          ]
+        },
+        "mega_bomb": {
+          "pattern": "ordnance/munitions/mega_bomb-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            42,
+            46
+          ],
+          "source_size": [
+            84,
+            92
+          ],
+          "anchor": [
+            21.0,
+            23.0
+          ]
+        },
+        "banana": {
+          "pattern": "ordnance/munitions/banana-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            38,
+            38
+          ],
+          "source_size": [
+            76,
+            76
+          ],
+          "anchor": [
+            19.0,
+            19.0
+          ]
+        },
+        "banana-fragment": {
+          "pattern": "ordnance/munitions/banana-fragment-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            22,
+            22
+          ],
+          "source_size": [
+            44,
+            44
+          ],
+          "anchor": [
+            11.0,
+            11.0
+          ]
+        },
+        "holy_bomb": {
+          "pattern": "ordnance/munitions/holy_bomb-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            48,
+            48
+          ],
+          "source_size": [
+            96,
+            96
+          ],
+          "anchor": [
+            24.0,
+            24.0
+          ]
+        },
+        "poison": {
+          "pattern": "ordnance/munitions/poison-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            34,
+            38
+          ],
+          "source_size": [
+            68,
+            76
+          ],
+          "anchor": [
+            17.0,
+            19.0
+          ]
+        },
+        "airstrike": {
+          "pattern": "ordnance/munitions/airstrike-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            36,
+            26
+          ],
+          "source_size": [
+            72,
+            52
+          ],
+          "anchor": [
+            18.0,
+            13.0
+          ]
+        },
+        "mine_strike": {
+          "pattern": "ordnance/munitions/mine_strike-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            30,
+            28
+          ],
+          "source_size": [
+            60,
+            56
+          ],
+          "anchor": [
+            15.0,
+            14.0
+          ]
+        },
+        "napalm": {
+          "pattern": "ordnance/munitions/napalm-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            38,
+            28
+          ],
+          "source_size": [
+            76,
+            56
+          ],
+          "anchor": [
+            19.0,
+            14.0
+          ]
+        },
+        "meteor": {
+          "pattern": "ordnance/munitions/meteor-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            64,
+            44
+          ],
+          "source_size": [
+            128,
+            88
+          ],
+          "anchor": [
+            32.0,
+            22.0
+          ]
+        },
+        "earthquake": {
+          "pattern": "ordnance/munitions/earthquake-{frame}.png",
+          "frames": 4,
+          "fps": 10,
+          "size": [
+            32,
+            34
+          ],
+          "source_size": [
+            64,
+            68
+          ],
+          "anchor": [
+            16.0,
+            17.0
+          ]
+        }
+      },
+      "stages": {
+        "homing": "homing-coast-{frame} before ignition / after burnout",
+        "holy_bomb": "holy_bomb-choir-{frame} during the final chord"
+      },
+      "variants": {
+        "homing-coast": {
+          "pattern": "ordnance/munitions/homing-coast-{frame}.png",
+          "frames": 4,
+          "size": [
+            48,
+            28
+          ],
+          "source_size": [
+            96,
+            56
+          ],
+          "anchor": [
+            24.0,
+            14.0
+          ]
+        },
+        "holy_bomb-choir": {
+          "pattern": "ordnance/munitions/holy_bomb-choir-{frame}.png",
+          "frames": 4,
+          "size": [
+            48,
+            48
+          ],
+          "source_size": [
+            96,
+            96
+          ],
+          "anchor": [
+            24.0,
+            24.0
+          ]
+        }
+      },
+      "bomber": {
+        "pattern": "ordnance/munitions/bomber-{direction}-{frame}.png",
+        "frames": 4,
+        "fps": 12,
+        "size": [
+          144,
+          72
+        ],
+        "source_size": [
+          288,
+          144
+        ],
+        "anchor": [
+          72,
+          36
+        ]
+      },
+      "effects": {
+        "blast": {
+          "pattern": "ordnance/munitions/blast-burst-{frame}.png",
+          "frames": 8,
+          "fps": 16,
+          "size": [
+            128,
+            128
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "anchor": [
+            64,
+            64
+          ]
+        },
+        "shrapnel": {
+          "pattern": "ordnance/munitions/shrapnel-burst-{frame}.png",
+          "frames": 8,
+          "fps": 16,
+          "size": [
+            128,
+            128
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "anchor": [
+            64,
+            64
+          ]
+        },
+        "heavy": {
+          "pattern": "ordnance/munitions/heavy-burst-{frame}.png",
+          "frames": 8,
+          "fps": 16,
+          "size": [
+            128,
+            128
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "anchor": [
+            64,
+            64
+          ]
+        },
+        "fruit": {
+          "pattern": "ordnance/munitions/fruit-burst-{frame}.png",
+          "frames": 8,
+          "fps": 16,
+          "size": [
+            128,
+            128
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "anchor": [
+            64,
+            64
+          ]
+        },
+        "choir": {
+          "pattern": "ordnance/munitions/choir-burst-{frame}.png",
+          "frames": 8,
+          "fps": 12,
+          "size": [
+            128,
+            128
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "anchor": [
+            64,
+            64
+          ]
+        },
+        "toxic": {
+          "pattern": "ordnance/munitions/toxic-burst-{frame}.png",
+          "frames": 8,
+          "fps": 16,
+          "size": [
+            128,
+            128
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "anchor": [
+            64,
+            64
+          ]
+        },
+        "fire": {
+          "pattern": "ordnance/munitions/fire-burst-{frame}.png",
+          "frames": 8,
+          "fps": 16,
+          "size": [
+            128,
+            128
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "anchor": [
+            64,
+            64
+          ]
+        },
+        "meteor": {
+          "pattern": "ordnance/munitions/meteor-burst-{frame}.png",
+          "frames": 8,
+          "fps": 16,
+          "size": [
+            128,
+            128
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "anchor": [
+            64,
+            64
+          ]
+        }
+      },
+      "choir_glow": {
+        "pattern": "ordnance/munitions/choir-glow-{frame}.png",
+        "frames": 6,
+        "fps": 10,
+        "size": [
+          96,
+          96
+        ],
+        "source_size": [
+          192,
+          192
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      }
+    },
     "mobility": {
       "jetpack": {
         "pattern": "ordnance/mobility/jetpack-{facing}-{frame}.png",

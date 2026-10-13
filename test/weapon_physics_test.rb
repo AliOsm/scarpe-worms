@@ -339,6 +339,8 @@ class WeaponPhysicsTest < Minitest::Test
     assert_includes match.projectiles, p
     p.merge!(x: 700.0, y: 498.0, stuck: true, support_x: 700, support_y: 500)
     match.step
+    assert_equal "choir", p[:stage]
+    match.step(18) # the resting bomb now has a brief, audible pre-blast cue
     refute_includes match.projectiles, p
   end
 

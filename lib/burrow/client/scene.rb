@@ -56,6 +56,7 @@ module Burrow
           @last_turn, @finished_at = presentation.values_at(:last_turn, :finished_at)
           @hurt_until = presentation[:hurt_until]
           @impact_focus = presentation[:impact_focus]
+          @strike_focus = presentation[:strike_focus]
           @tracked_projectile = presentation[:tracked_projectile]
           @turn_notice_data = presentation[:turn_notice_data]
           @turn_notice_pending = presentation[:turn_notice_pending]
@@ -180,9 +181,10 @@ module Burrow
         active = @state["worms"].find { |w| w["id"] == @state["active"] }
         render_camera(active, started)
         @scale = @ui_scale * camera.zoom
+        camera.update_shake(now: started, motion: @controller.motion?)
         render_backdrop
         @last_render = started
-        ox, oy = px(-camera.x), px(-camera.y)
+        ox, oy = px(-camera.x + camera.shake_x / camera.zoom), px(-camera.y + camera.shake_y / camera.zoom)
         if !@origin || @origin[0] != ox || @origin[1] != oy
           @world.move(ox, oy)
           @origin = [ox, oy]
@@ -202,6 +204,7 @@ module Burrow
         render_actors(started)
         render_overlays
         render_projectiles
+        render_strike
         render_hazards
         render_aim(started)
         render_effects(started)
@@ -224,6 +227,15 @@ module Burrow
       # Effect helpers for Sprites.effect_rule blocks (world coordinates).
       def fx_sprite(name, x, y, scale = 1.0) = sprite_effect(name, x, y, scale)
       def fx_particle(x, y, color:, life:, size:, vx: 0, vy: 0) = add_particle(x, y, color: color, life: life, size: size, vx: vx, vy: vy)
+      def fx_motion? = @controller.motion?
+      def fx_shake(strength, duration: 0.3) = camera.shake(strength, duration: duration, motion: @controller.motion?)
+
+      # Aircraft belong to a strike's presentation, not the disposable effect
+      # pool. Retain one pass so zoom/window rebuilds can redraw its current age.
+      def fx_strike(paths, event)
+        @strike_focus = {paths: paths, x: event["x"], y: event["y"], vx: event["vx"],
+          tick: event.fetch("tick", @timeline.tick), duration: event.fetch("duration", 3.2)}
+      end
 
       # A short-lived image animation: `paths` are full frame paths (Sprites.frames).
       def fx_frames(paths, x, y, width, height, fps:, anchor_x: width / 2.0, anchor_y: height / 2.0, rotation: nil)
@@ -335,7 +347,7 @@ module Burrow
           terrain_result: @terrain_result || @restored_terrain_result,
           camera: camera, timeline: timeline, last_turn: @last_turn,
           finished_at: @finished_at, hurt_until: @hurt_until,
-          impact_focus: @impact_focus, tracked_projectile: @tracked_projectile,
+          impact_focus: @impact_focus, strike_focus: @strike_focus, tracked_projectile: @tracked_projectile,
           turn_notice_data: @turn_notice_data, turn_notice_pending: @turn_notice_pending}
         @terrain_art = nil
         saved
@@ -474,7 +486,8 @@ module Burrow
           end
           place(node[:image], px(x - look.anchor_x), px(y - look.anchor_y), px(look.width), px(look.height))
           if look.rotation
-            rotation = (look.rotation / 6).round * 6
+            step = Sprites::MUNITION_BLASTS.key?(p["weapon"]) ? 3 : 6
+            rotation = (look.rotation / step).round * step
             node[:image].rotate(rotation) if node[:image].rotate_angle != rotation
           end
           if node[:fuse]
@@ -483,13 +496,24 @@ module Burrow
             bx, by = px(x) - bw / 2, px(y - 19) - bh
             restyle(node[:fuse_plate], left: bx, top: by, width: bw, height: bh)
             restyle(node[:fuse], left: bx, top: by + (3 * badge_scale).round, width: bw, size: [(12 * badge_scale).round, 8].max)
-            set_text(node[:fuse], p["life"] ? "#{(p['life'].fdiv(TICK_RATE)).ceil}s" : "")
+            fuse_text = if p["weapon"] == "holy_bomb" && p["stage"] == "waiting"
+              "…"
+            elsif p["weapon"] == "holy_bomb" && p["stage"] == "choir"
+              "!"
+            else
+              p["life"] ? "#{(p['life'].fdiv(TICK_RATE)).ceil}s" : ""
+            end
+            set_text(node[:fuse], fuse_text)
             color = p["life"].to_f <= TICK_RATE ? Theme::ORANGE : Theme::WHITE
             node[:fuse].style(stroke: color) if node[:fuse_color] != color
             node[:fuse_color] = color
           end
-          if @controller.motion? && @frame_count % 4 == 0 && !p["walker"] && Math.hypot(p["vx"], p["vy"]) > 40
-            add_particle(x, y, color: "#ffefc188", life: 0.35, size: 7, vx: 0, vy: -8)
+          if @controller.motion? && !p["walker"]
+            if Sprites::MUNITION_BLASTS.key?(p["weapon"])
+              Sprites.munition_trail(self, p, rotation: node[:image].rotate_angle) if @frame_count % 6 == 0
+            elsif @frame_count % 4 == 0 && Math.hypot(p["vx"], p["vy"]) > 40
+              add_particle(x, y, color: "#ffefc188", life: 0.35, size: 7, vx: 0, vy: -8)
+            end
           end
         end
       end
@@ -565,6 +589,7 @@ module Burrow
 
       def render_camera(active, now)
         shots = @state["projectiles"]
+        strike_elapsed = strike_age
         # Keep a flight's identity through packet coalescing and cluster spawns.
         # Timeline shots contain presentation data, not live control flags.
         shot = shots.find { |p| p["id"] == @tracked_projectile } || shots.first
@@ -573,6 +598,11 @@ module Burrow
         if shot
           @tracked_projectile = shot["id"]
           target, velocity, mode = shot.values_at("x", "y"), shot.values_at("vx", "vy"), :projectile
+        elsif strike_elapsed
+          # The approach is visible before the first release. Camera#update
+          # honors manual exploration; the first real bomb takes over tracking.
+          target = [@strike_focus[:x] + @strike_focus[:vx] * strike_elapsed, @strike_focus[:y]]
+          velocity, mode = [@strike_focus[:vx], 0], :projectile
         elsif @impact_focus && now < @impact_focus[:until]
           target, mode = @impact_focus[:point], :impact
         else
@@ -580,6 +610,32 @@ module Burrow
           target, velocity, mode = active&.values_at("x", "y"), nil, :actor
         end
         camera.update(target, velocity: velocity, mode: mode, dt: now - (@last_render || now), animate: @controller.motion?)
+      end
+
+      def strike_age
+        return unless @strike_focus
+        age = [(@timeline.tick - @strike_focus[:tick]).fdiv(TICK_RATE), 0].max
+        if age >= @strike_focus[:duration]
+          @strike_focus = nil
+          return
+        end
+        age
+      end
+
+      def render_strike
+        age = strike_age
+        unless age && @controller.motion?
+          show_if(@strike_node, false) if @strike_node
+          return
+        end
+        pass = @strike_focus
+        path = pass[:paths][(age * 12).floor % pass[:paths].length]
+        unless @strike_node
+          @effect_layer.append { @strike_node = @shoes.image(path, left: 0, top: 0, width: 1, height: 1, alt: "") }
+        end
+        @strike_node.path = path if @strike_node.path != path
+        place(@strike_node, px(pass[:x] + pass[:vx] * age - 72), px(pass[:y] - 49), px(144), px(72))
+        show_if(@strike_node, true)
       end
 
       def resize_world

@@ -191,7 +191,15 @@ module Burrow
       match.instance_variable_set(:@salvos, Array(match.instance_variable_get(:@salvos)).map { |s| s.transform_keys(&:to_sym) })
       match.instance_variable_set(:@rng, RandomStream.new(saved.fetch("random")))
       match.instance_variable_set(:@motion_frames, saved.fetch("motion_frames", []))
-      match.instance_variable_set(:@shot_tracks, saved.fetch("shot_tracks", {}))
+      shot_tracks = saved.fetch("shot_tracks", {})
+      # Early checkpoints did not tag secondary mortar/cluster/banana shots in
+      # their motion tracks. The live projectile list is authoritative, so
+      # restore that identity before the client builds its interpolated view.
+      match.projectiles.each do |projectile|
+        track = shot_tracks[projectile[:id].to_s] || shot_tracks[projectile[:id]]
+        track["fragment"] = !!projectile[:fragment] if track && !track.key?("fragment")
+      end
+      match.instance_variable_set(:@shot_tracks, shot_tracks)
       match
     end
 
@@ -217,8 +225,8 @@ module Burrow
     def record_projectile(p, ended: false)
       @shot_tracks ||= {}
       track = (@shot_tracks[p[:id]] ||= {"id" => p[:id], "weapon" => p[:weapon], "walker" => p[:walker],
-        "owner" => p[:owner], "fused" => !!(p[:bounce] || p[:sticky]), "from" => tick, "samples" => []})
-      track["samples"] << [tick, *p.values_at(:x, :y, :vx, :vy).map { |n| n.round(3) }, !!p[:walker], p[:stage], p[:life]]
+        "owner" => p[:owner], "fused" => !!(p[:bounce] || p[:sticky]), "fragment" => !!p[:fragment], "from" => tick, "samples" => []})
+      track["samples"] << [tick, *p.values_at(:x, :y, :vx, :vy).map { |n| n.round(3) }, !!p[:walker], p[:stage], p[:life], p[:age], !!p[:stuck]]
       track["to"] = tick if ended
     end
 

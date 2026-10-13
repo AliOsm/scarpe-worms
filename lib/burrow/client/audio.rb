@@ -179,7 +179,7 @@ module Burrow
           worm = state["worms"]&.find { |candidate| candidate["id"] == state["active"] }
           if projectile
             flying = projectile["kind"] == "guided" && projectile["stage"] == "walking"
-            {"kind" => "activate", "stage" => flying ? "flying" : nil}
+            {"kind" => "activate", "weapon" => projectile["weapon"], "stage" => flying ? "flying" : nil}
           elsif worm && worm["rope"]
             {"kind" => "activate", "stage" => "released"}
           elsif worm && worm["jetpack"]
@@ -199,8 +199,11 @@ module Burrow
         case event["kind"]
         when "fire"
           kind = Catalog::WEAPONS[event["weapon"]]&.fetch(:kind)
+          return "tick" if event["weapon"] == "dynamite"
+          return "explosion-heavy" if event["weapon"] == "earthquake"
           case kind
           when "projectile", "homing" then "launch"
+          when "strike", "mines", "napalm", "meteor" then "launch"
           when "bounce", "cluster", "sticky", "gas" then "throw"
           when "rope" then "throw"
           when "jetpack" then "launch"
@@ -212,11 +215,17 @@ module Burrow
         when "beam" then event["style"] == "laser" ? "beam" : "shot"
         when "explosion" then event.fetch("radius", 0) >= 70 ? "explosion-heavy" : "explosion"
         when "activate"
-          case event["stage"]
-          when "flying" then "launch"
-          when "released" then "throw"
-          else "equip"
+          if event["weapon"] == "banana" then "impact"
+          else
+            case event["stage"]
+            when "flying" then "launch"
+            when "released" then "throw"
+            else "equip"
+            end
           end
+        when "choir" then "pickup"
+        when "mine_land" then "impact"
+        when "gas" then "impact" if event["weapon"] == "poison"
         else EVENT_CUES[event["kind"]]
         end
       end

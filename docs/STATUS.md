@@ -25,6 +25,27 @@ the final pass does not establish the cause of every earlier stall. Physical Mac
 play and audible output remain untested. Rope uses one anchor without corner
 wrapping; girders retain a fixed 140-pixel length.
 
+## Munitions sweep (`weapons/munitions`)
+
+The 16 munitions now have dedicated flight/fragment art, distinct impacts and
+existing-cue audio feedback. Corrections cover choir fuse expiry, close-wall
+dynamite placement, terminal sticky attachment, legacy fragment playback, staged
+air support, edge-entry drops and earthquake rope/prop impulses. Aircraft survive
+zoom and window rebuilds; bounded camera shake respects reduced motion.
+
+The [munition validation report](validation/munitions-sweep.json) records each
+weapon's findings, tests, native lab evidence and shared-file integration notes.
+Ruby 4.0.7 and 3.4.7 each pass 175 tests / 7,346 assertions; all seven native
+journeys pass. The art checker covers all 162 new frames and rebuilds are
+byte-identical. All 16 native lab cases pass. Action cadence passes at 16.09ms
+mean / 20.83ms p95; scale-2 rendering with audio passes with combat/pan means
+of 16.22/16.66ms. The action checker now uses the existing rendering analysis to
+exclude measured idle gaps; the report retains its original failures and the
+diagnostic comparison, with no relaxed budgets.
+
+The remaining product check is human feel/balance and audible
+output on the owner's Mac; this branch's native measurements run on Linux.
+
 ## 0.5.1 performance sweep (unreleased)
 
 The owner found 0.5.0 stuttering, with lagging audio, on an M3 Pro. Measured on a

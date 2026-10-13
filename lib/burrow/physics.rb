@@ -314,10 +314,18 @@ module Burrow
         if p[:delay].to_i > 0
           p[:delay] -= 1
           next if p[:delay] > 0
+          record_projectile(p)
         end
         p[:age] += 1
         p[:life] -= 1
-        if p[:life] > 0
+        # An expired choir fuse waits for rest, but its physics must keep
+        # running. Resetting life to one without advancing made it hover.
+        choir_waiting = p[:weapon] == "holy_bomb" && !p[:choir_at] && p[:age] < 12 * TICK_RATE
+        # An attached sticky charge must follow its victim on the tick its
+        # fuse expires, so the blast is evaluated at the terminal position.
+        attached_victim = p[:stuck] && p[:attached_to] &&
+          worms.any? { |worm| worm[:id] == p[:attached_to] && worm[:hp] > 0 }
+        if p[:life] > 0 || choir_waiting || attached_victim
           if p[:stage] == "digging"
             advance_digger(p)
           elsif p[:walker]
@@ -326,9 +334,19 @@ module Burrow
             advance_projectile(p)
           end
         end
-        # The choir bomb finishes its count, then waits for a resting position.
-        p[:life] = 1 if p[:weapon] == "holy_bomb" && p[:life] <= 0 && !p[:stuck] && p[:age] < 12 * TICK_RATE
-        outside = p[:y] > (p[:homing] ? world_height + 40 : water) || p[:x] < -80 || p[:x] > world_width + 80 || p[:y] < -800
+        if choir_waiting && p[:life] <= 0
+          if p[:stuck] || p[:age] >= 12 * TICK_RATE - 18
+            p[:stage], p[:choir_at], p[:life] = "choir", tick, 18
+            emit("choir", weapon: p[:weapon], x: p[:x], y: p[:y])
+          else
+            p[:stage], p[:life] = "waiting", 1
+          end
+        end
+        # Bombs dropped beyond the edge can still enter along their approach;
+        # never discard them just before they reach an edge target.
+        entering = p[:sky_drop] && ((p[:x] < 0 && p[:vx] > 0) || (p[:x] > world_width && p[:vx] < 0))
+        outside = p[:y] > (p[:homing] ? world_height + 40 : water) ||
+          (!entering && (p[:x] < -80 || p[:x] > world_width + 80)) || p[:y] < -800
         record_projectile(p, ended: outside || p[:life] <= 0)
         if outside
           projectiles.delete(p)
@@ -374,6 +392,7 @@ module Burrow
         nx, ny = p[:x] + p[:vx] * DT / steps, p[:y] + p[:vy] * DT / steps
         victim = projectile_victim(p, nx, ny)
         solid = terrain.solid?(nx, ny)
+        victim = nil if solid # terrain contact wins over a body behind it
         if solid && p[:stage] == "diving"
           p[:stage] = "digging"
           p[:vx], p[:vy] = p[:direction] * 52.0, 76.0
