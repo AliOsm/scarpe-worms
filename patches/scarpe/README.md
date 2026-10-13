@@ -200,3 +200,25 @@ The [Mac cadence report](../../docs/validation/mac-cadence-0.5.0.json) records
 packaged Apple silicon and Linux before/after results, including failed outlier
 gates. These patches improve submission cadence; the report does not establish
 one-to-one update delivery or physical display scanout.
+
+
+Zoom text work (independent of game code):
+
+- `0020-native-share-repeated-text-shapes.patch`: paragraphs with identical text,
+  style and width share a shaped buffer even when their paragraph/span owners or
+  links differ. Cosmic-text stores run indexes; each caller receives its own
+  hit-test metadata and link identities. Colors, highlights and geometry remain
+  exact cache keys. Four same-color outline copies therefore shape once; the
+  foreground color retains its own buffer. No glyph sampling or paint changes.
+  Tests cover per-owner/span/link identity, color and layout differences, and
+  exact damage painting at 1×/2×. The existing per-window cache retention applies
+  to shared keys too.
+
+```sh
+PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
+  --manifest-path vendor/scarpe/native/Cargo.toml \
+  --test shared_text_shape --test text_cache --test large_damage --test damage
+```
+
+The ignored `repeated_label_zoom_shaping_timing` fixture measures 36 five-layer
+labels across 40 changing sizes; run it serially under `/tmp/burrow-bench.lock`.
