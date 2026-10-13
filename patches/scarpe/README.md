@@ -195,3 +195,8 @@ PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
   stall on a Mac runner. The rendering analyzer accepts older captures and has
   regressions for clock drift, real pending movement and backwards clock steps;
   no performance budget is relaxed.
+
+The [Mac cadence report](../../docs/validation/mac-cadence-0.5.0.json) records
+packaged Apple silicon and Linux before/after results, including failed outlier
+gates. These patches improve submission cadence; the report does not establish
+one-to-one update delivery or physical display scanout.
