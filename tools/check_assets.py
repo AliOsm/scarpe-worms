@@ -61,7 +61,9 @@ def main():
     args = parser.parse_args()
     runtime = json.loads(subprocess.check_output([
         "bundle", "exec", "ruby", "-r", "./lib/burrow", "-r", "./lib/burrow/client/audio", "-e",
-        "puts JSON.generate({weapons: Burrow::Catalog::WEAPONS.keys, cues: Burrow::Client::Audio::CUES})",
+        "require './lib/burrow/client/theme'; require './lib/burrow/client/sprites'; "
+        "puts JSON.generate({weapons: Burrow::Catalog::WEAPONS.keys, cues: Burrow::Client::Audio::CUES, "
+        "munition_sizes: Burrow::Client::Sprites::MUNITION_SIZES})",
     ], cwd=ROOT, text=True))
     manifest = json.loads((ART / "manifest.json").read_text())
     require(set(runtime["weapons"]) == set(manifest["weapons"]["ids"]), "Weapon manifest/catalog mismatch")
@@ -81,6 +83,10 @@ def main():
     # Munitions include stage variants and moving aircraft outside the legacy
     # combat manifest. Validate every emitted frame, including canvas margins.
     munitions = manifest["ordnance"]["munitions"]
+    flight_specs = munitions["projectiles"] | munitions["variants"]
+    for name, size in runtime["munition_sizes"].items():
+        require(flight_specs.get(name, {}).get("size") == size,
+                f"Runtime munition canvas differs from generated art: {name}")
     ordnance_paths = set()
     specs = [*munitions["projectiles"].values(), *munitions["variants"].values(),
              *munitions["effects"].values(), munitions["choir_glow"]]
