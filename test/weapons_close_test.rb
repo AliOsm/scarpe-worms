@@ -616,6 +616,34 @@ class WeaponsCloseHazardsAndSuppliesTest < Minitest::Test
     assert_placement_rolls_back("turret")
   end
 
+  def test_two_pixel_wall_at_the_edge_of_a_barrel_rejects_placement
+    %w[barrel turret].each do |weapon|
+      match = arena
+      # A single two-pixel cell beside the 324px placement centre is outside
+      # four-pixel samples but still intersects the prop's right silhouette.
+      match.terrain.bridge(334, 870, width: 0, height: 28)
+      before = JSON.generate(match.checkpoint)
+      assert_raises(Burrow::RuleError, weapon) { fire(match, weapon) }
+      assert_equal before, JSON.generate(match.checkpoint), weapon
+    end
+  end
+
+  def test_barrel_on_a_short_ledge_starts_at_the_hand_and_falls_to_the_floor
+    match = arena
+    match.active.merge!(x: 300.0, y: 690.0, facing: 1)
+    match.terrain.bridge(287, 690, width: 40, height: 12)
+    fire(match, "barrel")
+    barrel = match.hazards.last
+    assert_in_delta 324, barrel[:x], 0.01
+    assert_in_delta 688, barrel[:y], 0.01, "the barrel stays beside the hand rather than teleporting to floor 900"
+    assert_operator barrel.fetch(:vy, 0), :>=, 0
+    match.step(10)
+    assert_operator barrel[:y], :>, 688
+    assert_operator barrel[:y], :<, 900
+    match.step(100)
+    assert_operator barrel[:y], :>=, 899, "the loose prop settles on the lower floor"
+  end
+
   def test_turret_tracks_left_and_fires_exactly_five_visible_shots
     match = arena
     match.active.merge!(x: 600.0, facing: -1)
