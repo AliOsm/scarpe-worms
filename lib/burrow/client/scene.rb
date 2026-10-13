@@ -172,6 +172,7 @@ module Burrow
         end
         resize_world if @world_scale != @scale
         update_terrain if @terrain_art
+        render_terrain
         if @terrain_art.error && !@render_error_shown
           @render_error_shown = true
           @controller.notify("The landscape renderer stopped: #{@terrain_art.error}")
@@ -503,7 +504,6 @@ module Burrow
       def resize_world
         @world_scale = @scale
         [@world, @terrain_layer, @props_layer, @actor_layer, @shot_layer, @effect_layer, @aim_layer].each { |layer| layer.style(width: px(@width)) }
-        @tiles.each_value { |tile| place_tile(tile) }
         @aim_dots.each { |dot| restyle(dot, width: px(4), height: px(4), strokewidth: [px(1), 1].max) }
         restyle(@reticle, width: px(24), height: px(24))
         restyle(@placement, strokewidth: px(12))
@@ -560,6 +560,29 @@ module Burrow
 
       def place_tile(tile)
         place(tile[:node], px(tile[:x]), px(tile[:y]), px(tile[:x] + tile[:width]) - px(tile[:x]), px(tile[:y] + tile[:height]) - px(tile[:y]))
+        tile[:scale] = @scale
+      end
+
+      # A hidden tile can retain its previous scale. Restore both rounded edges
+      # before revealing it, so adjacent tiles still share exactly the same
+      # pixel boundary. The margin covers rounding of the world origin, tile
+      # edges and viewport at fractional UI scales.
+      def render_terrain
+        margin = 2.0 / @scale
+        left, top = camera.x - margin, camera.y - margin
+        right = camera.x + Camera::VIEW_WIDTH / camera.zoom + margin
+        bottom = camera.y + Camera::VIEW_HEIGHT / camera.zoom + margin
+        @tiles.each_value do |tile|
+          node = tile[:node]
+          visible = tile[:x] <= right && tile[:x] + tile[:width] >= left &&
+            tile[:y] <= bottom && tile[:y] + tile[:height] >= top
+          if visible
+            place_tile(tile) if tile[:scale] != @scale
+            node.show if node.hidden
+          else
+            node.hide unless node.hidden
+          end
+        end
       end
 
       def update_terrain
@@ -572,11 +595,13 @@ module Burrow
           tile = spec.dup
           if (existing = @tiles[tile[:id]])
             existing[:node].path = tile[:path] if existing[:path] != tile[:path]
-            existing[:path] = tile[:path]
+            existing[:scale] = nil unless %i[x y width height].all? { |key| existing[key] == tile[key] }
+            existing.merge!(tile)
           else
             @terrain_layer.append do
-              tile[:node] = @shoes.image(tile[:path], left: px(tile[:x]), top: px(tile[:y]), width: px(tile[:x] + tile[:width]) - px(tile[:x]), height: px(tile[:y] + tile[:height]) - px(tile[:y]), alt: "Destructible landscape")
+              tile[:node] = @shoes.image(tile[:path], left: px(tile[:x]), top: px(tile[:y]), width: px(tile[:x] + tile[:width]) - px(tile[:x]), height: px(tile[:y] + tile[:height]) - px(tile[:y]), alt: "Destructible landscape", hidden: true)
             end
+            tile[:scale] = @scale
             @tiles[tile[:id]] = tile
           end
         end
@@ -858,7 +883,9 @@ module Burrow
 
       def render_effects(now)
         @effects.delete_if do |effect|
-          age = now - effect[:born]
+          # Events are created after the frame's timestamp was sampled. Their
+          # first paint must still use frame zero, never an invalid "--1.png".
+          age = [now - effect[:born], 0].max
           if age >= effect[:life]
             effect[:node].remove
             true

@@ -271,4 +271,113 @@ class FrameWorkTest < Minitest::Test
     assert_empty effects
     assert nodes.all?(&:removed)
   end
+
+  def test_effects_born_during_the_current_frame_start_at_age_zero
+    scene = Burrow::Client::Scene.allocate
+    sprite = Drawable.new(path: "sparkle-0.png")
+    particle = Drawable.new
+    effects = [
+      {node: sprite, kind: :sprite, name: "sparkle", x: 10, y: 20, width: 30, height: 40, fps: 12, frame: 0},
+      {node: particle, kind: :particle, x: 100, y: 200, vx: 400, vy: -100, size: 8}
+    ].map { |effect| effect.merge(born: 100.001, life: 1) }
+    scene.instance_variable_set(:@scale, 1)
+    scene.instance_variable_set(:@effects, effects)
+    scene.send(:render_effects, 100)
+    assert_equal 0, effects.first[:frame]
+    assert_equal "sparkle-0.png", sprite.path, "birth must never load a nonexistent negative animation frame"
+    assert_equal [100, 200], [particle.left, particle.top]
+    assert_equal 2, effects.length
+  end
+
+  def terrain_scene(camera, tiles, ui_scale: 8.0 / 9)
+    Burrow::Client::Scene.allocate.tap do |scene|
+      {camera: camera, ui_scale: ui_scale, scale: ui_scale * camera.zoom, tiles: tiles}.each do |key, value|
+        scene.instance_variable_set("@#{key}", value)
+      end
+    end
+  end
+
+  def test_hidden_terrain_defers_geometry_then_places_exact_edges_before_revealing
+    camera = Struct.new(:x, :y, :zoom).new(3000.3, 250.4, 1.0)
+    tiles = [0, 3072, 3456].to_h do |x|
+      [x, {x: x, y: 384, width: 384, height: 384, node: Drawable.new(hidden: true)}]
+    end
+    scene = terrain_scene(camera, tiles)
+    scene.send(:render_terrain)
+    far = tiles.fetch(3072)
+    refute far[:node].hidden
+    initial_bounds = [far[:node].left, far[:node].top, far[:node].width, far[:node].height]
+    camera.x = 0.3
+    scene.send(:render_terrain)
+    assert far[:node].hidden
+    writes = far[:node].writes.length
+    camera.zoom = 0.55
+    scale = camera.zoom * 8.0 / 9
+    scene.instance_variable_set(:@scale, scale)
+    3.times { scene.send(:render_terrain) }
+    assert_equal writes, far[:node].writes.length, "offscreen scale changes must not send tile properties"
+    assert_equal initial_bounds, [far[:node].left, far[:node].top, far[:node].width, far[:node].height]
+    camera.x = 2000.7
+    scene.send(:render_terrain)
+    refute far[:node].hidden
+    assert_equal scale, far[:scale]
+    assert_equal((3072 * scale).round, far[:node].left)
+    assert_equal((3456 * scale).round - (3072 * scale).round, far[:node].width)
+    assert_equal far[:node].left + far[:node].width, tiles.fetch(3456)[:node].left, "adjacent tiles share the same rounded edge"
+    assert_equal({hidden: false}, far[:node].writes.last)
+    assert far[:node].writes[-2].key?(:width), "restore stale bounds before showing the tile"
+    writes = tiles.values.sum { |tile| tile[:node].writes.length }
+    scene.send(:render_terrain)
+    assert_equal writes, tiles.values.sum { |tile| tile[:node].writes.length }, "a retained camera sends no tile properties"
+  end
+
+  def test_terrain_culling_keeps_a_margin_on_all_fractional_viewport_edges
+    camera = Struct.new(:x, :y, :zoom).new(1000, 400, 0.7)
+    positions = {left_edge: [987, 500], left_out: [986, 500], top_edge: [1100, 387], top_out: [1100, 386],
+      right_edge: [3060, 500], right_out: [3061, 500], bottom_edge: [1100, 1431], bottom_out: [1100, 1432]}
+    tiles = positions.to_h do |id, (x, y)|
+      [id, {x: x, y: y, width: 10, height: 10, node: Drawable.new(hidden: true)}]
+    end
+    scene = terrain_scene(camera, tiles)
+    scene.send(:render_terrain)
+    %i[left top right bottom].each do |edge|
+      refute tiles.fetch(:"#{edge}_edge")[:node].hidden, "retain the #{edge} tile within two logical pixels"
+      assert tiles.fetch(:"#{edge}_out")[:node].hidden, "defer the #{edge} tile beyond the conservative margin"
+    end
+  end
+
+  def test_hidden_terrain_replacement_retains_latest_path_and_geometry_before_reentry
+    camera = Struct.new(:x, :y, :zoom).new(0, 0, 1.0)
+    old = {id: "far", x: 3072, y: 384, width: 384, height: 384, path: "old.png", scale: 8.0 / 9,
+      node: Drawable.new(path: "old.png", hidden: true)}
+    tiles = {"far" => old}
+    scene = terrain_scene(camera, tiles)
+    replacement = {id: "far", x: 3100, y: 390, width: 400, height: 380, path: "new.png"}
+    results = [{tiles: [replacement, {id: "new", x: 3600, y: 384, width: 384, height: 384, path: "new-tile.png"}],
+      overview: "map-new.png", revision: 2}]
+    worker = Object.new
+    worker.define_singleton_method(:poll) { results.shift }
+    shoes = Object.new
+    def shoes.image(path, **styles) = Drawable.new(path: path, **styles)
+    {terrain_art: worker, shoes: shoes, terrain_layer: Drawable.new, minimap: Drawable.new,
+      loading_label: Drawable.new(hidden: false)}.each { |key, value| scene.instance_variable_set("@#{key}", value) }
+    scene.send(:update_terrain)
+    scene.send(:render_terrain)
+    assert_same old[:node], tiles.fetch("far")[:node]
+    assert_equal [{path: "new.png"}], old[:node].writes, "hidden replacement must not resize or reveal the tile"
+    assert_nil old[:scale], "changed worker geometry must invalidate the retained scale"
+    assert tiles.fetch("new")[:node].hidden
+    assert_equal 2, scene.terrain_revision
+    camera.x, camera.y, camera.zoom = 2900, 200, 0.7
+    scale = camera.zoom * 8.0 / 9
+    scene.instance_variable_set(:@scale, scale)
+    scene.send(:render_terrain)
+    refute old[:node].hidden
+    assert_equal "new.png", old[:node].path
+    assert_equal [(3100 * scale).round, (390 * scale).round, (3500 * scale).round - (3100 * scale).round,
+      (770 * scale).round - (390 * scale).round], old[:node].then { |node| [node.left, node.top, node.width, node.height] }
+    assert_equal({hidden: false}, old[:node].writes.last)
+    refute tiles.fetch("new")[:node].hidden
+    assert_equal scale, tiles.fetch("new")[:scale]
+  end
 end
