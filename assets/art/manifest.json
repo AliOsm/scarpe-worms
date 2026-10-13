@@ -1007,7 +1007,7 @@
         "choir": {
           "pattern": "ordnance/munitions/choir-burst-{frame}.png",
           "frames": 8,
-          "fps": 16,
+          "fps": 12,
           "size": [
             128,
             128

@@ -383,7 +383,8 @@ def metadata():
                                         ("holy_bomb-choir", PROJECTILES["holy_bomb"]))},
         "bomber": {"pattern": "ordnance/munitions/bomber-{direction}-{frame}.png", "frames": 4, "fps": 12,
                    "size": [144, 72], "source_size": [288, 144], "anchor": [72, 36]},
-        "effects": {name: {"pattern": f"ordnance/munitions/{name}-burst-{{frame}}.png", "frames": 8, "fps": 16,
+        "effects": {name: {"pattern": f"ordnance/munitions/{name}-burst-{{frame}}.png", "frames": 8,
+                            "fps": 12 if name == "choir" else 16,
                             "size": [128, 128], "source_size": [256, 256], "anchor": [64, 64]}
                     for name in BLASTS},
         "choir_glow": {"pattern": "ordnance/munitions/choir-glow-{frame}.png", "frames": 6, "fps": 10,
