@@ -177,7 +177,13 @@ module Burrow
       match.worms.each do |w|
         w[:rope] = w[:rope].transform_keys(&:to_sym) if w[:rope]
         w[:jetpack] = w[:fuel].to_i > 0 unless w.key?(:jetpack)
+        w[:poisoned] = false unless w.key?(:poisoned)
+        w[:shield] = false unless w.key?(:shield)
+        w[:frozen] = false unless w.key?(:frozen)
+        w[:parachute] = false unless w.key?(:parachute)
       end
+      match.instance_variable_set(:@damage_boost, false) if match.instance_variable_get(:@damage_boost).nil?
+      match.instance_variable_set(:@low_gravity, false) if match.instance_variable_get(:@low_gravity).nil?
       # Version-one checkpoints predate the explicit critter stages.
       match.projectiles.each do |p|
         next if p[:stage] || !%w[walker guided digger poisoner herd].include?(p[:kind])

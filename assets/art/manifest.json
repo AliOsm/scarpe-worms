@@ -554,7 +554,391 @@
     "critters": {},
     "munitions": {},
     "mobility": {},
-    "status": {}
+    "status": {
+      "sprites": {
+        "shield": {
+          "size": [
+            76,
+            76
+          ],
+          "source_size": [
+            152,
+            152
+          ],
+          "anchor": [
+            38,
+            65
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/shield-{frame}.png"
+        },
+        "frozen": {
+          "size": [
+            64,
+            72
+          ],
+          "source_size": [
+            128,
+            144
+          ],
+          "anchor": [
+            32,
+            64
+          ],
+          "raster_scale": 2,
+          "frames": 2,
+          "pattern": "ordnance/status/frozen-{frame}.png"
+        },
+        "poison": {
+          "size": [
+            64,
+            72
+          ],
+          "source_size": [
+            128,
+            144
+          ],
+          "anchor": [
+            32,
+            62
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/poison-{frame}.png"
+        },
+        "boost": {
+          "size": [
+            76,
+            84
+          ],
+          "source_size": [
+            152,
+            168
+          ],
+          "anchor": [
+            38,
+            72
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/boost-{frame}.png"
+        },
+        "moon": {
+          "size": [
+            72,
+            76
+          ],
+          "source_size": [
+            144,
+            152
+          ],
+          "anchor": [
+            36,
+            64
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/moon-{frame}.png"
+        },
+        "drill": {
+          "size": [
+            80,
+            84
+          ],
+          "source_size": [
+            160,
+            168
+          ],
+          "anchor": [
+            40,
+            68
+          ],
+          "raster_scale": 2,
+          "frames": 2,
+          "pattern": "ordnance/status/drill-{frame}.png",
+          "left_pattern": "ordnance/status/drill-left-{frame}.png"
+        },
+        "torch": {
+          "size": [
+            96,
+            80
+          ],
+          "source_size": [
+            192,
+            160
+          ],
+          "anchor": [
+            40,
+            68
+          ],
+          "raster_scale": 2,
+          "frames": 2,
+          "pattern": "ordnance/status/torch-{frame}.png",
+          "left_pattern": "ordnance/status/torch-left-{frame}.png"
+        },
+        "muzzle": {
+          "size": [
+            48,
+            40
+          ],
+          "source_size": [
+            96,
+            80
+          ],
+          "anchor": [
+            24,
+            20
+          ],
+          "raster_scale": 2,
+          "frames": 3,
+          "pattern": "ordnance/status/muzzle-{frame}.png"
+        },
+        "laser-muzzle": {
+          "size": [
+            48,
+            48
+          ],
+          "source_size": [
+            96,
+            96
+          ],
+          "anchor": [
+            24,
+            24
+          ],
+          "raster_scale": 2,
+          "frames": 3,
+          "pattern": "ordnance/status/laser-muzzle-{frame}.png"
+        },
+        "impact": {
+          "size": [
+            40,
+            40
+          ],
+          "source_size": [
+            80,
+            80
+          ],
+          "anchor": [
+            20,
+            20
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/impact-{frame}.png"
+        },
+        "jet": {
+          "size": [
+            64,
+            40
+          ],
+          "source_size": [
+            128,
+            80
+          ],
+          "anchor": [
+            32,
+            20
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/jet-{frame}.png"
+        },
+        "fire_punch": {
+          "size": [
+            112,
+            112
+          ],
+          "source_size": [
+            224,
+            224
+          ],
+          "anchor": [
+            56,
+            72
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/fire_punch-{frame}.png",
+          "left_pattern": "ordnance/status/fire_punch-left-{frame}.png"
+        },
+        "dragon_punch": {
+          "size": [
+            112,
+            80
+          ],
+          "source_size": [
+            224,
+            160
+          ],
+          "anchor": [
+            56,
+            52
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/dragon_punch-{frame}.png",
+          "left_pattern": "ordnance/status/dragon_punch-left-{frame}.png"
+        },
+        "prod": {
+          "size": [
+            112,
+            80
+          ],
+          "source_size": [
+            224,
+            160
+          ],
+          "anchor": [
+            56,
+            52
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/prod-{frame}.png",
+          "left_pattern": "ordnance/status/prod-left-{frame}.png"
+        },
+        "bat": {
+          "size": [
+            112,
+            112
+          ],
+          "source_size": [
+            224,
+            224
+          ],
+          "anchor": [
+            56,
+            68
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/bat-{frame}.png",
+          "left_pattern": "ordnance/status/bat-left-{frame}.png"
+        },
+        "axe": {
+          "size": [
+            112,
+            112
+          ],
+          "source_size": [
+            224,
+            224
+          ],
+          "anchor": [
+            56,
+            68
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/axe-{frame}.png",
+          "left_pattern": "ordnance/status/axe-left-{frame}.png"
+        },
+        "heal": {
+          "size": [
+            72,
+            80
+          ],
+          "source_size": [
+            144,
+            160
+          ],
+          "anchor": [
+            36,
+            60
+          ],
+          "raster_scale": 2,
+          "frames": 5,
+          "pattern": "ordnance/status/heal-{frame}.png"
+        },
+        "wind": {
+          "size": [
+            112,
+            64
+          ],
+          "source_size": [
+            224,
+            128
+          ],
+          "anchor": [
+            56,
+            32
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/wind-{frame}.png"
+        },
+        "placement": {
+          "size": [
+            72,
+            32
+          ],
+          "source_size": [
+            144,
+            64
+          ],
+          "anchor": [
+            36,
+            22
+          ],
+          "raster_scale": 2,
+          "frames": 4,
+          "pattern": "ordnance/status/placement-{frame}.png"
+        }
+      },
+      "hazards": {
+        "mine": {
+          "size": [
+            36,
+            32
+          ],
+          "anchor": [
+            18,
+            28
+          ],
+          "states": [
+            "safe",
+            "armed",
+            "lit"
+          ]
+        },
+        "barrel": {
+          "size": [
+            44,
+            52
+          ],
+          "anchor": [
+            22,
+            47
+          ],
+          "states": [
+            "whole",
+            "cracked"
+          ]
+        },
+        "turret": {
+          "size": [
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            42
+          ],
+          "angles": [
+            -45,
+            0,
+            45
+          ],
+          "directions": [
+            "right",
+            "left"
+          ]
+        }
+      },
+      "note": "Original deterministic Cairo source; status overlays anchor at grub feet; all rasters are 2\u00d7."
+    }
   },
   "extras": {
     "fx": [

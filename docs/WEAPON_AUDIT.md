@@ -1,7 +1,8 @@
-# Weapon, input, and presentation audit — 0.5.0
+# Weapon, input, and presentation audit — 0.5.1
 
 This is Burrow Brigade's implemented contract, first reviewed on 2026-10-09 and
-updated for 0.5.0 on 2026-10-12 (see [0.5.0 changes](#050-blast-physics-and-multi-step-weapons)). Its 48
+updated for 0.5.0 on 2026-10-12 (see [0.5.0 changes](#050-blast-physics-and-multi-step-weapons))
+and the guns, close-up, hazards, digging tools and supplies sweep on 2026-10-13. Its 48
 weapons have original names, art, and balance values. It is not a compatibility
 implementation of a particular Worms release. [WEAPONS.md](WEAPONS.md) lists
 all 48 entries, ammunition defaults, and their current in-game descriptions.
@@ -68,16 +69,16 @@ are recorded in [ART_DIRECTION.md](ART_DIRECTION.md).
 | Short fuse | Placement and four-second countdown; full retreat window. |
 | Big trouble | Charged bouncing explosive with adjustable fuse and larger radius. |
 | Choir bomb | Fixed five-second fuse; waits for rest, bounded by a twelve-second safety lifetime. |
-| Double tap | Two separately aimed shots per cartridge, including the final cartridge; switching locked between shots. |
-| Long goodbye | Instant terrain-blocked ray; no muzzle gap through close walls. |
-| Peashooter | Eight visible rounds over time; saved burst queue survives host recovery. |
-| Sunbeam | Piercing ray, terrain cutting, one hit per body per ray. |
-| Hot breath | Seven timed short-range rays; each spills loose flames where it stops. |
-| Uppercrust | Close uppercut with upward motion and knockback; ordinary melee cannot hit through walls. |
-| Dragon dash | Movement spans twelve ticks; carves along its path; hits each body once. |
-| Little nudge | Zero-damage shove; terrain obstruction respected. |
-| Home run | Angle-sensitive knockback; frozen bodies stay still. |
-| Half measure | Halves current health before configured damage modifiers. |
+| Double tap | Five spread pellets per press, totaling 26 damage at close range; two separately aimed presses per cartridge, including the last cartridge. Pellets test the same cover before cutting holes. Distinct muzzle flash and pellet tracers; HUD identifies shot one/two; switching stays locked between shots. |
+| Long goodbye | One bright tracer and 42-damage hit; terrain and props block the ray, including a one-cell wall beside the muzzle. Impact sparks and terrain chips mark the hit. |
+| Peashooter | Eight timed 9-damage rounds with seeded spread, small recoil per hit and rapid flashes/tracers; the saved burst queue survives recovery. A dead shooter cannot finish the burst. |
+| Sunbeam | Thick glowing beam cuts through terrain and props, dealing 38 damage once per body along its path; bounded impact effects show entry points. |
+| Hot breath | Eighteen 3-damage pulses over about 1.2 seconds, reaching 160 world pixels; the visible stream stops at cover and spills persistent fire. Gentle push avoids launching every target out of the stream. The global 60-flame cap applies; interrupted streams restore deterministically. |
+| Uppercrust | Fiery fist pose; the attacker leaps and launches a nearby victim upward for 35 damage. Its leap does not cause self-inflicted fall damage; cover and frozen bodies are respected. |
+| Dragon dash | Fiery rush over twelve ticks; carves a body-clear tunnel, holds its height, and hits each nearby unobstructed body once for 42 damage. Space/click can stop the rush; the HUD names the dash. |
+| Little nudge | Visible poke; zero damage with a small forward shove and lift. Terrain obstruction and frozen bodies are respected. |
+| Home run | Visible swing arc; 32 damage and a large launch along the exact aim vector, including downward aim. Cover blocks it; frozen bodies stay still. |
+| Half measure | Visible chop; removes half current health rounded upward, then applies damage modifiers including Extra spicy. It has a small recoil instead of an uppercut launch. |
 | Special delivery, Rain check, Spicy forecast | ← → chooses the bombers' approach; five objects are released upwind so they land in a line across the target; normal blasts, armed mines, or spreading flames; cavern restrictions exposed before equipping. |
 | Bad astronomy | Random six-meteor shower, activated without a meaningless target selection; cavern restriction. |
 | Rumble button | Bounded seeded impulses; respects frozen bodies. |
@@ -86,23 +87,31 @@ are recorded in [ART_DIRECTION.md](ART_DIRECTION.md).
 | Tunnel buddy | Walking → dive → digging → detonation; tunnel exit detection probes ahead of carved material. |
 | Stink express | Walking → activated spray → final gas and small blast. |
 | Cattle call | Three timed releases; pending cows are invisible and do not collide before release. |
-| Mind your step | Arms after deployment; delayed proximity trigger; persistent hazard; blasts throw it and close blasts arm a short fuse. |
-| Sentry sprout | Five shots, range and line-of-sight limits, enemy selection. |
-| Red barrel | Persistent explosive; blasts throw and dent it, and a ruptured barrel explodes after a short delay, spilling flames. |
+| Mind your step | Validated placement ahead; one-second arming delay, visibly distinct safe/armed states, blinking light and a 0.6-second proximity fuse. Reacts within 36 pixels with clear sight. Persistent mine; blasts throw it and close blasts arm a short fuse. |
+| Sentry sprout | Dedicated sentry sprite tracks targets; five visible shots within 420 pixels and clear sight, enemy selection and an empty-ammo pose. Placement is validated ahead of the grub. |
+| Red barrel | Validated placement ahead with visible feedback; blasts throw and dent the drum. Gun hits can rupture it; the cracked barrel explodes after a short delay and spills flames. |
 | Grapple line | Validated overhead attachment; swing/reel/release; destroyed anchors detach; no extra ammo for releasing. |
 | Personal cloud | Directional thrust; fuel conservation; mutually exclusive with rope; graceful fuel exhaustion. |
 | Soft landing | Slows descent; suppresses fall damage; directional drift. |
 | Here to there | Clear landing and occupied-body validation before spending ammo; ends turn. |
 | Bridge builder | ← → tilts the beam in 22.5° steps up to vertical; tilted preview; collision and bounds validation along the beam before spending ammo. |
-| Down we go, Side hustle | Bounded-duration terrain tools; early stop; steerable torch slope; checkpoint recovery. |
-| First aid | Health cap, poison cure, rejects wasted use without spending ammo. |
-| Bubble wrap, Ice break | Protection lifetime through the team's next turn; frozen grubs resist weapon knockback. |
+| Down we go | Controlled downward drilling for at most two seconds, with a drilling pose and debris. Space/click stops cutting immediately; no fall damage while drilling. Uses the turn; saved drilling resumes deterministically. |
+| Side hustle | Forward cutting with a flame jet, sparks and a tool pose; Up/Down steers both slopes with an expiring input lease. Space/click stops cutting immediately. Uses the turn; saved damage history prevents extra hits after recovery. |
+| First aid | Restores up to 35 health, clears poison, and shows a healing effect and health number. Rejects wasted use without spending ammo; uses the turn. |
+| Bubble wrap | Animated shield bubble; halves incoming damage until the team's next turn. Keeps the turn; the active HUD directs the player to choose an attack. |
+| Ice break | Frost shell on every living team member; prevents damage and weapon knockback until the team's next turn. Uses the turn. |
 | Stink bomb | Timed bouncing gas canister, no premature body-impact explosion. |
-| Extra spicy, Moon boots, Weather vane | Attack damage, current-turn gravity, and bounded wind changes; utility actions preserve the turn. |
-| Pass the turn | Settles safely before handover; unavailable between shotgun shots. |
+| Extra spicy | Animated glow and ×2 cue; doubles attack damage, including Half measure, for the turn. Keeps the turn; the HUD says to choose an attack next. |
+| Moon boots | Reduced gravity for jumps and shots during the current turn, with a visible float cue. Keeps the turn; the HUD explains jump and backflip controls. |
+| Weather vane | Bounded reversed/strengthened wind, including a visible gust from calm conditions; animated wind cue and authoritative wind gauge. Keeps the turn. |
+| Pass the turn | Explicit Pass action; waits for a safe settled handover and remains unavailable between shotgun shots. |
 
 These contracts cover the implemented arsenal, not a claim that its tuning,
 weapon roster, or every advanced move is identical to Worms.
+
+The close-weapon sweep also tightens the shared line-of-sight helper to sample
+every two world pixels, matching the terrain cell size. This prevents narrow
+walls from being skipped by melee, sentries and other line-of-sight callers.
 
 ## Input reliability
 
@@ -157,6 +166,12 @@ older saves keep burning as static zones.
 - `test/weapon_controls_test.rb`: actual input handler contracts, source-specific
   releases, target locks, cancellation, auto-repeat, pending actions, and selection;
   two-step homing by mouse, re-targeting, strike approach, girder tilt and splitting.
+- `test/weapons_close_test.rb`: pellet/cover geometry, gun bursts and streams,
+  weapon-specific melee launches, digging speed and stop/steering contracts,
+  checkpoint recovery, and native-input-handler keyboard/mouse sequences for
+  Double tap, tools and supplies. The weapon lab captures the corresponding real
+  native keyboard/pointer journeys on its fixed course; healing begins injured
+  and poisoned, while short-range weapons begin within reach.
 - `test/battlefield_physics_test.rb`: blast direction, tumbling and rebounds, fall
   damage rules, shoved bombs and props, staggered chains, flames, rolling, strike
   approach, tilted girders, homing burnout, charred rims and checkpoint recovery.

@@ -6,6 +6,7 @@ module Burrow
     def grounded?(w) = terrain.solid?(w[:x] - 6, w[:y] + 1) || terrain.solid?(w[:x] + 6, w[:y] + 1)
 
     def update_worms
+      interrupt_displaced_tool
       worms.each do |w|
         next if w[:hp] <= 0
         was_grounded = grounded?(w) && w[:vy] >= 0
@@ -13,7 +14,11 @@ module Burrow
         controlled = w[:id] == active_id && %w[aiming retreat].include?(phase) && tick <= w[:input_until] && !w[:frozen] && !@tool && !tumbling
         direction = controlled ? w[:input] : 0
         lift = controlled ? w[:lift] : 0
-        if w[:frozen]
+        if w[:id] == active_id && @tool && %w[drill torch dash].include?(@tool[:kind])
+          # Digging and dashing advance explicitly in update_tool. Letting gravity
+          # integrate here turns a two-second drill into an uncontrolled fall.
+          w[:vx] = w[:vy] = 0.0
+        elsif w[:frozen]
           w[:vx] = 0.0
           w[:vy] = was_grounded ? 0.0 : w[:vy] + gravity * DT
         elsif w[:fuel] > 0
@@ -214,6 +219,7 @@ module Burrow
       hazards.delete(h)
       case h[:kind]
       when "barrel"
+        emit("barrel_rupture", hazard_id: h[:id], style: "barrel", hazard_kind: "barrel", x: h[:x], y: h[:y], owner: h[:blame] || h[:owner])
         weapon = Catalog.fetch("barrel")
         explode(h[:x], h[:y] - 14, damage: weapon[:damage], radius: weapon[:radius], owner: h[:blame] || h[:owner], kind: "barrel")
         # Spilled fuel keeps burning.
@@ -453,15 +459,37 @@ module Burrow
             worms.each { |w| hurt(w, 4, source: h[:owner]) if w[:hp] > 0 && Math.hypot(w[:x] - h[:x], w[:y] - 10 - h[:y]) <= h[:radius] }
           end
         else
+          # Old checkpoints and hand-authored test fixtures may omit newer prop
+          # fields.  Fill safe deterministic defaults before integrating motion.
+          h[:armed] = tick if h[:kind] == "mine" && !h.key?(:armed)
+          h[:hp] = h[:kind] == "barrel" ? 24 : 20 if %w[mine barrel turret crate].include?(h[:kind]) && !h.key?(:hp)
+          h[:shots] = 5 if h[:kind] == "turret" && !h.key?(:shots)
+          h[:facing] ||= 1 if %w[turret mine barrel].include?(h[:kind])
+          if h[:kind] == "turret"
+            h[:angle] ||= h[:facing].to_i.negative? ? Math::PI : 0.0
+            h[:aim_angle] ||= h[:angle]
+          end
           prop_motion(h)
           next unless hazards.include?(h)
           if h[:trigger] && tick >= h[:trigger]
+            emit("hazard_trigger", hazard_id: h[:id], style: h[:kind], hazard_kind: h[:kind], x: h[:x], y: h[:y], owner: h[:blame] || h[:owner])
             detonate_hazard(h)
             next
           end
-          near = worms.select { |w| w[:hp] > 0 && Math.hypot(w[:x] - h[:x], w[:y] - h[:y]) < 25 }
-          if h[:kind] == "mine" && tick >= h[:armed] && !near.empty?
-            h[:trigger] ||= tick + 18
+          if h[:kind] == "mine" && tick >= h[:armed].to_i && !h[:arm_reported]
+            h[:arm_reported] = true
+            emit("mine_arm", hazard_id: h[:id], style: "mine", hazard_kind: "mine", x: h[:x], y: h[:y], owner: h[:owner], fuse: 0)
+          end
+          proximity = h[:kind] == "mine" ? 36 : 25
+          near = worms.select do |w|
+            w[:hp] > 0 && Math.hypot(w[:x] - h[:x], w[:y] - h[:y]) < proximity &&
+              (h[:kind] != "mine" || clear_line?(h[:x], h[:y] - 4, w[:x], w[:y] - 10))
+          end
+          if h[:kind] == "mine" && tick >= h[:armed].to_i && !near.empty?
+            unless h[:trigger]
+              h[:trigger] = tick + 18
+              emit("mine_trigger", hazard_id: h[:id], style: "mine", hazard_kind: "mine", x: h[:x], y: h[:y], owner: h[:owner], fuse: 18)
+            end
           elsif h[:kind] == "crate" && !near.empty? && !h[:trigger]
             collector = near.first
             if h[:supply] == "health"
@@ -474,12 +502,17 @@ module Burrow
             hazards.delete(h)
             emit("pickup", x: h[:x], y: h[:y], text: h[:supply] == "health" ? "+30 health" : Catalog.fetch(h[:supply])[:name])
             next
-          elsif h[:kind] == "turret" && tick >= h[:armed] && tick % 35 == 0 && h[:shots] > 0
-            target = worms.select { |w| w[:hp] > 0 && w[:team] != h[:owner] && Math.hypot(w[:x] - h[:x], w[:y] - h[:y]) < 270 }
+          elsif h[:kind] == "turret" && tick >= h[:armed].to_i && tick % 35 == 0 && h[:shots].to_i > 0
+            target = worms.select { |w| w[:hp] > 0 && !w[:frozen] && w[:team] != h[:owner] && Math.hypot(w[:x] - h[:x], w[:y] - h[:y]) < 420 }
               .find { |w| clear_line?(h[:x], h[:y] - 20, w[:x], w[:y] - 10) }
             if target
+              h[:facing] = target[:x] < h[:x] ? -1 : 1
+              h[:angle] = Math.atan2(target[:y] - 10 - (h[:y] - 20), target[:x] - h[:x])
+              h[:aim_angle] = h[:angle]
+              h[:target_id], h[:target_x], h[:target_y] = target[:id], target[:x], target[:y]
               hurt(target, 16, source: h[:owner])
-              emit("beam", x: h[:x], y: h[:y] - 20, x2: target[:x], y2: target[:y] - 10, style: "turret")
+              emit("beam", x: h[:x], y: h[:y] - 20, x2: target[:x], y2: target[:y] - 10,
+                style: "turret", hazard: h[:id], facing: h[:facing], angle: h[:angle], shots: h[:shots] - 1)
               h[:shots] -= 1
             end
           end
@@ -591,7 +624,7 @@ module Burrow
 
     def clear_line?(x, y, tx, ty)
       limit = Math.hypot(tx - x, ty - y)
-      !terrain.ray(x, y, tx - x, ty - y, limit: [limit - 8, 0].max)
+      !terrain.ray(x, y, tx - x, ty - y, limit: [limit - 8, 0].max, step: 2)
     end
   end
 end

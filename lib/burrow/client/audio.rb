@@ -11,7 +11,9 @@ module Burrow
       EVENT_CUES = {"damage" => "hurt", "jump" => "jump", "bounce" => "bounce",
         "splash" => "splash", "turn" => "turn", "pickup" => "pickup", "heal" => "pickup",
         "victory" => "victory", "teleport" => "teleport", "build" => "equip",
-        "melee" => "impact", "quake" => "explosion-heavy"}.freeze
+        "melee" => "impact", "dig" => "impact", "turret_shot" => "shot",
+        "hazard_place" => "equip", "mine_arm" => "tick", "mine_trigger" => "tick",
+        "barrel_rupture" => "impact", "quake" => "explosion-heavy"}.freeze
       attr_reader :available, :error
 
       # RIFF allows ancillary chunks between fmt and data. Read the chunk table
@@ -162,7 +164,11 @@ module Burrow
         when "fire"
           weapon = values[:weapon]
           kind = Catalog::WEAPONS[weapon]&.fetch(:kind)
-          if %w[beam laser shotgun burst flame].include?(kind)
+          if %w[melee dash].include?(kind)
+            {"kind" => "melee"}
+          elsif kind == "heal"
+            {"kind" => "heal"}
+          elsif %w[beam laser shotgun burst flame].include?(kind)
             {"kind" => "beam", "style" => kind}
           else
             {"kind" => "fire", "weapon" => weapon}
@@ -192,7 +198,11 @@ module Burrow
           when "shield", "freeze", "boost", "gravity", "wind" then "pickup"
           else "equip"
           end
-        when "beam" then event["style"] == "laser" ? "beam" : "shot"
+        when "beam"
+          # The existing launch master is thrusterFire: its rush of burning gas
+          # suits a flame stream, while bullets retain the short dry gun report.
+          event["style"] == "laser" ? "beam" : event["style"] == "flame" ? "launch" : "shot"
+        when "dig" then event["style"] == "torch" ? "launch" : "impact"
         when "explosion" then event.fetch("radius", 0) >= 70 ? "explosion-heavy" : "explosion"
         when "activate" then event["stage"] == "flying" ? "launch" : "equip"
         else EVENT_CUES[event["kind"]]

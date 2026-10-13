@@ -41,12 +41,12 @@ module Burrow
         projectile(weapon, x: active[:x] + active[:facing] * 15, y: active[:y] - 8,
           vx: active[:facing] * 16, vy: 0, damage: damage, bounce: true, sticky: true, life: 4 * TICK_RATE)
       when "shotgun", "beam", "laser", "burst", "flame"
-        shots = kind == "burst" ? 8 : kind == "flame" ? 7 : 1
+        shots = kind == "burst" ? 8 : kind == "flame" ? 18 : 1
         shots.times do |i|
-          spread = kind == "burst" ? (@rng.rand - 0.5) * 0.15 : kind == "flame" ? (i - 3) * 0.08 : 0
-          shot = {at: tick + i * (kind == "flame" ? 3 : 2), angle: angle + spread, damage: damage,
-            radius: weapon[:radius], kind: kind, range: kind == "flame" ? 150 : world_width,
-            x: active[:x], y: active[:y] - 12, owner: team[:id], shooter: active_id}
+          spread = kind == "burst" ? (@rng.rand - 0.5) * 0.09 : kind == "flame" ? ((i % 5) - 2) * 0.025 : 0
+          shot = {at: tick + i * 2, angle: angle + spread, damage: damage, weapon: id,
+            radius: weapon[:radius], kind: kind, range: kind == "flame" ? 160 : world_width,
+            x: active[:x], y: active[:y] - 13, owner: team[:id], shooter: active_id}
           if i.zero?
             fire_ray(shot)
           else
@@ -95,8 +95,16 @@ module Burrow
         end
         active[:input] = active[:lift] = 0
       when "mine", "barrel", "turret"
-        hazards << {id: next_object_id, kind: kind, x: active[:x] + active[:facing] * 23, y: active[:y] - 2,
-          owner: team[:id], armed: tick + TICK_RATE, life: 100_000, hp: 20, shots: 5}
+        # Props are placed on the first clear patch immediately in front of the
+        # grub.  Validation runs before inventory is spent, so a wall or a
+        # crowded ledge gives useful feedback and leaves the action available.
+        px, py = hazard_place_point
+        hazard = {id: next_object_id, kind: kind, x: px, y: py, owner: team[:id],
+          armed: tick + (kind == "mine" ? TICK_RATE : 8), life: 100_000, hp: kind == "barrel" ? 24 : 20,
+          shots: kind == "turret" ? 5 : 0, facing: active[:facing], angle: active[:facing].negative? ? Math::PI : 0.0,
+          aim_angle: active[:facing].negative? ? Math::PI : 0.0}
+        hazards << hazard
+        emit("hazard_place", hazard_id: hazard[:id], style: kind, hazard_kind: kind, x: px, y: py, owner: team[:id], armed: hazard[:armed])
       when "rope"
         active[:jetpack], active[:fuel] = false, 0
         point = terrain.ray(active[:x], active[:y] - 12, x - active[:x], y - active[:y] + 12, limit: 460)
@@ -117,25 +125,45 @@ module Burrow
         terrain.girder(x, y, angle: tilt)
         emit("build", x: x, y: y, rotation: tilt)
       when "drill", "torch"
-        @tool = {kind: kind, until: tick + 60, direction: active[:facing], owner: team[:id], damage: damage, lift: 0, input_until: tick}
+        @tool = {kind: kind, until: tick + 60, direction: active[:facing], owner: team[:id], damage: damage,
+          lift: 0, input_until: tick, hits: {}}
+        active[:vx] = active[:vy] = 0.0
+        active[:launched] = false
         active[:input] = active[:lift] = 0
       when "heal"
+        cured = active[:poisoned]
         amount = [35, active[:max_hp] - active[:hp]].min
         active[:hp] += amount
         active[:poisoned] = false
-        emit("heal", x: active[:x], y: active[:y] - 20, amount: amount)
+        emit("heal", x: active[:x], y: active[:y] - 20, amount: amount, cured: cured)
       when "shield"
         active[:shield] = true
+        emit("shield", worm: active_id, x: active[:x], y: active[:y] - 24, duration: "turn")
       when "freeze"
-        worms.select { |w| w[:team] == team[:id] }.each { |w| w[:frozen] = true }
+        frozen = worms.select { |w| w[:team] == team[:id] && w[:hp] > 0 }
+        frozen.each { |w| w[:frozen] = true }
+        emit("freeze", team: team[:id], worms: frozen.map { |w| w[:id] }, x: active[:x], y: active[:y] - 24, duration: "turn")
       when "boost"
         @damage_boost = true
+        emit("boost", worm: active_id, x: active[:x], y: active[:y] - 24, duration: "turn")
       when "gravity"
         @low_gravity = true
+        emit("gravity", worm: active_id, x: active[:x], y: active[:y] - 24, duration: "turn")
       when "wind"
-        @wind = (-wind * 2).clamp(-4.0, 4.0)
+        prior_wind = wind
+        # A calm match still needs a readable Weather vane result.  Seed the
+        # gust from the configured wind cap, then reverse/double subsequent
+        # uses while keeping the authoritative bound.
+        baseline = config["wind"].to_f.clamp(0.25, 2.0)
+        @wind = if prior_wind.abs < 0.03
+          baseline
+        else
+          (-prior_wind * 2).clamp(-4.0, 4.0)
+        end
+        emit("wind", x: active[:x], y: active[:y] - 24, previous: prior_wind, wind: @wind, duration: "turn")
       when "skip"
         # Passing still waits for a safe settled turn boundary.
+        emit("skip", worm: active_id, team: team[:id])
       end
       resolve_turn(retreat: !%w[teleport girder heal freeze skip].include?(kind)) unless Catalog::UTILITY.include?(kind)
     end
@@ -163,6 +191,53 @@ module Burrow
         raise RuleError, "This grub is already healthy."
       elsif kind == "jetpack" && active[:jetpack]
         raise RuleError, "Your jetpack is already active."
+      elsif %w[mine barrel turret].include?(kind)
+        x, y = hazard_place_point
+        validate_hazard_place(kind, x, y)
+      end
+    end
+
+    # Hazard placement deliberately does not use the long aim ray used by
+    # projectiles.  Mines, barrels and sentries are hand-placed props, just
+    # ahead of the actor, and need a small clear footprint to avoid spawning in
+    # a wall or on top of another grub/prop.
+    def hazard_place_point
+      x = active[:x] + active[:facing] * 24
+      # Landing returns the exact top edge used by collision, keeping the prop
+      # feet aligned on slopes instead of floating two pixels above the actor.
+      y = grounded?(active) ? (terrain.landing(x, [active[:y] - 4, 0].max, water: water) || active[:y]) : active[:y] - 2
+      [x, y]
+    end
+
+    def validate_hazard_place(kind, x, y)
+      width = kind == "mine" ? 9 : 15
+      height = kind == "mine" ? 9 : 21
+      grounded = grounded?(active)
+      unless x.between?(width + 8, world_width - width - 8) &&
+          y.between?(height + 10, water - 4) && (!grounded || terrain.landing(x, y - height, water: water))
+        raise RuleError, "There is no clear ground ahead for that #{kind}."
+      end
+      # Check the full prop silhouette in four-pixel samples.  This catches a
+      # low ceiling or a thin side wall that a single centre-line probe misses.
+      if (-width..width).step(4).any? do |dx|
+        (-height + 3..-2).step(4).any? { |dy| terrain.solid?(x + dx, y + dy) }
+      end
+        raise RuleError, "There is no clear ground ahead for that #{kind}."
+      end
+      # The hand-to-ground sweep prevents placing through a one-cell wall.
+      span = x - active[:x]
+      steps = [(span.abs / 2).ceil, 1].max
+      if (1..steps).any? do |step|
+        sx = active[:x] + span * step / steps.to_f
+        terrain.solid?(sx, y - height / 2)
+      end
+        raise RuleError, "There is no clear ground ahead for that #{kind}."
+      end
+      if worms.any? { |w| w[:id] != active_id && w[:hp] > 0 && Math.hypot(w[:x] - x, w[:y] - y) < width + 18 }
+        raise RuleError, "Give the #{kind} more room before placing it."
+      end
+      if hazards.any? { |h| %w[mine barrel turret crate].include?(h[:kind]) && Math.hypot(h[:x] - x, h[:y] - y) < width + 18 }
+        raise RuleError, "Give the #{kind} more room before placing it."
       end
     end
 
@@ -206,6 +281,8 @@ module Burrow
         end
         emit("activate", weapon: p[:weapon], x: p[:x], y: p[:y], stage: p[:stage])
       elsif @tool
+        emit("activate", weapon: @tool[:kind] == "torch" ? "blowtorch" : @tool[:kind] == "dash" ? "dragon_punch" : "drill",
+          x: active[:x], y: active[:y] - 10, stage: "stopped")
         @tool = nil
       elsif active[:rope]
         active[:rope] = nil
@@ -272,101 +349,198 @@ module Burrow
         next false if tick < shot[:at]
         shooter = worms.find { |w| w[:id] == shot[:shooter] }
         next true if !shooter || shooter[:hp] <= 0
-        shot[:x], shot[:y] = shooter[:x], shooter[:y] - 12
+        shot[:x], shot[:y] = shooter[:x], shooter[:y] - 13
         fire_ray(shot)
         true
       end
     end
 
     def fire_ray(shot)
-      angle, damage, radius, kind, range = shot.values_at(:angle, :damage, :radius, :kind, :range)
+      angle, damage, radius, kind = shot.values_at(:angle, :damage, :radius, :kind)
+      start_x, start_y = shot.values_at(:x, :y)
+      # Trace every pellet against the same material before cutting its holes.
+      # A single cartridge report and damage event keep recoil and sound coherent.
+      pellets = kind == "shotgun" ? [-2, -1, 0, 1, 2] : [0]
+      weights = [4, 5, 8, 5, 4]
+      cuts, impacts, hits, prop_hits = [], [], Hash.new(0), Hash.new(0)
+      rays = pellets.each_with_index.map do |offset, index|
+        direction = angle + offset * 0.014
+        portion = kind == "shotgun" ? damage * weights[index].fdiv(26) : damage
+        trace_gun_ray(shot, direction, portion, cuts, impacts, hits, prop_hits)
+      end
+      cuts.each { |x, y| terrain.carve(x, y, radius) }
+      hits.each do |id, amount|
+        victim = worms.find { |w| w[:id] == id }
+        hurt(victim, amount.round, source: shot[:owner])
+        next if victim[:frozen] || victim[:hp] <= 0
+        # A stream pushes gently; a cartridge applies one impulse even when all
+        # five pellets connect. Neither kind gives the target extra fall damage.
+        force = kind == "flame" ? 10 : kind == "burst" ? 16 : 40
+        victim[:vx] += Math.cos(angle) * force
+        victim[:vy] += Math.sin(angle) * force - (kind == "flame" ? 5 : 18)
+        victim[:launched] = true
+      end
+      prop_hits.each do |id, amount|
+        prop = hazards.find { |h| h[:id] == id }
+        next unless prop
+        prop[:hp] = prop.fetch(:hp, 20) - amount
+        ignite(prop, shot[:owner], 2) if prop[:hp] <= 0
+      end
+      center = rays[rays.length / 2]
+      if kind == "flame"
+        # One loose flame per pulse is enough for a persistent carpet; the global
+        # sixty-flame cap also applies to this stream.
+        flame(center[:x2], center[:y2], shot[:owner], vx: Math.cos(angle) * 34, vy: -28)
+      end
+      distance = Math.hypot(center[:x2] - start_x, center[:y2] - start_y)
+      muzzle = [20.0, distance].min
+      emit("beam", x: start_x + Math.cos(angle) * muzzle, y: start_y + Math.sin(angle) * muzzle,
+        x2: center[:x2], y2: center[:y2], style: kind, weapon: shot[:weapon], angle: angle,
+        rays: kind == "shotgun" ? rays : nil, impacts: impacts.first(12))
+    end
+
+    def trace_gun_ray(shot, angle, damage, cuts, impacts, hits, prop_hits)
       x, y = shot.values_at(:x, :y)
-      start_x, start_y = x, y
-      hit_ids = []
-      (range / 3).times do
-        x += Math.cos(angle) * 3
-        y += Math.sin(angle) * 3
+      dx, dy = Math.cos(angle) * 2, Math.sin(angle) * 2
+      piercing = shot[:kind] == "laser"
+      hit_ids, prop_ids = [], []
+      last_cut = nil
+      was_solid = false
+      (shot[:range] / 2).ceil.times do
+        x += dx
+        y += dy
         break unless x.between?(0, world_width) && y.between?(0, world_height)
-        # Terrain takes precedence: a bullet cannot hit a body through a wall.
-        if terrain.solid?(x, y)
-          terrain.carve(x, y, radius)
-          break unless kind == "laser"
-        end
-        victim = worms.find { |w| w[:hp] > 0 && w[:id] != shot[:shooter] && !hit_ids.include?(w[:id]) && Math.hypot(w[:x] - x, w[:y] - 10 - y) < 13 }
-        if victim
-          hurt(victim, damage, source: shot[:owner])
-          unless victim[:frozen] || victim[:hp] <= 0
-            victim[:vx] += Math.cos(angle) * 40
-            victim[:vy] -= 22
-            victim[:launched] = true
+        solid = terrain.solid?(x, y)
+        if solid
+          impacts << {x: x, y: y, material: "terrain"} if !was_solid && impacts.length < 12
+          if !last_cut || Math.hypot(x - last_cut[0], y - last_cut[1]) >= shot[:radius]
+            cuts << [x, y]
+            last_cut = [x, y]
           end
+          break unless piercing
+        end
+        was_solid = solid
+        victim = worms.find do |w|
+          w[:hp] > 0 && w[:id] != shot[:shooter] && !hit_ids.include?(w[:id]) &&
+            Math.hypot(w[:x] - x, w[:y] - 10 - y) < 13
+        end
+        if victim
+          hits[victim[:id]] += damage
           hit_ids << victim[:id]
-          break unless kind == "laser"
+          impacts << {x: x, y: y, material: "worm"} if impacts.length < 12
+          break unless piercing
+        end
+        prop = hazards.find do |h|
+          %w[mine barrel turret crate].include?(h[:kind]) && !prop_ids.include?(h[:id]) &&
+            (h[:x] - x).abs < (h[:kind] == "mine" ? 9 : 13) &&
+            (h[:y] - (h[:kind] == "mine" ? 4 : 12) - y).abs < (h[:kind] == "mine" ? 5 : 14)
+        end
+        if prop
+          prop_hits[prop[:id]] += damage
+          prop_ids << prop[:id]
+          impacts << {x: x, y: y, material: "metal"} if impacts.length < 12
+          break unless piercing
         end
       end
-      fire_patch(x, y, shot[:owner], radius: 24) if kind == "flame"
-      emit("beam", x: start_x, y: start_y, x2: x, y2: y, style: kind)
+      {x2: x.clamp(0, world_width), y2: y.clamp(0, world_height)}
     end
 
     def melee(weapon, damage, angle)
       if weapon[:kind] == "dash"
         @tool = {kind: "dash", until: tick + 12, direction: active[:facing], owner: team[:id], damage: damage, hits: []}
-        active[:input] = active[:lift] = 0
+        active[:input] = active[:lift] = active[:vx] = active[:vy] = 0
+        active[:launched] = false
+        emit("melee", x: active[:x], y: active[:y] - 10, style: weapon[:id], worm: active_id,
+          facing: active[:facing], angle: active[:facing] > 0 ? 0 : Math::PI, hits: [])
         return
       end
-      reach = weapon[:kind] == "dash" ? 120 : 56
       victims = worms.select do |w|
         w[:id] != active_id && w[:hp] > 0 && (w[:x] - active[:x]) * active[:facing] >= -5 &&
-          Math.hypot(w[:x] - active[:x], w[:y] - active[:y]) < reach &&
-          (weapon[:kind] == "dash" || clear_line?(active[:x], active[:y] - 10, w[:x], w[:y] - 10))
+          Math.hypot(w[:x] - active[:x], w[:y] - active[:y]) < 56 &&
+          clear_line?(active[:x], active[:y] - 10, w[:x], w[:y] - 10)
       end
       victims.each do |w|
-        hit = weapon[:id] == "axe" ? (w[:hp] / 2.0).ceil : damage
+        hit = weapon[:id] == "axe" ? (w[:hp] / 2.0).ceil * (@damage_boost ? 2 : 1) : damage
         hurt(w, hit, source: team[:id])
         next if w[:frozen] || w[:hp] <= 0
-        force = weapon[:id] == "bat" ? 490 : weapon[:id] == "prod" ? 180 : 200
-        w[:vx] = active[:facing] * force * [Math.cos(angle).abs, 0.35].max
-        w[:vy] = weapon[:id] == "axe" ? -25 : -[Math.sin(angle).abs * force, 90].max
-        w[:vx], w[:vy] = active[:facing] * 95, -235 if weapon[:id] == "fire_punch"
+        case weapon[:id]
+        when "bat"
+          w[:vx], w[:vy] = Math.cos(angle) * 490, Math.sin(angle) * 490
+        when "prod"
+          w[:vx], w[:vy] = active[:facing] * 140, -35
+        when "axe"
+          w[:vx], w[:vy] = active[:facing] * 25, -25
+        when "fire_punch"
+          w[:vx], w[:vy] = active[:facing] * 95, -285
+        end
         w[:launched] = true
       end
-      active[:vy] = -135 if weapon[:id] == "fire_punch"
-      emit("melee", x: active[:x], y: active[:y] - 10, style: weapon[:id], facing: active[:facing])
+      if weapon[:id] == "fire_punch"
+        active[:vy], active[:launched] = -175, true
+      end
+      emit("melee", x: active[:x], y: active[:y] - 10, style: weapon[:id], worm: active_id,
+        facing: active[:facing], angle: angle, hits: victims.map { |w| w[:id] })
+    end
+
+    # Impacts may arrive before movement or later in the same tick from a mine.
+    # End the action before its explicit motion can erase an external impulse.
+    def interrupt_displaced_tool
+      return unless @tool && active
+      @tool = nil if active[:launched] || active[:vx].abs > 0.01 || active[:vy].abs > 0.01
     end
 
     def update_tool
+      interrupt_displaced_tool
       return unless @tool
-      if tick >= @tool[:until] || active[:hp] <= 0
+      if tick >= @tool[:until] || active[:hp] <= 0 || active[:frozen]
         @tool = nil
         return
       end
       if @tool[:kind] == "dash"
         x = (active[:x] + @tool[:direction] * 9).clamp(12, world_width - 12)
         terrain.carve(x, active[:y] - 10, 23, scorch: false)
-        active[:x] = x
+        active[:x] = x if body_clear?(x, active[:y])
+        @tool[:hits] ||= []
+        hits = []
         worms.each do |w|
-          next if w[:id] == active_id || w[:hp] <= 0 || @tool[:hits].include?(w[:id]) || Math.hypot(w[:x] - x, w[:y] - active[:y]) > 33
+          next if w[:id] == active_id || w[:hp] <= 0 || @tool[:hits].include?(w[:id]) ||
+            Math.hypot(w[:x] - active[:x], w[:y] - active[:y]) > 33 ||
+            !clear_line?(active[:x], active[:y] - 10, w[:x], w[:y] - 10)
           @tool[:hits] << w[:id]
+          hits << w[:id]
           hurt(w, @tool[:damage], source: @tool[:owner])
           w[:vx], w[:vy], w[:launched] = @tool[:direction] * 230, -95, true if w[:hp] > 0 && !w[:frozen]
         end
-        emit("melee", x: x, y: active[:y] - 10, style: "dragon_punch", facing: active[:facing]) if tick % 3 == 0
+        if tick % 3 == 0 || !hits.empty?
+          emit("melee", x: active[:x], y: active[:y] - 10, style: "dragon_punch", worm: active_id,
+            facing: @tool[:direction], angle: @tool[:direction] > 0 ? 0 : Math::PI, hits: hits, continuing: true)
+        end
         return
       end
-      return unless tick % 3 == 0
       drilling = @tool[:kind] == "drill"
-      x = active[:x] + (drilling ? 0 : @tool[:direction] * 9)
       lift = tick <= @tool.fetch(:input_until, 0) ? @tool.fetch(:lift, 0) : 0
-      y = active[:y] + (drilling ? 8 : -10 - lift * 7)
+      nx = (active[:x] + (drilling ? 0 : @tool[:direction] * 3)).clamp(12, world_width - 12)
+      ny = active[:y] + (drilling ? 2.8 : -lift * 1.35)
+      x = nx + (drilling ? 0 : @tool[:direction] * 12)
+      y = ny + (drilling ? 4 : -10)
       terrain.carve(x, y, drilling ? 22 : 25, scorch: !drilling)
-      active[:x] = x.clamp(12, world_width - 12) unless drilling
-      active[:y] += 4 if drilling
-      active[:y] -= lift * 4 unless drilling
-      worms.each do |w|
-        next if w[:id] == active_id || w[:hp] <= 0 || Math.hypot(w[:x] - x, w[:y] - y) > 36
-        hurt(w, (@tool[:damage] / 10.0).ceil, source: @tool[:owner])
+      active[:x], active[:y] = nx, ny if body_clear?(nx, ny)
+      if tick % 6 == 0
+        @tool[:hits] ||= {}
+        worms.each do |w|
+          next if w[:id] == active_id || w[:hp] <= 0 || Math.hypot(w[:x] - x, w[:y] - 10 - y) > 30 ||
+            !clear_line?(x, y, w[:x], w[:y] - 10)
+          dealt = @tool[:hits].fetch(w[:id], 0)
+          amount = [(@tool[:damage] / 10.0).ceil, @tool[:damage] - dealt].min
+          next if amount <= 0
+          hurt(w, amount, source: @tool[:owner])
+          @tool[:hits][w[:id]] = dealt + amount
+        end
       end
-      emit("dig", x: x, y: y, radius: 22)
+      if tick % 3 == 0
+        emit("dig", x: x, y: y, radius: 22, worm: active_id, style: @tool[:kind], facing: @tool[:direction],
+          lift: lift, angle: drilling ? Math::PI / 2 : Math.atan2(-lift * 1.35, @tool[:direction] * 3))
+      end
     end
   end
 end

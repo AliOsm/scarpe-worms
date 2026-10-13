@@ -173,9 +173,17 @@ module Burrow
         elsif active["rope"]
           "Line #{active['rope']['length'].round} · ↑↓ reel"
         elsif control
-          remote_critter ? "#{remote_critter['stage'].capitalize} · #{(remote_critter['life'].fdiv(TICK_RATE)).ceil}s" : "Tool active"
+          remote_critter ? "#{remote_critter['stage'].capitalize} · #{(remote_critter['life'].fdiv(TICK_RATE)).ceil}s" : tool_detail
         elsif @selected_weapon == "homing" && !@locked_target
           "Step 1 of 2 · pick a target"
+        elsif @selected_weapon == "shotgun"
+          state["shots_left"] > 0 ? "Shot 2 of 2 · re-aim, then tap" : "Shot 1 of 2 · aim, then tap"
+        elsif %w[shield double_damage low_gravity wind_control].include?(@selected_weapon)
+          "Keeps your turn · #{supply_active? ? 'active' : 'ready'}"
+        elsif %w[heal freeze skip].include?(@selected_weapon)
+          "Uses your turn · tap to use"
+        elsif %w[mine turret barrel].include?(@selected_weapon)
+          "Place ahead · then retreat"
         elsif charged
           "Aim #{@angle.abs.round}° · Power #{(@power * 100).round}%"
         elsif weapon[:kind] == "girder"
@@ -190,7 +198,7 @@ module Burrow
         @power_minus.state = @power_plus.state = aiming && charged ? nil : "disabled"
         set_text(@fuse_button, @selected_weapon == "holy_bomb" ? "Fixed 5s" : Catalog::FUSED.include?(@selected_weapon) ? "Fuse #{@fuse}s" : "No fuse")
         @fuse_button.state = aiming && Catalog::FUSED.include?(@selected_weapon) && !control ? nil : "disabled"
-        set_text(@fire_button, @pending_action ? "Sending…" : control ? control[0] : @charge_started ? "Charging…" : state["shots_left"] > 0 ? "Second shot" : @selected_weapon == "homing" && !@locked_target ? "1 · Lock target" : @selected_weapon == "homing" ? "2 · Launch" : "Fire · Space")
+        set_text(@fire_button, @pending_action ? "Sending…" : control ? control[0] : @charge_started ? "Charging…" : state["shots_left"] > 0 ? "Shot 2 · Space" : @selected_weapon == "homing" && !@locked_target ? "1 · Lock target" : @selected_weapon == "homing" ? "2 · Launch" : weapon_fire_label)
         @fire_button.state = my_turn? && !@pending_action && (control || (aiming && can_equip?(@selected_weapon))) ? nil : "disabled"
         @pass_button.state = aiming && state["shots_left"].zero? && !@pending_action ? nil : "disabled"
         hint = if !my_turn?
@@ -201,6 +209,10 @@ module Burrow
           "Retreat! A / D moves · W jumps · B backflips · watch where the shot lands"
         elsif state["phase"] != "aiming"
           "Waiting for the action to settle · G map · F follow"
+        elsif @selected_weapon == "shotgun" && state["shots_left"] > 0
+          "One shot left in this cartridge · move and re-aim · Space or click fires shot two"
+        elsif supply_active?
+          "#{weapon[:name]} is active · your turn continues · E opens the arsenal for your next action"
         elsif @selected_weapon == "homing"
           @locked_target ? "Step 2 of 2 · Aim with the mouse or ↑ ↓ · hold the mouse or Space, release to launch · Backspace re-targets" :
             "Step 1 of 2 · Click the target to lock it (Space locks at the pointer)"
@@ -214,6 +226,44 @@ module Burrow
         state && state["projectiles"].find { |p| p["owner"] == my_id && p["remote"] && p["life"] > 0 }
       end
 
+      def supply_active?
+        case @selected_weapon
+        when "shield" then active_worm && active_worm["shield"]
+        when "double_damage" then state.dig("effects", "double_damage")
+        when "low_gravity" then state.dig("effects", "low_gravity")
+        end
+      end
+
+      def tool_detail
+        tool = state["tool"]
+        return "Tool active" unless tool
+        name = {"drill" => "Drilling", "torch" => "Cutting", "dash" => "Dashing"}.fetch(tool["kind"], "Tool active")
+        "#{name} · #{([tool.fetch('until', state['tick']) - state['tick'], 0].max.fdiv(TICK_RATE)).round(1)}s"
+      end
+
+      def weapon_fire_label
+        action = case @selected_weapon
+        when "shotgun" then "Shot 1"
+        when "fire_punch" then "Punch"
+        when "dragon_punch" then "Dash"
+        when "prod" then "Poke"
+        when "bat" then "Swing"
+        when "axe" then "Chop"
+        when "mine", "turret", "barrel" then "Place"
+        when "drill" then "Drill"
+        when "blowtorch" then "Cut"
+        when "heal" then "Heal"
+        when "shield" then "Shield"
+        when "freeze" then "Freeze"
+        when "double_damage" then "Boost"
+        when "low_gravity" then "Float"
+        when "wind_control" then "Wind"
+        when "skip" then "Pass"
+        else "Fire"
+        end
+        "#{action} · Space"
+      end
+
       def special_control
         if (p = remote_critter)
           case [p["kind"], p["stage"]]
@@ -225,7 +275,12 @@ module Burrow
           else ["Detonate · Space", "Tap Space or click to detonate the critter"]
           end
         elsif state && state["tool"]
-          ["Stop · Space", state["tool"]["kind"] == "torch" ? "Up / Down changes tunnel slope · Space stops digging" : "Space stops drilling early"]
+          hint = case state["tool"]["kind"]
+          when "torch" then "↑ / ↓ changes tunnel slope · Space or click stops cutting early"
+          when "dash" then "Dragon dash carves forward · Space or click stops the rush"
+          else "Drilling downward · Space or click stops drilling early"
+          end
+          ["Stop · Space", hint]
         elsif @selected_weapon == "rope" && active_worm && active_worm["rope"]
           ["Detach · Space", "Left / Right swings · Up / Down reels · Space or Jump releases"]
         elsif @selected_weapon == "jetpack" && active_worm && active_worm["jetpack"]

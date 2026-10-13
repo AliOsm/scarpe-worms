@@ -15,16 +15,16 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
 | Big trouble | Explosives | 1 | A very large bouncing bomb. Your friends may object. |
 | Fruit salad | Explosives | 1 | One fruit becomes six. Press Fire mid-air to split it early. |
 | Choir bomb | Explosives | 1 | A weighty bomb with a five-second fuse and a grand finale. |
-| Double tap | Direct | -1 | Two separate shots. Re-aim before the second. |
+| Double tap | Direct | -1 | Two separately aimed pellet shots per cartridge. Finish both before switching. |
 | Long goodbye | Direct | 3 | A precise single shot. Terrain blocks the bullet. |
 | Peashooter | Direct | 2 | Eight rounds spread around your aim, chewing small holes. |
 | Sunbeam | Direct | 2 | A straight beam cuts through terrain and enemies. |
-| Hot breath | Direct | 2 | A short cone of fire leaves burning ground behind. |
-| Uppercrust | Close-up | -1 | A close-range uppercut that launches an opponent. |
-| Dragon dash | Close-up | 2 | Burst forward through a short tunnel, striking everyone ahead. |
+| Hot breath | Direct | 2 | A short-range stream of fire leaves flames burning on the ground. |
+| Uppercrust | Close-up | -1 | Leap into a fiery uppercut, launching a nearby opponent upward. |
+| Dragon dash | Close-up | 2 | Rush forward through a short tunnel, striking each grub once. |
 | Little nudge | Close-up | -1 | No damage. Plenty of shove. Best beside the water. |
-| Home run | Close-up | 2 | Aim the angle of an enormous knockback. |
-| Half measure | Close-up | 2 | Halves a nearby opponent's current health. |
+| Home run | Close-up | 2 | Swing at a nearby grub. Your aim sets its enormous launch. |
+| Half measure | Close-up | 2 | Chop away half a nearby opponent's current health. |
 | Special delivery | Sky | 2 | Pick the approach with ← →, then click a target for five bombs. Not in caverns. |
 | Rain check | Sky | 1 | Drops five persistent proximity mines from above. |
 | Spicy forecast | Sky | 1 | A line of firebombs spreads persistent fire. |
@@ -35,23 +35,23 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
 | Tunnel buddy | Critters | 2 | Release, Fire to dive and dig, then Fire again to detonate. |
 | Stink express | Critters | 2 | Release, then Fire to spray poison as it runs. |
 | Cattle call | Critters | 1 | Three walking troublemakers, released one after another. |
-| Mind your step | Hazards | 3 | Arms after one second, then reacts to nearby grubs. |
-| Sentry sprout | Hazards | 1 | A five-shot sentry fires at enemies within sight. |
-| Red barrel | Hazards | 2 | An explosive obstacle. Blasts can start a chain reaction. |
+| Mind your step | Hazards | 3 | Place ahead, then retreat. Arms after one second; nearby grubs start its fuse. |
+| Sentry sprout | Hazards | 1 | Place a five-shot sentry ahead. It tracks enemies within clear sight. |
+| Red barrel | Hazards | 2 | Place an explosive drum ahead. Blasts throw it; rupture spills burning fuel. |
 | Grapple line | Mobility | 4 | Click ground above to attach. Left / Right swings; Up / Down reels; Fire releases. |
 | Personal cloud | Mobility | 2 | Four seconds of thrust. Arrows fly; Fire stops. Fuel only burns while thrusting. |
 | Soft landing | Mobility | 2 | Slows this turn's falls and prevents fall damage. |
 | Here to there | Mobility | 2 | Click clear ground to relocate. Uses the turn. |
 | Bridge builder | Tools | 3 | Tilt with ← →, then click open space to build a 140-pixel beam. Uses the turn. |
-| Down we go | Tools | 2 | Bore downward for two seconds. Fire again stops early. |
-| Side hustle | Tools | 2 | Dig forward; Up / Down changes slope. Fire again stops early. |
+| Down we go | Tools | 2 | Bore downward for up to two seconds. Space or click stops early. Uses the turn. |
+| Side hustle | Tools | 2 | Cut forward for up to two seconds; ↑ / ↓ steers the slope. Space stops early. Uses the turn. |
 | First aid | Supplies | 2 | Restore 35 health and clear poison. Uses the turn. |
-| Bubble wrap | Supplies | 1 | Halve incoming damage until your next turn. |
+| Bubble wrap | Supplies | 1 | Halve this grub's incoming damage until your team's next turn. Keeps your turn. |
 | Ice break | Supplies | 1 | Protect your whole team until its next turn. Uses the turn. |
 | Stink bomb | Explosives | 2 | A bouncing canister leaves a lingering poison cloud. |
-| Extra spicy | Supplies | 1 | Double the damage of the attack you make this turn. |
-| Moon boots | Supplies | 1 | Reduce gravity for the rest of this turn. |
-| Weather vane | Supplies | 1 | Reverse and double the wind, up to storm strength, for this turn. |
+| Extra spicy | Supplies | 1 | Double your attack damage this turn. Keeps your turn; choose an attack next. |
+| Moon boots | Supplies | 1 | Reduce gravity for floaty jumps and shots this turn. Keeps your turn. |
+| Weather vane | Supplies | 1 | Reverse and strengthen this turn's wind. Keeps your turn. |
 | Pass the turn | Supplies | -1 | Let the next team take its turn. |
 
 ## Controls by stage
@@ -70,9 +70,20 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
   Space or Jump detaches. The anchor releases if destroyed.
 - Jetpack: arrows apply thrust; released keys conserve fuel. Space deploys a
   parachute and stops the pack. Fuel exhaustion also provides a soft landing.
-- Digging: Fire stops early. Up/Down changes the blowtorch slope.
+- Digging: tap Space or click to start. Space or another click stops early;
+  Up/Down changes the blowtorch slope. Face the tunnel before starting Side hustle.
+  The HUD shows the tool's remaining time. Digging uses the turn.
 - Double tap: each press fires one shot. Re-aim for the second; it belongs to the
   same cartridge, including the last cartridge. Finish both before switching.
+- Guns: aim with the mouse or Up/Down, then tap Space or click. Hot breath needs
+  a nearby target; its stream leaves fire that keeps burning after the spray ends.
+- Close-up: move within reach, aim toward the grub, then tap Space or click.
+  Home run launches along the aim angle; Dragon dash carves through the ground ahead.
+- Hazards: face the placement, then tap Space or click to place just ahead.
+  Retreat with A/D; an armed mine reacts to either team's grubs.
+- Bubble wrap, Extra spicy, Moon boots and Weather vane keep the turn. The HUD
+  says so; open the arsenal with E to follow a utility with an attack. First aid,
+  Ice break and Pass the turn use the turn.
 
 The HUD shows the current stage, next action, fuse, rope length, or remaining
 thrust. Irrelevant controls are disabled. Focus loss, menus, weapon changes, and
