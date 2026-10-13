@@ -226,8 +226,8 @@ labels across 40 changing sizes; run it serially under `/tmp/burrow-bench.lock`.
 Frame-stall diagnostics (independent of game code):
 
 - `0021-native-frame-stall-diagnostics.patch`: retain bounded timestamps for
-  complete IPC batch receipt, event-loop settling and redraw start, including
-  the number of lines in each batch. Native phase totals and each frame now
+  event-loop receipt of stdin chunks, settling and redraw start, including
+  the number of lines in each chunk. Native phase totals and each frame now
   report event-loop thread CPU time beside wall time, so a long interval can
   distinguish renderer CPU work from time descheduled or waiting in the event
   loop. Existing eight-column frame rows remain unchanged; CPU rows and batch
@@ -253,3 +253,14 @@ PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
   --manifest-path vendor/scarpe/native/Cargo.toml \
   --test image_visibility --test image_animation --test image_blit --test images
 ```
+
+- `0023-native-correct-coalesced-batch-diagnostics.patch`: the stdin reader's
+  chunks can split a protocol update or contain several flushes. Mark accumulated
+  chunks settled only when the runtime permits redraw, then associate every
+  pending settled chunk with the same first subsequent redraw callback. The
+  previous latest-only association could assign an already-coalesced chunk to
+  a later idle redraw and report a false delay. Diagnostic version 2 preserves
+  the existing row columns and names their precise semantics. These process-wide
+  timestamps do not identify individual Ruby updates, windows or presentation.
+  Rust tests cover coalescing, fragmented updates and bounded-log eviction;
+  use the `runtime::stats::tests` command above.
