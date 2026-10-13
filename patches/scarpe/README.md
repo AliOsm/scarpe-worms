@@ -238,3 +238,18 @@ Frame-stall diagnostics (independent of game code):
 PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
   --manifest-path vendor/scarpe/native/Cargo.toml --lib runtime::stats::tests
 ```
+
+- `0022-native-cull-images-before-resizing.patch`: reject unrotated images outside
+  the current paint canvas or ancestor clip before constructing a resized copy.
+  The general culler retains an eight-logical-pixel margin around images; narrow
+  perimeter strips could pay for a resize before their pixels were discarded.
+  Conservative physical-pixel margins retain rounded image and fractional clip
+  edges. Rotated images keep their existing path. Tests compare against the
+  unculled pipeline at 0.5×, 2/3×, 1×, 1.25× and 2×, with translated damage
+  canvases, and verify exact moving-image damage and visible rotated silhouettes.
+
+```sh
+PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
+  --manifest-path vendor/scarpe/native/Cargo.toml \
+  --test image_visibility --test image_animation --test image_blit --test images
+```
