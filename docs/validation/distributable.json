@@ -1,12 +1,12 @@
 {
-  "version": "0.3.0",
+  "version": "0.5.2",
   "current_launcher_files": 2,
-  "current_game_source_and_asset_files": 554,
+  "current_game_source_and_asset_files": 991,
   "current_scarpe_runtime_files": 176,
-  "zip_entries_matched": 3439,
+  "zip_entries_matched": 3876,
   "zip_crc": true,
   "zip_executable_permissions": true,
   "symlinks_preserved": true,
-  "sha256": "c5c4a217ca89fd1bf27d7c390ae9ded43ad7b30d4cc2d6b1e26d0f844ecd6bad",
-  "zip_bytes": 32387587
+  "sha256": "e58e7092fc8bf596229b85d5bbdd002e6dc439a9c3bce3c74e1a6527fa09f813",
+  "zip_bytes": 47850782
 }

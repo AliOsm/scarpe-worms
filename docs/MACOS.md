@@ -13,7 +13,7 @@ python3 tools/verify_macos.py 'dist/Burrow Brigade.app'
 python3 tools/check_distributable.py
 ```
 
-Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.0) and its `.sha256` sidecar.
+Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.2) and its `.sha256` sidecar.
 The archive bundles Ruby 3.4.7, patched native Scarpe, gems, fonts, art, and audio.
 Players do not need a separate Ruby, Rust, browser, or server installation.
 
