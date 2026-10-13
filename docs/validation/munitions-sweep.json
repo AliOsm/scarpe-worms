@@ -293,6 +293,38 @@
         "log": "/tmp/munitions-lab/holy_bomb/log.json",
         "sheet": "/tmp/munitions-lab/holy_bomb-sheet.png"
       }
+    },
+    "poison": {
+      "defects_found": "Generic canister art failed to show leakage or a distinct cloud release.",
+      "changes": "Leaking canister with rotation-attached wisps, toxic bloom, clear fuse and release cue.",
+      "verification": [
+        "bouncing timed fuse",
+        "nonlethal drifting status cloud",
+        "no crater",
+        "cloud expiry and handover"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 19,
+        "start_turn": 1,
+        "final_turn": 2,
+        "event_counts": {
+          "fire": 1,
+          "bounce": 4,
+          "gas": 1,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/poison/log.json",
+        "sheet": "/tmp/munitions-lab/poison-sheet.png"
+      }
     }
   }
 }
