@@ -4,8 +4,8 @@
   "boot": true,
   "teams": 3,
   "version": "0.5.2",
-  "match_id": "7dea790b4e33f197a818e6a3",
-  "player_id": "83f8c564c000aeff",
+  "match_id": "594bb1d908d6809a918de426",
+  "player_id": "cd139bc40a42302b",
   "profile_name": "Pip Équipe",
   "resumed": true,
   "external_encoding": "UTF-8",
@@ -32,8 +32,8 @@
   "macos_execution": false,
   "performance": {
     "frames": 31,
-    "mean_ruby_scene_ms": 1.8727568639141898,
-    "p95_ruby_scene_ms": 6.309327203780413,
-    "max_ruby_scene_ms": 23.263914044946432
+    "mean_ruby_scene_ms": 1.6184978547596163,
+    "p95_ruby_scene_ms": 3.7610093131661415,
+    "max_ruby_scene_ms": 24.103000294417143
   }
 }
