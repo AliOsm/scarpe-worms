@@ -203,24 +203,27 @@ module Burrow
     # a wall or on top of another grub/prop.
     def hazard_place_point
       x = active[:x] + active[:facing] * 24
-      # Landing returns the exact top edge used by collision, keeping the prop
-      # feet aligned on slopes instead of floating two pixels above the actor.
-      y = grounded?(active) ? (terrain.landing(x, [active[:y] - 4, 0].max, water: water) || active[:y]) : active[:y] - 2
+      y = active[:y] - 2
+      if grounded?(active)
+        # Snap to nearby ground, but release at hand height beside a ledge.
+        # An unrestricted landing search would teleport props to distant floors.
+        landing = terrain.landing(x, [active[:y] - 4, 0].max, water: water)
+        y = landing if landing && (landing - active[:y]).abs <= 8
+      end
       [x, y]
     end
 
     def validate_hazard_place(kind, x, y)
       width = kind == "mine" ? 9 : 15
       height = kind == "mine" ? 9 : 21
-      grounded = grounded?(active)
       unless x.between?(width + 8, world_width - width - 8) &&
-          y.between?(height + 10, water - 4) && (!grounded || terrain.landing(x, y - height, water: water))
+          y.between?(height + 10, water - 4)
         raise RuleError, "There is no clear ground ahead for that #{kind}."
       end
-      # Check the full prop silhouette in four-pixel samples.  This catches a
-      # low ceiling or a thin side wall that a single centre-line probe misses.
-      if (-width..width).step(4).any? do |dx|
-        (-height + 3..-2).step(4).any? { |dy| terrain.solid?(x + dx, y + dy) }
+      # Sample every terrain cell across the full footprint, including its top
+      # and feet. Coarser samples can skip a one-cell wall inside the prop.
+      if (-width..width).step(Terrain::CELL).any? do |dx|
+        (-height..-1).step(Terrain::CELL).any? { |dy| terrain.solid?(x + dx, y + dy) }
       end
         raise RuleError, "There is no clear ground ahead for that #{kind}."
       end
