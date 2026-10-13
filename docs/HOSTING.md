@@ -91,8 +91,8 @@ gh secret set DEPLOY_SSH_KEY --env production < burrow-deploy
 gh secret set DEPLOY_KNOWN_HOSTS --env production < burrow-known-hosts
 ```
 
-Add `DEPLOY_PORT` if SSH is not on port 22, and optionally require a reviewer on
-the environment. Deploy by tagging the release on `main`:
+If SSH is not on port 22, add `DEPLOY_PORT` and scan with `ssh-keyscan -p PORT`.
+Optionally require a reviewer on the environment. Deploy by tagging the release on `main`:
 
 ```sh
 git tag v0.5.2 && git push origin v0.5.2
