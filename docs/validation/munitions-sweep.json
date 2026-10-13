@@ -227,6 +227,39 @@
         "log": "/tmp/munitions-lab/mega_bomb/log.json",
         "sheet": "/tmp/munitions-lab/mega_bomb-sheet.png"
       }
+    },
+    "banana": {
+      "defects_found": "Fruit and secondary fruit lacked distinct flight/split presentation.",
+      "changes": "Six smaller bananettes with inherited momentum and boosted damage, yellow burst and predicted split cue.",
+      "verification": [
+        "owner-only early split",
+        "no extra ammo",
+        "six nonrecursive fragments",
+        "seven lab blasts"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 17,
+        "start_turn": 1,
+        "final_turn": 2,
+        "event_counts": {
+          "fire": 1,
+          "activate": 1,
+          "explosion": 7,
+          "damage": 3,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/banana/log.json",
+        "sheet": "/tmp/munitions-lab/banana-sheet.png"
+      }
     }
   }
 }
