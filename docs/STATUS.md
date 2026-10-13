@@ -255,10 +255,10 @@ audio lag is resolved.
 
 ## Repository handoff
 
-The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 19
-independent patches; the arcade interface added 0013 and the renderer investigation
-added 0014–0017; patch 0018 removes redundant Mac refresh deadlines and 0019
-records live clock anchors. Protocol 4 hosts and clients must upgrade together.
+The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 23
+independent patches; the arcade interface added 0013, the renderer investigation
+added 0014–0017, cadence and clock work added 0018–0019, and the zoom follow-up
+added 0020–0023. Protocol 4 hosts and clients must upgrade together.
 Runtime assets live in the source tree, so running the game needs no image service or
 asset download. Generated bundles, raw captures and player data remain ignored.
 No publishing or deployment was performed.
