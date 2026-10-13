@@ -1,0 +1,661 @@
+{
+  "title": "0.5.2 integrated weapons sweep — Linux validation",
+  "date": "2026-10-13",
+  "version": "0.5.2",
+  "protocol": 4,
+  "branch": "weapons/integration",
+  "commit": "a6b5fcd",
+  "platform": "x86_64-linux, Ruby 4.0.7 and 3.4.7, Xvfb / headless native Scarpe",
+  "families": {
+    "mobility": "weapons-mobility-linux.json",
+    "munitions": "munitions-sweep.json",
+    "critters": "weapons-critters-linux.json",
+    "close": "weapons/close branch; summarized in STATUS.md"
+  },
+  "integration_fixes": [
+    "Diving mole strikes a grub at the surface; other projectiles keep terrain-first contact.",
+    "Herd releases are recorded for playback and emit their release cue.",
+    "Critter first-frame effect test supplies coordinates now that effects re-place on zoom.",
+    "Hazard placement validation merged with the mobility parachute/jetpack rules.",
+    "Fire labels keep sky and critter verbs alongside close-family labels; tool HUD timers coexist with critter stage readouts.",
+    "A neutral steer after a tool stops is a no-op instead of a rejection notice (found by the integrated lab)."
+  ],
+  "tests": {
+    "ruby_4.0.7": "296 runs, 8994 assertions, 0 failures",
+    "ruby_3.4.7": "296 runs, 8994 assertions, 0 failures",
+    "note": "Counted before the steer regression test was added; weapons_close_test then ran 45 runs / 425 assertions."
+  },
+  "native_journeys": {
+    "result": "7/7 passed",
+    "first_attempt": "controls errored (terrain renderer exited) and online exceeded its 120 ms max-frame bound while a full art rebuild ran concurrently; the uncontended rerun passed"
+  },
+  "assets": {
+    "check_assets": "passed",
+    "full_art_rebuild": "byte-identical",
+    "check_audio": "passed (22 cues)",
+    "test_rendering": "OK",
+    "verify_scarpe": "passed"
+  },
+  "weapon_lab": {
+    "weapons": 48,
+    "errors": 0,
+    "checkers": {
+      "check_close_lab.py": "22/22 passed",
+      "check_munitions_lab.py": "15/16 on the full run; holy_bomb's 18-tick choir stage fell between captures (choir tick 3281, blast 3299, captures 3280/3301); the rerun captured it and passed"
+    },
+    "mobility_traces": {
+      "rope": "hooked a 299 px line, swung 300→478 px, released with momentum, re-hooked at 164 px, swung back and landed (4 hp ordinary fall after release)",
+      "jetpack": "climbed from y900 to y600 at the 220 px/s cap, strafed at 210 px/s; Space stopped the pack and armed the parachute; landed on the perch",
+      "parachute": "opened on descent, held 65 px/s, steered right and landed with full health"
+    },
+    "notes": "turn_completed_in_script is false where the lab script ends during the 3 s retreat or a utility keeps the turn; the family checkers judge those weapons.",
+    "per_weapon": {
+      "rocket": {
+        "frames": 12,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "mortar": {
+        "frames": 14,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "homing": {
+        "frames": 20,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "damage",
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": "Target locked. Now aim, then hold the mouse or Space and release to launch."
+      },
+      "grenade": {
+        "frames": 13,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "bounce",
+          "damage",
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "cluster": {
+        "frames": 16,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "bounce",
+          "damage",
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "sticky": {
+        "frames": 13,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "damage",
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "dynamite": {
+        "frames": 14,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "mega_bomb": {
+        "frames": 15,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "bounce",
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "banana": {
+        "frames": 17,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "activate",
+          "damage",
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "holy_bomb": {
+        "frames": 16,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "bounce",
+          "choir",
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null,
+        "rerun": {
+          "frames": 15,
+          "turn_completed_in_script": true,
+          "event_kinds": [
+            "bounce",
+            "choir",
+            "explosion",
+            "fire",
+            "turn"
+          ],
+          "notice": null
+        }
+      },
+      "shotgun": {
+        "frames": 8,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "beam",
+          "damage",
+          "fire"
+        ],
+        "notice": null
+      },
+      "rifle": {
+        "frames": 6,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "beam",
+          "damage",
+          "fire"
+        ],
+        "notice": null
+      },
+      "minigun": {
+        "frames": 6,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "beam",
+          "damage",
+          "fire"
+        ],
+        "notice": null
+      },
+      "laser": {
+        "frames": 6,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "beam",
+          "damage",
+          "fire"
+        ],
+        "notice": null
+      },
+      "flamethrower": {
+        "frames": 9,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "beam",
+          "damage",
+          "fire"
+        ],
+        "notice": null
+      },
+      "fire_punch": {
+        "frames": 7,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "bounce",
+          "damage",
+          "fire",
+          "melee"
+        ],
+        "notice": null
+      },
+      "dragon_punch": {
+        "frames": 6,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "damage",
+          "fire",
+          "melee"
+        ],
+        "notice": null
+      },
+      "prod": {
+        "frames": 6,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "fire",
+          "melee"
+        ],
+        "notice": null
+      },
+      "bat": {
+        "frames": 7,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "bounce",
+          "damage",
+          "fire",
+          "melee"
+        ],
+        "notice": null
+      },
+      "axe": {
+        "frames": 6,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "damage",
+          "fire",
+          "melee"
+        ],
+        "notice": null
+      },
+      "airstrike": {
+        "frames": 19,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "damage",
+          "explosion",
+          "fire",
+          "strike",
+          "turn"
+        ],
+        "notice": null
+      },
+      "mine_strike": {
+        "frames": 20,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "bounce",
+          "damage",
+          "explosion",
+          "fire",
+          "hazard_trigger",
+          "mine_arm",
+          "mine_land",
+          "mine_trigger",
+          "strike",
+          "turn"
+        ],
+        "notice": null
+      },
+      "napalm": {
+        "frames": 25,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "damage",
+          "explosion",
+          "fire",
+          "strike",
+          "turn"
+        ],
+        "notice": null
+      },
+      "meteor": {
+        "frames": 15,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "damage",
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "earthquake": {
+        "frames": 12,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "damage",
+          "fire",
+          "quake",
+          "turn"
+        ],
+        "notice": null
+      },
+      "sheep": {
+        "frames": 14,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "activate",
+          "damage",
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "super_sheep": {
+        "frames": 12,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "activate",
+          "critter_trail",
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "mole": {
+        "frames": 13,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "activate",
+          "critter_dirt",
+          "critter_dive",
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "skunk": {
+        "frames": 15,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "activate",
+          "damage",
+          "explosion",
+          "fire",
+          "gas",
+          "turn"
+        ],
+        "notice": null
+      },
+      "cow": {
+        "frames": 19,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "bounce",
+          "critter_release",
+          "damage",
+          "explosion",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "mine": {
+        "frames": 8,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "damage",
+          "explosion",
+          "fire",
+          "hazard_place",
+          "hazard_trigger",
+          "mine_arm",
+          "mine_trigger",
+          "turn"
+        ],
+        "notice": null
+      },
+      "turret": {
+        "frames": 13,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "beam",
+          "damage",
+          "fire",
+          "hazard_place",
+          "turn"
+        ],
+        "notice": null
+      },
+      "barrel": {
+        "frames": 14,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "barrel_rupture",
+          "damage",
+          "explosion",
+          "fire",
+          "hazard_place",
+          "hazard_trigger"
+        ],
+        "notice": null
+      },
+      "rope": {
+        "frames": 16,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "activate",
+          "damage",
+          "fire",
+          "rope_hook"
+        ],
+        "notice": null
+      },
+      "jetpack": {
+        "frames": 14,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "activate",
+          "fire"
+        ],
+        "notice": null
+      },
+      "parachute": {
+        "frames": 12,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "fire",
+          "jump"
+        ],
+        "notice": null
+      },
+      "teleport": {
+        "frames": 8,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "fire",
+          "teleport",
+          "turn"
+        ],
+        "notice": null
+      },
+      "girder": {
+        "frames": 8,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "build",
+          "fire",
+          "turn"
+        ],
+        "notice": null
+      },
+      "drill": {
+        "frames": 7,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "activate",
+          "dig",
+          "fire"
+        ],
+        "notice": null,
+        "rerun": {
+          "frames": 7,
+          "turn_completed_in_script": false,
+          "event_kinds": [
+            "activate",
+            "dig",
+            "fire"
+          ],
+          "notice": null
+        }
+      },
+      "blowtorch": {
+        "frames": 7,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "activate",
+          "dig",
+          "fire"
+        ],
+        "notice": "There is nothing to steer right now.",
+        "rerun": {
+          "frames": 7,
+          "turn_completed_in_script": false,
+          "event_kinds": [
+            "activate",
+            "dig",
+            "fire"
+          ],
+          "notice": null
+        }
+      },
+      "heal": {
+        "frames": 6,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "fire",
+          "heal",
+          "turn"
+        ],
+        "notice": null
+      },
+      "shield": {
+        "frames": 6,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "fire",
+          "shield"
+        ],
+        "notice": null
+      },
+      "freeze": {
+        "frames": 6,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "fire",
+          "freeze",
+          "turn"
+        ],
+        "notice": null
+      },
+      "poison": {
+        "frames": 20,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "bounce",
+          "fire",
+          "gas",
+          "turn"
+        ],
+        "notice": null
+      },
+      "double_damage": {
+        "frames": 5,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "boost",
+          "fire"
+        ],
+        "notice": null
+      },
+      "low_gravity": {
+        "frames": 7,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "fire",
+          "gravity",
+          "jump"
+        ],
+        "notice": null
+      },
+      "wind_control": {
+        "frames": 5,
+        "turn_completed_in_script": false,
+        "event_kinds": [
+          "fire",
+          "wind"
+        ],
+        "notice": null
+      },
+      "skip": {
+        "frames": 5,
+        "turn_completed_in_script": true,
+        "event_kinds": [
+          "fire",
+          "skip",
+          "turn"
+        ],
+        "notice": null
+      }
+    }
+  },
+  "performance": {
+    "action_cadence": {
+      "count": 887,
+      "mean_ms": 16.53,
+      "p95_ms": 21.57,
+      "max_ms": 55.43,
+      "result": "passed (exit 0); one 49 ms stall at tick 489; command: xvfb-run -a python3 tools/check_action.py"
+    },
+    "rendering_scale2_audio": {
+      "combat": {
+        "count": 893,
+        "mean_ms": 16.55,
+        "p95_ms": 20.31,
+        "p99_ms": 26.25,
+        "max_ms": 48.15,
+        "over_33ms": 2,
+        "over_50ms": 0
+      },
+      "pan": {
+        "count": 358,
+        "mean_ms": 16.7,
+        "p95_ms": 18.64,
+        "p99_ms": 20.63,
+        "max_ms": 42.9,
+        "over_33ms": 1,
+        "over_50ms": 0
+      },
+      "zoom": {
+        "count": 355,
+        "mean_ms": 20.61,
+        "p95_ms": 38.87,
+        "p99_ms": 58.11,
+        "max_ms": 77.83,
+        "over_33ms": 34,
+        "over_50ms": 6
+      },
+      "zoom_sweep": {
+        "count": 241,
+        "mean_ms": 20.28,
+        "p95_ms": 25.38,
+        "p99_ms": 28.62,
+        "max_ms": 46.12,
+        "over_33ms": 1,
+        "over_50ms": 0
+      },
+      "result": "passed (exit 0); command: xvfb-run -a -s '-screen 0 3840x2400x24' python3 tools/check_rendering.py --scale 2 --size 1920x1200 --audio"
+    }
+  },
+  "limits": "Linux only. Feel, balance, Retina/ProMotion presentation and audible output on the owner's Mac remain the acceptance check."
+}

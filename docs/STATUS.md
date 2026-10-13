@@ -32,7 +32,12 @@ scripts. Protocol 4 and version-one checkpoints remain supported.
 
 Integrated Linux evidence: Ruby 4.0.7 and 3.4.7 each pass 296 tests / 8,994
 assertions; all seven native journeys pass; assets pass and a full art rebuild is
-byte-identical. LAB_EVIDENCE The family reports below keep each branch's own
+byte-identical. A native lab drove all 48 weapons through real input with no errors; the
+close and munitions checkers pass every weapon (Choir bomb after a rerun that caught its
+0.6 s warning between captures), and rope, jetpack and parachute traces show hooking,
+swinging, powered flight and safe descent. Action cadence passes at 16.53 ms mean /
+21.57 ms p95; scale-2 rendering with audio passes at combat/pan means of 16.55/16.70 ms,
+zoom 20.6 ms. See the [integrated report](validation/weapons-0.5.2-linux.json). The family reports below keep each branch's own
 measurements, including failed and retried captures. Feel, balance and audible
 output on the owner's Mac remain the acceptance check.
 
