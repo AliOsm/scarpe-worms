@@ -49,6 +49,7 @@ class PresentationTest < Minitest::Test
     assert_in_delta 4230, point[0], 0.001
     assert_in_delta 878, point[1], 0.001
     camera.overview
+    camera.update(nil, dt: 1)
     assert camera.overview?
     assert_operator camera.screen(0, 0)[0], :>=, 0
     assert_operator camera.screen(4800, 1600)[0], :<=, 1440
@@ -174,6 +175,7 @@ class PresentationTest < Minitest::Test
     camera.update([2400, 850], dt: 1.0 / 60)
     point = camera.world(1000, 280)
     camera.zoom_by(1, anchor: [1000, 280])
+    camera.update(nil, dt: 1)
     assert_in_delta point[0], camera.world(1000, 280)[0], 0.001
     assert_in_delta point[1], camera.world(1000, 280)[1], 0.001
     refute camera.following
@@ -184,6 +186,139 @@ class PresentationTest < Minitest::Test
     camera.update([200, 400], dt: 1.0 / 60)
     assert camera.following
     assert_operator camera.screen(200, 400)[0], :>=, 0
+  end
+
+  def test_camera_zoom_animates_every_frame_and_keeps_pointer_coordinates_exact
+    camera = Burrow::Client::Camera.new(4800, 1600)
+    camera.navigate(2400, 850)
+    anchor = [1000, 280]
+    point = camera.world(*anchor)
+    camera.zoom_by(1, anchor: anchor)
+    assert_equal 1.0, camera.zoom, "requesting a zoom must not jump the displayed view"
+    assert_equal 1.25, camera.target_zoom
+    zooms = 13.times.map do
+      camera.update(nil, dt: 1.0 / 60)
+      assert_in_delta point[0], camera.world(*anchor)[0], 0.0001
+      assert_in_delta point[1], camera.world(*anchor)[1], 0.0001
+      world_point = camera.world(*camera.screen(2600, 900))
+      assert_in_delta 2600, world_point[0], 0.0001
+      assert_in_delta 900, world_point[1], 0.0001
+      camera.zoom
+    end
+    assert_operator zooms.first, :>, 1.0
+    assert_operator zooms.first, :<, 1.25
+    assert_equal zooms.sort, zooms
+    assert_operator zooms.uniq.length, :>=, 12
+    assert_equal 1.25, zooms.last
+    refute camera.zooming?
+    refute camera.following
+  end
+
+  def test_camera_zoom_elapsed_time_matches_across_refresh_rates_and_catches_up
+    cameras = [30, 60, 120].map do |hz|
+      camera = Burrow::Client::Camera.new(4800, 1600)
+      camera.navigate(2400, 850)
+      camera.zoom_by(-1, anchor: [900, 300])
+      (hz / 10).times { camera.update(nil, dt: 1.0 / hz) }
+      camera
+    end
+    cameras.drop(1).each do |camera|
+      assert_in_delta cameras.first.zoom, camera.zoom, 0.000001
+      assert_in_delta cameras.first.x, camera.x, 0.000001
+      assert_in_delta cameras.first.y, camera.y, 0.000001
+    end
+    cameras.each do |camera|
+      camera.update(nil, dt: 1.5)
+      assert_equal 0.7, camera.zoom
+      refute camera.zooming?
+    end
+  end
+
+  def test_repeated_zoom_retargets_from_current_view_and_uses_requested_level
+    camera = Burrow::Client::Camera.new(4800, 1600)
+    camera.navigate(2400, 850)
+    camera.zoom_by(-1, anchor: [900, 300])
+    camera.update(nil, dt: 0.05)
+    before = [camera.x, camera.y, camera.zoom]
+    anchor = [500, 400]
+    point = camera.world(*anchor)
+    camera.zoom_by(-1, anchor: anchor)
+    assert_equal 0.5, camera.target_zoom, "repeated input advances past the pending 70% level"
+    assert_equal before, [camera.x, camera.y, camera.zoom]
+    camera.update(nil, dt: 0.04)
+    assert_in_delta point[0], camera.world(*anchor)[0], 0.000001
+    assert_in_delta point[1], camera.world(*anchor)[1], 0.000001
+    before = [camera.x, camera.y, camera.zoom]
+    camera.zoom_by(1, anchor: anchor)
+    assert_equal 0.7, camera.target_zoom
+    assert_equal before, [camera.x, camera.y, camera.zoom]
+    camera.update(nil, dt: 1)
+    assert_equal 0.7, camera.zoom
+  end
+
+  def test_pan_and_minimap_cancel_unfinished_zoom_without_a_later_jump
+    camera = Burrow::Client::Camera.new(4800, 1600)
+    camera.navigate(2400, 850)
+    camera.zoom_by(1)
+    camera.update(nil, dt: 0.06)
+    zoom = camera.zoom
+    x, y = camera.x, camera.y
+    camera.pan(50, 20)
+    assert_equal zoom, camera.zoom
+    assert_in_delta x + 50 / zoom, camera.x, 0.000001
+    assert_in_delta y + 20 / zoom, camera.y, 0.000001
+    view = [camera.x, camera.y, camera.zoom]
+    camera.update([200, 100], dt: 1)
+    assert_equal view, [camera.x, camera.y, camera.zoom]
+    refute camera.zooming?
+    camera.overview
+    camera.update(nil, dt: 0.05)
+    camera.navigate(2600, 800)
+    view = [camera.x, camera.y, camera.zoom]
+    camera.update(nil, dt: 1)
+    assert_equal view, [camera.x, camera.y, camera.zoom]
+    assert_equal 0.7, camera.zoom
+    refute camera.zooming?
+    refute camera.overview?
+  end
+
+  def test_overview_and_follow_interruption_are_smooth_and_reduced_motion_settles_immediately
+    camera = Burrow::Client::Camera.new(4800, 1600)
+    camera.navigate(3500, 900)
+    before = [camera.x, camera.y, camera.zoom]
+    camera.overview
+    assert_equal before, [camera.x, camera.y, camera.zoom]
+    camera.update(nil, dt: 0.05)
+    assert camera.zooming?
+    assert_operator camera.zoom, :<, 1
+    assert_operator camera.zoom, :>, camera.minimum
+    before = [camera.x, camera.y, camera.zoom]
+    camera.follow
+    assert_equal before, [camera.x, camera.y, camera.zoom]
+    camera.update([3500, 900], dt: 0.016)
+    assert camera.following
+    assert_operator (camera.x - before[0]).abs, :<, 100
+    camera.update([3500, 900], dt: 1)
+    assert_equal 1.0, camera.zoom
+    refute camera.zooming?
+    camera.overview
+    camera.update(nil, dt: 0, animate: false)
+    assert_equal camera.minimum, camera.zoom
+    assert_equal [2400, 800], camera.world(720, 360)
+    refute camera.zooming?
+  end
+
+  def test_overview_eases_out_of_high_sky_without_clamping_on_its_first_frame
+    camera = Burrow::Client::Camera.new(4800, 1600)
+    camera.update([2400, -2000], dt: 1, mode: :projectile)
+    before = camera.y
+    camera.overview
+    camera.update(nil, dt: 1.0 / 60)
+    assert_operator camera.y, :<, -500
+    assert_operator (camera.y - before).abs, :<, 100
+    camera.update(nil, dt: 1)
+    assert_equal camera.minimum, camera.zoom
+    assert_equal [2400, 800], camera.world(720, 360)
   end
 
   def test_camera_safe_area_absorbs_actor_jitter_and_tracks_fast_high_shots
@@ -225,6 +360,7 @@ class PresentationTest < Minitest::Test
     assert_in_delta camera.minimum, camera.zoom
     camera.follow
     refute camera.overview?
+    camera.update(nil, dt: 1)
     assert_equal 1.0, camera.zoom
     small = Burrow::Client::Camera.new(1440, 720)
     refute small.overview?, "a fitted small map is still initially following"
@@ -246,6 +382,7 @@ class PresentationTest < Minitest::Test
     assert_operator camera.y - previous, :<, 500, "handoff should not snap to the old -500 ceiling"
     point = camera.world(720, 360)
     camera.zoom_by(1, anchor: [720, 360])
+    camera.update(nil, dt: 1)
     assert_in_delta point[1], camera.world(720, 360)[1], 0.001, "high-sky zoom must retain the cursor anchor"
     previous = camera.y
     camera.pan(10, 10)

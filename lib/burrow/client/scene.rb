@@ -152,7 +152,6 @@ module Burrow
         started = Burrow.clock
         @frame_count += 1
         @state = @timeline.sample(now: started)
-        @scale = @ui_scale * camera.zoom
         if @last_turn != @state["turn"]
           @last_turn = @state["turn"]
           @impact_focus = nil
@@ -163,6 +162,7 @@ module Burrow
         end
         active = @state["worms"].find { |w| w["id"] == @state["active"] }
         render_camera(active, started)
+        @scale = @ui_scale * camera.zoom
         render_backdrop
         @last_render = started
         ox, oy = px(-camera.x), px(-camera.y)
@@ -251,7 +251,8 @@ module Burrow
           sprite_effect("sparkle", x, y, 0.45)
           @effect_layer.append do
             node = line(x, y, event["x2"], event["y2"], color: event["style"] == "laser" ? "#fa7660" : "#fff1b5", width: event["style"] == "laser" ? 4 : 2)
-            retain_effect(node: node, born: now, life: 0.15, kind: :line)
+            retain_effect(node: node, born: now, life: 0.15, kind: :line,
+              x: x, y: y, x2: event["x2"], y2: event["y2"], width: event["style"] == "laser" ? 4 : 2)
           end
         end
       end
@@ -370,7 +371,7 @@ module Burrow
             labels_built += 1
           end
           next unless node[:label]
-          restyle_label(node) if node[:label_scale] != @scale
+          restyle_label(node) if show_badge && node[:label_scale] != @scale
           if node[:show_badge] != show_badge
             show_badge ? node[:label].show : node[:label].hide
             node[:show_badge] = show_badge
@@ -496,19 +497,17 @@ module Burrow
           @tracked_projectile = nil
           target, velocity, mode = active&.values_at("x", "y"), nil, :actor
         end
-        camera.update(target, velocity: velocity, mode: mode, dt: now - (@last_render || now))
+        camera.update(target, velocity: velocity, mode: mode, dt: now - (@last_render || now), animate: @controller.motion?)
       end
 
       def resize_world
         @world_scale = @scale
         [@world, @terrain_layer, @props_layer, @actor_layer, @shot_layer, @effect_layer, @aim_layer].each { |layer| layer.style(width: px(@width)) }
         @tiles.each_value { |tile| place_tile(tile) }
-        @aim_dots.each { |dot| dot.style(width: px(4), height: px(4), strokewidth: [px(1), 1].max) }
-        @reticle.style(width: px(24), height: px(24))
-        @placement.style(strokewidth: px(12))
-        @active_arrow.style(width: px(30), size: [px(22), 10].max)
-        @effects.each { |effect| effect[:node].remove }
-        @effects.clear
+        @aim_dots.each { |dot| restyle(dot, width: px(4), height: px(4), strokewidth: [px(1), 1].max) }
+        restyle(@reticle, width: px(24), height: px(24))
+        restyle(@placement, strokewidth: px(12))
+        restyle(@active_arrow, width: px(30), size: [px(22), 10].max)
       end
 
       # Native slots clip their children. Enclose the whole name and health,
@@ -533,12 +532,12 @@ module Burrow
         place(node[:slot], left, top, m[:width], m[:height])
         node[:position] = [left, top]
         place(node[:image], node[:offset_x] - px(32), m[:sprite_top], px(64), px(64))
-        place(node[:badge], m[:bx], 0, m[:bw], m[:bh])
       end
 
       # Name layers follow a zoom only once their grub is on screen (see render).
       def restyle_label(node)
         m = actor_metrics
+        place(node[:badge], 0, 0, m[:width], m[:height])
         node[:label].layers.zip(BADGE_OUTLINE + [[0, 0]]).each do |layer, (dx, dy)|
           restyle(layer, left: m[:bx] + dx * m[:edge], top: m[:edge] + dy * m[:edge], width: m[:bw], size: m[:size])
         end
@@ -547,19 +546,20 @@ module Burrow
 
       def build_label(node, worm, outline)
         m = actor_metrics
+        place(node[:badge], 0, 0, m[:width], m[:height])
         text = "#{worm['name']}\n#{worm['hp']}"
-        node[:slot].append do
+        node[:badge].append do
           node[:label] = Outlined.new((BADGE_OUTLINE + [[0, 0]]).map do |dx, dy|
             @shoes.para(text, left: m[:bx] + dx * m[:edge], top: m[:edge] + dy * m[:edge], width: m[:bw], size: m[:size],
               stroke: dx.zero? && dy.zero? ? COLORS[node[:team]] : outline, font: Theme.display, weight: 700, align: "center", margin: 0)
-          end)
+          end, container: node[:badge])
         end
         node[:show_badge], node[:outline], node[:label_scale] = true, outline, @scale
         node[:label_name], node[:label_hp] = worm["name"], worm["hp"]
       end
 
       def place_tile(tile)
-        tile[:node].style(left: px(tile[:x]), top: px(tile[:y]), width: px(tile[:x] + tile[:width]) - px(tile[:x]), height: px(tile[:y] + tile[:height]) - px(tile[:y]))
+        place(tile[:node], px(tile[:x]), px(tile[:y]), px(tile[:x] + tile[:width]) - px(tile[:x]), px(tile[:y] + tile[:height]) - px(tile[:y]))
       end
 
       def update_terrain
@@ -645,10 +645,11 @@ module Burrow
           node = {team: color, scale: @scale, offset_x: m[:width] / 2, offset_y: m[:sprite_top] + px(54.4)}
           @actor_layer.append do
             node[:slot] = @shoes.stack(left: 0, top: 0, width: m[:width], height: m[:height]) do
-              # The name's bounds, for layout; the outlined text (build_label) paints over the scenery itself.
-              node[:badge] = @shoes.rect(m[:bx], 0, m[:bw], m[:bh], 0, fill: "#00000000", strokewidth: 0)
               node[:image] = @shoes.image(File.join(Theme::ART, "grubs/#{color}-idle-0.png"), left: node[:offset_x] - px(32),
                 top: m[:sprite_top], width: px(64), height: px(64), alt: "")
+              # Hide or reveal an outlined name with one property change. Its
+              # full actor bounds preserve the original text clipping exactly.
+              node[:badge] = @shoes.stack(left: 0, top: 0, width: m[:width], height: m[:height]) {}
             end
           end
           @actors[w["id"]] = node
@@ -813,7 +814,7 @@ module Burrow
         return if @effects.length >= 100
         @effect_layer.append do
           node = @shoes.oval(px(x), px(y), px(size), fill: color, strokewidth: 0)
-          retain_effect(node: node, born: Burrow.clock, life: life, kind: :particle, x: x, y: y, vx: vx, vy: vy)
+          retain_effect(node: node, born: Burrow.clock, life: life, kind: :particle, x: x, y: y, vx: vx, vy: vy, size: size)
         end
       end
 
@@ -834,7 +835,7 @@ module Burrow
                 stroke: dx.zero? && dy.zero? ? fill : outline, font: Theme.display, weight: 700, align: "center", margin: 0)
             end
           end
-          retain_effect(node: node, born: Burrow.clock, life: 1.15, kind: :text, x: left, y: top)
+          retain_effect(node: node, born: Burrow.clock, life: 1.15, kind: :text, x: x, y: y, width: width, height: height)
         end
       end
 
@@ -846,7 +847,7 @@ module Burrow
         @effect_layer.append do
           node = image("fx/#{name}-0", x - ax, y - ay, width, height)
           retain_effect(node: node, born: Burrow.clock, life: spec["frames"].fdiv(spec["fps"]),
-            kind: :sprite, name: name, fps: spec["fps"], frame: 0)
+            kind: :sprite, name: name, fps: spec["fps"], frame: 0, x: x - ax, y: y - ay, width: width, height: height)
         end
       end
 
@@ -864,6 +865,7 @@ module Burrow
           else
             case effect[:kind]
             when :sprite
+              place(effect[:node], px(effect[:x]), px(effect[:y]), px(effect[:width]), px(effect[:height]))
               frame = (age * effect[:fps]).floor
               if frame != effect[:frame]
                 path = "fx/#{effect[:name]}-#{frame}"
@@ -872,12 +874,16 @@ module Burrow
                 effect[:frame] = frame
               end
             when :particle
-              move_to(effect[:node], px(effect[:x] + effect[:vx] * age), px(effect[:y] + effect[:vy] * age + age * age * 110))
+              place(effect[:node], px(effect[:x] + effect[:vx] * age), px(effect[:y] + effect[:vy] * age + age * age * 110), px(effect[:size]), px(effect[:size]))
             when :text
-              move_to(effect[:node], px(effect[:x]), px(effect[:y] - age * 24))
+              # A floating caption keeps its readable screen size while its
+              # world anchor follows a zoom; do not erase damage on camera input.
+              move_to(effect[:node], px(effect[:x]) - effect[:width] / 2, px(effect[:y] - 20 - age * 24) - effect[:height])
+            when :line
+              restyle(effect[:node], left: px(effect[:x]), top: px(effect[:y]), x2: px(effect[:x2]), y2: px(effect[:y2]), strokewidth: px(effect[:width]))
             when :ring
               radius = 8 + effect[:radius] * (age / effect[:life])
-              restyle(effect[:node], left: px(effect[:x] - radius), top: px(effect[:y] - radius), width: px(radius * 2), height: px(radius * 2))
+              restyle(effect[:node], left: px(effect[:x] - radius), top: px(effect[:y] - radius), width: px(radius * 2), height: px(radius * 2), strokewidth: px(5))
             end
             false
           end

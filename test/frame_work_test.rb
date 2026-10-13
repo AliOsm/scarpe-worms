@@ -8,8 +8,8 @@ class FrameWorkTest < Minitest::Test
   # Like Shoes, setters count even when the value did not change. This catches
   # needless pipe traffic at the call sites, without depending on native timing.
   class Drawable
-    attr_reader :writes
-    %i[left top width height size stroke fill path text state hidden].each do |name|
+    attr_reader :writes, :removed
+    %i[left top width height size stroke strokewidth fill path text state hidden x2 y2].each do |name|
       attr_reader name
       define_method("#{name}=") { |value| @writes << {name => value}; instance_variable_set("@#{name}", value) }
     end
@@ -27,6 +27,7 @@ class FrameWorkTest < Minitest::Test
     def hover(&block) = @hover = block
     def leave(&block) = @leave = block
     def append = yield
+    def remove = @removed = true
   end
 
   class ActorScene < Burrow::Client::Scene
@@ -43,6 +44,7 @@ class FrameWorkTest < Minitest::Test
     end
     def cache_frame(_path); end
     def frame
+      camera.update(nil, dt: 1, animate: false)
       @scale = @ui_scale * camera.zoom
       render_actors(100)
     end
@@ -142,6 +144,20 @@ class FrameWorkTest < Minitest::Test
     assert_equal [10, 21, 30, 41], [node.left, node.top, node.width, node.height]
   end
 
+  def test_grouped_outline_changes_visibility_without_writing_five_layers
+    nodes = Array.new(5) { Drawable.new(text: "Grub", hidden: false) }
+    container = Drawable.new(hidden: false)
+    outlined = Burrow::Client::Outlined.new(nodes, container: container)
+    2.times { outlined.hide }
+    assert outlined.hidden
+    2.times { outlined.show }
+    refute outlined.hidden
+    assert_equal [{hidden: true}, {hidden: false}], container.writes
+    assert nodes.all? { |node| node.writes.empty? }
+    outlined.text = "Grub\n75"
+    assert nodes.all? { |node| node.text == "Grub\n75" }
+  end
+
   def test_crowd_names_build_in_small_batches_and_refresh_after_being_hidden
     worms = 12.times.map do |i|
       {"id" => i, "name" => "Grub #{i}", "hp" => 100, "facing" => 1,
@@ -156,12 +172,16 @@ class FrameWorkTest < Minitest::Test
     writes = node[:image].writes.length
     scene.frame
     assert_equal writes, node[:image].writes.length, "a retained pose must not resend its path"
+    label_writes = node[:label].layers.sum { |layer| layer.writes.length }
     scene.camera.overview
     scene.frame
     assert node[:label].hidden
+    assert_equal label_writes, node[:label].layers.sum { |layer| layer.writes.length }, "hidden names need neither geometry nor five visibility messages"
+    assert_equal 1, node[:badge].writes.count { |write| write == {hidden: true} }
     worms[1]["name"], worms[1]["hp"] = "Renamed", 50
     scene.frame
     scene.camera.follow
+    scene.camera.update(nil, dt: 1)
     scene.camera.navigate(720, 600)
     scene.frame
     refute node[:label].hidden
@@ -219,5 +239,36 @@ class FrameWorkTest < Minitest::Test
     slot = scene.actors[1][:slot]
     assert slot.writes.any? { |write| write.key?(:left) && write.key?(:width) }, "resize and move share a message"
     assert_equal [slot.left, slot.top], scene.actors[1][:position]
+    assert_equal [slot.width, slot.height], [scene.actors[1][:badge].width, scene.actors[1][:badge].height], "grouping must keep the original text clipping bounds"
+  end
+
+  def test_world_resize_keeps_combat_effects_until_their_own_expiry
+    scene = Burrow::Client::Scene.allocate
+    effects = [
+      {kind: :particle, x: 100, y: 200, vx: 20, vy: -10, size: 8},
+      {kind: :sprite, x: 80, y: 150, width: 60, height: 70, fps: 1, frame: 0},
+      {kind: :text, x: 100, y: 200, width: 90, height: 30},
+      {kind: :line, x: 10, y: 20, x2: 50, y2: 80, width: 4},
+      {kind: :ring, x: 100, y: 200, radius: 40}
+    ].map { |effect| effect.merge(node: Drawable.new, born: 100, life: 1) }
+    {scale: 0.5, width: 4800, effects: effects, tiles: {}, aim_dots: []}.each do |key, value|
+      scene.instance_variable_set("@#{key}", value)
+    end
+    %i[world terrain_layer props_layer actor_layer shot_layer effect_layer aim_layer reticle placement active_arrow].each do |name|
+      scene.instance_variable_set("@#{name}", Drawable.new)
+    end
+    scene.send(:resize_world)
+    assert_equal 5, effects.length
+    refute effects.any? { |effect| effect[:node].removed }
+    scene.send(:render_effects, 100.25)
+    nodes = effects.map { |effect| effect[:node] }
+    assert_equal [53, 102, 4, 4], nodes[0].then { |node| [node.left, node.top, node.width, node.height] }
+    assert_equal [40, 75, 30, 35], nodes[1].then { |node| [node.left, node.top, node.width, node.height] }
+    assert_equal [5, 57], [nodes[2].left, nodes[2].top], "floating damage keeps its readable size and world anchor"
+    assert_equal [5, 10, 25, 40, 2], nodes[3].then { |node| [node.left, node.top, node.x2, node.y2, node.strokewidth] }
+    assert_equal [41, 91, 18, 18, 3], nodes[4].then { |node| [node.left, node.top, node.width, node.height, node.strokewidth] }
+    scene.send(:render_effects, 101)
+    assert_empty effects
+    assert nodes.all?(&:removed)
   end
 end

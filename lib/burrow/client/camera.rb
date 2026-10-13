@@ -4,6 +4,7 @@ module Burrow
   module Client
     class Camera
       VIEW_WIDTH, VIEW_HEIGHT = 1440, 720
+      ZOOM_DURATION = 0.2
       attr_reader :x, :y, :zoom, :width, :height, :following
 
       def initialize(width, height)
@@ -17,18 +18,20 @@ module Burrow
       def world(sx, sy) = [x + sx / zoom, y + sy / zoom]
       def screen(wx, wy) = [(wx - x) * zoom, (wy - y) * zoom]
       def overview? = @overview
+      def zooming? = !@zoom_transition.nil?
+      def target_zoom = @zoom_transition ? @zoom_transition[:to] : zoom
 
       def overview
-        @zoom, @following = minimum, false
-        @overview, @ceiling = true, -500
-        center(width / 2.0, height / 2.0)
+        @following = false
+        @overview = true
+        start_zoom(minimum, center: [width / 2.0, height / 2.0])
       end
 
       def follow
         @following = true
-        @zoom = 1.0 if overview?
+        start_zoom(overview? ? 1.0 : target_zoom) if overview? || zooming?
         @overview = false
-        @snap = true
+        @snap = !zooming?
       end
 
       # Wheel zoom keeps the world point beneath the pointer in place. Taking an
@@ -36,20 +39,18 @@ module Burrow
       # Buttons/keys keep following, centered on the current viewport.
       def zoom_by(direction, anchor: nil)
         return if direction.zero?
-        sx, sy = anchor || [VIEW_WIDTH / 2.0, VIEW_HEIGHT / 2.0]
-        cx, cy = world(sx, sy)
         levels = ([minimum, 0.5, 0.7, 1.0, 1.25].select { |z| z >= minimum }).uniq.sort
-        next_zoom = direction > 0 ? (levels.find { |z| z > zoom + 0.001 } || levels.last) : (levels.reverse.find { |z| z < zoom - 0.001 } || levels.first)
-        return if next_zoom == zoom
-        @zoom = next_zoom
-        @overview = (zoom - minimum).abs < 0.001
+        selected = target_zoom
+        next_zoom = direction > 0 ? (levels.find { |z| z > selected + 0.001 } || levels.last) : (levels.reverse.find { |z| z < selected - 0.001 } || levels.first)
+        return if next_zoom == selected
+        @overview = (next_zoom - minimum).abs < 0.001
         @following = false if anchor || @overview
-        @x, @y = cx - sx / zoom, cy - sy / zoom
+        start_zoom(next_zoom, anchor: anchor)
         @snap = false
-        clamp
       end
 
       def pan(dx, dy)
+        @zoom_transition = nil
         @following, @overview = false, false
         @x += dx / zoom
         @y += dy / zoom
@@ -58,6 +59,7 @@ module Burrow
       end
 
       def navigate(wx, wy)
+        @zoom_transition = nil
         @following = false
         @zoom = [0.7, minimum].max if overview?
         @overview = false
@@ -65,7 +67,8 @@ module Burrow
         center(wx, wy)
       end
 
-      def update(target, dt:, velocity: nil, mode: :actor)
+      def update(target, dt:, velocity: nil, mode: :actor, animate: true)
+        advance_zoom(animate ? [dt, 0].max : ZOOM_DURATION)
         return unless following && target
         tx, ty = target
         # Anticipate a flying shot without changing the simulated position. A
@@ -98,6 +101,36 @@ module Burrow
       end
 
       private
+
+      def start_zoom(value, anchor: nil, center: nil)
+        sx, sy = anchor || [VIEW_WIDTH / 2.0, VIEW_HEIGHT / 2.0]
+        @zoom_transition = {from: zoom, to: value, elapsed: 0.0, sx: sx, sy: sy,
+          origin: center && world(sx, sy), center: center}
+        @zoom_transition = nil if value == zoom && !center
+      end
+
+      # Keep the camera's input mapping and visible scale together on every
+      # frame. Retarget from the current view, so rapid wheel/key input never
+      # jumps back to the start of an unfinished transition. The elapsed-time
+      # curve reaches its exact endpoint after a delayed frame, too.
+      def advance_zoom(dt)
+        transition = @zoom_transition
+        return unless transition
+        transition[:elapsed] += dt
+        progress = [transition[:elapsed] / ZOOM_DURATION, 1.0].min
+        eased = progress * progress * (3 - 2 * progress)
+        sx, sy = transition.values_at(:sx, :sy)
+        cx, cy = world(sx, sy)
+        if transition[:center]
+          cx, cy = transition[:origin].zip(transition[:center]).map { |from, to| from + (to - from) * eased }
+        end
+        @zoom = transition[:from] + (transition[:to] - transition[:from]) * eased
+        @zoom = transition[:to] if progress == 1.0
+        @x, @y = cx - sx / zoom, cy - sy / zoom
+        @zoom_transition = nil if progress == 1.0
+        @ceiling = -500 if @y >= -500
+        clamp
+      end
 
       def outside_deadzone(delta, radius)
         delta.positive? ? [delta - radius, 0].max : [delta + radius, 0].min
