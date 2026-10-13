@@ -38,11 +38,11 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
 | Mind your step | Hazards | 3 | Arms after one second, then reacts to nearby grubs. |
 | Sentry sprout | Hazards | 1 | A five-shot sentry fires at enemies within sight. |
 | Red barrel | Hazards | 2 | An explosive obstacle. Blasts can start a chain reaction. |
-| Grapple line | Mobility | 4 | Click ground above to attach. Left / Right swings; Up / Down reels; Fire releases. |
-| Personal cloud | Mobility | 2 | Four seconds of thrust. Arrows fly; Fire stops. Fuel only burns while thrusting. |
-| Soft landing | Mobility | 2 | Slows this turn's falls and prevents fall damage. |
-| Here to there | Mobility | 2 | Click clear ground to relocate. Uses the turn. |
-| Bridge builder | Tools | 3 | Tilt with ← →, then click open space to build a 140-pixel beam. Uses the turn. |
+| Grapple line | Mobility | 4 | Aim and fire a hook up to 460 pixels. A/D swings; W/S reels; Space releases with momentum. Misses cost no ammo; airborne re-hooks share one use until landing. |
+| Personal cloud | Mobility | 2 | Five seconds of powered flight. W/↑ thrusts; A/D or ←/→ flies sideways. Released keys and S/↓ coast without burning fuel. Space stops the pack and arms a parachute. |
+| Soft landing | Mobility | 2 | Space equips a canopy that opens automatically while descending this turn. A/D steers with wind drift; an open canopy prevents fall damage. |
+| Here to there | Mobility | 2 | Click clear ground to relocate. A landing ghost marks the destination; red marks a blocked, occupied, or submerged landing. Uses the turn. |
+| Bridge builder | Tools | 3 | Tilt a 140-pixel beam with ← → in 22.5° steps, then click open space. Red means invalid placement. The tilted beam becomes ground; uses the turn. |
 | Down we go | Tools | 2 | Bore downward for two seconds. Fire again stops early. |
 | Side hustle | Tools | 2 | Dig forward; Up / Down changes slope. Fire again stops early. |
 | First aid | Supplies | 2 | Restore 35 health and clear poison. Uses the turn. |
@@ -56,6 +56,9 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
 
 ## Controls by stage
 
+- Movement: A/D or ←/→ walks; W or Enter jumps; B backflips. While a rope or
+  jetpack is active, W/S controls that tool. Arrow keys choose the approach for
+  air strikes and the tilt for girders; A/D still walks with those selected.
 - Thrown weapons: hold Space or left mouse, release to fire. Guns, mortar, tools,
   and critters fire on the press. Auto-repeat never counts as another press.
 - Homing: click to lock a destination, move the cursor or use Up/Down to aim the
@@ -66,10 +69,28 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
   or digging. It also explodes after breaking out of the ground.
 - Woolly menace: tap to release, tap to detonate. Stink express: tap to release,
   tap to spray poison along its path. Cattle call deploys three critters at intervals.
-- Grapple: click an overhead surface to attach, Left/Right swings, Up/Down reels,
-  Space or Jump detaches. The anchor releases if destroyed.
-- Jetpack: arrows apply thrust; released keys conserve fuel. Space deploys a
-  parachute and stops the pack. Fuel exhaustion also provides a soft landing.
+- Grapple: aim with the mouse or Up/Down, then press Space or click. A visible hook
+  travels up to 460 pixels and catches the first terrain or girder in its path;
+  aim away from straight down. A miss retracts for free. Once hooked, A/D or
+  Left/Right pumps the swing; W/S or Up/Down reels between 28 and 460 pixels.
+  Space, Enter, or B releases without changing velocity. Fire again while airborne
+  to re-hook using the same cartridge, including the last one; landing ends that
+  use. Destroyed anchors detach. The rope has one anchor and no corner wrapping.
+- Jetpack: W/Up supplies lift; A/D or Left/Right thrusts sideways. Five seconds of
+  fuel burns only during upward or horizontal thrust. S/Down and released keys
+  coast under gravity. Speed is capped at 220 pixels/s upward and 210 sideways.
+  Space stops the pack and arms a parachute; fuel exhaustion does the same.
+- Parachute: Space or click equips it for this turn. It opens automatically on
+  descent, slows falls to 65 pixels/s, and prevents fall damage while open. A/D or
+  Left/Right steers with wind drift. The visible canopy closes on landing and
+  reopens on another fall that turn.
+- Teleport: the landing ghost shows where the grub will stand. The preview and
+  host share checks for body clearance, other grubs, and water; invalid targets
+  show red and cost no ammo. Successful teleportation ends the turn.
+- Girder: Left/Right rotates the preview in 22.5° steps up to vertical. Red means
+  the shared host/preview checks reject the beam's terrain, grub, or water overlap.
+  A valid placement ends the turn and becomes collision terrain. Beam length is
+  fixed at 140 pixels; there is no short/long toggle.
 - Digging: Fire stops early. Up/Down changes the blowtorch slope.
 - Double tap: each press fires one shot. Re-aim for the second; it belongs to the
   same cartridge, including the last cartridge. Finish both before switching.
@@ -115,7 +136,8 @@ rises each turn. Setting the water rise to zero permits longer standoffs. A grub
 entering water is eliminated regardless of health. Poison does not reduce health
 below one; protection effects expire on the team's next turn.
 
-Up/Down adjusts aim, reels the rope, or controls the active tool; Up supplies
-lift with the jetpack. The arsenal describes
+Up/Down adjusts aim, reels the rope, or controls the active tool; W/Up supplies
+lift with an active jetpack. W jumps when neither rope nor jetpack is active.
+The arsenal describes
 targeted tools and whether they use a turn. Hover a grub in a crowded battle
 to reveal its name; the active grub always shows its name.
