@@ -168,13 +168,18 @@ def main():
         for stage in report.pop('stages'):
             first, last = stage['from'], stage['to']
             rows = [r for r in native['frames'] if first <= frame_unix(r, native['started_unix']) <= last]
+            stage_samples = [s for s in samples if s[1] == stage['name']]
+            active_intervals = moving_intervals(rows, stage_samples, native['started_unix'])
             if stage['name'] == 'combat':
-                intervals = moving_intervals(rows, [s for s in samples if s[1] == 'combat'], native['started_unix'])
+                intervals = active_intervals
             else:
-                # Zoom changes are discrete. Paint work is measured for every
-                # frame; only continuous pan has a frame-interval budget.
+                # Preserve historical whole-stage intervals for comparison.
+                # Gaps between zoom inputs include intentionally skipped idle
+                # paints; active_motion_intervals measures the moving parts.
                 intervals = [(b[0]-a[0])*1000 for a,b in zip(rows, rows[1:])]
             results[stage['name']] = dict(presented_intervals=stats(intervals),
+                active_motion_intervals=stats(active_intervals),
+                updates=len(stage_samples), moving_updates=sum(bool(s[4]) for s in stage_samples),
                 paint=stats([r[4] for r in rows]), present=stats([r[5] for r in rows]),
                 app_update=stats([s[2] for s in samples if s[1]==stage['name'] and s[2] is not None]))
         report.update(scenarios=results, counters=native['counters'],

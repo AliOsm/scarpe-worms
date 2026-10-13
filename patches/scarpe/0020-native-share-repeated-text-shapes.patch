@@ -1,0 +1,216 @@
+diff --git a/native/src/text/rich.rs b/native/src/text/rich.rs
+index 7146a84..df7c066 100644
+--- a/native/src/text/rich.rs
++++ b/native/src/text/rich.rs
+@@ -97,7 +97,6 @@ impl TextStyle {
+         self.letter_spacing.to_bits().hash(h);
+         self.rise.to_bits().hash(h);
+         self.highlight.hash(h);
+-        self.link.hash(h);
+         self.explicit_color.hash(h);
+         self.small_caps.hash(h);
+     }
+@@ -149,12 +148,12 @@ impl RichText {
+ 
+     pub fn cache_key(&self, width: Option<f32>) -> u64 {
+         let mut h = std::collections::hash_map::DefaultHasher::new();
+-        // Ids are part of the key: the shaped text carries them back for hit-testing.
++        // The buffer stores run indexes, not document IDs. Identity is rebound in
++        // ShapeCache::get so repeated labels can share shaping while hit-testing
++        // and link hover still use the particular paragraph and span owners.
+         for run in &self.runs {
+             run.text.hash(&mut h);
+             run.style.hash_into(&mut h);
+-            run.node.hash(&mut h);
+-            run.spans.hash(&mut h);
+         }
+         self.size.to_bits().hash(&mut h);
+         self.line_height.to_bits().hash(&mut h);
+diff --git a/native/src/text/shape_cache.rs b/native/src/text/shape_cache.rs
+index 0169e01..d1ee256 100644
+--- a/native/src/text/shape_cache.rs
++++ b/native/src/text/shape_cache.rs
+@@ -38,6 +38,22 @@ impl SpanMeta {
+     }
+ }
+ 
++impl From<&super::rich::Run> for SpanMeta {
++    fn from(run: &super::rich::Run) -> Self {
++        SpanMeta {
++            node: run.node,
++            spans: run.spans.clone(),
++            link: run.style.link,
++            rise: run.style.rise,
++            highlight: run.style.highlight,
++            explicit_color: run.style.explicit_color,
++            underline: run.style.underline,
++            strike: run.style.strike,
++            color: run.style.color,
++        }
++    }
++}
++
+ #[derive(Clone)]
+ pub struct ShapedText {
+     pub buffer: Rc<Buffer>,
+@@ -166,7 +182,13 @@ impl ShapeCache {
+         let generation = self.generation;
+         if let Some((shaped, used)) = self.entries.get_mut(&key) {
+             *used = generation;
+-            return shaped.clone();
++            let mut copy = shaped.clone();
++            if copy.metas.iter().zip(&rich.runs).any(|(meta, run)| {
++                meta.node != run.node || meta.spans != run.spans || meta.link != run.style.link
++            }) {
++                copy.metas = Rc::new(rich.runs.iter().map(SpanMeta::from).collect());
++            }
++            return copy;
+         }
+         let shaped = shape(fs, rich, width, indent, optical_tracking);
+         self.shaped += 1;
+@@ -231,21 +253,7 @@ fn shape(fs: &mut FontSystem, rich: &RichText, width: Option<f32>, indent: f32,
+         Align::Right => cosmic_text::Align::Right,
+         Align::Justify => cosmic_text::Align::Justified,
+     };
+-    let metas: Vec<SpanMeta> = rich
+-        .runs
+-        .iter()
+-        .map(|run| SpanMeta {
+-            node: run.node,
+-            spans: run.spans.clone(),
+-            link: run.style.link,
+-            rise: run.style.rise,
+-            highlight: run.style.highlight,
+-            explicit_color: run.style.explicit_color,
+-            underline: run.style.underline,
+-            strike: run.style.strike,
+-            color: run.style.color,
+-        })
+-        .collect();
++    let metas = rich.runs.iter().map(SpanMeta::from).collect();
+     let mut pieces: Vec<(Cow<str>, Attrs)> = Vec::with_capacity(rich.runs.len() + 1);
+     if indent > 0.0 {
+         pieces.push((Cow::Borrowed(" "), indent_attrs(&rich.runs[0], indent, rich)));
+diff --git a/native/tests/shared_text_shape.rs b/native/tests/shared_text_shape.rs
+new file mode 100644
+index 0000000..0fa5193
+--- /dev/null
++++ b/native/tests/shared_text_shape.rs
+@@ -0,0 +1,117 @@
++//! Repeated text layers share glyph layout, while every paragraph keeps its own
++//! hit-test ownership, span paths, link identity and paint style.
++
++mod common;
++
++use common::{app, create, Harness};
++use scarpe_native::text::{FontMode, RichText, TextEngine, TextStyle};
++use scarpe_native::style::Color;
++use scarpe_native::paint::damage::FrameMemory;
++use serde_json::json;
++use std::rc::Rc;
++use tiny_skia::Pixmap;
++
++#[test]
++fn four_outline_copies_shape_once_and_keep_their_paragraph_owners() {
++    let mut h = Harness::new();
++    let body: Vec<_> = (0..5).map(|i| create(10 + i, "Para", 2, json!({
++        "text_items": ["Repeated name\n100"], "left": i * 2, "top": i * 2,
++        "width": 160, "size": 15, "margin": 0, "align": "center",
++        "stroke": if i == 4 { "#ef8125" } else { "#101010" }
++    }))).collect();
++    h.feed(&app(200, 100, &body));
++    assert_eq!(h.rt.text.texts_shaped(), 2, "four identical outlines and one differently colored face");
++    let layout = h.rt.views[&1].layout.as_ref().unwrap();
++    for id in 10..15 {
++        let shape = &layout.texts[&id].shaped;
++        assert_eq!(shape.metas[0].node, id);
++        assert_eq!(shape.text(), "Repeated name\n100");
++        assert_eq!(Rc::ptr_eq(&shape.buffer, &layout.texts[&10].shaped.buffer), id < 14);
++    }
++}
++
++#[test]
++fn shared_span_layout_rebinds_nested_span_paths_and_distinct_links() {
++    let mut text = TextEngine::new(FontMode::Bundled);
++    let mut first = RichText::plain("A linked label", TextStyle::new(16.0, Color::BLACK));
++    first.runs[0].node = 12;
++    first.runs[0].spans = vec![12, 11];
++    first.runs[0].style.link = Some(11);
++    let a = text.shape(&first, Some(180.0));
++    let mut second = first.clone();
++    second.runs[0].node = 22;
++    second.runs[0].spans = vec![22, 21];
++    second.runs[0].style.link = Some(21);
++    let b = text.shape(&second, Some(180.0));
++    assert!(Rc::ptr_eq(&a.buffer, &b.buffer));
++    assert_eq!(text.texts_shaped(), 1);
++    assert_eq!((a.metas[0].node, &a.metas[0].spans, a.metas[0].link), (12, &vec![12, 11], Some(11)));
++    assert_eq!((b.metas[0].node, &b.metas[0].spans, b.metas[0].link), (22, &vec![22, 21], Some(21)));
++    assert_eq!(a.cursor_at(5), b.cursor_at(5));
++    assert_eq!(a.char_index(a.cursor_at(5)), 5);
++}
++
++#[test]
++fn paint_and_layout_differences_still_make_distinct_buffers() {
++    let mut text = TextEngine::new(FontMode::Bundled);
++    let base = RichText::plain("Colors and geometry", TextStyle::new(16.0, Color::BLACK));
++    let before = text.shape(&base, Some(180.0));
++    for property in 0..7 {
++        let mut changed = base.clone();
++        let mut width = 180.0;
++        match property {
++            0 => changed.runs[0].style.color = Color::rgb(220, 30, 40),
++            1 => changed.runs[0].style.highlight = Some(Color::rgb(30, 220, 40)),
++            2 => changed.runs[0].style.size = 20.0,
++            3 => changed.runs[0].style.weight = 700,
++            4 => width = 80.0,
++            5 => changed.runs[0].style.explicit_color = true,
++            _ => changed.runs[0].style.letter_spacing = 1.0,
++        }
++        let after = text.shape(&changed, Some(width));
++        assert!(!Rc::ptr_eq(&before.buffer, &after.buffer), "property {property}");
++    }
++}
++
++#[test]
++fn repeated_paragraphs_keep_exact_damage_after_style_and_owner_changes() {
++    for scale in [1.0, 2.0] {
++        let mut h = Harness::new();
++        h.feed(&app(300, 160, &[
++            create(10, "Para", 2, json!({"text_items": ["Same shape"], "left": 20, "top": 20, "width": 150, "size": 18, "stroke": "#224488"})),
++            create(11, "Para", 2, json!({"text_items": ["Same shape"], "left": 20, "top": 70, "width": 150, "size": 18, "stroke": "#224488"})),
++        ]));
++        let mut frame = Pixmap::new((300.0 * scale) as u32, (160.0 * scale) as u32).unwrap();
++        let mut memory = FrameMemory::default();
++        h.rt.repaint(1, &mut frame, scale, &mut memory);
++        let mut before = h.rt.picture(1, scale).unwrap();
++        for props in [json!({"stroke": "#bb2233"}), json!({"fill": "#eecc99"}), json!({"left": 24, "top": 74}), json!({"stroke": "#224488", "fill": "#ffffff00"})] {
++            h.feed(&format!("{}\n{{\"t\":\"flush\"}}\n", json!({"t": "props", "id": 11, "props": props})));
++            let plan = h.rt.repaint(1, &mut frame, scale, &mut memory);
++            let full = h.rt.picture(1, scale).unwrap();
++            h.rt.verify_repaint(1, &plan, &frame, scale, &full, &before).unwrap();
++            before = full;
++        }
++    }
++}
++
++#[test]
++#[ignore = "timing fixture; run serially under /tmp/burrow-bench.lock"]
++fn repeated_label_zoom_shaping_timing() {
++    let mut text = TextEngine::new(FontMode::Bundled);
++    let started = std::time::Instant::now();
++    for step in 0..40 {
++        text.begin_layout(1);
++        for label in 0..36 {
++            for layer in 0..5 {
++                let color = if layer == 4 { Color::rgb(220, 120, 30) } else { Color::BLACK };
++                let mut rich = RichText::plain(&format!("Label {label}\n100"), TextStyle::new(12.0 + step as f32 / 8.0, color));
++                rich.runs[0].node = label * 5 + layer;
++                text.shape(&rich, Some(90.0 + step as f32));
++            }
++        }
++        text.end_layout();
++    }
++    eprintln!("36 labels × five layers × 40 zoom steps: {:?}, {} shaped buffers", started.elapsed(), text.texts_shaped());
++    assert_eq!(text.texts_shaped(), 36 * 2 * 40);
++}

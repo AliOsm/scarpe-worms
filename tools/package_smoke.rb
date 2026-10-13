@@ -66,7 +66,7 @@ Scarpe::Native.after_first_heartbeat do
     timeline = client.scene.timeline
     auto.resize(1440, 900)
     auto.advance(0.7)
-    raise "Terrain lost on resize" unless client.scene.terrain_revision == terrain_revision
+    raise "Terrain lost on resize: before=#{terrain_revision}, after=#{client.scene.terrain_revision}, packet=#{client.scene.terrain_packet&.fetch("revision")}, state=#{client.state["terrain_revision"]}" unless client.scene.terrain_revision == terrain_revision
     raise "Resize replaced the terrain process" unless client.scene.instance_variable_get(:@terrain_art).equal?(terrain_worker)
     raise "Resize restarted motion playback" unless client.scene.timeline.equal?(timeline)
     auto.snapshot(ENV.fetch("BURROW_SMOKE_SHOT"))

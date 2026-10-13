@@ -51,6 +51,14 @@ Add `--timer-slack-ms 100` to reproduce the old Mac timing failure on Linux.
 Run `python3 tools/test_rendering.py` when changing the timing analysis itself.
 See [validation](docs/VALIDATION.md) for scope and limits.
 
+The rendering report retains the original spaced `zoom` inputs and adds
+`zoom_sweep`, which retargets the camera before a transition settles. Compare
+`active_motion_intervals` for motion and keep whole-stage `presented_intervals`
+separate: gaps between spaced inputs can be intentionally skipped idle paints.
+`updates` and paint counts do not identify individual IPC batches or prove scanout.
+Native captures include bounded batch receipt/settle/redraw timestamps and phase
+thread CPU time alongside wall time, to distinguish work from scheduling delays.
+
 For input latency and snapshot costs, run `nice -n 10 flock /tmp/burrow-bench.lock
 bundle exec ruby tools/check_latency.rb --output /tmp/burrow-latency.json`.
 It exercises real TCP/TLS host subprocesses, App input, Timeline playback and

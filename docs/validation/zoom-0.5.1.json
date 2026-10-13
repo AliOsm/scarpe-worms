@@ -1,0 +1,213 @@
+{
+  "date": "2026-10-13",
+  "game": "Burrow Brigade 0.5.1",
+  "branch": "perf/zoom",
+  "baseline": "origin/main a937452 (0.5.1 integration)",
+  "scope": "Round 3b zoom, terrain resize, native stall and image-resize follow-up",
+  "implementation_commits": [
+    "19246aa native shared text shaping",
+    "a645710 native frame-stall diagnostics (0021)",
+    "3158b5a elapsed-time animated camera zoom and reduced outlined-name bursts",
+    "d271ef9 continuous zoom_sweep journey and Ruby frame attribution",
+    "61285ee offscreen terrain deferral and effect birth-frame preservation",
+    "5447f7d native clipped-image resize culling",
+    "0023 native corrected coalesced-batch diagnostics",
+    "resize presentation restoration and defer-only terrain geometry"
+  ],
+  "decisions": {
+    "19246aa": "keep; owner/span/link identity is rebound per caller while text, style, width and geometry remain cache keys",
+    "a645710": "keep with patch 0023; phase wall/CPU and batch evidence attributes the Mac outlier to waiting or descheduling",
+    "3158b5a": "keep; camera transitions are elapsed-time based and retarget safely",
+    "d271ef9": "keep; active zoom intervals are reported separately from intentionally idle discrete-zoom gaps",
+    "61285ee": "keep the effect birth-frame clamp; replace terrain show/hide toggles with defer-only geometry to avoid redraw bursts",
+    "5447f7d": "keep; conservative unrotated clip rejection is pixel-tested across scales and damage origins"
+  },
+  "linux_ab": {
+    "method": "alternating native-window captures under flock /tmp/burrow-bench.lock; 0.5.1 candidate captures are retained in /tmp/burrow-zoom-r3 and /tmp/burrow-zoom-r3b",
+    "origin_main_reference": {
+      "combat": {
+        "mean_ms": 16.57,
+        "p95_ms": 20.41,
+        "max_ms": 57.36,
+        "paints": 953,
+        "updates": 1081
+      },
+      "pan": {
+        "mean_ms": 16.67,
+        "p95_ms": 18.72,
+        "max_ms": 27.44,
+        "paints": 361,
+        "updates": 361
+      },
+      "zoom": {
+        "mean_ms": 20.24,
+        "p95_ms": 34.43,
+        "max_ms": 78.3,
+        "paints": 362,
+        "updates": 440
+      },
+      "zoom_sweep": {
+        "mean_ms": 21.5,
+        "p95_ms": 30.34,
+        "max_ms": 38.64,
+        "paints": 227,
+        "updates": 276
+      }
+    },
+    "candidate_defer_only_capture": {
+      "source": "current worktree before final commit; one ordinary Linux capture",
+      "combat": {
+        "mean_ms": 16.51,
+        "p95_ms": 20.21,
+        "max_ms": 46.57,
+        "paints": 999,
+        "updates": 1082
+      },
+      "pan": {
+        "mean_ms": 16.67,
+        "p95_ms": 18.98,
+        "max_ms": 23.58,
+        "paints": 361,
+        "updates": 361
+      },
+      "zoom": {
+        "mean_ms": 19.7,
+        "p95_ms": 36.07,
+        "max_ms": 64.74,
+        "paints": 373,
+        "updates": 442
+      },
+      "zoom_sweep": {
+        "mean_ms": 21.02,
+        "p95_ms": 27.64,
+        "max_ms": 67.77,
+        "paints": 228,
+        "updates": 273
+      },
+      "images_resampled": 11765
+    },
+    "interpretation": "Linux combat and pan remain at the 60 Hz cadence. Discrete zoom whole-stage intervals include idle gaps; zoom_sweep is the continuous motion signal. Single-run zoom_sweep variation is retained rather than used to claim a regression."
+  },
+  "macos_apple_silicon": {
+    "workflow_run": "38329759710",
+    "package": "packaged app, arm64 runner, 1280x653 at 1x, 60 Hz; package checks passed",
+    "scenarios": {
+      "combat": {
+        "mean_ms": 16.31,
+        "p95_ms": 20.61,
+        "max_ms": 60.5,
+        "paints": 969,
+        "updates": 1082,
+        "images_resampled": null
+      },
+      "pan": {
+        "mean_ms": 16.99,
+        "p95_ms": 19.72,
+        "max_ms": 123.26,
+        "paints": 356,
+        "updates": 357,
+        "images_resampled": null
+      },
+      "zoom": {
+        "mean_ms": 24.13,
+        "p95_ms": 51.92,
+        "max_ms": 119.28,
+        "paints": 301,
+        "updates": 438,
+        "images_resampled": null
+      },
+      "zoom_sweep": {
+        "mean_ms": 16.35,
+        "p95_ms": 19.61,
+        "max_ms": 33.64,
+        "paints": 275,
+        "updates": 270,
+        "images_resampled": null
+      }
+    },
+    "discrete_zoom_active_motion": {
+      "mean_ms": 15.66,
+      "p95_ms": 20.69,
+      "max_ms": 36.95
+    },
+    "stall": {
+      "gui_update_wall_ms": 60.068,
+      "gui_update_cpu_ms": 0.763,
+      "native_present_wall_ms": 58.735,
+      "native_present_cpu_ms": 1.035,
+      "native_paint_wall_ms": 0.215,
+      "wait_overshoot_ms": 30.564,
+      "diagnosis": "shared scheduling or compositor/native waiting; not expensive Ruby update or paint work"
+    },
+    "limits": [
+      "The run still fails the strict maximum interval gate on isolated stalls.",
+      "The discrete zoom aggregate includes idle intervals with no moving marker; active intervals are the meaningful motion result.",
+      "Image-resample totals are workload-wide and are not comparable when zoom_sweep is added; no larger cache was justified.",
+      "Physical scanout, ProMotion/Retina and audible-device latency remain unmeasured."
+    ],
+    "workflow_runs": [
+      "38329759710",
+      "38343883985",
+      "38345368622"
+    ],
+    "latest_workflow_run": "38345368622",
+    "latest_capture": {
+      "package_jobs": "38343883985 and 38345368622 passed default and C-locale package checks",
+      "scenarios": {
+        "combat": {
+          "mean_ms": 16.0503,
+          "p95_ms": 19.76775,
+          "max_ms": 41.061625,
+          "paints": 885,
+          "updates": 1082
+        },
+        "pan": {
+          "mean_ms": 17.14725,
+          "p95_ms": 23.38408,
+          "max_ms": 81.4075,
+          "paints": 350,
+          "updates": 358
+        },
+        "zoom": {
+          "mean_ms": 24.88311,
+          "p95_ms": 58.86721,
+          "max_ms": 121.90212,
+          "active_mean_ms": 15.09277,
+          "active_p95_ms": 19.90446,
+          "active_max_ms": 22.96212,
+          "paints": 295,
+          "updates": 440
+        },
+        "zoom_sweep": {
+          "mean_ms": 16.33011,
+          "p95_ms": 20.07171,
+          "max_ms": 40.11812,
+          "paints": 275,
+          "updates": 270
+        }
+      },
+      "images_resampled": 12230,
+      "strict_gate": "failed on the isolated 81.4 ms pan interval; zoom_sweep mean/p95 and combat mean/p95 met the target"
+    }
+  },
+  "package_resize": {
+    "local_repetitions": "40 C-locale/default launches across 20 checks, including 20 scene rebuilds",
+    "result": "all passed; terrain revision, TerrainArt worker identity and Timeline identity were preserved",
+    "earlier_failure": "workflow 38330816143 failed the C-locale package resize assertion and skipped Mac smoke; no deterministic reproduction remained",
+    "fix": "restore the last completed terrain result and revision immediately when rebuilding a match scene; defer offscreen terrain geometry without visibility toggles"
+  },
+  "tests": {
+    "verify_scarpe": "passed",
+    "ruby": "bundle exec rake test: 148 runs, 6,165 assertions, 0 failures",
+    "native_rust": "cargo test --release --locked: all 368 tests passed (11 ignored)",
+    "native_journeys": "./bin/check-native: 7 cases passed; 228 assertions",
+    "action_journey": "tools/check_action.py: passed (527 action samples)",
+    "rendering_analysis": "tools/test_rendering.py: 13 tests passed",
+    "timer_regressions": "tools/check_waits.rb: TimerFD deadline descriptor passed under 100 ms timer slack",
+    "rendering_normal": "check_rendering.py: passed in the final ordinary capture",
+    "rendering_timer_slack": "check_rendering.py: passed on the third serialized 100 ms-slack capture; two earlier captures had expected scheduling outliers",
+    "package": "check_package.py default and --locale c: passed locally; workflow runs 38343883985 and 38345368622 package jobs passed both checks",
+    "frame_work_focused": "15 runs, 121 assertions",
+    "native_diagnostic_focused": "12 Rust stats tests passed"
+  }
+}

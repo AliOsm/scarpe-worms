@@ -205,6 +205,29 @@ delivery: combat motion selection is heuristic, paint/update counts do not
 identify individual batches, and physical scanout, ProMotion/Retina and audible
 device output still require physical Mac validation.
 
+## Zoom and stall follow-up (2026-10-13)
+
+Round 3b keeps the elapsed-time camera zoom and continuous `zoom_sweep` journey,
+shares repeated native text shaping, records frame-stall phases, and culls fully
+clipped image resizes. Terrain presentation now defers offscreen tile geometry
+without show/hide messages; resize restores the last completed terrain result and
+keeps its worker and playback timeline. The package smoke resize check passed 40
+C-locale/default launches in the local repetition; the earlier CI failure was timing
+dependent and did not reproduce with diagnostics.
+
+The Apple silicon run 38345368622 measured combat 16.05/19.77/41.06 ms, pan
+17.15/23.38/81.41 ms, discrete zoom 24.88/58.87/121.90 ms, and the continuous
+zoom sweep 16.33/20.07/40.12 ms (mean/p95/max). Its active discrete zoom was
+15.09/19.90/22.96 ms. The discrete zoom tail is mostly
+intentional idle time: its active intervals were 15.66/20.69/36.95 ms. A 60.07 ms
+GUI update used 0.76 ms CPU while native presentation used 58.74 ms wall time and
+1.04 ms CPU, so the outlier is waiting or descheduling rather than Ruby or paint
+work. Patch 0023 corrects coalesced-batch diagnostic attribution; no timer or
+pacing change is justified by this evidence.
+
+See [zoom validation](validation/zoom-0.5.1.json) for alternating Linux captures,
+Mac limits, and the kept/reverted change decisions.
+
 ## Next checks
 
 The owner reports dropped frames and lagging audio in packaged 0.5.0 on an M3 Pro.
@@ -232,10 +255,10 @@ audio lag is resolved.
 
 ## Repository handoff
 
-The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 19
-independent patches; the arcade interface added 0013 and the renderer investigation
-added 0014–0017; patch 0018 removes redundant Mac refresh deadlines and 0019
-records live clock anchors. Protocol 4 hosts and clients must upgrade together.
+The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 23
+independent patches; the arcade interface added 0013, the renderer investigation
+added 0014–0017, cadence and clock work added 0018–0019, and the zoom follow-up
+added 0020–0023. Protocol 4 hosts and clients must upgrade together.
 Runtime assets live in the source tree, so running the game needs no image service or
 asset download. Generated bundles, raw captures and player data remain ignored.
 No publishing or deployment was performed.

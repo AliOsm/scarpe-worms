@@ -1,0 +1,438 @@
+diff --git a/native/Cargo.toml b/native/Cargo.toml
+index 33b55d8..fe23fd1 100644
+--- a/native/Cargo.toml
++++ b/native/Cargo.toml
+@@ -23,6 +23,7 @@ winit = "0.30"
+ softbuffer = "0.4"
+ image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "bmp"] }
+ fast_image_resize = { version = "6.1.0", features = ["only_u8x4"] }
++libc = "0.2"
+ serde = { version = "1", features = ["derive"] }
+ serde_json = "1"
+ rfd = "0.17"
+diff --git a/native/Cargo.lock b/native/Cargo.lock
+index ee55292..faf353d 100644
+--- a/native/Cargo.lock
++++ b/native/Cargo.lock
+@@ -2076,6 +2076,7 @@ dependencies = [
+  "cosmic-text",
+  "fast_image_resize",
+  "image",
++ "libc",
+  "objc2 0.6.4",
+  "rfd",
+  "serde",
+diff --git a/native/src/runtime.rs b/native/src/runtime.rs
+index c495089..0ebd33b 100644
+--- a/native/src/runtime.rs
++++ b/native/src/runtime.rs
+@@ -187,8 +187,9 @@ impl Runtime {
+             eprintln!("[scarpe-native] << {line}");
+         }
+         let parsing = Instant::now();
++        let parsing_cpu = stats::thread_cpu_now();
+         let parsed = protocol::parse_line(line);
+-        self.stats.since(Phase::Parse, parsing);
++        self.stats.since_cpu(Phase::Parse, parsing, parsing_cpu);
+         match parsed {
+             Ok(msg) => self.apply(msg),
+             Err(e) => {
+@@ -201,6 +202,7 @@ impl Runtime {
+     pub fn apply(&mut self, msg: Incoming) {
+         self.mid_batch = !matches!(msg, Incoming::Flush | Incoming::Req { .. } | Incoming::Hello { .. });
+         let started = Instant::now();
++        let started_cpu = stats::thread_cpu_now();
+         let change = matches!(msg, Incoming::Create(_) | Incoming::Props { .. } | Incoming::Destroy { .. } | Incoming::Reparent { .. });
+         match msg {
+             Incoming::Hello { .. } => {
+@@ -254,13 +256,14 @@ impl Runtime {
+                     self.stats.input();
+                 }
+                 let answering = Instant::now();
++                let answering_cpu = stats::thread_cpu_now();
+                 self.handle_req(req, op);
+-                self.stats.since(Phase::Req, answering);
++                self.stats.since_cpu(Phase::Req, answering, answering_cpu);
+                 self.out.flush();
+             }
+         }
+         if change {
+-            self.stats.since(Phase::Apply, started);
++            self.stats.since_cpu(Phase::Apply, started, started_cpu);
+         }
+     }
+ 
+@@ -513,9 +516,10 @@ impl Runtime {
+             return;
+         }
+         let started = Instant::now();
++        let started_cpu = stats::thread_cpu_now();
+         let inputs = Inputs { doc: &self.doc, text: &mut self.text, images: &mut self.images, scroll: &view.ui.scroll };
+         view.layout = Some(layout::layout(inputs, view.doc_root, view.size));
+-        self.stats.since(Phase::Layout, started);
++        self.stats.since_cpu(Phase::Layout, started, started_cpu);
+         self.stats.mark("first_layout");
+         self.push_layout(app);
+     }
+@@ -555,10 +559,11 @@ impl Runtime {
+         let AppView { layout, ui, frames, .. } = view;
+         let Some(layout) = layout.as_ref() else { return };
+         let started = Instant::now();
++        let started_cpu = stats::thread_cpu_now();
+         let mut scene = Scene { doc: &self.doc, layout, view: ui, text: &mut self.text, images: &mut self.images };
+         paint::paint(&mut scene, pm, scale);
+         *frames += 1;
+-        self.stats.since(Phase::Paint, started);
++        self.stats.since_cpu(Phase::Paint, started, started_cpu);
+         self.stats.mark("first_paint");
+         self.count_resampled_images();
+     }
+diff --git a/native/src/runtime/repaint.rs b/native/src/runtime/repaint.rs
+index 6263d11..76c72f2 100644
+--- a/native/src/runtime/repaint.rs
++++ b/native/src/runtime/repaint.rs
+@@ -1,7 +1,7 @@
+ //! Repainting a window's frame in part (paint::damage), and SCARPE_NATIVE_DAMAGE=check, which
+ //! verifies every partial repaint against full paints, in a window or headless.
+ 
+-use super::stats::Phase;
++use super::stats::{self, Phase};
+ use super::{AppView, Runtime};
+ use crate::paint::damage::{self, FrameMemory, Repaint};
+ use crate::paint::{self, Scene};
+@@ -39,6 +39,7 @@ impl Runtime {
+         }
+         self.ensure_layout(app);
+         let started = Instant::now();
++        let started_cpu = stats::thread_cpu_now();
+         let Some(view) = self.views.get_mut(&app) else { return Repaint::Nothing };
+         let AppView { layout, ui, frames, dirty, .. } = view;
+         let Some(layout) = layout.as_ref() else { return Repaint::Nothing };
+@@ -46,7 +47,7 @@ impl Runtime {
+         let plan = damage::repaint(&mut scene, frame, scale, memory, &self.revisions);
+         *frames += 1;
+         *dirty = false;
+-        self.stats.since(Phase::Paint, started);
++        self.stats.since_cpu(Phase::Paint, started, started_cpu);
+         self.stats.mark("first_paint");
+         self.count_resampled_images();
+         self.count_repaint(&plan, (frame.width(), frame.height()));
+diff --git a/native/src/runtime/stats.rs b/native/src/runtime/stats.rs
+index bd0fef0..a0763fa 100644
+--- a/native/src/runtime/stats.rs
++++ b/native/src/runtime/stats.rs
+@@ -8,6 +8,26 @@ use std::path::PathBuf;
+ use std::sync::OnceLock;
+ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+ 
++/// Thread CPU time is sampled beside wall time for native phase diagnostics. The
++/// fallback keeps the instrumentation portable on targets without a POSIX clock.
++#[cfg(unix)]
++pub fn thread_cpu_now() -> Duration {
++    let mut value = libc::timespec { tv_sec: 0, tv_nsec: 0 };
++    // CLOCK_THREAD_CPUTIME_ID is available on Linux and macOS and measures only
++    // this event-loop thread, excluding time descheduled by the OS.
++    let result = unsafe { libc::clock_gettime(libc::CLOCK_THREAD_CPUTIME_ID, &mut value) };
++    if result == 0 && value.tv_sec >= 0 && value.tv_nsec >= 0 {
++        Duration::new(value.tv_sec as u64, value.tv_nsec as u32)
++    } else {
++        Duration::ZERO
++    }
++}
++
++#[cfg(not(unix))]
++pub fn thread_cpu_now() -> Duration {
++    Duration::ZERO
++}
++
+ /// The work a frame is made of, in pipeline order.
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+ pub enum Phase {
+@@ -43,6 +63,20 @@ struct Tally {
+     count: u64,
+     total: Duration,
+     max: Duration,
++    cpu_total: Duration,
++    cpu_max: Duration,
++}
++
++#[derive(Clone, Debug)]
++struct BatchSample {
++    id: u64,
++    lines: usize,
++    received: f64,
++    received_unix: f64,
++    settled: Option<f64>,
++    settled_unix: Option<f64>,
++    redraw_start: Option<f64>,
++    redraw_start_unix: Option<f64>,
+ }
+ 
+ /// Keeps a long run's frame log bounded; a minute at 120 fps fits.
+@@ -61,15 +95,24 @@ pub struct Stats {
+     tallies: [Tally; 6],
+     /// Work done since the last frame was shown, per phase.
+     since_frame: [Duration; 6],
++    /// Event-loop thread CPU work since the last frame, per phase.
++    since_frame_cpu: [Duration; 6],
+     /// Milestones (first layout, first present...), seconds since start, first time only.
+     marks: Vec<(&'static str, f64)>,
+     /// One row per frame shown: monotonic seconds since start, ms per phase since the
+     /// frame before, then live Unix seconds for correlation with other processes.
+     frames: VecDeque<[f64; 8]>,
++    /// CPU milliseconds for the same six phases, kept beside (not inside) the
++    /// existing frame rows so older consumers can still parse eight columns.
++    frame_cpu: VecDeque<[f64; 6]>,
+     /// Input that has not been drawn yet.
+     input_at: Option<Instant>,
+     /// Input -> the frame that showed it, in ms.
+     input_latency: VecDeque<f64>,
++    /// Recent complete IPC batches and their event-loop milestones.
++    batches: VecDeque<BatchSample>,
++    next_batch: u64,
++    current_batch: Option<u64>,
+     counters: std::collections::BTreeMap<&'static str, u64>,
+ }
+ 
+@@ -89,10 +132,15 @@ impl Stats {
+             started_unix,
+             tallies: [Tally::default(); 6],
+             since_frame: [Duration::ZERO; 6],
++            since_frame_cpu: [Duration::ZERO; 6],
+             marks: vec![("main", 0.0)],
+             frames: VecDeque::new(),
++            frame_cpu: VecDeque::new(),
+             input_at: None,
+             input_latency: VecDeque::new(),
++            batches: VecDeque::new(),
++            next_batch: 0,
++            current_batch: None,
+             counters: Default::default(),
+         }
+     }
+@@ -102,11 +150,18 @@ impl Stats {
+     }
+ 
+     pub fn add(&mut self, phase: Phase, took: Duration) {
++        self.add_cpu(phase, took, Duration::ZERO);
++    }
++
++    pub fn add_cpu(&mut self, phase: Phase, took: Duration, cpu: Duration) {
+         let tally = &mut self.tallies[phase as usize];
+         tally.count += 1;
+         tally.total += took;
+         tally.max = tally.max.max(took);
++        tally.cpu_total += cpu;
++        tally.cpu_max = tally.cpu_max.max(cpu);
+         self.since_frame[phase as usize] += took;
++        self.since_frame_cpu[phase as usize] += cpu;
+     }
+ 
+     /// Adds the time since `from` to `phase`.
+@@ -114,6 +169,11 @@ impl Stats {
+         self.add(phase, from.elapsed());
+     }
+ 
++    /// Adds a phase duration with CPU time measured from the same starting point.
++    pub fn since_cpu(&mut self, phase: Phase, from: Instant, cpu_from: Duration) {
++        self.add_cpu(phase, from.elapsed(), thread_cpu_now().saturating_sub(cpu_from));
++    }
++
+     /// Adds to a named counter (repaints in part and in full, pixels repainted...).
+     pub fn count(&mut self, name: &'static str, by: u64) {
+         *self.counters.entry(name).or_insert(0) += by;
+@@ -146,6 +206,56 @@ impl Stats {
+         self.input_at.get_or_insert_with(Instant::now);
+     }
+ 
++    fn timestamp(&self, at: Instant) -> (f64, f64) {
++        let unix = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0);
++        (self.since_start(at), unix)
++    }
++
++    /// Records receipt of one complete stdin batch. The lines count is kept so
++    /// a long redraw can be compared with protocol burst size.
++    pub fn batch_received(&mut self, lines: usize) {
++        let at = Instant::now();
++        let (received, received_unix) = self.timestamp(at);
++        self.next_batch += 1;
++        if self.batches.len() == MAX_SAMPLES { self.batches.pop_front(); }
++        self.batches.push_back(BatchSample {
++            id: self.next_batch,
++            lines,
++            received,
++            received_unix,
++            settled: None,
++            settled_unix: None,
++            redraw_start: None,
++            redraw_start_unix: None,
++        });
++        self.current_batch = Some(self.next_batch);
++    }
++
++    /// Marks the event-loop turn that applied and settled the current batch.
++    pub fn batch_settled(&mut self) {
++        let Some(id) = self.current_batch else { return };
++        let at = Instant::now();
++        let (settled, settled_unix) = self.timestamp(at);
++        if let Some(batch) = self.batches.iter_mut().rev().find(|batch| batch.id == id) {
++            if batch.settled.is_none() {
++                batch.settled = Some(settled);
++                batch.settled_unix = Some(settled_unix);
++            }
++        }
++    }
++
++    /// Associates a redraw callback with the most recently settled batch that
++    /// has not yet started drawing. This remains useful when AppKit coalesces
++    /// several IPC events into one redraw.
++    pub fn redraw_started(&mut self) {
++        let at = Instant::now();
++        let (redraw_start, redraw_start_unix) = self.timestamp(at);
++        if let Some(batch) = self.batches.iter_mut().rev().find(|batch| batch.settled.is_some() && batch.redraw_start.is_none()) {
++            batch.redraw_start = Some(redraw_start);
++            batch.redraw_start_unix = Some(redraw_start_unix);
++        }
++    }
++
+     /// A frame reached the screen (or, headless, a picture was painted).
+     pub fn frame_shown(&mut self) {
+         let now = Instant::now();
+@@ -153,12 +263,17 @@ impl Stats {
+         // versus a disciplined wall clock). Do not infer this from started_unix.
+         let unix = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0);
+         let work = std::mem::take(&mut self.since_frame);
++        let cpu_work = std::mem::take(&mut self.since_frame_cpu);
+         let mut row = [self.since_start(now), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, unix];
+         for (cell, took) in row[1..7].iter_mut().zip(work) {
+             *cell = took.as_secs_f64() * 1000.0;
+         }
+         if self.frames.len() == MAX_SAMPLES { self.frames.pop_front(); }
+         self.frames.push_back(row);
++        // Kept separately so the long-standing eight-column frame wire format
++        // remains compatible with existing analyzers and captures.
++        if self.frame_cpu.len() == MAX_SAMPLES { self.frame_cpu.pop_front(); }
++        self.frame_cpu.push_back(cpu_work.map(|d| d.as_secs_f64() * 1000.0));
+         if let Some(at) = self.input_at.take() {
+             if self.input_latency.len() == MAX_SAMPLES { self.input_latency.pop_front(); }
+             self.input_latency.push_back(now.duration_since(at).as_secs_f64() * 1000.0);
+@@ -171,7 +286,8 @@ impl Stats {
+             .iter()
+             .map(|p| {
+                 let t = self.tallies[*p as usize];
+-                (p.name().to_string(), json!({"n": t.count, "total_ms": ms(t.total), "max_ms": ms(t.max)}))
++                (p.name().to_string(), json!({"n": t.count, "total_ms": ms(t.total), "max_ms": ms(t.max),
++                    "cpu_total_ms": ms(t.cpu_total), "cpu_max_ms": ms(t.cpu_max)}))
+             })
+             .collect();
+         let marks: Map<String, Value> = self.marks.iter().map(|(n, at)| (n.to_string(), json!(at))).collect();
+@@ -182,7 +298,12 @@ impl Stats {
+             "marks": marks,
+             "phases": phases,
+             "frame_columns": ["at", "parse", "apply", "layout", "paint", "present", "req", "unix"],
++            "frame_cpu_columns": ["parse", "apply", "layout", "paint", "present", "req"],
+             "frames": self.frames,
++            "frame_cpu": self.frame_cpu,
++            "batch_columns": ["id", "lines", "received", "received_unix", "settled", "settled_unix", "redraw_start", "redraw_start_unix"],
++            "batches": self.batches.iter().map(|batch| json!([batch.id, batch.lines, batch.received, batch.received_unix,
++                batch.settled, batch.settled_unix, batch.redraw_start, batch.redraw_start_unix])).collect::<Vec<_>>(),
+             "sample_policy": "most_recent",
+             "sample_limit": MAX_SAMPLES,
+             "input_latency_ms": self.input_latency,
+@@ -297,6 +418,51 @@ mod tests {
+         assert_eq!(frames[1][4], 0.0);
+     }
+ 
++    #[test]
++    fn frame_cpu_rows_follow_wall_rows_and_phase_tallies_report_cpu() {
++        let mut stats = Stats::new(None);
++        let wall = Duration::from_millis(4);
++        let cpu = Duration::from_millis(2);
++        stats.add_cpu(Phase::Paint, wall, cpu);
++        stats.frame_shown();
++        let json = stats.to_json();
++        assert_eq!(json["frame_cpu_columns"], json!(["parse", "apply", "layout", "paint", "present", "req"]));
++        assert_eq!(json["frame_cpu"].as_array().unwrap().len(), 1);
++        assert_eq!(json["frame_cpu"][0][3], 2.0);
++        assert_eq!(json["phases"]["paint"]["cpu_total_ms"], 2.0);
++        assert_eq!(json["phases"]["paint"]["cpu_max_ms"], 2.0);
++    }
++
++    #[test]
++    fn batch_timestamps_record_receipt_settle_and_first_redraw() {
++        let mut stats = Stats::new(None);
++        stats.batch_received(3);
++        stats.batch_settled();
++        stats.redraw_started();
++        let row = stats.to_json()["batches"][0].as_array().unwrap().to_vec();
++        assert_eq!(row[0], 1);
++        assert_eq!(row[1], 3);
++        assert!(row[2].as_f64().unwrap() <= row[4].as_f64().unwrap());
++        assert!(row[4].as_f64().unwrap() <= row[6].as_f64().unwrap());
++        assert!(row[3].as_f64().unwrap() <= row[5].as_f64().unwrap());
++        assert!(row[5].as_f64().unwrap() <= row[7].as_f64().unwrap());
++    }
++
++    #[test]
++    fn batch_log_is_bounded_and_new_batches_replace_current_turn() {
++        let mut stats = Stats::new(None);
++        for lines in 0..MAX_SAMPLES + 3 {
++            stats.batch_received(lines);
++            stats.batch_settled();
++        }
++        let json = stats.to_json();
++        let batches = json["batches"].as_array().unwrap();
++        assert_eq!(batches.len(), MAX_SAMPLES);
++        assert_eq!(batches[0][0], 4);
++        assert_eq!(batches.last().unwrap()[0], MAX_SAMPLES as u64 + 3);
++        assert_eq!(batches.last().unwrap()[1], MAX_SAMPLES + 2);
++    }
++
+     #[test]
+     fn writes_rust_json_into_the_stats_directory() {
+         let dir = std::env::temp_dir().join(format!("scarpe-native-stats-{}", std::process::id()));
+diff --git a/native/src/window.rs b/native/src/window.rs
+index 2407e8e..7364578 100644
+--- a/native/src/window.rs
++++ b/native/src/window.rs
+@@ -357,6 +357,7 @@ impl Shell {
+             }
+         }
+         self.rt.out.flush();
++        self.rt.stats.batch_settled();
+         if self.rt.exit.is_some() || self.rt.out.broken {
+             el.exit();
+         }
+@@ -391,6 +392,7 @@ impl Shell {
+         // new batch. Its flush will request another redraw once it is complete.
+         if self.rt.mid_batch { return; }
+         let redraw_started = Instant::now();
++        self.rt.stats.redraw_started();
+         let Some(win) = self.windows.get_mut(&id) else { return };
+         win.pacing.drawing(Instant::now());
+         let size = win.window.inner_size();
+@@ -420,6 +422,7 @@ impl Shell {
+         self.rt.out.flush();
+         self.rt.stats.set("max_layout_delivery_us", self.rt.stats.counter("max_layout_delivery_us").max(delivering.elapsed().as_micros() as u64));
+         let presenting = Instant::now();
++        let presenting_cpu = stats::thread_cpu_now();
+         let (w, h, divisor) = if win.compositor_scaling {
+             (render.width, render.height, 1)
+         } else { (w, h, render.divisor) };
+@@ -432,7 +435,7 @@ impl Shell {
+         let Ok(mut buffer) = win.surface.buffer_mut() else { return };
+         resolution::write_pixels(pm, &mut buffer, w, divisor);
+         let _ = buffer.present();
+-        self.rt.stats.since(Phase::Present, presenting);
++        self.rt.stats.since_cpu(Phase::Present, presenting, presenting_cpu);
+         let app = win.app;
+         self.rt.frame_presented(app);
+         // A new frame shows a change, and a screen reader that is listening hears of it too.
+@@ -524,6 +527,7 @@ impl ApplicationHandler<UserEvent> for Shell {
+     fn user_event(&mut self, el: &ActiveEventLoop, event: UserEvent) {
+         match event {
+             UserEvent::Lines(lines) => {
++                self.rt.stats.batch_received(lines.len());
+                 for line in &lines {
+                     self.rt.handle_line(line);
+                 }

@@ -1,0 +1,196 @@
+diff --git a/native/src/elements/image.rs b/native/src/elements/image.rs
+index 24a9319..f79c9d3 100644
+--- a/native/src/elements/image.rs
++++ b/native/src/elements/image.rs
+@@ -294,6 +294,12 @@ pub fn paint(canvas: &mut Canvas, node: &Node, lbox: &LBox, images: &mut ImageCa
+     if path.as_ref().is_some_and(|path| images.is_transparent(path)) { return; }
+     let base = canvas.base();
+     let turned = node.props.f32("rotate_angle").filter(|d| *d != 0.0);
++    // Paint's general culler leaves an eight-logical-pixel image margin.
++    // Do not allocate and filter an entire new
++    // size when the slot or this partial-damage canvas will discard it all.
++    // Keep a physical-pixel rim for rounded image edges and fractional masks;
++    // the normal drawing path remains the authority at their boundaries.
++    if turned.is_none() && !may_touch_canvas(canvas, r, lbox.clip) { return; }
+     // Unturned, it lands on whole device pixels; a picture of another size is drawn from its
+     // copy at that size, kept from paint to paint, one pixel for each.
+     let (x0, y0) = ((r.x * base.sx + base.tx).round(), (r.y * base.sy + base.ty).round());
+@@ -318,6 +324,24 @@ pub fn paint(canvas: &mut Canvas, node: &Node, lbox: &LBox, images: &mut ImageCa
+     canvas.image_with_runs(img.as_ref().as_ref(), transform, lbox.clip, runs.as_deref());
+ }
+ 
++/// A conservative device-space visibility check before making a resized copy.
++/// The one-pixel rim includes Skia's clip rounding and both the rounded blit and
++/// the unrounded sampling fallback (for pictures too large to cache).
++fn may_touch_canvas(canvas: &Canvas, r: Rect, clip: Option<Rect>) -> bool {
++    let base = canvas.base();
++    let (mut x0, mut y0, mut x1, mut y1) = (0.0f32, 0.0f32, canvas.pm.width() as f32, canvas.pm.height() as f32);
++    if let Some(clip) = clip {
++        x0 = x0.max(clip.x * base.sx + base.tx - 1.0);
++        y0 = y0.max(clip.y * base.sy + base.ty - 1.0);
++        x1 = x1.min(clip.right() * base.sx + base.tx + 1.0);
++        y1 = y1.min(clip.bottom() * base.sy + base.ty + 1.0);
++    }
++    r.x * base.sx + base.tx < x1 + 1.0
++        && r.y * base.sy + base.ty < y1 + 1.0
++        && r.right() * base.sx + base.tx > x0 - 1.0
++        && r.bottom() * base.sy + base.ty > y0 - 1.0
++}
++
+ /// Draws `img` as large as fits in `r`, keeping its shape, centred (a button's icon).
+ pub fn draw_fitted(canvas: &mut Canvas, img: &Pixmap, r: Rect, clip: Option<Rect>) {
+     let (iw, ih) = (img.width() as f32, img.height() as f32);
+diff --git a/native/tests/image_visibility.rs b/native/tests/image_visibility.rs
+new file mode 100644
+index 0000000..3d919ae
+--- /dev/null
++++ b/native/tests/image_visibility.rs
+@@ -0,0 +1,148 @@
++//! Offscreen images must not be resized before the canvas clips them out. Keep
++//! fractional clip edges, damage origins and rotated silhouettes pixel exact.
++mod common;
++
++use common::{app, create, Harness};
++use scarpe_native::{
++    doc::{Kind, Node},
++    elements::image::{self, ImageCache},
++    layout::{LBox, Rect},
++    paint::{Canvas, damage::FrameMemory},
++    props::Props,
++};
++use serde_json::json;
++use std::path::{Path, PathBuf};
++use tiny_skia::{Color, Pixmap, Transform};
++
++fn picture(name: &str) -> PathBuf {
++    let path = std::env::temp_dir().join(format!("scarpe-image-visibility-{}-{name}.png", std::process::id()));
++    let mut source = Pixmap::new(18, 14).unwrap();
++    for (i, pixel) in source.pixels_mut().iter_mut().enumerate() {
++        *pixel = Color::from_rgba8(180, (i % 256) as u8, 75, [0, 113, 255][i % 3]).premultiply().to_color_u8();
++    }
++    source.save_png(&path).unwrap();
++    path
++}
++
++fn node(path: &Path) -> Node {
++    Node { id: 1, kind: Kind::Image, class: "Image".into(), parent: None, children: Vec::new(),
++        props: Props::new(json!({"url": path}).as_object().unwrap().clone()) }
++}
++
++fn bounds(rect: Rect, clip: Option<Rect>) -> LBox {
++    LBox { rect, clip, origin: (0.0, 0.0), parent_size: (120.0, 100.0) }
++}
++
++/// The previous unturned path: always prepare a copy before Canvas does any clipping.
++fn paint_without_culling(canvas: &mut Canvas, path: &Path, lbox: &LBox, images: &mut ImageCache) {
++    let source = images.get(path).unwrap();
++    let r = lbox.rect;
++    let base = canvas.base();
++    let (x0, y0) = ((r.x * base.sx + base.tx).round(), (r.y * base.sy + base.ty).round());
++    let (w, h) = ((r.right() * base.sx + base.tx).round() - x0, (r.bottom() * base.sy + base.ty).round() - y0);
++    let image = if (w as u32, h as u32) == (source.width(), source.height()) { source }
++        else { images.at_size(path, w as u32, h as u32).unwrap() };
++    let local = Transform::from_translate((x0 - base.tx) / base.sx, (y0 - base.ty) / base.sy)
++        .pre_scale(1.0 / base.sx, 1.0 / base.sy);
++    canvas.image(image.as_ref().as_ref(), local, lbox.clip);
++}
++
++#[test]
++fn images_just_outside_a_slot_do_not_make_resized_copies() {
++    let path = picture("outside-slot");
++    for scale in [2.0 / 3.0, 1.0, 2.0] {
++        let mut h = Harness::new();
++        h.feed(&app(240, 180, &[
++            create(3, "Stack", 2, json!({"left": 40, "top": 40, "width": 80, "height": 80})),
++            create(4, "Image", 3, json!({"url": path, "left": 85, "top": 15, "width": 40, "height": 40})),
++            create(5, "Image", 3, json!({"url": path, "left": -45, "top": 15, "width": 40, "height": 40})),
++            create(6, "Image", 3, json!({"url": path, "left": 15, "top": -45, "width": 40, "height": 40})),
++            create(7, "Image", 3, json!({"url": path, "left": 15, "top": 85, "width": 40, "height": 40})),
++        ]));
++        h.rt.picture(1, scale).unwrap();
++        assert_eq!(h.rt.stats.counter("images_resampled"), 0, "fully clipped pictures at {scale}x");
++        h.feed(&format!("{}\n{{\"t\":\"flush\"}}\n", json!({"t":"props","id":4,"props":{"left":75}})));
++        h.rt.picture(1, scale).unwrap();
++        assert_eq!(h.rt.stats.counter("images_resampled"), 1, "a visible edge needs its exact sized pixels");
++    }
++    std::fs::remove_file(path).unwrap();
++}
++
++#[test]
++fn unturned_culling_matches_unculled_pixels_at_fractional_edges_and_damage_origins() {
++    let path = picture("fractional");
++    let node = node(&path);
++    let clip = Rect::new(18.375, 14.625, 30.25, 32.125);
++    for scale in [0.5, 2.0 / 3.0, 1.0, 1.25, 2.0] {
++        for origin in [(0, 0), (7, 13)] {
++            for delta in [-3.0, -1.0, -0.51, -0.01, 0.0, 0.01, 0.49, 1.0, 3.0] {
++                for (x, y) in [(clip.x - 30.3 + delta, 20.0), (clip.right() + delta, 20.0),
++                    (20.0, clip.y - 26.7 + delta), (20.0, clip.bottom() + delta),
++                    (-30.3 + delta, 0.0), (64.0 / scale + delta, 0.0)] {
++                    for clipping in [None, Some(clip)] {
++                        let lbox = bounds(Rect::new(x, y, 30.3, 26.7), clipping);
++                        let mut actual = Pixmap::new(64, 64).unwrap();
++                        actual.fill(Color::from_rgba8(62, 127, 222, 190));
++                        let mut expected = actual.clone();
++                        image::paint(&mut Canvas::at(&mut actual, scale, origin), &node, &lbox, &mut ImageCache::default());
++                        paint_without_culling(&mut Canvas::at(&mut expected, scale, origin), &path, &lbox, &mut ImageCache::default());
++                        assert_eq!(actual.data(), expected.data(), "scale {scale}, origin {origin:?}, rect {:?}, clip {clipping:?}", lbox.rect);
++                    }
++                }
++            }
++        }
++    }
++    std::fs::remove_file(path).unwrap();
++}
++
++#[test]
++fn a_damage_canvas_skips_an_image_outside_its_pixels_before_resizing() {
++    let path = picture("damage-canvas");
++    let mut images = ImageCache::default();
++    let mut actual = Pixmap::new(32, 32).unwrap();
++    image::paint(&mut Canvas::at(&mut actual, 2.0, (200, 200)), &node(&path),
++        &bounds(Rect::new(20.0, 20.0, 40.0, 40.0), None), &mut images);
++    assert_eq!(images.take_resampled(), 0);
++    assert!(actual.data().iter().all(|byte| *byte == 0));
++    std::fs::remove_file(path).unwrap();
++}
++
++#[test]
++fn a_rotated_image_keeps_pixels_outside_its_unturned_box() {
++    let path = picture("turned");
++    let mut node = node(&path);
++    node.props.merge(json!({"rotate_angle":90,"transform_origin":"center"}).as_object().unwrap().clone());
++    for scale in [1.0, 2.0] {
++        let mut actual = Pixmap::new((100.0 * scale) as u32, (100.0 * scale) as u32).unwrap();
++        let mut images = ImageCache::default();
++        image::paint(&mut Canvas::new(&mut actual, scale), &node,
++            &bounds(Rect::new(20.0, 55.0, 60.0, 8.0), Some(Rect::new(0.0, 0.0, 100.0, 50.0))), &mut images);
++        assert!(actual.data().iter().any(|byte| *byte != 0), "the rotation reaches into the clip");
++        assert_eq!(images.take_resampled(), 0, "rotations keep the existing sampling path");
++    }
++    std::fs::remove_file(path).unwrap();
++}
++
++#[test]
++fn moving_scaled_images_across_slot_edges_preserves_exact_damage() {
++    let path = picture("damage");
++    for scale in [2.0 / 3.0, 1.0, 1.25, 2.0] {
++        let mut h = Harness::new();
++        h.feed(&app(240, 180, &[
++            create(3, "Stack", 2, json!({"left": 40, "top": 30, "width": 80, "height": 100})),
++            create(4, "Image", 3, json!({"url": path, "left": 15, "top": 15, "width": 40, "height": 36})),
++        ]));
++        let mut frame = h.rt.picture(1, scale).unwrap();
++        let mut memory = FrameMemory::default();
++        h.rt.repaint(1, &mut frame, scale, &mut memory);
++        let mut before = h.rt.picture(1, scale).unwrap();
++        for (left, top, width) in [(75.25, 16.5, 40.0), (90.0, 14.0, 42.0), (-45.0, 16.0, 40.0), (-38.25, 15.5, 41.5), (16.5, 98.25, 43.0), (14.25, 16.25, 44.0)] {
++            h.feed(&format!("{}\n{{\"t\":\"flush\"}}\n", json!({"t":"props","id":4,"props":{"left":left,"top":top,"width":width}})));
++            let plan = h.rt.repaint(1, &mut frame, scale, &mut memory);
++            let full = h.rt.picture(1, scale).unwrap();
++            h.rt.verify_repaint(1, &plan, &frame, scale, &full, &before).unwrap();
++            before = full;
++        }
++    }
++    std::fs::remove_file(path).unwrap();
++}

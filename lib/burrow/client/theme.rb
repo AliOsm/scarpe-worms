@@ -50,17 +50,26 @@ module Burrow
     class Outlined
       attr_reader :layers
 
-      def initialize(layers) = @layers = layers
+      def initialize(layers, container: nil)
+        @layers, @container = layers, container
+      end
       def fill = layers.last
       def text = fill.text
-      def hidden = fill.hidden
+      def hidden = (@container || fill).hidden
 
       def text=(value)
         layers.each { |layer| layer.text = value }
       end
 
-      def show = (layers.each(&:show) if hidden)
-      def hide = (layers.each(&:hide) unless hidden)
+      def show
+        return unless hidden
+        @container ? @container.show : layers.each(&:show)
+      end
+
+      def hide
+        return if hidden
+        @container ? @container.hide : layers.each(&:hide)
+      end
     end
 
     # A real Shoes button (focus, keys, screen readers, `state`) with a glossy

@@ -26,9 +26,15 @@ assert_equal [4800, 1600], client.state.values_at("world_width", "world_height")
 assert_equal 36, client.scene.actors.size
 backdrop = client.scene.instance_variable_get(:@backdrop)
 initial_backdrop = layout_of(backdrop)
+initial_zoom = client.scene.camera.zoom
 press_key "g"
+assert client.scene.camera.zooming?, "G requests a transition without snapping the displayed view"
+assert_equal initial_zoom, client.scene.camera.zoom
 advance 0.05
 assert client.scene.camera.overview?
+assert_operator client.scene.camera.zoom, :<, initial_zoom
+assert_operator client.scene.camera.zoom, :>, client.scene.camera.minimum, "native updates should show an intermediate map scale"
+wait_real.call(2) { !client.scene.camera.zooming? }
 actor = client.scene.actors.fetch(client.state["active"])
 badge, bounds = layout_of(actor[:badge]), layout_of(actor[:slot])
 assert_operator badge.x, :>=, bounds.x
@@ -48,6 +54,7 @@ zoom = client.scene.camera.zoom
 auto.wheel(-120, x: 700, y: 400)
 advance 0.05
 assert_operator client.scene.camera.zoom, :>, zoom
+wait_real.call(2) { !client.scene.camera.zooming? }
 # Explore the rightmost island via the actual minimap hit area.
 scale = 1280.0 / 1440
 x, y = 1385 * scale, (Burrow::Client::Scene::Y + 650) * scale
