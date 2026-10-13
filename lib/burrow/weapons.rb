@@ -230,22 +230,26 @@ module Burrow
         case [p[:kind], p[:stage]]
         when ["guided", "walking"]
           p[:stage], p[:walker], p[:guided] = "flying", false, true
-          p[:vx], p[:vy], p[:heading] = 0.0, -230.0, -Math::PI / 2
+          p[:vx], p[:vy], p[:heading] = 0.0, -Physics::CRITTER_FLIGHT_SPEED, -Math::PI / 2
           p[:steer], p[:input_until] = 0, tick
+          p[:flight_ticks], p[:life] = Physics::CRITTER_FLIGHT_TICKS, Physics::CRITTER_FLIGHT_TICKS + 4 * TICK_RATE
+          # A late takeoff still gets its full flight, without handing control
+          # to the next team while the critter is alive.
+          @settle_limit = [@settle_limit, tick + p[:life] + TICK_RATE].max
         when ["guided", "flying"]
-          p[:stage], p[:guided], p[:remote] = "falling", false, false
+          p[:life], p[:guided], p[:remote], p[:stage] = 0, false, false, "detonating"
         when ["digger", "walking"]
           p[:stage], p[:walker] = "diving", false
           p[:vx], p[:vy] = p[:direction] * 110.0, -150.0
         when ["poisoner", "walking"]
           p[:stage], p[:spraying], p[:remote] = "spraying", true, false
-          p[:life] = [p[:life], 4 * TICK_RATE].min
-          gas_cloud(p[:x], p[:y] - 6, owner, radius: 35, life: 150)
+          p[:life] = 4 * TICK_RATE
+          gas_cloud(p[:x], p[:y] - 6, owner, radius: 35, life: 150, weapon: p[:weapon])
         when ["cluster", "thrown"]
           # Fruit salad bursts early on command.
           p[:life], p[:remote], p[:stage] = 0, false, "split"
         else
-          p[:life] = 0
+          p[:life], p[:remote], p[:stage] = 0, false, "detonating"
         end
         emit("activate", weapon: p[:weapon], x: p[:x], y: p[:y], stage: p[:stage])
       elsif @tool

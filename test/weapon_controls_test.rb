@@ -249,7 +249,7 @@ class WeaponControlsTest < Minitest::Test
     c.key_down(" ")
     c.key_up(" ")
     c.sync
-    assert_match(/Drop/, c.special_control[0])
+    assert_match(/Detonate/, c.special_control[0])
     c.key_down("left")
     c.update_controls
     assert_equal(-1, m.projectiles.first[:steer])

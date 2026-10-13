@@ -225,6 +225,7 @@ module Burrow
       end
 
       # Effect helpers for Sprites.effect_rule blocks (world coordinates).
+      def fx_motion? = @controller.motion?
       def fx_sprite(name, x, y, scale = 1.0) = sprite_effect(name, x, y, scale)
       def fx_particle(x, y, color:, life:, size:, vx: 0, vy: 0) = add_particle(x, y, color: color, life: life, size: size, vx: vx, vy: vy)
       def fx_motion? = @controller.motion?
@@ -486,7 +487,9 @@ module Burrow
           end
           place(node[:image], px(x - look.anchor_x), px(y - look.anchor_y), px(look.width), px(look.height))
           if look.rotation
-            step = Sprites::MUNITION_BLASTS.key?(p["weapon"]) ? 3 : 6
+            # Munitions turn in 3° steps; the guided critter's interpolated
+            # heading is shown at presentation cadence (6° buckets visibly step).
+            step = p["weapon"] == "super_sheep" ? 1 : Sprites::MUNITION_BLASTS.key?(p["weapon"]) ? 3 : 6
             rotation = (look.rotation / step).round * step
             node[:image].rotate(rotation) if node[:image].rotate_angle != rotation
           end

@@ -122,7 +122,7 @@ press_key " "
 wait_real.call { client.state["phase"] != "aiming" }
 assert_equal 2, $controls_server.rooms.values.first.match.events.count { |e| e[:kind] == "beam" }
 reset.call
-# Launch, steering, focus cancellation, and dropping the flying critter.
+# Launch, steering, focus cancellation, and detonating the flying critter.
 equip.call("super_sheep")
 press_key " "
 wait_real.call { client.remote_critter }
@@ -136,10 +136,14 @@ auto.key_up("left")
 auto.window_focus(false)
 wait_real.call { $controls_server.rooms.values.first.match.projectiles.first[:steer] == 0 }
 auto.window_focus(true)
+auto.key_down("d")
+wait_real.call { $controls_server.rooms.values.first.match.projectiles.first[:steer] == 1 }
+auto.key_up("d")
+wait_real.call { $controls_server.rooms.values.first.match.projectiles.first[:steer] == 0 }
 acknowledged.call
 snapshot "captain-wool-flight"
 press_key " "
-wait_real.call { client.state["projectiles"].any? { |shot| shot["stage"] == "falling" } }
+wait_real.call { client.state["projectiles"].empty? && client.state["events"].any? { |event| event["kind"] == "explosion" && event["style"] == "super_sheep" } }
 reset.call
 # Reeling and detaching do not consume a second rope.
 equip.call("rope")
@@ -197,6 +201,15 @@ reset.call
   press_key " "
   desired = id == "mole" ? "diving" : "spraying"
   wait_real.call { client.state["projectiles"].any? { |shot| shot["stage"] == desired } }
+  if id == "mole"
+    wait_real.call { client.remote_critter && client.remote_critter["stage"] == "digging" }
+    acknowledged.call
+    click_on "Detonate · Space"
+    wait_real.call { client.state["events"].any? { |event| event["kind"] == "explosion" && event["style"] == "mole" } }
+  else
+    wait_real.call { client.state["hazards"].count { |hazard| hazard["kind"] == "gas" } >= 2 }
+    assert_equal "disabled", button("Spraying…").state
+  end
   reset.call
 end
 # Homing by mouse alone: the first click locks, the second press charges and its release launches.

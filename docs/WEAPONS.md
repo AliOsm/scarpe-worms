@@ -30,11 +30,11 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
 | Spicy forecast | Sky | 1 | Choose an approach and target. Five firebombs spread loose flames that burn for 3–5 seconds. |
 | Bad astronomy | Sky | 1 | Call six flaming meteors in a staggered shower across the battlefield. Keep clear of open sky. |
 | Rumble button | Sky | 1 | Shakes grubs off ropes and throws loose props. Frozen grubs stay safe; watch the edges. |
-| Woolly menace | Critters | 2 | A hopping runner. Press Fire again to detonate early. |
-| Captain wool | Critters | 1 | Release, then Fire to fly. Left / Right steers; Fire again drops it. |
-| Tunnel buddy | Critters | 2 | Release, Fire to dive and dig, then Fire again to detonate. |
-| Stink express | Critters | 2 | Release, then Fire to spray poison as it runs. |
-| Cattle call | Critters | 1 | Three walking troublemakers, released one after another. |
+| Woolly menace | Critters | 2 | Release a hopping runner. Fire again explodes it; its fuse lasts eight seconds. |
+| Captain wool | Critters | 1 | Release, Fire to fly, then Fire to explode. ← / → or A / D steers; eight seconds of flight. |
+| Tunnel buddy | Critters | 2 | Release, Fire to dive and dig, then Fire to explode. Grubs and tunnel exits also detonate. |
+| Stink express | Critters | 2 | Release, then Fire for four seconds of running poison spray and a small final blast. |
+| Cattle call | Critters | 1 | Three runners released one after another; walls and grubs set them off. |
 | Mind your step | Hazards | 3 | Arms after one second, then reacts to nearby grubs. |
 | Sentry sprout | Hazards | 1 | A five-shot sentry fires at enemies within sight. |
 | Red barrel | Hazards | 2 | An explosive obstacle. Blasts can start a chain reaction. |
@@ -63,12 +63,16 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
   and critters fire on the press. Auto-repeat never counts as another press.
 - Homing: click to lock a destination, move the cursor or use Up/Down to aim the
   launch, then charge with Space. Moving the cursor does not move the lock.
-- Captain wool: tap to release, tap to launch upward, Left/Right turns in flight,
-  tap again to drop. Flight ends on collision, water, or timeout.
+- Captain wool: tap to release, tap to launch upward, ←/→ or A/D turns in flight,
+  tap again to explode. It flies at 260 pixels/s and turns at 2.7 radians/s.
+  Takeoff starts an eight-second flight timer; after that it falls for at most
+  four seconds, still detonatable. Collision explodes it; water ends the action.
 - Tunnel buddy: tap to release, tap to jump and dive, tap to detonate while diving
   or digging. It also explodes after breaking out of the ground.
 - Woolly menace: tap to release, tap to detonate. Stink express: tap to release,
-  tap to spray poison along its path. Cattle call deploys three critters at intervals.
+  tap to spray poison along its path for four seconds, ending in gas and a small
+  blast. Cattle call deploys three runners 0.8 seconds apart; walls or grubs trigger
+  each blast, with an eight-second fallback timer per cow.
 - Grapple: aim with the mouse or Up/Down, then press Space or click. A visible hook
   travels up to 460 pixels and catches the first terrain or girder in its path;
   aim away from straight down. A miss retracts for free. Once hooked, A/D or

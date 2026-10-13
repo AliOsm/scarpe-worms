@@ -119,7 +119,7 @@ module Burrow
         end
       end
 
-      def play(name, x: WIDTH / 2, volume: 1, immediate: false, throttle: true)
+      def play(name, x: WIDTH / 2, volume: 1, immediate: false, throttle: true, pitch: 1.0)
         return if muted? || !CUES.include?(name)
         now = Burrow.clock
         return if throttle && !immediate && now - @last.fetch(name, 0) < 0.065
@@ -129,6 +129,7 @@ module Burrow
         @voice_priority[source], @voice_started[source] = immediate, now
         @al.alSourceStop(source)
         @al.alSourcei(source, 0x1009, @buffers.fetch(name))
+        @al.alSourcef(source, 0x1003, pitch.clamp(0.25, 2.0))
         @gains[source] = volume.clamp(0.0, 1.0)
         @al.alSourcef(source, 0x100a, @gains[source] * @preferences["volume"])
         pan = ((x.to_f / WIDTH - 0.5) * 1.8).clamp(-0.9, 0.9)
@@ -151,7 +152,7 @@ module Burrow
         # Timeline already emits each event once. Valid reports in a burst can
         # arrive less than 65 ms apart during catch-up; do not discard them.
         report = %w[fire beam jump activate].include?(event["kind"])
-        play(cue, x: screen_x, throttle: !report) if cue
+        play(cue, x: screen_x, throttle: !report, pitch: event_pitch(event)) if cue
       end
 
       # Called only after an input passes the UI gate and enters the connection
@@ -178,8 +179,10 @@ module Burrow
           projectile = state["projectiles"].find { |p| p["owner"] == player && p["remote"] && p["life"] > 0 }
           worm = state["worms"]&.find { |candidate| candidate["id"] == state["active"] }
           if projectile
-            flying = projectile["kind"] == "guided" && projectile["stage"] == "walking"
-            {"kind" => "activate", "weapon" => projectile["weapon"], "stage" => flying ? "flying" : nil}
+            stage = if projectile["stage"] == "walking"
+              {"guided" => "flying", "digger" => "diving", "poisoner" => "spraying"}[projectile["kind"]]
+            end
+            {"kind" => "activate", "weapon" => projectile["weapon"], "stage" => stage}
           elsif worm && worm["rope"]
             {"kind" => "activate", "stage" => "released"}
           elsif worm && worm["jetpack"]
@@ -189,7 +192,7 @@ module Burrow
           end
         end
         cue = event && event_cue(event)
-        return unless cue && play(cue, immediate: true)
+        return unless cue && play(cue, immediate: true, pitch: event_pitch(event))
         @predicted ||= {}
         @predicted[[match_id, player, sequence]] = cue
         @predicted.shift while @predicted.size > 96
@@ -210,6 +213,7 @@ module Burrow
           # Beam, melee, healing and teleport events supply their own report.
           when "beam", "laser", "shotgun", "burst", "flame", "melee", "dash", "heal", "teleport", "skip" then nil
           when "shield", "freeze", "boost", "gravity", "wind" then "pickup"
+          when "herd" then "hurt"
           else "equip"
           end
         when "beam" then event["style"] == "laser" ? "beam" : "shot"
@@ -219,15 +223,25 @@ module Burrow
           else
             case event["stage"]
             when "flying" then "launch"
-            when "released" then "throw"
+            when "diving" then "jump"
+            when "spraying", "released" then "throw"
             else "equip"
             end
           end
         when "choir" then "pickup"
         when "mine_land" then "impact"
         when "gas" then "impact" if event["weapon"] == "poison"
+        when "critter_release" then "hurt"
+        when "critter_dive" then "impact"
+        when "critter_fall" then "throw"
         else EVENT_CUES[event["kind"]]
         end
+      end
+
+      # A low cartoon call reuses the original voiced cue for each cow release.
+      # Reset pitch on every voice use so later damage reports sound normal.
+      def event_pitch(event)
+        event["weapon"] == "cow" && %w[fire critter_release].include?(event["kind"]) ? 0.65 : 1.0
       end
 
       def close

@@ -119,7 +119,7 @@ class WeaponPhysicsTest < Minitest::Test
     assert_equal [700.0, 100.0], p.values_at(:target_x, :target_y)
   end
 
-  def test_super_sheep_walks_launches_steers_and_drops_without_moving_its_owner
+  def test_super_sheep_walks_launches_steers_and_detonates_without_moving_its_owner
     match = arena
     p = launch(match, "super_sheep")
     assert_equal "walking", p[:stage]
@@ -127,11 +127,11 @@ class WeaponPhysicsTest < Minitest::Test
     match.step(8)
     match.command("p0", "activate")
     assert_equal "flying", p[:stage]
-    assert_in_delta(-230, p[:vy])
+    assert_in_delta(-260, p[:vy])
     match.command("p0", "steer", direction: 1)
     match.step(6)
     assert_operator p[:vx], :>, 80
-    assert_in_delta 230, Math.hypot(p[:vx], p[:vy]), 0.001
+    assert_in_delta 260, Math.hypot(p[:vx], p[:vy]), 0.001
     assert_in_delta x, match.active[:x], 0.01
     heading = p[:heading]
     match.step(20)
@@ -140,11 +140,11 @@ class WeaponPhysicsTest < Minitest::Test
     assert_operator expired, :>, heading
     assert_equal expired, p[:heading], "released or lost steering must expire"
     match.command("p0", "activate")
-    assert_equal "falling", p[:stage]
+    assert_equal "detonating", p[:stage]
     refute p[:guided]
-    vy = p[:vy]
     match.step
-    assert_operator p[:vy], :>, vy
+    refute_includes match.projectiles, p
+    assert match.events.any? { |event| event[:kind] == "explosion" && event[:style] == "super_sheep" }
   end
 
   def test_remote_is_owned_and_remains_controllable_after_shooter_dies

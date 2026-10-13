@@ -315,6 +315,7 @@ module Burrow
           p[:delay] -= 1
           next if p[:delay] > 0
           record_projectile(p)
+          emit("critter_release", weapon: p[:weapon], x: p[:x], y: p[:y]) if p[:kind] == "herd"
         end
         p[:age] += 1
         p[:life] -= 1
@@ -369,9 +370,20 @@ module Burrow
         p[:stuck], p[:attached_to] = false, nil
       end
       if p[:guided]
-        steering = tick <= p.fetch(:input_until, 0) ? p.fetch(:steer, 0) : 0
-        p[:heading] = p.fetch(:heading, Math.atan2(p[:vy], p[:vx])) + steering * 2.9 * DT
-        p[:vx], p[:vy] = Math.cos(p[:heading]) * 230, Math.sin(p[:heading]) * 230
+        # Old checkpoints have no separate motor timer. Bound their remaining
+        # flight by the saved lifetime, preserving the normal gravity fallback.
+        p[:flight_ticks] = p.fetch(:flight_ticks, [p[:life], CRITTER_FLIGHT_TICKS].min) - 1
+        if p[:flight_ticks] <= 0
+          p[:stage], p[:guided], p[:steer] = "falling", false, 0
+          p[:life] = [p[:life], 4 * TICK_RATE].min
+          p[:vy] += gravity * DT
+          emit("critter_fall", weapon: p[:weapon], x: p[:x], y: p[:y])
+        else
+          steering = tick <= p.fetch(:input_until, 0) ? p.fetch(:steer, 0) : 0
+          p[:heading] = p.fetch(:heading, Math.atan2(p[:vy], p[:vx])) + steering * CRITTER_TURN_RATE * DT
+          p[:vx], p[:vy] = Math.cos(p[:heading]) * CRITTER_FLIGHT_SPEED, Math.sin(p[:heading]) * CRITTER_FLIGHT_SPEED
+          emit("critter_trail", weapon: p[:weapon], x: p[:x], y: p[:y], vx: p[:vx], vy: p[:vy]) if p[:age] % 4 == 0
+        end
       elsif p[:homing] && p[:age] > TICK_RATE / 2 && p[:age] <= HOMING_TICKS
         # After a short ballistic launch the motor locks on: rotate towards the
         # beacon at a bounded rate, preserving speed through turns, and cruise
@@ -392,10 +404,13 @@ module Burrow
         nx, ny = p[:x] + p[:vx] * DT / steps, p[:y] + p[:vy] * DT / steps
         victim = projectile_victim(p, nx, ny)
         solid = terrain.solid?(nx, ny)
-        victim = nil if solid # terrain contact wins over a body behind it
-        if solid && p[:stage] == "diving"
+        # Terrain contact wins over a body behind it, except that a diving
+        # mole meeting a grub at the surface strikes the grub, not the soil.
+        victim = nil if solid && p[:stage] != "diving"
+        if solid && !victim && p[:stage] == "diving"
           p[:stage] = "digging"
           p[:vx], p[:vy] = p[:direction] * 52.0, 76.0
+          emit("critter_dive", weapon: p[:weapon], x: p[:x], y: p[:y])
           advance_digger(p)
           break
         elsif solid || victim
@@ -462,6 +477,9 @@ module Burrow
     end
 
     HOMING_TICKS = TICK_RATE * 9 / 2
+    CRITTER_FLIGHT_SPEED = 260.0
+    CRITTER_TURN_RATE = 2.7
+    CRITTER_FLIGHT_TICKS = 8 * TICK_RATE
     BOUNCE = {"banana" => 0.72, "cluster" => 0.48, "mega_bomb" => 0.38, "holy_bomb" => 0.32,
       "dynamite" => 0.2, "poison" => 0.5}.freeze
 
@@ -484,23 +502,25 @@ module Burrow
       direction = p.fetch(:direction, p[:vx] < 0 ? -1 : 1)
       p[:direction] = direction
       p[:vx] = direction * 105.0
-      grounded = terrain.solid?(p[:x] - 4, p[:y] + 7) || terrain.solid?(p[:x] + 4, p[:y] + 7)
+      grounded = p[:vy] >= 0 && (terrain.solid?(p[:x] - 4, p[:y] + 7) || terrain.solid?(p[:x] + 4, p[:y] + 7))
+      blocked = false
       p[:vy] += gravity * DT
       steps = [((p[:vx].abs + p[:vy].abs) * DT / 2).ceil, 1].max
       steps.times do
         nx = p[:x] + p[:vx] * DT / steps
         if walker_clear?(nx, p[:y])
           p[:x] = nx
-          p[:blocked] = 0
         elsif grounded && (up = (1..6).find { |offset| walker_clear?(nx, p[:y] - offset) })
           p[:x], p[:y] = nx, p[:y] - up
         elsif p[:kind] == "herd"
           p[:life] = 0
           break
         else
-          p[:blocked] = p.fetch(:blocked, 0) + 1
-          p[:vy] = -165 if grounded
-          p[:direction] *= -1 if p[:blocked] % 24 == 0
+          blocked = true
+          if grounded
+            p[:vy] = -165
+            grounded = false
+          end
         end
         ny = p[:y] + p[:vy] * DT / steps
         if walker_clear?(p[:x], ny)
@@ -508,15 +528,25 @@ module Burrow
         else
           p[:vy] = 0.0
         end
+        if p[:kind] == "herd" && projectile_victim(p, p[:x], p[:y])
+          p[:life] = 0
+          break
+        end
+      end
+      # Count blocked ticks, not collision substeps: hops and turnarounds must
+      # behave the same on every slope and at every falling speed.
+      p[:blocked] = blocked ? p.fetch(:blocked, 0) + 1 : 0
+      if p[:blocked] >= 12
+        p[:direction] *= -1
+        p[:blocked] = 0
       end
       # Sheep attempt a jump at a ledge; cows commit to their direction.
       if grounded && p[:kind] != "herd" && !terrain.solid?(p[:x] + direction * 12, p[:y] + 12)
         p[:vy] = -135
       end
       if p[:spraying] && p[:age] % 12 == 0
-        gas_cloud(p[:x], p[:y] - 6, p[:owner], radius: 35, life: 150)
+        gas_cloud(p[:x], p[:y] - 6, p[:owner], radius: 35, life: 150, weapon: p[:weapon])
       end
-      p[:life] = 0 if p[:kind] == "herd" && projectile_victim(p, p[:x], p[:y])
     end
 
     def advance_digger(p)
@@ -530,6 +560,7 @@ module Burrow
       terrain.carve(nx, ny, 17, scorch: false)
       p[:dug] = true
       p[:x], p[:y] = nx, ny
+      emit("critter_dirt", weapon: p[:weapon], x: nx, y: ny, vx: p[:vx], vy: p[:vy]) if p[:age] % 5 == 0
       p[:life] = 0 if projectile_victim(p, nx, ny)
     end
 

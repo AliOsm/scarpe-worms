@@ -551,7 +551,67 @@
     "source": "source/materials/provenance.json"
   },
   "ordnance": {
-    "critters": {},
+    "critters": {
+      "source_size": [
+        128,
+        128
+      ],
+      "logical_size": [
+        64,
+        64
+      ],
+      "source_anchor": [
+        64,
+        88
+      ],
+      "anchor": [
+        32,
+        44
+      ],
+      "flight_anchor": [
+        32,
+        32
+      ],
+      "pattern": "ordnance/critters/{id}.png",
+      "left_pattern": "ordnance/critters/left/{id}.png",
+      "directions": [
+        "right",
+        "left"
+      ],
+      "sprites": {
+        "sheep": {
+          "walk": 4,
+          "hop": 2,
+          "fall": 1
+        },
+        "super_sheep": {
+          "walk": 4,
+          "hop": 1,
+          "fall": 1,
+          "flying": 2
+        },
+        "mole": {
+          "walk": 4,
+          "hop": 1,
+          "fall": 1,
+          "dive": 1,
+          "dig": 2
+        },
+        "skunk": {
+          "walk": 4,
+          "hop": 1,
+          "fall": 1,
+          "spray": 2
+        },
+        "cow": {
+          "walk": 4,
+          "hop": 1,
+          "fall": 1,
+          "impact": 1
+        }
+      },
+      "note": "Original Cairo vectors, mirrored at build time; no external art source."
+    },
     "munitions": {
       "raster_scale": 2,
       "facing": "right",
