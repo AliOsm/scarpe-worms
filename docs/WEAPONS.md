@@ -5,16 +5,16 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
 
 | Weapon | Category | Ammo | Behavior |
 | --- | --- | ---: | --- |
-| Pocket rocket | Launchers | -1 | Wind bends its flight. Point, charge, and let it fly. |
-| Moon mortar | Launchers | 3 | A fixed-power shell bursts on impact into five fragments. |
-| Love letter | Launchers | 2 | Lock a target, then aim and charge. The rocket homes in once its motor ignites. |
-| Tick-tock | Explosives | -1 | Bounces until the fuse expires. Set a 1–5 second fuse. |
-| Party popper | Explosives | 3 | A bouncing shell that scatters five explosive fragments. |
-| Velcro bomb | Explosives | 2 | Sticks to the first surface it touches. Mind the fuse. |
-| Short fuse | Explosives | 2 | Drop it at your feet, then use your retreat time. |
-| Big trouble | Explosives | 1 | A very large bouncing bomb. Your friends may object. |
-| Fruit salad | Explosives | 1 | One fruit becomes six. Press Fire mid-air to split it early. |
-| Choir bomb | Explosives | 1 | A weighty bomb with a five-second fuse and a grand finale. |
+| Pocket rocket | Launchers | -1 | Aim and charge a wind-sensitive rocket. Explodes on the first impact. |
+| Moon mortar | Launchers | 3 | Tap to launch a fixed-power shell. Impact scatters five smaller fragments. |
+| Love letter | Launchers | 2 | Lock, aim, then charge. Its motor steers after half a second and burns for four seconds. |
+| Tick-tock | Explosives | -1 | Set a 1–5 second fuse, charge and throw. Bounces, rolls and blasts on the count. |
+| Party popper | Explosives | 3 | A timed bouncing shell scatters five small impact bomblets. Set a 1–5 second fuse. |
+| Velcro bomb | Explosives | 2 | Sticks to terrain or a grub until its 1–5 second fuse expires. Broken support releases it. |
+| Short fuse | Explosives | 2 | Place a charge at your feet. Fixed four-second fuse: move away immediately. |
+| Big trouble | Explosives | 1 | A heavy bouncing bomb with a huge blast. Set a 1–5 second fuse and leave room to retreat. |
+| Fruit salad | Explosives | 1 | A bouncy fruit bursts into six smaller impact fruits. Fire splits it before its fuse expires. |
+| Choir bomb | Explosives | 1 | Five seconds, then rest, a short chord and a huge blast. Keeps falling while it waits. |
 | Double tap | Direct | -1 | Two separate shots. Re-aim before the second. |
 | Long goodbye | Direct | 3 | A precise single shot. Terrain blocks the bullet. |
 | Peashooter | Direct | 2 | Eight rounds spread around your aim, chewing small holes. |
@@ -25,11 +25,11 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
 | Little nudge | Close-up | -1 | No damage. Plenty of shove. Best beside the water. |
 | Home run | Close-up | 2 | Aim the angle of an enormous knockback. |
 | Half measure | Close-up | 2 | Halves a nearby opponent's current health. |
-| Special delivery | Sky | 2 | Pick the approach with ← →, then click a target for five bombs. Not in caverns. |
-| Rain check | Sky | 1 | Drops five persistent proximity mines from above. |
-| Spicy forecast | Sky | 1 | A line of firebombs spreads persistent fire. |
-| Bad astronomy | Sky | 1 | A scattered shower of six destructive meteors. |
-| Rumble button | Sky | 1 | Shakes everyone loose. Watch the edges. |
+| Special delivery | Sky | 2 | Choose the approach with ← → and click a target. A passing bomber releases five impact bombs. |
+| Rain check | Sky | 1 | Choose an approach and target. Five dropped mines arm after landing and remain as traps. |
+| Spicy forecast | Sky | 1 | Choose an approach and target. Five firebombs spread loose flames that burn for 3–5 seconds. |
+| Bad astronomy | Sky | 1 | Call six flaming meteors in a staggered shower across the battlefield. Keep clear of open sky. |
+| Rumble button | Sky | 1 | Shakes grubs off ropes and throws loose props. Frozen grubs stay safe; watch the edges. |
 | Woolly menace | Critters | 2 | A hopping runner. Press Fire again to detonate early. |
 | Captain wool | Critters | 1 | Release, then Fire to fly. Left / Right steers; Fire again drops it. |
 | Tunnel buddy | Critters | 2 | Release, Fire to dive and dig, then Fire again to detonate. |
@@ -48,7 +48,7 @@ Ammo below is the full preset; −1 means unlimited. Hosts can override every en
 | First aid | Supplies | 2 | Restore 35 health and clear poison. Uses the turn. |
 | Bubble wrap | Supplies | 1 | Halve incoming damage until your next turn. |
 | Ice break | Supplies | 1 | Protect your whole team until its next turn. Uses the turn. |
-| Stink bomb | Explosives | 2 | A bouncing canister leaves a lingering poison cloud. |
+| Stink bomb | Explosives | 2 | Set a 1–5 second fuse and throw. A bouncing canister releases drifting, nonlethal poison. |
 | Extra spicy | Supplies | 1 | Double the damage of the attack you make this turn. |
 | Moon boots | Supplies | 1 | Reduce gravity for the rest of this turn. |
 | Weather vane | Supplies | 1 | Reverse and double the wind, up to storm strength, for this turn. |
@@ -79,6 +79,29 @@ thrust. Irrelevant controls are disabled. Focus loss, menus, weapon changes, and
 turn expiry cancel charging. A mouse release cannot release a keyboard charge.
 A pending action waits for the host's next authoritative snapshot before a second
 activation can be sent. The server validates ownership, parameters, phase, and ammo.
+
+## Munitions details
+
+Air support spends one charge for an entire pass. The bomber releases five objects
+at 0.4-second intervals in the chosen approach direction, covering about 152 world
+pixels around the clicked point. Mines take 40 ticks (1.33 seconds) to arm after
+landing; nearby grubs then trigger an 18-tick warning. Napalm waits for its loose
+flames to burn out before handing over the turn. Bad astronomy scatters six
+meteors across the map in 0.3-second intervals. All four sky attacks are blocked
+in caverns.
+
+Choir bomb keeps moving after its fixed five-second count until it rests, then
+plays a 0.6-second warning before exploding. Its complete lifetime is bounded by
+12 seconds. Short fuse always counts four seconds, regardless of the last chosen
+throwing fuse. The HUD distinguishes those fixed fuses from adjustable ones.
+
+Mortar and Party popper create five small impact fragments; Fruit salad creates
+six. Fragments retain part of the parent's horizontal momentum and carry damage
+boosts, but never split again. Their small sprites have no fuse badge. All thrown
+weapons have dedicated in-flight art, slow tumbling, readable countdowns and
+weapon-specific blasts. Rocket, homing and meteor trails follow their flight;
+Choir bomb glows and dynamite sparks. Camera shake is bounded and disabled by
+the reduced-motion preference.
 
 ## Match options
 

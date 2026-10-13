@@ -38,7 +38,13 @@ module Burrow
           bounce: %w[bounce cluster gas].include?(kind), sticky: kind == "sticky", homing: kind == "homing",
           target_x: x, target_y: y, wind: id != "mortar" && %w[projectile homing].include?(kind), shooter: active_id, **staged)
       when "place"
-        projectile(weapon, x: active[:x] + active[:facing] * 15, y: active[:y] - 8,
+        # A close wall must not place the charge on its far side or inside it.
+        px, py = active[:x], active[:y] - 8
+        7.times do
+          break if terrain.solid?(px + active[:facing] * 2, py)
+          px += active[:facing] * 2
+        end
+        projectile(weapon, x: px, y: py, shooter: active_id,
           vx: active[:facing] * 16, vy: 0, damage: damage, bounce: true, sticky: true, life: 4 * TICK_RATE)
       when "shotgun", "beam", "laser", "burst", "flame"
         shots = kind == "burst" ? 8 : kind == "flame" ? 7 : 1
@@ -61,30 +67,50 @@ module Burrow
       when "melee", "dash"
         melee(weapon, damage, angle)
       when "strike", "mines", "napalm", "meteor"
-        count = kind == "meteor" ? 6 : 5
-        count.times do |i|
-          if kind == "meteor"
-            px, top, vx = @rng.rand(40..world_width - 40), -40 - i * 36, 85.0
-          else
-            # Bombers cross from `side`; each bomb is released ahead of the target
-            # so the stick lands in a line across it.
-            vx, top = side * 95.0, -40 - i * 18
-            drop = [y - top, 40].max
+        if kind == "meteor"
+          # A shower crosses the whole battlefield in readable waves, not six
+          # simultaneous flashes. Persisted projectile delays keep saves exact.
+          6.times do |i|
+            landing = 40 + (world_width - 80) * (i + @rng.rand) / 6.0
+            vx = @rng.rand(-85.0..85.0)
+            drop = [terrain.surface(landing) + 40, 40].max
             fall = (-130 + Math.sqrt(130**2 + 2 * gravity * drop)) / gravity
-            px = (x - vx * fall + (i - 2) * 30).clamp(-60, world_width + 60)
+            projectile(weapon, x: landing - vx * fall, y: -40, vx: vx, vy: 130,
+              damage: damage, life: 12 * TICK_RATE, delay: i * 9, sky_drop: true)
           end
-          projectile(weapon, x: px, y: top, vx: vx, vy: 130,
-            damage: damage, life: 12 * TICK_RATE, drop_mine: kind == "mines", fire: kind == "napalm")
+        else
+          # The plane and release points use the same trajectory. Its bombs
+          # inherit its speed and cover a 152-pixel stick in approach order.
+          vx, top, spacing = side * 95.0, -40.0, 12
+          drop = [y - top, 40].max
+          fall = (-130 + Math.sqrt(130**2 + 2 * gravity * drop)) / gravity
+          first = x - vx * fall - vx * (2 * spacing).fdiv(TICK_RATE)
+          lead = 18
+          start = first - vx * lead.fdiv(TICK_RATE)
+          emit("strike", weapon: id, x: start, y: top - 14, vx: vx, side: side,
+            duration: (lead + spacing * 4 + 24).fdiv(TICK_RATE))
+          5.times do |i|
+            projectile(weapon, x: first + vx * (i * spacing).fdiv(TICK_RATE), y: top, vx: vx, vy: 130,
+              damage: damage, life: 12 * TICK_RATE, delay: lead + i * spacing,
+              drop_mine: kind == "mines", fire: kind == "napalm", sky_drop: true)
+          end
         end
       when "quake"
         worms.each do |w|
           next if w[:hp] <= 0 || w[:frozen]
           w[:vx] += (@rng.rand - 0.5) * 420
           w[:vy] = -90 - @rng.rand * 70
+          w[:rope] = nil
           w[:launched] = true
           hurt(w, damage, source: team[:id])
         end
-        emit("quake", x: world_width / 2, y: world_height / 2, radius: 100)
+        hazards.each do |h|
+          next unless %w[mine barrel crate turret].include?(h[:kind])
+          h[:vx] = h.fetch(:vx, 0) + (@rng.rand - 0.5) * 240 / Physics::PROP_MASS.fetch(h[:kind])
+          h[:vy], h[:launched], h[:chute] = -70 - @rng.rand * 60, true, false
+        end
+        emit("quake", x: active[:x], y: active[:y], radius: 100,
+          points: worms.select { |w| w[:hp] > 0 }.first(8).map { |w| [w[:x], w[:y]] })
       when "walker", "guided", "digger", "poisoner", "herd"
         count = kind == "herd" ? 3 : 1
         count.times do |i|
@@ -229,10 +255,11 @@ module Burrow
       if p[:drop_mine]
         hazards << {id: next_object_id, kind: "mine", x: p[:x], y: p[:y], owner: p[:owner],
           life: 100_000, armed: tick + 40, hp: 20}
+        emit("mine_land", weapon: p[:weapon], x: p[:x], y: p[:y])
         return
       end
       if p[:kind] == "gas" || p[:poisoner]
-        gas_cloud(p[:x], p[:y], p[:owner], radius: p[:radius], life: 6 * TICK_RATE)
+        gas_cloud(p[:x], p[:y], p[:owner], radius: p[:radius], life: 6 * TICK_RATE, weapon: p[:weapon])
         explode(p[:x], p[:y], damage: p[:damage], radius: 18, owner: p[:owner], kind: p[:weapon]) if p[:poisoner]
       else
         explode(p[:x], p[:y], damage: p[:damage], radius: p[:radius], owner: p[:owner], kind: p[:weapon])
@@ -241,18 +268,18 @@ module Burrow
         count = p[:weapon] == "banana" ? 6 : 5
         count.times do |i|
           projectiles << {id: next_object_id, weapon: p[:weapon], kind: "projectile", owner: p[:owner],
-            x: p[:x], y: p[:y] - 12, vx: (i - (count - 1) / 2.0) * 85,
+            x: p[:x], y: p[:y] - 12, vx: (i - (count - 1) / 2.0) * 85 + p[:vx] * 0.3,
             vy: -135 - @rng.rand * 95, age: 0, life: 100, radius: p[:weapon] == "banana" ? 40 : 25,
-            damage: (p[:weapon] == "banana" ? 45 : p[:weapon] == "mortar" ? 15 : 24) * p.fetch(:damage_scale, 1), fragment: true}
+            damage: (p[:weapon] == "banana" ? 45 : p[:weapon] == "mortar" ? 15 : 24) * p.fetch(:damage_scale, 1), fragment: true, stage: "fragment"}
           record_projectile(projectiles.last)
         end
       end
       fire_patch(p[:x], p[:y], p[:owner], radius: 50) if p[:fire]
     end
 
-    def gas_cloud(x, y, owner, radius:, life:)
+    def gas_cloud(x, y, owner, radius:, life:, weapon: nil)
       hazards << {id: next_object_id, kind: "gas", x: x, y: y, owner: owner, radius: radius, life: life}
-      emit("gas", x: x, y: y, radius: radius)
+      emit("gas", x: x, y: y, radius: radius, weapon: weapon)
     end
 
     def fire_patch(x, y, owner, radius: 35)

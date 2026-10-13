@@ -166,9 +166,10 @@ module Burrow
         end
         active = @state["worms"].find { |w| w["id"] == @state["active"] }
         render_camera(active, started)
+        camera.update_shake(now: started, motion: @controller.motion?)
         render_backdrop
         @last_render = started
-        ox, oy = px(-camera.x), px(-camera.y)
+        ox, oy = px(-camera.x + camera.shake_x / camera.zoom), px(-camera.y + camera.shake_y / camera.zoom)
         if !@origin || @origin[0] != ox || @origin[1] != oy
           @world.move(ox, oy)
           @origin = [ox, oy]
@@ -209,9 +210,12 @@ module Burrow
       # Effect helpers for Sprites.effect_rule blocks (world coordinates).
       def fx_sprite(name, x, y, scale = 1.0) = sprite_effect(name, x, y, scale)
       def fx_particle(x, y, color:, life:, size:, vx: 0, vy: 0) = add_particle(x, y, color: color, life: life, size: size, vx: vx, vy: vy)
+      def fx_motion? = @controller.motion?
+      def fx_shake(strength, duration: 0.3) = camera.shake(strength, duration: duration, motion: @controller.motion?)
 
       # A short-lived image animation: `paths` are full frame paths (Sprites.frames).
-      def fx_frames(paths, x, y, width, height, fps:, anchor_x: width / 2.0, anchor_y: height / 2.0, rotation: nil)
+      def fx_frames(paths, x, y, width, height, fps:, anchor_x: width / 2.0, anchor_y: height / 2.0, rotation: nil,
+        vx: 0, vy: 0, life: nil, loop: false)
         return if @effects.length >= 100 || !@controller.motion?
         @effect_layer.append do
           node = @shoes.image(paths.first, left: px(x - anchor_x), top: px(y - anchor_y), width: px(width), height: px(height), alt: "")
@@ -219,7 +223,8 @@ module Burrow
             node.transform(:center)
             node.rotate(rotation.round)
           end
-          retain_effect(node: node, born: Burrow.clock, life: paths.length.fdiv(fps), kind: :frames, paths: paths, fps: fps, frame: 0)
+          retain_effect(node: node, born: Burrow.clock, life: life || paths.length.fdiv(fps), kind: :frames, paths: paths,
+            fps: fps, frame: 0, loop: loop, x: x - anchor_x, y: y - anchor_y, vx: vx, vy: vy)
         end
       end
 
@@ -456,7 +461,8 @@ module Burrow
           end
           place(node[:image], px(x - look.anchor_x), px(y - look.anchor_y), px(look.width), px(look.height))
           if look.rotation
-            rotation = (look.rotation / 6).round * 6
+            step = Sprites::MUNITION_BLASTS.key?(p["weapon"]) ? 3 : 6
+            rotation = (look.rotation / step).round * step
             node[:image].rotate(rotation) if node[:image].rotate_angle != rotation
           end
           if node[:fuse]
@@ -465,13 +471,24 @@ module Burrow
             bx, by = px(x) - bw / 2, px(y - 19) - bh
             restyle(node[:fuse_plate], left: bx, top: by, width: bw, height: bh)
             restyle(node[:fuse], left: bx, top: by + (3 * badge_scale).round, width: bw, size: [(12 * badge_scale).round, 8].max)
-            set_text(node[:fuse], p["life"] ? "#{(p['life'].fdiv(TICK_RATE)).ceil}s" : "")
+            fuse_text = if p["weapon"] == "holy_bomb" && p["stage"] == "waiting"
+              "…"
+            elsif p["weapon"] == "holy_bomb" && p["stage"] == "choir"
+              "!"
+            else
+              p["life"] ? "#{(p['life'].fdiv(TICK_RATE)).ceil}s" : ""
+            end
+            set_text(node[:fuse], fuse_text)
             color = p["life"].to_f <= TICK_RATE ? Theme::ORANGE : Theme::WHITE
             node[:fuse].style(stroke: color) if node[:fuse_color] != color
             node[:fuse_color] = color
           end
-          if @controller.motion? && @frame_count % 4 == 0 && !p["walker"] && Math.hypot(p["vx"], p["vy"]) > 40
-            add_particle(x, y, color: "#ffefc188", life: 0.35, size: 7, vx: 0, vy: -8)
+          if @controller.motion? && !p["walker"]
+            if Sprites::MUNITION_BLASTS.key?(p["weapon"])
+              Sprites.munition_trail(self, p) if @frame_count % 6 == 0
+            elsif @frame_count % 4 == 0 && Math.hypot(p["vx"], p["vy"]) > 40
+              add_particle(x, y, color: "#ffefc188", life: 0.35, size: 7, vx: 0, vy: -8)
+            end
           end
         end
       end
@@ -547,6 +564,11 @@ module Burrow
 
       def render_camera(active, now)
         shots = @state["projectiles"]
+        if (strike = @timeline.events.find { |e| e["kind"] == "strike" })
+          @strike_focus = {x: strike["x"], y: strike["y"], vx: strike["vx"], born: now,
+            until: now + strike.fetch("duration", 3.2)}
+        end
+        @strike_focus = nil if @strike_focus && now >= @strike_focus[:until]
         # Keep a flight's identity through packet coalescing and cluster spawns.
         # Timeline shots contain presentation data, not live control flags.
         shot = shots.find { |p| p["id"] == @tracked_projectile } || shots.first
@@ -555,6 +577,12 @@ module Burrow
         if shot
           @tracked_projectile = shot["id"]
           target, velocity, mode = shot.values_at("x", "y"), shot.values_at("vx", "vy"), :projectile
+        elsif @strike_focus
+          # The approach is visible before the first release. Camera#update
+          # honors manual exploration; the first real bomb takes over tracking.
+          elapsed = now - @strike_focus[:born]
+          target = [@strike_focus[:x] + @strike_focus[:vx] * elapsed, @strike_focus[:y]]
+          velocity, mode = [@strike_focus[:vx], 0], :projectile
         elsif @impact_focus && now < @impact_focus[:until]
           target, mode = @impact_focus[:point], :impact
         else
@@ -930,10 +958,14 @@ module Burrow
           else
             case effect[:kind]
             when :frames
-              frame = [(age * effect[:fps]).floor, effect[:paths].length - 1].min
+              frame = (age * effect[:fps]).floor
+              frame = effect[:loop] ? frame % effect[:paths].length : [frame, effect[:paths].length - 1].min
               if frame != effect[:frame]
                 effect[:node].path = effect[:paths][frame]
                 effect[:frame] = frame
+              end
+              if effect[:vx] != 0 || effect[:vy] != 0
+                move_to(effect[:node], px(effect[:x] + effect[:vx] * age), px(effect[:y] + effect[:vy] * age))
               end
             when :sprite
               frame = (age * effect[:fps]).floor

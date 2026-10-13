@@ -171,7 +171,7 @@ module Burrow
         when "activate", "detonate"
           projectile = state["projectiles"].find { |p| p["owner"] == player && p["remote"] && p["life"] > 0 }
           flying = projectile && projectile["kind"] == "guided" && projectile["stage"] == "walking"
-          {"kind" => "activate", "stage" => flying ? "flying" : nil}
+          {"kind" => "activate", "weapon" => projectile && projectile["weapon"], "stage" => flying ? "flying" : nil}
         end
         cue = event && event_cue(event)
         return unless cue && play(cue, immediate: true)
@@ -184,8 +184,11 @@ module Burrow
         case event["kind"]
         when "fire"
           kind = Catalog::WEAPONS[event["weapon"]]&.fetch(:kind)
+          return "tick" if event["weapon"] == "dynamite"
+          return "explosion-heavy" if event["weapon"] == "earthquake"
           case kind
           when "projectile", "homing" then "launch"
+          when "strike", "mines", "napalm", "meteor" then "launch"
           when "bounce", "cluster", "sticky", "gas" then "throw"
           # Beam, melee, healing and teleport events supply their own report.
           when "beam", "laser", "shotgun", "burst", "flame", "melee", "dash", "heal", "teleport", "skip" then nil
@@ -194,7 +197,10 @@ module Burrow
           end
         when "beam" then event["style"] == "laser" ? "beam" : "shot"
         when "explosion" then event.fetch("radius", 0) >= 70 ? "explosion-heavy" : "explosion"
-        when "activate" then event["stage"] == "flying" ? "launch" : "equip"
+        when "activate" then event["weapon"] == "banana" ? "impact" : event["stage"] == "flying" ? "launch" : "equip"
+        when "choir" then "pickup"
+        when "mine_land" then "impact"
+        when "gas" then "impact" if event["weapon"] == "poison"
         else EVENT_CUES[event["kind"]]
         end
       end

@@ -4,16 +4,16 @@ module Burrow
   module Catalog
     # All gameplay values live here; every ID has a server-side implementation.
     DATA = [
-      ["rocket", "Pocket rocket", "Launchers", "projectile", 48, 48, -1, "Wind bends its flight. Point, charge, and let it fly."],
-      ["mortar", "Moon mortar", "Launchers", "projectile", 18, 26, 3, "A fixed-power shell bursts on impact into five fragments."],
-      ["homing", "Love letter", "Launchers", "homing", 45, 42, 2, "Lock a target, then aim and charge. The rocket homes in once its motor ignites."],
-      ["grenade", "Tick-tock", "Explosives", "bounce", 52, 50, -1, "Bounces until the fuse expires. Set a 1–5 second fuse."],
-      ["cluster", "Party popper", "Explosives", "cluster", 30, 34, 3, "A bouncing shell that scatters five explosive fragments."],
-      ["sticky", "Velcro bomb", "Explosives", "sticky", 60, 52, 2, "Sticks to the first surface it touches. Mind the fuse."],
-      ["dynamite", "Short fuse", "Explosives", "place", 78, 72, 2, "Drop it at your feet, then use your retreat time."],
-      ["mega_bomb", "Big trouble", "Explosives", "bounce", 95, 92, 1, "A very large bouncing bomb. Your friends may object."],
-      ["banana", "Fruit salad", "Explosives", "cluster", 55, 58, 1, "One fruit becomes six. Press Fire mid-air to split it early."],
-      ["holy_bomb", "Choir bomb", "Explosives", "bounce", 85, 84, 1, "A weighty bomb with a five-second fuse and a grand finale."],
+      ["rocket", "Pocket rocket", "Launchers", "projectile", 48, 48, -1, "Aim and charge a wind-sensitive rocket. Explodes on the first impact."],
+      ["mortar", "Moon mortar", "Launchers", "projectile", 18, 26, 3, "Tap to launch a fixed-power shell. Impact scatters five smaller fragments."],
+      ["homing", "Love letter", "Launchers", "homing", 45, 42, 2, "Lock, aim, then charge. Its motor steers after half a second and burns for four seconds."],
+      ["grenade", "Tick-tock", "Explosives", "bounce", 52, 50, -1, "Set a 1–5 second fuse, charge and throw. Bounces, rolls and blasts on the count."],
+      ["cluster", "Party popper", "Explosives", "cluster", 30, 34, 3, "A timed bouncing shell scatters five small impact bomblets. Set a 1–5 second fuse."],
+      ["sticky", "Velcro bomb", "Explosives", "sticky", 60, 52, 2, "Sticks to terrain or a grub until its 1–5 second fuse expires. Broken support releases it."],
+      ["dynamite", "Short fuse", "Explosives", "place", 78, 72, 2, "Place a charge at your feet. Fixed four-second fuse: move away immediately."],
+      ["mega_bomb", "Big trouble", "Explosives", "bounce", 95, 92, 1, "A heavy bouncing bomb with a huge blast. Set a 1–5 second fuse and leave room to retreat."],
+      ["banana", "Fruit salad", "Explosives", "cluster", 55, 58, 1, "A bouncy fruit bursts into six smaller impact fruits. Fire splits it before its fuse expires."],
+      ["holy_bomb", "Choir bomb", "Explosives", "bounce", 85, 84, 1, "Five seconds, then rest, a short chord and a huge blast. Keeps falling while it waits."],
       ["shotgun", "Double tap", "Direct", "shotgun", 26, 9, -1, "Two separate shots. Re-aim before the second."],
       ["rifle", "Long goodbye", "Direct", "beam", 42, 8, 3, "A precise single shot. Terrain blocks the bullet."],
       ["minigun", "Peashooter", "Direct", "burst", 9, 8, 2, "Eight rounds spread around your aim, chewing small holes."],
@@ -24,11 +24,11 @@ module Burrow
       ["prod", "Little nudge", "Close-up", "melee", 0, 0, -1, "No damage. Plenty of shove. Best beside the water."],
       ["bat", "Home run", "Close-up", "melee", 32, 0, 2, "Aim the angle of an enormous knockback."],
       ["axe", "Half measure", "Close-up", "melee", 0, 0, 2, "Halves a nearby opponent's current health."],
-      ["airstrike", "Special delivery", "Sky", "strike", 32, 38, 2, "Pick the approach with ← →, then click a target for five bombs. Not in caverns."],
-      ["mine_strike", "Rain check", "Sky", "mines", 38, 36, 1, "Drops five persistent proximity mines from above."],
-      ["napalm", "Spicy forecast", "Sky", "napalm", 20, 32, 1, "A line of firebombs spreads persistent fire."],
-      ["meteor", "Bad astronomy", "Sky", "meteor", 55, 66, 1, "A scattered shower of six destructive meteors."],
-      ["earthquake", "Rumble button", "Sky", "quake", 12, 0, 1, "Shakes everyone loose. Watch the edges."],
+      ["airstrike", "Special delivery", "Sky", "strike", 32, 38, 2, "Choose the approach with ← → and click a target. A passing bomber releases five impact bombs."],
+      ["mine_strike", "Rain check", "Sky", "mines", 38, 36, 1, "Choose an approach and target. Five dropped mines arm after landing and remain as traps."],
+      ["napalm", "Spicy forecast", "Sky", "napalm", 20, 32, 1, "Choose an approach and target. Five firebombs spread loose flames that burn for 3–5 seconds."],
+      ["meteor", "Bad astronomy", "Sky", "meteor", 55, 66, 1, "Call six flaming meteors in a staggered shower across the battlefield. Keep clear of open sky."],
+      ["earthquake", "Rumble button", "Sky", "quake", 12, 0, 1, "Shakes grubs off ropes and throws loose props. Frozen grubs stay safe; watch the edges."],
       ["sheep", "Woolly menace", "Critters", "walker", 68, 64, 2, "A hopping runner. Press Fire again to detonate early."],
       ["super_sheep", "Captain wool", "Critters", "guided", 72, 62, 1, "Release, then Fire to fly. Left / Right steers; Fire again drops it."],
       ["mole", "Tunnel buddy", "Critters", "digger", 58, 52, 2, "Release, Fire to dive and dig, then Fire again to detonate."],
@@ -47,7 +47,7 @@ module Burrow
       ["heal", "First aid", "Supplies", "heal", 35, 0, 2, "Restore 35 health and clear poison. Uses the turn."],
       ["shield", "Bubble wrap", "Supplies", "shield", 0, 0, 1, "Halve incoming damage until your next turn."],
       ["freeze", "Ice break", "Supplies", "freeze", 0, 0, 1, "Protect your whole team until its next turn. Uses the turn."],
-      ["poison", "Stink bomb", "Explosives", "gas", 10, 58, 2, "A bouncing canister leaves a lingering poison cloud."],
+      ["poison", "Stink bomb", "Explosives", "gas", 10, 58, 2, "Set a 1–5 second fuse and throw. A bouncing canister releases drifting, nonlethal poison."],
       ["double_damage", "Extra spicy", "Supplies", "boost", 0, 0, 1, "Double the damage of the attack you make this turn."],
       ["low_gravity", "Moon boots", "Supplies", "gravity", 0, 0, 1, "Reduce gravity for the rest of this turn."],
       ["wind_control", "Weather vane", "Supplies", "wind", 0, 0, 1, "Reverse and double the wind, up to storm strength, for this turn."],
@@ -75,6 +75,10 @@ module Burrow
       return "Click open space to build · ← → tilts the beam" if kind == "girder"
       return "Click the target · ← → picks the bombers' approach" if %w[strike mines napalm].include?(kind)
       return "Aim · hold Space or mouse, release to throw · 1–5 sets fuse · Space mid-air splits it" if id == "banana"
+      return "Place with Space or click · fixed 4s fuse · A / D and W to retreat" if id == "dynamite"
+      return "Aim · hold Space or mouse, release to throw · fixed 5s, then rest and a short chord" if id == "holy_bomb"
+      return "Tap Space or click · six meteors fall across the map · no target needed" if id == "meteor"
+      return "Tap Space or click · shakes every team and loose props · no target needed" if id == "earthquake"
       return "Aim · hold Space or mouse, release to throw · 1–5 sets fuse" if FUSED.include?(id)
       return "Aim · hold Space or mouse, release to launch" if CHARGED.include?(kind)
       return fetch(id)[:description] if %w[walker guided digger poisoner herd rope jetpack drill torch].include?(kind)

@@ -213,8 +213,8 @@ module Burrow
     def record_projectile(p, ended: false)
       @shot_tracks ||= {}
       track = (@shot_tracks[p[:id]] ||= {"id" => p[:id], "weapon" => p[:weapon], "walker" => p[:walker],
-        "owner" => p[:owner], "fused" => !!(p[:bounce] || p[:sticky]), "from" => tick, "samples" => []})
-      track["samples"] << [tick, *p.values_at(:x, :y, :vx, :vy).map { |n| n.round(3) }, !!p[:walker], p[:stage], p[:life]]
+        "owner" => p[:owner], "fused" => !!(p[:bounce] || p[:sticky]), "fragment" => !!p[:fragment], "from" => tick, "samples" => []})
+      track["samples"] << [tick, *p.values_at(:x, :y, :vx, :vy).map { |n| n.round(3) }, !!p[:walker], p[:stage], p[:life], p[:age], !!p[:stuck]]
       track["to"] = tick if ended
     end
 

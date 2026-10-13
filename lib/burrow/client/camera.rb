@@ -4,19 +4,45 @@ module Burrow
   module Client
     class Camera
       VIEW_WIDTH, VIEW_HEIGHT = 1440, 720
-      attr_reader :x, :y, :zoom, :width, :height, :following
+      attr_reader :x, :y, :zoom, :width, :height, :following, :shake_x, :shake_y
 
       def initialize(width, height)
         @width, @height, @zoom = width, height, 1.0
         @x, @y, @following = 0.0, 0.0, true
         @overview, @ceiling = false, -500
         @snap = true
+        @shake_x = @shake_y = 0.0
       end
 
       def minimum = [VIEW_WIDTH.fdiv(width), VIEW_HEIGHT.fdiv(height), 1.0].min
-      def world(sx, sy) = [x + sx / zoom, y + sy / zoom]
-      def screen(wx, wy) = [(wx - x) * zoom, (wy - y) * zoom]
+      def world(sx, sy) = [x + (sx - shake_x) / zoom, y + (sy - shake_y) / zoom]
+      def screen(wx, wy) = [(wx - x) * zoom + shake_x, (wy - y) * zoom + shake_y]
       def overview? = @overview
+
+      # Shake is a bounded presentation offset, never an accumulated pan or a
+      # simulation input. Repeated blasts replace/extend one envelope. Pointer
+      # conversion includes the offset, so the drawn terrain remains aimable.
+      def shake(strength, duration: 0.3, now: Burrow.clock, motion: true)
+        return unless motion
+        strength = strength.to_f.clamp(0, 8)
+        return if strength.zero?
+        @shake_strength = [strength, @shake_until && now < @shake_until ? @shake_strength : 0].max
+        @shake_started = now
+        @shake_duration = duration.to_f.clamp(0.05, 0.8)
+        @shake_until = now + @shake_duration
+      end
+
+      def update_shake(now: Burrow.clock, motion: true)
+        unless motion && @shake_until && now < @shake_until
+          @shake_x = @shake_y = 0.0
+          @shake_until = nil
+          return
+        end
+        age = [now - @shake_started, 0].max
+        envelope = (1 - age / @shake_duration)**2 * @shake_strength
+        @shake_x = Math.sin(age * 73) * envelope
+        @shake_y = Math.sin(age * 91 + 0.7) * envelope * 0.55
+      end
 
       def overview
         @zoom, @following = minimum, false
@@ -44,7 +70,7 @@ module Burrow
         @zoom = next_zoom
         @overview = (zoom - minimum).abs < 0.001
         @following = false if anchor || @overview
-        @x, @y = cx - sx / zoom, cy - sy / zoom
+        @x, @y = cx - (sx - shake_x) / zoom, cy - (sy - shake_y) / zoom
         @snap = false
         clamp
       end

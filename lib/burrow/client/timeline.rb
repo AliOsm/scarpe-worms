@@ -101,9 +101,10 @@ module Burrow
           b = samples.find { |point| point[0] >= tick } || samples.last
           blend = a[0] == b[0] ? 1.0 : (tick - a[0]).fdiv(b[0] - a[0]).clamp(0, 1)
           @seen_shots << shot["id"]
-          shot.slice("id", "weapon", "walker", "owner", "fused").merge("x" => a[1] + (b[1] - a[1]) * blend,
+          shot.slice("id", "weapon", "walker", "owner", "fused", "fragment", "from").merge("x" => a[1] + (b[1] - a[1]) * blend,
             "y" => a[2] + (b[2] - a[2]) * blend, "vx" => a[3] + (b[3] - a[3]) * blend, "vy" => a[4] + (b[4] - a[4]) * blend,
-            "walker" => a.length > 5 ? a[5] : shot["walker"], "stage" => a[6], "life" => a[7])
+            "walker" => a.length > 5 ? a[5] : shot["walker"], "stage" => a[6], "life" => a[7],
+            "age" => a[8] ? a[8] + (b.fetch(8, a[8]) - a[8]) * blend : tick - shot["from"], "stuck" => a[9])
         end
         @events = @pending.values.select { |event| event["tick"] <= tick }
         @events.each { |event| @pending.delete(event["id"]) }

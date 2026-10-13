@@ -188,9 +188,16 @@ module Burrow
         set_text(@aim_label, detail)
         restyle(@power_bar, width: px(168 * (charged ? @power : active["jetpack"] ? active["fuel"].fdiv(4 * TICK_RATE) : 0)))
         @power_minus.state = @power_plus.state = aiming && charged ? nil : "disabled"
-        set_text(@fuse_button, @selected_weapon == "holy_bomb" ? "Fixed 5s" : Catalog::FUSED.include?(@selected_weapon) ? "Fuse #{@fuse}s" : "No fuse")
+        set_text(@fuse_button, @selected_weapon == "holy_bomb" ? "5s + rest" : @selected_weapon == "dynamite" ? "Fixed 4s" : Catalog::FUSED.include?(@selected_weapon) ? "Fuse #{@fuse}s" : "No fuse")
         @fuse_button.state = aiming && Catalog::FUSED.include?(@selected_weapon) && !control ? nil : "disabled"
-        set_text(@fire_button, @pending_action ? "Sending…" : control ? control[0] : @charge_started ? "Charging…" : state["shots_left"] > 0 ? "Second shot" : @selected_weapon == "homing" && !@locked_target ? "1 · Lock target" : @selected_weapon == "homing" ? "2 · Launch" : "Fire · Space")
+        fire_label = case @selected_weapon
+        when "dynamite" then "Place · Space"
+        when "airstrike", "mine_strike", "napalm" then "Call strike"
+        when "meteor" then "Call meteors"
+        when "earthquake" then "Shake · Space"
+        else "Fire · Space"
+        end
+        set_text(@fire_button, @pending_action ? "Sending…" : control ? control[0] : @charge_started ? "Charging…" : state["shots_left"] > 0 ? "Second shot" : @selected_weapon == "homing" && !@locked_target ? "1 · Lock target" : @selected_weapon == "homing" ? "2 · Launch" : fire_label)
         @fire_button.state = my_turn? && !@pending_action && (control || (aiming && can_equip?(@selected_weapon))) ? nil : "disabled"
         @pass_button.state = aiming && state["shots_left"].zero? && !@pending_action ? nil : "disabled"
         hint = if !my_turn?
