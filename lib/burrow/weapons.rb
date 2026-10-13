@@ -6,6 +6,8 @@ module Burrow
     # bodies of the status sprites. Placement and bullets share these bounds.
     HAZARD_BOUNDS = {"mine" => [15, 21], "barrel" => [17, 45],
       "turret" => [21, 40], "crate" => [13, 26]}.transform_values(&:freeze).freeze
+    PLACEMENT_BOUNDS = {"mine" => [9, 9], "barrel" => [15, 21],
+      "turret" => [15, 21]}.transform_values(&:freeze).freeze
 
     def use_weapon(values)
       id = values.fetch("weapon")
@@ -219,7 +221,7 @@ module Burrow
     end
 
     def validate_hazard_place(kind, x, y)
-      width, height = HAZARD_BOUNDS.fetch(kind)
+      width, height = PLACEMENT_BOUNDS.fetch(kind)
       unless x.between?(width + 8, world_width - width - 8) &&
           y.between?(height + 10, water - 4)
         raise RuleError, "There is no clear ground ahead for that #{kind}."
