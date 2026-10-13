@@ -776,4 +776,21 @@ class WeaponsCloseHazardsAndSuppliesTest < Minitest::Test
     pass_turn(match)
     assert_equal false, match.snapshot[:effects][:double_damage]
   end
+
+  def test_moon_boots_reduce_gravity_for_floaty_jumps_and_restore_cleanly
+    match = arena("scheme" => "sandbox")
+    normal_gravity = match.send(:gravity)
+    fire(match, "low_gravity")
+    assert_in_delta normal_gravity * 0.45, match.send(:gravity), 0.001
+    assert_equal true, match.snapshot[:effects][:low_gravity]
+    recovered = restored(match)
+    assert_in_delta match.send(:gravity), recovered.send(:gravity), 0.001
+    assert_equal JSON.generate(match.snapshot(terrain: true)), JSON.generate(recovered.snapshot(terrain: true))
+    match.command("p0", "jump")
+    match.step
+    assert_operator match.active[:vy], :<, -170
+    pass_turn(match)
+    assert_in_delta normal_gravity, match.send(:gravity), 0.001
+    assert_equal false, match.snapshot[:effects][:low_gravity]
+  end
 end
