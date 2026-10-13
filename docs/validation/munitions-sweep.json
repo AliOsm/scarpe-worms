@@ -358,6 +358,41 @@
         "log": "/tmp/munitions-lab/airstrike/log.json",
         "sheet": "/tmp/munitions-lab/airstrike-sheet.png"
       }
+    },
+    "mine_strike": {
+      "defects_found": "Dropped mines lacked a readable aircraft pass and landing feedback.",
+      "changes": "Dedicated dropped mines from a staged bomber with landing cue and existing persistent arming behavior.",
+      "verification": [
+        "five native landings",
+        "40-tick arming then trigger delay",
+        "checkpoint persistence",
+        "clean handover with traps remaining"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 20,
+        "start_turn": 1,
+        "final_turn": 2,
+        "event_counts": {
+          "fire": 1,
+          "strike": 1,
+          "mine_land": 5,
+          "explosion": 3,
+          "damage": 1,
+          "bounce": 1,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/mine_strike/log.json",
+        "sheet": "/tmp/munitions-lab/mine_strike-sheet.png"
+      }
     }
   }
 }
