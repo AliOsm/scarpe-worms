@@ -159,8 +159,13 @@ all precise-timer protections. Ruby timers already use a fixed monotonic grid.
 The 144.8 ms maximum redraw in that capture belongs to startup, before combat;
 a separate 268.8 ms combat gap included a large layout/system stall.
 
-New packaged Mac evidence is pending. Submission timestamps do not establish
-physical scanout, ProMotion behavior or audible device output.
+Two packaged Mac captures restore approximately 60 Hz submission cadence:
+pan 16.77/20.37 and 16.70/19.30 ms mean/p95. Both retained outlier failures.
+The second exposed drift between Rust's raw clock and Ruby wall time that can
+misclassify already-painted motion as pending. Patch 0019 appends live frame
+wall-clock anchors; the analyzer keeps monotonic durations and unchanged budgets.
+A fresh capture of that corrected correlation is pending. Submission timestamps
+do not establish physical scanout, ProMotion behavior or audible device output.
 
 ## Next checks
 
@@ -188,7 +193,7 @@ every frame meets its deadline or that the reported audio lag is resolved.
 
 ## Repository handoff
 
-The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 18
+The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 19
 independent patches; the arcade interface added 0013 and the renderer investigation
 added 0014–0017; patch 0018 removes redundant Mac refresh deadlines. Protocol 4 hosts and clients must upgrade together.
 Runtime assets live in the source tree, so running the game needs no image service or

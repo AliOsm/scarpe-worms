@@ -172,8 +172,9 @@ Mac update-cadence patch (independent of game code):
   adds run-loop wake lateness and coalesces otherwise timely updates. AppKit
   coalesces queued redraw requests and CoreAnimation composes submitted images;
   neither the redraw callback nor our presentation timestamp proves physical
-  scanout. Other platforms retain the existing software pacing. Partial batches
-  remain guarded, idle apps still sleep, and patch 0012's critical/timerfd waits
+  scanout. Other platforms retain the existing software pacing. The IPC batch
+  guard and native input's existing batch-interruption behavior are unchanged;
+  idle apps still sleep, and patch 0012's critical/timerfd waits
   are unchanged. `software_frame_pacing` records the selected path. Rust tests
   cover 60/120 Hz update jitter, idle/resume and refresh changes, and preservation
   of the software burst limit. High-rate Mac producers can submit more frames
@@ -184,3 +185,13 @@ PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
   --manifest-path vendor/scarpe/native/Cargo.toml \
   --test compositor_cadence --test frame_deadlines
 ```
+
+- `0019-native-live-frame-wall-clock.patch`: append live Unix time to each
+  bounded frame sample. On macOS, Rust's `Instant` uses `CLOCK_UPTIME_RAW`, which
+  can drift from the OS-adjusted wall clock used by another process. Keep the
+  original monotonic timestamp for duration measurements and use the live anchor
+  when correlating Ruby updates with native frames. Mapping elapsed raw time from
+  a single startup wall reading made already-presented camera changes appear to
+  stall on a Mac runner. The rendering analyzer accepts older captures and has
+  regressions for clock drift, real pending movement and backwards clock steps;
+  no performance budget is relaxed.
