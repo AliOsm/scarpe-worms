@@ -722,4 +722,23 @@ class WeaponsCloseHazardsAndSuppliesTest < Minitest::Test
     assert_equal before_turn + 1, match.turn
     assert_equal "p1", match.team[:id]
   end
+
+  def test_bubble_wrap_halves_damage_keeps_the_turn_and_expires_next_turn
+    match = arena
+    actor = match.active
+    fire(match, "shield")
+    assert actor[:shield]
+    assert_equal "aiming", match.phase
+    match.send(:hurt, actor, 30, source: "p1")
+    assert_equal 85, actor[:hp]
+    assert_equal({low_gravity: false, double_damage: false}, match.snapshot[:effects])
+    pass_turn(match)
+    assert actor[:shield], "the shield covers the intervening enemy turn"
+    match.send(:hurt, actor, 30, source: "p1")
+    assert_equal 70, actor[:hp]
+    pass_turn(match)
+    refute actor[:shield]
+    match.send(:hurt, actor, 30, source: "p1")
+    assert_equal 40, actor[:hp]
+  end
 end
