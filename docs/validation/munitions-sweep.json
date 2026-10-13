@@ -195,6 +195,38 @@
         "log": "/tmp/munitions-lab/dynamite/log.json",
         "sheet": "/tmp/munitions-lab/dynamite-sheet.png"
       }
+    },
+    "mega_bomb": {
+      "defects_found": "Heavy explosive used generic art and impact feedback.",
+      "changes": "Oversized bomb, rotating fuse sparks, heavy burst/smoke, bounded shake and explicit adjustable fuse.",
+      "verification": [
+        "charge and exact fuse",
+        "heavy restitution",
+        "scaled explosion feedback",
+        "turn completion"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 15,
+        "start_turn": 1,
+        "final_turn": 2,
+        "event_counts": {
+          "fire": 1,
+          "bounce": 3,
+          "explosion": 1,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/mega_bomb/log.json",
+        "sheet": "/tmp/munitions-lab/mega_bomb-sheet.png"
+      }
     }
   }
 }
