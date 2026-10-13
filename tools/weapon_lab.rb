@@ -72,6 +72,13 @@ module LabCourse
     @deadline = tick + 90 * Burrow::TICK_RATE
     @shots_left, @shot_weapon, @damage_boost, @low_gravity = 0, nil, false, false
     @wind = setup.fetch(:wind, 0.0)
+    if setup[:barrel_blast]
+      # A fuse already burning on the course exercises the placed barrel's
+      # blast throw, rupture and fuel spill while the player retreats normally.
+      bomb = Burrow::Catalog.fetch("mega_bomb")
+      projectile(bomb, x: 324, y: GROUND - 8, vx: 0, vy: 0, damage: bomb[:damage],
+        life: 5 * Burrow::TICK_RATE, bounce: true, owner: teams[1][:id])
+    end
     # Alternate turns 1 and 2: a new turn for the client, never sudden death.
     @turn = @turn == 1 ? 2 : 1
     @bot_at = tick + 1_000_000
@@ -118,7 +125,7 @@ SCRIPTS = {
   "cow" => [[:press, " "], [:wait, 4.5]],
   "mine" => [[:place, [701, GROUND]], [:press, " "], [:hold, "a", 0.8], [:wait, 2.0]],
   "turret" => [[:place, [430, GROUND]], [:click, ENEMY], [:wait, 6.8]],
-  "barrel" => [[:click, [400, GROUND - 12]], [:hold, "a", 0.5], [:wait, 1.5]],
+  "barrel" => [[:setup, {barrel_blast: true}], [:click, [400, GROUND - 12]], [:hold, "a", 1.4], [:wait, 5.0]],
   "rope" => [[:aim, [380, 470]], [:click, [380, 470]], [:wait, 0.4], [:hold, "right", 1.0], [:hold, "up", 0.5],
     [:hold, "left", 0.8], [:press, " "], [:wait, 1.6]],
   "jetpack" => [[:press, " "], [:wait, 0.2], [:hold, "up", 1.0], [:hold, "right", 0.7], [:press, " "], [:wait, 2.2]],
@@ -198,6 +205,7 @@ Scarpe::Native.after_first_heartbeat do
       FileUtils.rm_rf(folder)
       FileUtils.mkdir_p(folder)
       frames, log = 0, []
+      player_team = match.call.team[:id]
       last_event = match.call.events.last&.fetch(:id) || 0
       capture = lambda do
         m = match.call
@@ -209,7 +217,7 @@ Scarpe::Native.after_first_heartbeat do
           wind: m.wind, shots_left: m.instance_variable_get(:@shots_left), tool: m.instance_variable_get(:@tool)&.dup,
           effects: {double_damage: m.instance_variable_get(:@damage_boost), low_gravity: m.instance_variable_get(:@low_gravity)},
           active: a && a.slice(:id, :team, :x, :y, :vx, :vy, :hp, :rope, :jetpack, :fuel, :parachute, :launched, :poisoned, :shield, :frozen),
-          enemies: m.worms.reject { |w| w[:team] == a&.fetch(:team) }.map { |w| w.slice(:id, :x, :y, :hp) },
+          enemies: m.worms.reject { |w| w[:team] == player_team }.map { |w| w.slice(:id, :x, :y, :hp) },
           projectiles: m.projectiles.map { |p| p.slice(:weapon, :kind, :stage, :x, :y, :vx, :vy, :life) },
           hazards: m.hazards.map { |h| h.slice(:kind, :x, :y, :armed, :trigger, :shots, :hp, :vx, :vy) }, notice: client.instance_variable_get(:@last_notice)}
         auto.snapshot(File.join(folder, format("frame-%02d.png", frames)))

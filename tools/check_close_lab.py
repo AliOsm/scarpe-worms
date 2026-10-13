@@ -55,6 +55,10 @@ def validate(weapon, rows):
         beams = [event for event in events if event["kind"] == "beam" and event["style"] == "turret"]
         assert len(beams) == 5 and beams[-1]["shots"] == 0, "sentry did not spend exactly five shots"
         assert min(enemy["hp"] for enemy in targets) == 20, "sentry damage differs from five hits"
+    if weapon == "barrel":
+        assert any(event["kind"] == "barrel_rupture" for event in events), "barrel did not rupture in the incoming blast"
+        assert any(event["kind"] == "explosion" and event["style"] == "barrel" for event in events), "barrel did not explode"
+        assert any(h["kind"] == "flame" for row in rows for h in row["hazards"]), "barrel spilled no fire"
     if weapon in {"drill", "blowtorch"}:
         assert any(row["tool"] for row in rows), "tool did not start"
         assert rows[-1]["tool"] is None, "tool did not stop"
