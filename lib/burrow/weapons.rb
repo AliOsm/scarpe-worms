@@ -431,9 +431,17 @@ module Burrow
           break unless piercing
         end
         prop = hazards.find do |h|
-          %w[mine barrel turret crate].include?(h[:kind]) && !prop_ids.include?(h[:id]) &&
-            (h[:x] - x).abs < (h[:kind] == "mine" ? 9 : 13) &&
-            (h[:y] - (h[:kind] == "mine" ? 4 : 12) - y).abs < (h[:kind] == "mine" ? 5 : 14)
+          next false if prop_ids.include?(h[:id])
+          across, above = (h[:x] - x).abs, h[:y] - y
+          case h[:kind]
+          # Bounds follow the status sprites' foot anchors, including their ink
+          # and the sentry's raised head, so visible upper bodies stop bullets.
+          when "barrel" then across < 17 && above.between?(-1, 45)
+          when "turret" then across < 21 && above.between?(-2, 40)
+          when "mine" then across < 9 && (above - 4).abs < 5
+          when "crate" then across < 13 && (above - 12).abs < 14
+          else false
+          end
         end
         if prop
           prop_hits[prop[:id]] += damage
