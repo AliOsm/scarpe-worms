@@ -884,6 +884,40 @@
         "homing": "homing-coast-{frame} before ignition / after burnout",
         "holy_bomb": "holy_bomb-choir-{frame} during the final chord"
       },
+      "variants": {
+        "homing-coast": {
+          "pattern": "ordnance/munitions/homing-coast-{frame}.png",
+          "frames": 4,
+          "size": [
+            48,
+            28
+          ],
+          "source_size": [
+            96,
+            56
+          ],
+          "anchor": [
+            24.0,
+            14.0
+          ]
+        },
+        "holy_bomb-choir": {
+          "pattern": "ordnance/munitions/holy_bomb-choir-{frame}.png",
+          "frames": 4,
+          "size": [
+            48,
+            48
+          ],
+          "source_size": [
+            96,
+            96
+          ],
+          "anchor": [
+            24.0,
+            24.0
+          ]
+        }
+      },
       "bomber": {
         "pattern": "ordnance/munitions/bomber-{direction}-{frame}.png",
         "frames": 4,

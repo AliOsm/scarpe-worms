@@ -78,6 +78,25 @@ def main():
     for prop in manifest["props"].values():
         check_image(ART / prop["path"], tuple(prop["size"]))
 
+    # Munitions include stage variants and moving aircraft outside the legacy
+    # combat manifest. Validate every emitted frame, including canvas margins.
+    munitions = manifest["ordnance"]["munitions"]
+    ordnance_paths = set()
+    specs = [*munitions["projectiles"].values(), *munitions["variants"].values(),
+             *munitions["effects"].values(), munitions["choir_glow"]]
+    for spec in specs + [munitions["bomber"]]:
+        size = spec["size"]
+        require(spec["source_size"] == [v * munitions["raster_scale"] for v in size],
+                f"Munition raster scale mismatch: {spec['pattern']}")
+        require(spec["anchor"] == [v / 2 for v in size], f"Munition anchor mismatch: {spec['pattern']}")
+        for direction in (("left", "right") if spec is munitions["bomber"] else ("right",)):
+            for frame in range(spec["frames"]):
+                path = ART / spec["pattern"].format(frame=frame, direction=direction)
+                check_image(path, tuple(spec["source_size"]), interior=True)
+                ordnance_paths.add(path)
+    require(ordnance_paths == set((ART / "ordnance/munitions").glob("*.png")),
+            "Munition manifest must cover every generated frame")
+
     sprite_count = 0
     for team in range(manifest["grubs"]["teams"]):
         for state, spec in manifest["grubs"]["states"].items():
@@ -143,6 +162,7 @@ def main():
         "art_version": manifest["version"],
         "weapons": len(runtime["weapons"]), "animation_frames": sprite_count,
         "directional_combat_sprites": len(manifest["combat"]["held"]) * 2 + len(manifest["combat"]["projectiles"]),
+        "munition_frames_verified": len(ordnance_paths),
         "portraits": 12, "biomes": 4, "painting_sources_verified": 5,
         "material_sources_verified": len(materials["assets"]),
         "licensed_audio_masters_verified": len(audio_manifest["cues"]),

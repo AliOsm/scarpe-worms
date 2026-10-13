@@ -377,6 +377,10 @@ def metadata():
                         for name, size in PROJECTILES.items()},
         "stages": {"homing": "homing-coast-{frame} before ignition / after burnout",
                    "holy_bomb": "holy_bomb-choir-{frame} during the final chord"},
+        "variants": {name: {"pattern": f"ordnance/munitions/{name}-{{frame}}.png", "frames": 4,
+                            "size": list(size), "source_size": [v * 2 for v in size], "anchor": [v / 2 for v in size]}
+                     for name, size in (("homing-coast", PROJECTILES["homing"]),
+                                        ("holy_bomb-choir", PROJECTILES["holy_bomb"]))},
         "bomber": {"pattern": "ordnance/munitions/bomber-{direction}-{frame}.png", "frames": 4, "fps": 12,
                    "size": [144, 72], "source_size": [288, 144], "anchor": [72, 36]},
         "effects": {name: {"pattern": f"ordnance/munitions/{name}-burst-{{frame}}.png", "frames": 8, "fps": 16,
