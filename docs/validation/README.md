@@ -7,6 +7,8 @@ their scope; generic filenames are outputs of individual tools.
 | --- | --- |
 | 0.5.0 Mac update cadence | [Mac and Linux comparisons, timer checks and limits](mac-cadence-0.5.0.json) |
 | 0.5.0 renderer per-frame investigation | [Linux before/after, Mac CI baseline, tests and limits](renderer-per-frame-0.5.0.json) |
+| 0.5.1 performance sweep on an Apple silicon runner | [0.5.0 vs 0.5.1 packaged rendering](macos-runner-0.5.1.json) |
+| 0.5.1 Mac archive (cross-built) | [Integrity](distributable-0.5.1.json), [static checks](macos-arm64-package-0.5.1.json), relocated packaged Ruby code on Linux ([unset locale](package-0.5.1-relocated-linux.json), [C locale](package-0.5.1-relocated-linux-locale-c.json)) |
 | 0.5.0 battlefield and blast physics (unreleased) | [battlefield-0.5.0-linux.json](battlefield-0.5.0-linux.json) |
 | Input latency, adaptive playback and immediate audio (unreleased) | [latency-audio-linux.json](latency-audio-linux.json) |
 | 0.5.0 Ruby frame work (isolated branch) | [CPU, properties, allocations, GC and scheduler diagnosis](ruby-frame-0.5.0-linux.json) |

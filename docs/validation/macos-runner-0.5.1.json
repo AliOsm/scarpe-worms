@@ -1,0 +1,64 @@
+{
+  "scope": "0.5.1 performance sweep (unreleased): packaged app on a GitHub Apple silicon runner",
+  "recorded": "2026-10-13",
+  "platform": "GitHub Actions macos-15 arm64 runner (virtual display 1280x656 at 1x, 60 Hz); not the owner's M3 Pro ProMotion/Retina display",
+  "command": "python3 tools/check_rendering.py --app 'dist/Burrow Brigade.app' --audio",
+  "runs": {
+    "0.5.0_main": "https://github.com/AliOsm/scarpe-worms/actions/runs/38299955006",
+    "0.5.1": "https://github.com/AliOsm/scarpe-worms/actions/runs/38328364175"
+  },
+  "before_0_5_0": {
+    "combat": {
+      "mean_ms": 22.27,
+      "p95_ms": 32.95,
+      "max_ms": 58.4,
+      "paints": 713,
+      "updates": 1075
+    },
+    "pan": {
+      "mean_ms": 24.62,
+      "p95_ms": 36.21,
+      "max_ms": 88.8,
+      "paints": 248,
+      "updates": 358
+    },
+    "zoom": {
+      "mean_ms": 25.59,
+      "p95_ms": 38.37,
+      "max_ms": 112.8,
+      "paints": 293,
+      "updates": 442
+    },
+    "playback_backlog_mean_ms": 50.8
+  },
+  "after_0_5_1": {
+    "combat": {
+      "mean_ms": 16.31,
+      "p95_ms": 20.61,
+      "max_ms": 60.5,
+      "paints": 969,
+      "updates": 1082
+    },
+    "pan": {
+      "mean_ms": 16.99,
+      "p95_ms": 19.72,
+      "max_ms": 123.3,
+      "paints": 356,
+      "updates": 357
+    },
+    "zoom": {
+      "mean_ms": 24.13,
+      "p95_ms": 51.92,
+      "max_ms": 119.3,
+      "paints": 301,
+      "updates": 438
+    },
+    "playback_backlog_mean_ms": 7.0
+  },
+  "budget_result": "combat and pan means and p95s are within budget; the job's maximum-interval gate failed on one 60.5 ms combat stall; zoom (24.1 ms mean) remains above budget",
+  "not_measured": [
+    "owner's M3 Pro with ProMotion/Retina",
+    "physical display output",
+    "audible output"
+  ]
+}
