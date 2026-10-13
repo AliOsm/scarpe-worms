@@ -553,7 +553,123 @@
   "ordnance": {
     "critters": {},
     "munitions": {},
-    "mobility": {},
+    "mobility": {
+      "jetpack": {
+        "pattern": "ordnance/mobility/jetpack-{facing}-{frame}.png",
+        "size": [
+          64,
+          80
+        ],
+        "source_size": [
+          128,
+          160
+        ],
+        "raster_scale": 2,
+        "anchor": [
+          32,
+          54.4
+        ],
+        "frames": 4,
+        "fps": 15,
+        "facing": [
+          "left",
+          "right"
+        ],
+        "idle": "ordnance/mobility/jetpack-{facing}-idle.png"
+      },
+      "parachute": {
+        "pattern": "ordnance/mobility/parachute-{frame}.png",
+        "size": [
+          112,
+          112
+        ],
+        "source_size": [
+          224,
+          224
+        ],
+        "raster_scale": 2,
+        "anchor": [
+          56,
+          105
+        ],
+        "frames": 7,
+        "fps": 0,
+        "animation": "sway selected from horizontal velocity and tick; handles stay fixed"
+      },
+      "grapple_hook": {
+        "pattern": "ordnance/mobility/grapple-hook.png",
+        "size": [
+          24,
+          24
+        ],
+        "source_size": [
+          48,
+          48
+        ],
+        "raster_scale": 2,
+        "anchor": [
+          12,
+          12
+        ],
+        "frames": 1,
+        "fps": 0,
+        "facing": "right"
+      },
+      "teleport_ghost": {
+        "pattern": "ordnance/mobility/teleport-ghost.png",
+        "size": [
+          64,
+          64
+        ],
+        "source_size": [
+          128,
+          128
+        ],
+        "raster_scale": 2,
+        "anchor": [
+          32,
+          54.4
+        ],
+        "frames": 1,
+        "fps": 0
+      },
+      "teleport_out": {
+        "pattern": "ordnance/mobility/teleport-out-{frame}.png",
+        "size": [
+          96,
+          112
+        ],
+        "source_size": [
+          192,
+          224
+        ],
+        "raster_scale": 2,
+        "anchor": [
+          48,
+          87
+        ],
+        "frames": 8,
+        "fps": 16
+      },
+      "teleport_in": {
+        "pattern": "ordnance/mobility/teleport-in-{frame}.png",
+        "size": [
+          96,
+          112
+        ],
+        "source_size": [
+          192,
+          224
+        ],
+        "raster_scale": 2,
+        "anchor": [
+          48,
+          87
+        ],
+        "frames": 8,
+        "fps": 16
+      }
+    },
     "status": {}
   },
   "extras": {
