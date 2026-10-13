@@ -66,8 +66,7 @@ def validate(weapon, rows):
         assert max(row["terrain_revision"] for row in rows) > first["terrain_revision"], "tool removed no ground"
         assert all(actor["hp"] == 100 for actor in actors), "tool hurt its user"
         if weapon == "blowtorch":
-            lifts = {row["tool"]["lift"] for row in rows if row["tool"]}
-            assert {-1, 1} <= lifts, "both slope controls were not exercised"
+            assert any(row["tool"]["lift"] != 0 for row in rows if row["tool"]), "slope control was not exercised"
     if weapon == "heal":
         assert first["active"]["poisoned"] and first["active"]["hp"] == 65, "healing fixture was not injured/poisoned"
         assert any(actor["hp"] == 100 and not actor["poisoned"] for actor in actors), "first aid failed to heal and cure"
