@@ -39,7 +39,10 @@ close and munitions checkers pass every weapon (Choir bomb after a rerun that ca
 0.6 s warning between captures), and rope, jetpack and parachute traces show hooking,
 swinging, powered flight and safe descent. Action cadence passes at 16.53 ms mean /
 21.57 ms p95; scale-2 rendering with audio passes at combat/pan means of 16.55/16.70 ms,
-zoom 20.6 ms. See the [integrated report](validation/weapons-0.5.2-linux.json). The family reports below keep each branch's own
+zoom 20.6 ms. See the [integrated report](validation/weapons-0.5.2-linux.json). On a GitHub Apple silicon runner the packaged app launches and passes its
+window and timer checks; combat/pan average 15.95–17.13/16.67–16.84 ms. Its stall
+gates failed, as did unchanged 0.5.1 in the same hour, on isolated waits with
+little CPU work ([Mac runner report](validation/macos-runner-0.5.2.json)). The family reports below keep each branch's own
 measurements, including failed and retried captures. Feel, balance and audible
 output on the owner's Mac remain the acceptance check.
 

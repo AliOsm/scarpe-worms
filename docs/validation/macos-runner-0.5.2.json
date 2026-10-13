@@ -1,0 +1,173 @@
+{
+  "title": "0.5.2 packaged app on a GitHub Apple silicon runner",
+  "date": "2026-10-13",
+  "version": "0.5.2",
+  "workflow": "macos-preview.yml",
+  "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38379357194",
+  "passed_steps": [
+    "Extract and verify the delivered app",
+    "Packaged native renderer and real window",
+    "Packaged macOS deadline timer"
+  ],
+  "failed_step": "Sustained packaged combat, camera and audio (stall gates)",
+  "attempts": {
+    "1": {
+      "scenarios": {
+        "combat": {
+          "presented": {
+            "count": 590,
+            "mean_ms": 15.95,
+            "p95_ms": 21.88,
+            "p99_ms": 25.07,
+            "max_ms": 34.62,
+            "over_33ms": 1,
+            "over_50ms": 0
+          },
+          "app_update_max_ms": 94.59
+        },
+        "pan": {
+          "presented": {
+            "count": 360,
+            "mean_ms": 16.67,
+            "p95_ms": 21.87,
+            "p99_ms": 26.19,
+            "max_ms": 27.51,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update_max_ms": 22.04
+        },
+        "zoom": {
+          "presented": {
+            "count": 265,
+            "mean_ms": 27.62,
+            "p95_ms": 79.73,
+            "p99_ms": 147.85,
+            "max_ms": 167.51,
+            "over_33ms": 46,
+            "over_50ms": 28
+          },
+          "app_update_max_ms": 20.08
+        },
+        "zoom_sweep": {
+          "presented": {
+            "count": 267,
+            "mean_ms": 16.8,
+            "p95_ms": 24.77,
+            "p99_ms": 30.08,
+            "max_ms": 30.96,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update_max_ms": 28.94
+        }
+      },
+      "wait_overshoot_ms": {
+        "count": 3994,
+        "mean_ms": 0.57,
+        "p95_ms": 2.84,
+        "p99_ms": 3.87,
+        "max_ms": 78.34,
+        "over_33ms": 1,
+        "over_50ms": 1
+      },
+      "failure": "Combat GUI updates stalled: one 94.6 ms app update interval; the frame cost 0.6 ms and the GUI's 14.4 ms timer wait returned after 92.8 ms (78 ms OS oversleep) with nothing moving"
+    },
+    "2": {
+      "scenarios": {
+        "combat": {
+          "presented": {
+            "count": 800,
+            "mean_ms": 17.13,
+            "p95_ms": 22.48,
+            "p99_ms": 38.67,
+            "max_ms": 210.2,
+            "over_33ms": 11,
+            "over_50ms": 6
+          },
+          "app_update_max_ms": 177.05
+        },
+        "pan": {
+          "presented": {
+            "count": 356,
+            "mean_ms": 16.84,
+            "p95_ms": 22.83,
+            "p99_ms": 34.49,
+            "max_ms": 44.23,
+            "over_33ms": 4,
+            "over_50ms": 0
+          },
+          "app_update_max_ms": 30.55
+        },
+        "zoom": {
+          "presented": {
+            "count": 376,
+            "mean_ms": 19.39,
+            "p95_ms": 37.77,
+            "p99_ms": 52.18,
+            "max_ms": 62.61,
+            "over_33ms": 27,
+            "over_50ms": 5
+          },
+          "app_update_max_ms": 38.11
+        },
+        "zoom_sweep": {
+          "presented": {
+            "count": 259,
+            "mean_ms": 17.31,
+            "p95_ms": 26.95,
+            "p99_ms": 60.92,
+            "max_ms": 82.33,
+            "over_33ms": 8,
+            "over_50ms": 5
+          },
+          "app_update_max_ms": 37.35
+        }
+      },
+      "wait_overshoot_ms": {
+        "count": 4217,
+        "mean_ms": 0.49,
+        "p95_ms": 1.97,
+        "p99_ms": 5.91,
+        "max_ms": 53.06,
+        "over_33ms": 3,
+        "over_50ms": 1
+      },
+      "failure": "Combat stalls up to 210 ms presented; Ruby updates cost 0.4-9 ms while native frames show wall time far above CPU time (layout 179.5 ms wall / 7.5 ms CPU, apply 54.3 ms wall / 0.2 ms CPU): the processes were waiting, not computing"
+    }
+  },
+  "history": "The same stall gates failed on the 0.5.1 performance branches that became 0.5.1 (perf/integration, perf/mac-cadence, perf/zoom: 'combat: a frame stalled', 'Combat GUI updates stalled', 'pan: a frame stalled'); only one of the previous twelve runs passed. The package smoke's 'Terrain lost on resize' failure also occurred before (run 38330816143) and on main during this check; 0.5.2 fixes its cause (starting props sliding onto grubs).",
+  "comparison_0_5_1": "macos-runner-0.5.1.json after_0_5_1: combat 16.31 / p95 20.61 ms, pan 16.99 / 19.72 ms, zoom 24.13 / 51.92 ms.",
+  "interpretation": "Unchanged 0.5.1 failed the same stall gate on the same runner class within the hour, with comparable means. 0.5.2's means match it (combat 15.95-17.13 vs 16.52 ms, pan 16.67-16.84 vs 16.66 ms, zoom 19.39-27.62 vs 21.72 ms); the isolated stalls are shared-VM waits, not a weapons-sweep regression. The owner's M3 Pro remains the acceptance check.",
+  "same_hour_baseline_0_5_1": {
+    "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38381424287 (main, attempt 2)",
+    "failure": "combat: a frame stalled",
+    "presented": {
+      "combat": {
+        "mean_ms": 16.52,
+        "p95_ms": 21.95,
+        "max_ms": 149.17,
+        "over_50ms": 2
+      },
+      "pan": {
+        "mean_ms": 16.66,
+        "p95_ms": 21.65,
+        "max_ms": 27.8,
+        "over_50ms": 0
+      },
+      "zoom": {
+        "mean_ms": 21.72,
+        "p95_ms": 48.78,
+        "max_ms": 90.25,
+        "over_50ms": 15
+      },
+      "zoom_sweep": {
+        "mean_ms": 16.76,
+        "p95_ms": 23.83,
+        "max_ms": 48.68,
+        "over_50ms": 0
+      }
+    },
+    "attempt_1": "failed earlier in package smoke with 'Terrain lost on resize', the starting-prop bug fixed in 0.5.2"
+  }
+}
