@@ -1,0 +1,352 @@
+{
+  "date": "2026-10-13",
+  "version": "0.5.1",
+  "branch": "weapons/mobility",
+  "source_commit": "81e2ae9",
+  "platform": "x86_64-linux",
+  "protocol": 4,
+  "ruby_suites": {
+    "4.0.7": {
+      "runs": 156,
+      "assertions": 6115,
+      "failures": 0,
+      "errors": 0,
+      "log": "/tmp/mobility-ruby-4.log"
+    },
+    "3.4.7": {
+      "runs": 156,
+      "assertions": 6115,
+      "failures": 0,
+      "errors": 0,
+      "log": "/tmp/mobility-ruby-3.log"
+    }
+  },
+  "native_suite": {
+    "cases": 7,
+    "assertions": 237,
+    "failures": 0,
+    "full_report": ".cache/native-checks/native.json",
+    "controls_rerun": {
+      "result": "passed",
+      "assertions": 59,
+      "after_change": "Jump release uses the snapshot acknowledgement gate."
+    }
+  },
+  "assets": {
+    "result": "passed",
+    "new_original_rasters": 35,
+    "runtime_pngs": 561,
+    "byte_identical_pngs_and_manifest": 571
+  },
+  "action": {
+    "count": 529,
+    "mean_ms": 17.03899524162307,
+    "p95_ms": 21.26336097717285,
+    "max_ms": 59.65280532836914,
+    "result": "passed",
+    "raw_report": "/tmp/mobility-action.json"
+  },
+  "rendering_attempts": [
+    {
+      "path": "/tmp/mobility-rendering.json",
+      "result": "failed",
+      "reason": "Pan max 77.04 ms exceeded 60 ms; one 71.50 ms Ruby update used 1.25 ms CPU. Sustained combat/pan budgets passed; attribution of the wait remains unestablished.",
+      "scenarios": {
+        "combat": {
+          "presented_intervals": {
+            "count": 893,
+            "mean_ms": 16.689352159342377,
+            "p95_ms": 21.102486000000198,
+            "max_ms": 56.51302000000058
+          },
+          "app_update_max_ms": 45.549624133855104,
+          "paint_max_ms": 39.432432000000006
+        },
+        "pan": {
+          "presented_intervals": {
+            "count": 353,
+            "mean_ms": 17.011747999999994,
+            "p95_ms": 20.352488000000335,
+            "max_ms": 77.04373399999653
+          },
+          "app_update_max_ms": 71.67138485237956,
+          "paint_max_ms": 20.521655
+        },
+        "zoom": {
+          "presented_intervals": {
+            "count": 371,
+            "mean_ms": 19.633263183288413,
+            "p95_ms": 36.09907999999962,
+            "max_ms": 66.85221200000058
+          },
+          "app_update_max_ms": 35.69617681205273,
+          "paint_max_ms": 12.654735
+        }
+      },
+      "profiled": false
+    },
+    {
+      "path": "/tmp/mobility-rendering-recheck.json",
+      "result": "failed",
+      "reason": "Pan max 68.41 ms exceeded 60 ms. Sustained combat/pan budgets passed. The native gap included 15.81 ms layout and 21.67 ms paint; Ruby updates continued during the gap. No attribution established.",
+      "profiled": false,
+      "scenarios": {
+        "combat": {
+          "presented_intervals": {
+            "count": 904,
+            "mean_ms": 16.498913818456977,
+            "p95_ms": 20.505841000000302,
+            "max_ms": 46.10018399999927
+          },
+          "app_update_max_ms": 31.8876258097589,
+          "paint_max_ms": 13.616672
+        },
+        "pan": {
+          "presented_intervals": {
+            "count": 350,
+            "mean_ms": 17.13990304571428,
+            "p95_ms": 19.987827000001346,
+            "max_ms": 68.4091680000023
+          },
+          "app_update_max_ms": 23.79053086042404,
+          "paint_max_ms": 21.673108
+        },
+        "zoom": {
+          "presented_intervals": {
+            "count": 364,
+            "mean_ms": 20.16037263461538,
+            "p95_ms": 43.10036399999717,
+            "max_ms": 82.59305300000364
+          },
+          "app_update_max_ms": 41.973980609327555,
+          "paint_max_ms": 26.275008999999997
+        }
+      }
+    },
+    {
+      "path": "/tmp/mobility-rendering-profile.json",
+      "result": "failed",
+      "profiled": true,
+      "reason": "Combat maximum 132.42 ms and pan maximum 69.80 ms exceeded 60 ms. Sustained budgets passed. The largest native combat gap had continuing Ruby updates and normal adjacent native phase costs; its cause is not established.",
+      "scenarios": {
+        "combat": {
+          "presented_intervals": {
+            "count": 893,
+            "mean_ms": 16.765268388244916,
+            "p95_ms": 20.661663000000274,
+            "max_ms": 132.42378200000005
+          },
+          "app_update_max_ms": 37.837011739611626,
+          "paint_max_ms": 15.238501999999999
+        },
+        "pan": {
+          "presented_intervals": {
+            "count": 355,
+            "mean_ms": 16.936011887323946,
+            "p95_ms": 20.53889999999825,
+            "max_ms": 69.79687200000129
+          },
+          "app_update_max_ms": 68.77471413463354,
+          "paint_max_ms": 12.643248
+        },
+        "zoom": {
+          "presented_intervals": {
+            "count": 362,
+            "mean_ms": 20.177850060773487,
+            "p95_ms": 39.53629200000108,
+            "max_ms": 81.66188599999913
+          },
+          "app_update_max_ms": 30.685595702379942,
+          "paint_max_ms": 17.444986
+        }
+      }
+    },
+    {
+      "path": "/tmp/mobility-rendering-final.json",
+      "result": "passed",
+      "profiled": false,
+      "nice": 0,
+      "scenarios": {
+        "combat": {
+          "presented_intervals": {
+            "count": 864,
+            "mean_ms": 16.63747315195381,
+            "p95_ms": 20.261929000000123,
+            "max_ms": 46.09470999999843
+          },
+          "app_update_max_ms": 34.30983517318964,
+          "paint_max_ms": 17.484555
+        },
+        "pan": {
+          "presented_intervals": {
+            "count": 360,
+            "mean_ms": 16.66446690833333,
+            "p95_ms": 19.70579600000022,
+            "max_ms": 25.204261999999034
+          },
+          "app_update_max_ms": 20.87800996378064,
+          "paint_max_ms": 8.933254
+        },
+        "zoom": {
+          "presented_intervals": {
+            "count": 361,
+            "mean_ms": 20.206853523545707,
+            "p95_ms": 36.423253000002376,
+            "max_ms": 68.04626899999988
+          },
+          "app_update_max_ms": 36.2294539809227,
+          "paint_max_ms": 13.742867
+        }
+      }
+    }
+  ],
+  "lab": {
+    "before": "/tmp/mobility-before-lab",
+    "after": "/tmp/mobility-after-lab",
+    "weapons": [
+      "rope",
+      "jetpack",
+      "parachute",
+      "teleport",
+      "girder"
+    ],
+    "final_result": "passed",
+    "captures": 53,
+    "notices": 0,
+    "evidence": {
+      "rope": "Ceiling hook, upward reel, swing, Enter release at vx about 196, airborne re-hook on perch, second swing/release, grounded at HP 100.",
+      "jetpack": "Idle fuel stays 150 ticks. W reaches vy -220 and climbs about 299 px. Sideways flight reaches vx 210. Space arms canopy; HP 100.",
+      "parachute": "Opens during descent at vy 65; steering moves from x 560 to x 926; closes on landing, HP 100.",
+      "teleport": "Occupied destination red, valid landing ghost; lands at x 1100.25, y 900, shows both effects, settles and passes turn.",
+      "girder": "Obstructed preview red, clear tilted preview green; visible sloping ground is built, settles and passes turn."
+    },
+    "evidence_limit": "Lab captures retain mutable nested rope references; use screenshots, scalar positions/velocities and hook/release events for the sequence. Hook-flight/reeling timing is checked in behavioral tests."
+  },
+  "limits": [
+    "Linux native/Xvfb execution only; no physical Mac or acoustic-output claim.",
+    "Grapple uses one anchor without corner wrapping.",
+    "Girders retain a fixed 140-pixel length.",
+    "Earlier rendering attempts exceeded maximum-frame budgets. The final pass does not establish their cause or guarantee every frame reaches 60 FPS."
+  ],
+  "defects_and_changes": {
+    "rope": {
+      "baseline": "Immediate overhead terrain-click attachment; no travelling hook or free re-hook chain; jump injected velocity.",
+      "changed": "1150 px/s swept hook, 460 px reach, 1600 px/s free retraction; tangent pendulum pumping and 105 px/s reeling; momentum-preserving Space/Enter/B release; one cartridge per airborne chain until landing; ink rope and hook; throw/hook/release cues."
+    },
+    "jetpack": {
+      "baseline": "W jumped; arrow-only thrust capped at 130 px/s; no equipment visual.",
+      "changed": "WASD and arrows; net upward acceleration with 220 px/s up and 210 px/s horizontal caps, air drag, 150 thrust ticks; fuel HUD, pack and exhaust; Space/fuel exhaustion arms canopy; immediate launch cue."
+    },
+    "parachute": {
+      "baseline": "Invisible canopy, no wind drift; blast tumbling could bypass descent cap.",
+      "changed": "Space arms an auto-open descent canopy this turn; 65 px/s fall cap, wind and A/D steering, fall-damage immunity only while open; swaying original canopy; equip cue."
+    },
+    "teleport": {
+      "baseline": "No actual landing ghost or invalid/occupied target preview; delayed local report.",
+      "changed": "Shared host/preview safe-landing checks and reasons, green ghost/red invalid marker, paired in/out effects and immediate receipt-deduplicated cue; ends turn."
+    },
+    "girder": {
+      "baseline": "Preview never showed rejection and sparse host sampling missed thin obstructions.",
+      "changed": "Shared cell-sized placement geometry; clear/blocked preview and reasons; tilted 140 px beam remains terrain; preserved arrow tilt and A/D walking; build/equip cue retained."
+    }
+  },
+  "audio": {
+    "result": "passed",
+    "check": "bundle exec ruby tools/check_audio.rb",
+    "decoded_and_mixed_cues": 22,
+    "checks": [
+      "camera-relative positioning",
+      "mute",
+      "resume",
+      "shutdown"
+    ],
+    "output": "Linux OpenAL null driver; no acoustic-output measurement"
+  },
+  "commands": {
+    "ruby_4": "bundle exec rake test",
+    "ruby_3": "PATH=\"$HOME/.local/share/mise/installs/ruby/3.4.7/bin:$PATH\" bundle exec rake test",
+    "native": "flock /tmp/burrow-bench.lock ./bin/check-native",
+    "controls_rerun": "flock /tmp/burrow-bench.lock ./bin/check-native checks/controls.sspec",
+    "action": "flock /tmp/burrow-bench.lock xvfb-run -a python3 tools/check_action.py",
+    "rendering": "flock /tmp/burrow-bench.lock xvfb-run -a -s \"-screen 0 3840x2400x24\" python3 tools/check_rendering.py --scale 2 --size 1920x1200 --audio --output /tmp/mobility-rendering-final.json",
+    "assets": "uv run tools/check_assets.py",
+    "ordnance_rebuild": "cd tools && uv run build_art.py ordnance",
+    "lab": "flock /tmp/burrow-bench.lock env SCARPE_DISPLAY_SERVICE=native SCARPE_NATIVE_HEADLESS=1 BURROW_LAB_WEAPONS=\"rope jetpack parachute teleport girder\" BURROW_LAB_OUT=/tmp/mobility-after-lab ./bin/scarpe tools/weapon_lab.rb",
+    "lab_sheets": "uv run tools/weapon_lab_sheet.py /tmp/mobility-after-lab rope jetpack parachute teleport girder"
+  },
+  "shared_changes": [
+    "New lib/burrow/placement.rb shares validation geometry between the host and placement previews; loaded from lib/burrow.rb.",
+    "Terrain worker writes one bounded collision.bin; TerrainArt loads immutable preview terrain on its I/O thread. Scene does not decode collision on the GUI thread.",
+    "match.rb adds checkpoint defaults and turn/death cleanup for rope chain, thrust and canopy fields; jump releases keep momentum.",
+    "Localized mobility branches in weapons.rb, physics.rb, match_ui.rb, scene.rb, audio.rb and Catalog; acknowledgement/focus cleanup retained.",
+    "Existing match/weapon-physics tests only adjust intentional rope attachment timing and 150-tick fuel expectations.",
+    "Mobility lab script entries and checks/controls.sspec gain native movement/tool coverage.",
+    "35 original mobility rasters and manifest metadata; regenerate the manifest after combining family branches."
+  ],
+  "rendering_diagnosis": {
+    "baseline_source_commit": "966d2c0",
+    "baseline_path": "/tmp/mobility-rendering-baseline-profile.json",
+    "baseline_result": "failed",
+    "baseline_reason": "Pan maximum 97.44 ms exceeded 60 ms. A correlated 83.79 ms App update consumed 4.82 ms CPU and recorded 79.39 ms run-queue wait, establishing scheduling contention for this baseline capture.",
+    "baseline_scenarios": {
+      "combat": {
+        "presented_intervals": {
+          "count": 823,
+          "mean_ms": 16.396691926247016,
+          "p95_ms": 21.193322000000236,
+          "max_ms": 33.468597999999794
+        },
+        "app_update_max_ms": 42.0630918815732,
+        "paint_max_ms": 13.994529
+      },
+      "pan": {
+        "presented_intervals": {
+          "count": 354,
+          "mean_ms": 16.938716098870053,
+          "p95_ms": 19.694245000000166,
+          "max_ms": 97.44324000000049
+        },
+        "app_update_max_ms": 84.51673714444041,
+        "paint_max_ms": 8.682743
+      },
+      "zoom": {
+        "presented_intervals": {
+          "count": 400,
+          "mean_ms": 18.235092842500002,
+          "p95_ms": 33.27573600000022,
+          "max_ms": 67.80395200000555
+        },
+        "app_update_max_ms": 29.64147413149476,
+        "paint_max_ms": 13.055288
+      }
+    },
+    "profile_settings": {
+      "BURROW_BENCH_PROFILE": "1",
+      "BURROW_BENCH_SCHED": "1",
+      "nice": 10
+    },
+    "baseline_cpu": {
+      "combat": {
+        "app_update_mean_cpu_ms": 1.8410290987084972,
+        "scene_mean_cpu_ms": 1.7047242361623571
+      },
+      "pan": {
+        "app_update_mean_cpu_ms": 1.094400716292139,
+        "scene_mean_cpu_ms": 0.971421536516794
+      }
+    },
+    "mobility_cpu": {
+      "combat": {
+        "app_update_mean_cpu_ms": 1.741181496296298,
+        "scene_mean_cpu_ms": 1.6146603675925895
+      },
+      "pan": {
+        "app_update_mean_cpu_ms": 1.1698951089385508,
+        "scene_mean_cpu_ms": 1.0409582821229058
+      }
+    },
+    "inspection": "No mobility tool is active during this benchmark. Placement/effects remain inactive; equipment rules return nil; rope/ghost/caption nodes stay hidden. Terrain revision 5 is stable for more than nine seconds before pan. Collision handoff and queues remain bounded.",
+    "conclusion": "Sustained budgets pass in both builds. Final unprofiled normal-priority mobility capture passed all unchanged gates. Earlier failures remain recorded; no mobility-specific cause identified, and baseline scheduling contention does not establish the cause of every changed-build outlier."
+  },
+  "rendering_final_result": "passed"
+}

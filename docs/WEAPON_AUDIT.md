@@ -177,9 +177,13 @@ canopy states survive checkpoints deterministically.
   placement rejection, tilted ground, blast recovery, and old/new checkpoints.
   `test/client_mobility_test.rb` covers WASD, focus loss, release, acknowledgement
   gating, and shared teleport/girder previews. `test/weapons_mobility_audio_test.rb`
-  covers predicted cues, authoritative receipts, and hook/release stages. Full
-  Linux suite, native input, asset, and weapon-lab validation is pending; these
-  additions do not establish Mac runtime or audible-output validation.
+  covers predicted cues, authoritative receipts, and hook/release stages. Both
+  Ruby suites passed (156 tests / 6,115 assertions each), as did seven native
+  journeys (237 assertions), a final controls rerun, asset/audio checks, and
+  byte-identical art rebuilds. All five final weapon labs completed with 53
+  captures and no error notices. The [Linux mobility report](validation/weapons-mobility-linux.json)
+  records the checks, lab outcomes, rendering captures and retained limits;
+  these checks do not establish Mac runtime or audible-output validation.
 - `test/match_test.rb`: every catalog entry launches, spends the right ammo, and
   completes its action; deterministic six-team matches; validation and recovery.
 - `test/weapon_physics_test.rb`: controlled impact geometry, first-tick hits,
