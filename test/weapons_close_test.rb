@@ -761,4 +761,19 @@ class WeaponsCloseHazardsAndSuppliesTest < Minitest::Test
     pass_turn(match)
     refute own.any? { |worm| worm[:frozen] }, "the team's next turn thaws its grubs"
   end
+
+  def test_extra_spicy_doubles_the_next_attack_and_clears_at_turn_boundary
+    match = arena("scheme" => "sandbox")
+    match.worms[1][:x] = 345
+    fire(match, "double_damage")
+    assert_equal "aiming", match.phase
+    assert_equal true, match.snapshot[:effects][:double_damage]
+    recovered = restored(match)
+    assert_equal JSON.generate(match.snapshot(terrain: true)), JSON.generate(recovered.snapshot(terrain: true))
+    fire(match, "rifle")
+    assert_equal 16, match.worms[1][:hp]
+    assert_equal "settling", match.phase
+    pass_turn(match)
+    assert_equal false, match.snapshot[:effects][:double_damage]
+  end
 end
