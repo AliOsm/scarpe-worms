@@ -556,7 +556,11 @@ class WeaponsCloseHazardsAndSuppliesTest < Minitest::Test
 
   def pass_turn(match)
     previous = match.turn
-    fire(match, "skip")
+    if match.phase == "aiming"
+      fire(match, "skip")
+    else
+      assert_equal "settling", match.phase
+    end
     600.times do
       match.step
       break if match.turn > previous || match.finished?
@@ -740,5 +744,21 @@ class WeaponsCloseHazardsAndSuppliesTest < Minitest::Test
     refute actor[:shield]
     match.send(:hurt, actor, 30, source: "p1")
     assert_equal 40, actor[:hp]
+  end
+
+  def test_ice_break_freezes_every_teammate_until_that_team_acts_again
+    match = arena
+    own = match.worms.select { |worm| worm[:team] == "p0" }
+    fire(match, "freeze")
+    assert own.all? { |worm| worm[:frozen] }
+    assert_equal "settling", match.phase
+    event = match.events.reverse.find { |entry| entry[:kind] == "freeze" }
+    assert_equal own.map { |worm| worm[:id] }, event[:worms]
+    recovered = restored(match)
+    assert_equal JSON.generate(match.snapshot(terrain: true)), JSON.generate(recovered.snapshot(terrain: true))
+    pass_turn(match)
+    assert own.all? { |worm| worm[:frozen] }, "the freeze spans the other team's turn"
+    pass_turn(match)
+    refute own.any? { |worm| worm[:frozen] }, "the team's next turn thaws its grubs"
   end
 end
