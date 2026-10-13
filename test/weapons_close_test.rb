@@ -813,4 +813,19 @@ class WeaponsCloseHazardsAndSuppliesTest < Minitest::Test
     pass_turn(match)
     assert_operator match.wind.abs, :<=, 1
   end
+
+  def test_pass_the_turn_emits_a_receipt_and_moves_to_the_next_team
+    match = arena
+    previous_turn = match.turn
+    previous_active = match.active_id
+    fire(match, "skip")
+    assert_equal "settling", match.phase
+    skip = match.events.reverse.find { |event| event[:kind] == "skip" }
+    assert_equal previous_active, skip[:worm]
+    pass_turn(match)
+    assert_equal previous_turn + 1, match.turn
+    assert_equal "p1", match.team[:id]
+    refute_equal previous_active, match.active_id
+    assert_equal "aiming", match.phase
+  end
 end
