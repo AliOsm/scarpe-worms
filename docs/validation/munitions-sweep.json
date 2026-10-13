@@ -491,6 +491,38 @@
         "log": "/tmp/munitions-lab/earthquake/log.json",
         "sheet": "/tmp/munitions-lab/earthquake-sheet.png"
       }
+    },
+    "sticky": {
+      "defects_found": "A body behind a wall could capture the attachment; final-tick motion could leave the blast behind its target.",
+      "changes": "Terrain wins contact ties; attachment follows a living grub through the final fuse tick and releases on death/support loss.",
+      "verification": [
+        "wall/body precedence",
+        "moving attachment at expiry",
+        "support/death release",
+        "checkpoint recovery"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 13,
+        "start_turn": 1,
+        "final_turn": 2,
+        "event_counts": {
+          "fire": 1,
+          "explosion": 1,
+          "damage": 2,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/sticky/log.json",
+        "sheet": "/tmp/munitions-lab/sticky-sheet.png"
+      }
     }
   }
 }
