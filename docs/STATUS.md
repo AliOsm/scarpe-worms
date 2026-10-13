@@ -211,13 +211,14 @@ Round 3b keeps the elapsed-time camera zoom and continuous `zoom_sweep` journey,
 shares repeated native text shaping, records frame-stall phases, and culls fully
 clipped image resizes. Terrain presentation now defers offscreen tile geometry
 without show/hide messages; resize restores the last completed terrain result and
-keeps its worker and playback timeline. The package smoke resize check passed 36
-C-locale launches in the local repetition; the earlier CI failure was timing
+keeps its worker and playback timeline. The package smoke resize check passed 40
+C-locale/default launches in the local repetition; the earlier CI failure was timing
 dependent and did not reproduce with diagnostics.
 
-The Apple silicon run 38329759710 measured combat 16.31/20.61/60.50 ms, pan
-16.99/19.72/123.26 ms, discrete zoom 24.13/51.92/119.28 ms, and the continuous
-zoom sweep 16.35/19.61/33.64 ms (mean/p95/max). The discrete zoom tail is mostly
+The Apple silicon run 38345368622 measured combat 16.05/19.77/41.06 ms, pan
+17.15/23.38/81.41 ms, discrete zoom 24.88/58.87/121.90 ms, and the continuous
+zoom sweep 16.33/20.07/40.12 ms (mean/p95/max). Its active discrete zoom was
+15.09/19.90/22.96 ms. The discrete zoom tail is mostly
 intentional idle time: its active intervals were 15.66/20.69/36.95 ms. A 60.07 ms
 GUI update used 0.76 ms CPU while native presentation used 58.74 ms wall time and
 1.04 ms CPU, so the outlier is waiting or descheduling rather than Ruby or paint
