@@ -1,13 +1,16 @@
 Kenney sound effects used by Burrow Brigade
 
-Selected cues from Interface Sounds, Impact Sounds, RPG Audio and Sci-fi Sounds.
+Selected cues from Interface Sounds, Impact Sounds, RPG Audio, Sci-fi Sounds,
+Voiceover Pack and Voiceover Pack (Fighter).
 Creator: Kenney (https://kenney.nl)
 License: Creative Commons Zero 1.0 Universal (CC0-1.0)
 https://creativecommons.org/publicdomain/zero/1.0/
 
 Canonical converted PCM masters, source URLs and SHA-256 hashes are retained in
 assets/audio/source/kenney/ in the source repository. Runtime copies are used
-for interface, equipment, throw, impact, explosion, beam and launch cues.
+for interface, equipment, throw, impact, explosion, beam, launch, grub speech
+and announcer cues. Recorded voices retain their original speed and pitch;
+the game can pitch the grub lines up independently of the announcer.
 
 Original pack notices follow.
 
@@ -102,3 +105,44 @@ Sci-Fi Sounds (1.0)
 	Follow on Twitter for updates:
 	http://twitter.com/KenneyNL
 
+--- voiceover-pack-LICENSE.txt ---
+Voiceover Pack #1
+
+	by  Kenney Vleugels (Kenney.nl)
+
+			------------------------------
+
+	License (Creative Commons Zero, CC0)
+	http://creativecommons.org/publicdomain/zero/1.0/
+
+	You may use these assets in personal and commercial projects.
+	Credit (Kenney or www.kenney.nl) would be nice but is not mandatory.
+
+			------------------------------
+
+	Donate:   http://support.kenney.nl
+	Request:  http://request.kenney.nl
+
+	Follow on Twitter for updates:
+	@KenneyNL
+
+--- voiceover-pack-fighter-LICENSE.txt ---
+Voiceover Pack: Fighter
+
+	by  Kenney Vleugels (Kenney.nl)
+
+			------------------------------
+
+	License (Creative Commons Zero, CC0)
+	http://creativecommons.org/publicdomain/zero/1.0/
+
+	You may use these assets in personal and commercial projects.
+	Credit (Kenney or www.kenney.nl) would be nice but is not mandatory.
+
+			------------------------------
+
+	Donate:   http://support.kenney.nl
+	Request:  http://request.kenney.nl
+
+	Follow on Twitter for updates:
+	@KenneyNL

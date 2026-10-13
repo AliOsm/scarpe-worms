@@ -6,8 +6,17 @@ module Burrow
     class Audio
       MAX_VOICES = 12
       ROOT = File.join(Burrow::ROOT, "assets/audio")
-      CUES = %w[beam bounce click close equip error explosion explosion-heavy hurt impact
-        jump launch music open pickup shot splash teleport throw tick turn victory].freeze
+      CUES = %w[ann-fight ann-flawless-victory ann-its-a-tie ann-multi-kill ann-sudden-death
+        baa beam blub boing bomb-whistle bonk bounce choir clank click close equip error
+        explosion explosion-heavy fuse hurt ice impact jump launch moo music open pfft
+        pickup plane poof pop pow sad-trombone shot slide-whistle-down slide-whistle-up
+        splash squeak-byebye squeak-eek squeak-giggle squeak-oof squeak-ow squeak-wah
+        squeak-yay squeak-yelp teleport throw thud thwip tick turn victory
+        vo-cover-me-f vo-cover-me-m vo-fire-in-the-hole-f vo-fire-in-the-hole-m
+        vo-get-down-f vo-get-down-m vo-go-go-go-f vo-go-go-go-m vo-hurry-up-f vo-hurry-up-m
+        vo-look-out-f vo-look-out-m vo-medic-f vo-medic-m vo-target-destroyed-f
+        vo-target-destroyed-m vo-watch-my-back-f vo-watch-my-back-m vo-you-win-f
+        vo-you-win-m whoosh].freeze
       EVENT_CUES = {"damage" => "hurt", "jump" => "jump", "bounce" => "bounce",
         "splash" => "splash", "turn" => "turn", "pickup" => "pickup", "heal" => "pickup",
         "victory" => "victory", "teleport" => "teleport", "build" => "equip",

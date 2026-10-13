@@ -22,6 +22,16 @@
       "source": "https://kenney.nl/assets/sci-fi-sounds",
       "download": "https://kenney.nl/media/pages/assets/sci-fi-sounds/6b296f9ecf-1677589334/kenney_sci-fi-sounds.zip",
       "sha256": "119340f351a5098ad814f78719438c0da355a9ce8a4c8a3af6a8d48aa3d49e04"
+    },
+    "voiceover-pack": {
+      "source": "https://kenney.nl/assets/voiceover-pack",
+      "download": "https://kenney.nl/media/pages/assets/voiceover-pack/3f7f168698-1677589897/kenney_voiceover-pack.zip",
+      "sha256": "a5194df2f05f7ec439a8d4c1a7c20ba12ffe700d363a0733ae6fa826846af458"
+    },
+    "voiceover-pack-fighter": {
+      "source": "https://kenney.nl/assets/voiceover-pack-fighter",
+      "download": "https://kenney.nl/media/pages/assets/voiceover-pack-fighter/6ceb77c6f1-1677589837/kenney_voiceover-pack-fighter.zip",
+      "sha256": "368ac0711e59521aff965a833e22e2b5218c397cf8b059ce3cb72e8d13219ee2"
     }
   },
   "cues": [
@@ -145,6 +155,325 @@
       "seconds": 0.6500226757369615,
       "normalization_gain": 1.995048,
       "treatment": "Trim to 0.65 seconds; 8 ms fade-in and 250 ms fade-out from 0.40 seconds, before PCM normalization."
+    },
+    {
+      "cue": "vo-fire-in-the-hole-m",
+      "pack": "voiceover-pack",
+      "original": "Male/war_fire_in_the_hole.ogg",
+      "original_sha256": "f4134f3c3dd2572906c4d0832d4014c5983b2b8725d045563fcfc67ecfed1e3a",
+      "master": "vo-fire-in-the-hole-m.wav",
+      "master_sha256": "5c6009e72d0292eea51cfb330bed5d78c9c1098c9649e83dfb891c2a415dac36",
+      "seconds": 1.3422222222222222,
+      "normalization_gain": 0.877771,
+      "treatment": "30 Hz DC blocker; trim decoded frames 325..29921 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^5.216456) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-fire-in-the-hole-f",
+      "pack": "voiceover-pack",
+      "original": "Female/war_fire_in_the_hole.ogg",
+      "original_sha256": "6b27c070addc1fef360a2b557cf93dd87d0c2385325c8fe85d56c7405b7ffca7",
+      "master": "vo-fire-in-the-hole-f.wav",
+      "master_sha256": "6bfb72619960ce549a5a679c70cc1102638b2577353f9374e967c5bd88cbab35",
+      "seconds": 0.9813151927437642,
+      "normalization_gain": 0.846111,
+      "treatment": "30 Hz DC blocker; trim decoded frames 207..21845 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.594302) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-look-out-m",
+      "pack": "voiceover-pack",
+      "original": "Male/war_look_out.ogg",
+      "original_sha256": "f2b8648f0f8e6c47dbf4eaa3340de8b3d6ae1f200b4e462b07c0daa78cd5d9fd",
+      "master": "vo-look-out-m.wav",
+      "master_sha256": "700eadb3a15cf70adc00937a503afa1867d33060381dce8b983705d80ed63e66",
+      "seconds": 0.5777777777777777,
+      "normalization_gain": 0.81192,
+      "treatment": "30 Hz DC blocker; trim decoded frames 334..13074 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.417484) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-look-out-f",
+      "pack": "voiceover-pack",
+      "original": "Female/war_look_out.ogg",
+      "original_sha256": "f7cf8b756fb63dd6785a288577ed95bff24d8dfd514f58d25962a6c479c78dff",
+      "master": "vo-look-out-f.wav",
+      "master_sha256": "97c0f51f6c153296f956556ad3fec949f03318d7eab00b39c8ea96b21c6a3812",
+      "seconds": 0.6041269841269842,
+      "normalization_gain": 0.997566,
+      "treatment": "30 Hz DC blocker; trim decoded frames 535..13856 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^1.796184) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-medic-m",
+      "pack": "voiceover-pack",
+      "original": "Male/war_medic.ogg",
+      "original_sha256": "bcf8bdeb29b318e87d271e36725baccd0a6ed13277458781fb4be3dcf79f860e",
+      "master": "vo-medic-m.wav",
+      "master_sha256": "fa43fd3c6bf35e45323271a1ede549239b4e139b234cd555009b072680265d3c",
+      "seconds": 0.6371428571428571,
+      "normalization_gain": 0.791453,
+      "treatment": "30 Hz DC blocker; trim decoded frames 533..14582 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.750342) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-medic-f",
+      "pack": "voiceover-pack",
+      "original": "Female/war_medic.ogg",
+      "original_sha256": "20c78cde5014f08c42dba71d786c58421708d84e93c90694e1e4bdd922dfcf37",
+      "master": "vo-medic-f.wav",
+      "master_sha256": "06d662317d34c606f6f6576d221c6986c5985b2a7d78e792a0553d3551dd1b35",
+      "seconds": 0.6080272108843537,
+      "normalization_gain": 0.884532,
+      "treatment": "30 Hz DC blocker; trim decoded frames 1030..14437 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.732492) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-get-down-m",
+      "pack": "voiceover-pack",
+      "original": "Male/war_get_down.ogg",
+      "original_sha256": "ea5cc21f4a55da6746e5a05e6e65187ae39cf50b9670d9d779e1b4f8a22a56ae",
+      "master": "vo-get-down-m.wav",
+      "master_sha256": "ca66b1fec3e88377431f88157b2146714f3eac11b453b0d461ed20c72f1c7226",
+      "seconds": 0.823219954648526,
+      "normalization_gain": 0.898351,
+      "treatment": "30 Hz DC blocker; trim decoded frames 327..18479 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^1.683813) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-get-down-f",
+      "pack": "voiceover-pack",
+      "original": "Female/war_get_down.ogg",
+      "original_sha256": "cb5a46ae0cee5db449330c2fcd6c1ba343dcbab78182516614fde7c64bf52d4b",
+      "master": "vo-get-down-f.wav",
+      "master_sha256": "09f94598e00c84949a7617d4c7396c38a7e343cec52600408204e56072b08834",
+      "seconds": 0.5927891156462585,
+      "normalization_gain": 0.805011,
+      "treatment": "30 Hz DC blocker; trim decoded frames 254..13325 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.543203) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-go-go-go-m",
+      "pack": "voiceover-pack",
+      "original": "Male/war_go_go_go.ogg",
+      "original_sha256": "f8ca2d8e7713a471e9b5ad16806d4ad726c6ad76d6c70d64ccb73735b416dc40",
+      "master": "vo-go-go-go-m.wav",
+      "master_sha256": "7be2ebb95fca3abafdb72d35b070a20d836fc226cf25b79cb0f0aed097197c7c",
+      "seconds": 0.9429478458049887,
+      "normalization_gain": 0.865009,
+      "treatment": "30 Hz DC blocker; trim decoded frames 566..21358 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^5.335157) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-go-go-go-f",
+      "pack": "voiceover-pack",
+      "original": "Female/war_go_go_go.ogg",
+      "original_sha256": "06d29e7e129dc00d8caf0b2a4951137538a54e830d8a6facce24d10081c85823",
+      "master": "vo-go-go-go-f.wav",
+      "master_sha256": "9deeaad52dc76d5410f9453b96663e442aa75aba611750ff399dd7794dba784c",
+      "seconds": 1.1816326530612244,
+      "normalization_gain": 0.895441,
+      "treatment": "30 Hz DC blocker; trim decoded frames 568..26623 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^2.722302) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-cover-me-m",
+      "pack": "voiceover-pack",
+      "original": "Male/war_cover_me.ogg",
+      "original_sha256": "3f0db8b18a7f0d93dc7d8c0baea556886f3f23aa4fd2b15b284a16c0b96da5dd",
+      "master": "vo-cover-me-m.wav",
+      "master_sha256": "27b9b3a917b130acf4f5d26439299376c9718dcca4648f5b6e426a286a988416",
+      "seconds": 0.5698866213151927,
+      "normalization_gain": 0.845173,
+      "treatment": "30 Hz DC blocker; trim decoded frames 224..12790 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.214861) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-cover-me-f",
+      "pack": "voiceover-pack",
+      "original": "Female/war_cover_me.ogg",
+      "original_sha256": "9adf16ec7b0b9393f8128e1317b7983dd0a244dbbdeeeadf9912da0c4e216106",
+      "master": "vo-cover-me-f.wav",
+      "master_sha256": "a77d1d465500bb23f8ded0230c1a3e6da95e98fdeddd261faa6acc33c5c45c00",
+      "seconds": 0.501360544217687,
+      "normalization_gain": 0.835866,
+      "treatment": "30 Hz DC blocker; trim decoded frames 1112..12167 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding."
+    },
+    {
+      "cue": "vo-watch-my-back-m",
+      "pack": "voiceover-pack",
+      "original": "Male/war_watch_my_back.ogg",
+      "original_sha256": "beefb17ad63dbbfa437c6d57de79920501e55e37c14ea9016ce682a5d6bc7ac8",
+      "master": "vo-watch-my-back-m.wav",
+      "master_sha256": "1a8e8f8f9f60446eeaef39f6ce9f784f79478ee577fa26dde635428e5574c602",
+      "seconds": 0.8998185941043084,
+      "normalization_gain": 0.976609,
+      "treatment": "30 Hz DC blocker; trim decoded frames 446..20287 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^2.385747) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-watch-my-back-f",
+      "pack": "voiceover-pack",
+      "original": "Female/war_watch_my_back.ogg",
+      "original_sha256": "5ad14a582e950b628056ccb17879bee5cdb9f8b9c419477b45c638c67f484b38",
+      "master": "vo-watch-my-back-f.wav",
+      "master_sha256": "d87bf1697b04e209d41e6cc861f79622dcba41fad7e7364733c894c4cd313a66",
+      "seconds": 0.8375963718820861,
+      "normalization_gain": 0.983762,
+      "treatment": "30 Hz DC blocker; trim decoded frames 417..18886 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.738949) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-target-destroyed-m",
+      "pack": "voiceover-pack",
+      "original": "Male/war_target_destroyed.ogg",
+      "original_sha256": "c247516343dad0eb8df3402c2be0377f4abc1d555a6e9d6a51d17e59ceb98ea3",
+      "master": "vo-target-destroyed-m.wav",
+      "master_sha256": "2cb02b940276258174e1d0ee4ce8eb6a8ca72466c3539ca130f0ad0c509548d9",
+      "seconds": 1.2867120181405896,
+      "normalization_gain": 0.863902,
+      "treatment": "30 Hz DC blocker; trim decoded frames 817..29189 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.397159) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-target-destroyed-f",
+      "pack": "voiceover-pack",
+      "original": "Female/war_target_destroyed.ogg",
+      "original_sha256": "f1d39f42616c21b41f190a5968b16d74d5607d7d7adb277321f33358c08b1a83",
+      "master": "vo-target-destroyed-f.wav",
+      "master_sha256": "49f8f410bedca35787595b025d9d6023d005fd9873a833911b83bf208a32d903",
+      "seconds": 1.2524263038548753,
+      "normalization_gain": 0.863575,
+      "treatment": "30 Hz DC blocker; trim decoded frames 451..28067 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.131316) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-hurry-up-m",
+      "pack": "voiceover-pack",
+      "original": "Male/hurry_up.ogg",
+      "original_sha256": "f5b03e3c048fa951ab41be56b4441e3714c44e98e3f33327a065692c1e8c9411",
+      "master": "vo-hurry-up-m.wav",
+      "master_sha256": "3e544d7431bb701c4c66362bf92a7616742d0a331c6a33720bc2aaace9bcae6e",
+      "seconds": 0.6457596371882086,
+      "normalization_gain": 0.827068,
+      "treatment": "30 Hz DC blocker; trim decoded frames 204..14443 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.561854) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-hurry-up-f",
+      "pack": "voiceover-pack",
+      "original": "Female/hurry_up.ogg",
+      "original_sha256": "afbbe16160541929d7565f4fd7c81b61b2c873aceb6478cc0ba2058c5aa80b41",
+      "master": "vo-hurry-up-f.wav",
+      "master_sha256": "bfd8c788afcf6414eed78eece9a522953f196c4748b6f8d7ba46b60faa04ec3e",
+      "seconds": 0.6853968253968254,
+      "normalization_gain": 0.824459,
+      "treatment": "30 Hz DC blocker; trim decoded frames 626..15739 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.359585) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-you-win-m",
+      "pack": "voiceover-pack",
+      "original": "Male/you_win.ogg",
+      "original_sha256": "21ee1909734144ee0ad29fbdf8eda5c06fd360862f46ab89234d2d23af3fdead",
+      "master": "vo-you-win-m.wav",
+      "master_sha256": "d0ebd12afe74e0b130fd96b739a8b6696a0f2105758beb67995aceb24588d5ae",
+      "seconds": 0.9585034013605442,
+      "normalization_gain": 0.834864,
+      "treatment": "30 Hz DC blocker; trim decoded frames 413..21548 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.803309) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "vo-you-win-f",
+      "pack": "voiceover-pack",
+      "original": "Female/you_win.ogg",
+      "original_sha256": "18907e24f8cbd0751831eed8d2dd1c2501ed587da6a7451404edf0876aa56150",
+      "master": "vo-you-win-f.wav",
+      "master_sha256": "12dc344d6b32881758fe2fa8da668f4b381ea3a43d29e4ccba8c20c1432a1e6f",
+      "seconds": 0.881859410430839,
+      "normalization_gain": 0.80674,
+      "treatment": "30 Hz DC blocker; trim decoded frames 767..20212 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding."
+    },
+    {
+      "cue": "ann-fight",
+      "pack": "voiceover-pack-fighter",
+      "original": "Audio/fight.ogg",
+      "original_sha256": "fc16c61cd474da6c80fffe34fb3bfcee79b754fcc345bd916b0e66a826695e89",
+      "master": "ann-fight.wav",
+      "master_sha256": "7c98bf18ca9292ec5d14ab0579b9c63379798b302336c4f4bc329beee70a0dc4",
+      "seconds": 0.7004081632653061,
+      "normalization_gain": 0.954405,
+      "treatment": "30 Hz DC blocker; trim decoded frames 2064..17508 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^1.207500) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "ann-sudden-death",
+      "pack": "voiceover-pack-fighter",
+      "original": "Audio/sudden_death.ogg",
+      "original_sha256": "cdca9b9946fe7104a767f74e6f7d69c727cc0595adfbbdb470df388a1bed37fc",
+      "master": "ann-sudden-death.wav",
+      "master_sha256": "9deb8151a37daa96446a34864a554f309a2b32c8f12bc01039c306773dc81b11",
+      "seconds": 1.2980045351473923,
+      "normalization_gain": 1.085479,
+      "treatment": "30 Hz DC blocker; trim decoded frames 231..28852 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^1.148890) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "ann-multi-kill",
+      "pack": "voiceover-pack-fighter",
+      "original": "Audio/multi_kill.ogg",
+      "original_sha256": "bf5439f1077424c593d8908220aaed2e2bbe9fd474cdff5eda5fe3f641b75867",
+      "master": "ann-multi-kill.wav",
+      "master_sha256": "a19f43798127456945ea959913d39ab65ad900fc50a4dd733875378635def7fb",
+      "seconds": 1.3350566893424036,
+      "normalization_gain": 0.916804,
+      "treatment": "30 Hz DC blocker; trim decoded frames 638..30076 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^0.967963) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "ann-flawless-victory",
+      "pack": "voiceover-pack-fighter",
+      "original": "Audio/flawless_victory.ogg",
+      "original_sha256": "70d80e1bdd30649edd17419e6f8cddc9c69694b4c9a4890d132e40c65bc91a5b",
+      "master": "ann-flawless-victory.wav",
+      "master_sha256": "30d9735bc961ad8670dabfa9b4ced9d4d1df6b4d14fe82dd6e934436726bb7bc",
+      "seconds": 1.6859410430839001,
+      "normalization_gain": 1.078623,
+      "treatment": "30 Hz DC blocker; trim decoded frames 1933..39108 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^1.810612) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "ann-its-a-tie",
+      "pack": "voiceover-pack-fighter",
+      "original": "Audio/it's_a_tie.ogg",
+      "original_sha256": "0ef08cd681459052e4173da5f5aa479a77040d9e1ce38c8e09f9f9ca0a806989",
+      "master": "ann-its-a-tie.wav",
+      "master_sha256": "dda3af5520fa243bfeb855c0977b1e8f5f5cbbf0263fd413528bd5e0c4dfe04e",
+      "seconds": 1.2782766439909297,
+      "normalization_gain": 0.977499,
+      "treatment": "30 Hz DC blocker; trim decoded frames 871..29057 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding. Before normalization, 3 ms Gaussian RMS-envelope expansion (gain = 0.18 + 0.82 * normalized_envelope^1.042943) targets -18.5 dBFS RMS, preserving consonants with a gain floor; original speed and pitch."
+    },
+    {
+      "cue": "bonk",
+      "pack": "impact-sounds",
+      "original": "impactWood_light_004.ogg",
+      "original_sha256": "e10009f67ddaeb3a59a3e1129cfc1615d84ba60ab578eae07e7092ac223f099c",
+      "master": "bonk.wav",
+      "master_sha256": "5972e4092fb8cebf0457ced5c424fb2ec2c85e878c17b612f7174ff1ed195768",
+      "seconds": 0.08965986394557823,
+      "normalization_gain": 1.963589,
+      "treatment": "30 Hz DC blocker; trim decoded frames 0..1977 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding."
+    },
+    {
+      "cue": "pow",
+      "pack": "impact-sounds",
+      "original": "impactPunch_heavy_001.ogg",
+      "original_sha256": "f92f5cb6ba4ff2766497292ffd90865654317eeca976f5652e0708dbdcdc0dd9",
+      "master": "pow.wav",
+      "master_sha256": "b67192da954e53531055935a4ddfa93a862c4a90bfb37cb7bbeb20a50856ee46",
+      "seconds": 0.3844444444444444,
+      "normalization_gain": 0.781626,
+      "treatment": "30 Hz DC blocker; trim decoded frames 0..8477 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding."
+    },
+    {
+      "cue": "clank",
+      "pack": "impact-sounds",
+      "original": "impactMetal_light_003.ogg",
+      "original_sha256": "92d5db6bfc672d9dc1b4f390b2900504f013187fa36335472554fafefa9050b1",
+      "master": "clank.wav",
+      "master_sha256": "88785d3406ba7edd1bd82a2ce95fcb97444d248b8354f02d2493643a49b8aab4",
+      "seconds": 0.32140589569161,
+      "normalization_gain": 0.995664,
+      "treatment": "30 Hz DC blocker; trim decoded frames 0..7087 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding."
+    },
+    {
+      "cue": "thud",
+      "pack": "impact-sounds",
+      "original": "impactSoft_heavy_000.ogg",
+      "original_sha256": "49e7ca88743fca974bb8676ea138b751cfd8f9033b5e7af8736c2a215d6edbc1",
+      "master": "thud.wav",
+      "master_sha256": "74f16167c4b390525e3cfe437f7cfb86053999af30aad5067e75d11b59709617",
+      "seconds": 0.5175963718820862,
+      "normalization_gain": 0.90775,
+      "treatment": "30 Hz DC blocker; trim decoded frames 0..11413 (end exclusive, -48 dB peak threshold, 8 ms margin); 6 ms cosine fades; weighted DC removal; peak 0.75; zero-sum PCM rounding."
     }
   ]
 }

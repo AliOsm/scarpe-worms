@@ -12,14 +12,17 @@ official Worms title.
   in `assets/art/source/{paintings,materials}/provenance.json`; rebuilding uses those local
   masters. See `docs/ART_DIRECTION.md`. No Team17 image was used as generation
   input. The menu reference was this project's existing original illustration.
-- Music and several effects are original synthesis in `tools/build_audio.rb`.
-  Selected effects are from Kenney's Interface Sounds, Impact Sounds, RPG Audio
-  and Sci-fi Sounds packs, under CC0-1.0. Full pack notices ship in
+- Music and several effects are original synthesis in `tools/build_audio.rb`,
+  including the cartoon grub voices, animal calls, whistles and comic foley.
+  Selected effects and recorded voices are from Kenney's Interface Sounds,
+  Impact Sounds, RPG Audio, Sci-fi Sounds, Voiceover Pack and Voiceover Pack
+  (Fighter), under CC0-1.0. Full pack notices ship in
   `assets/audio/KENNEY-NOTICES.txt`; source URLs, original hashes and converted
   PCM master hashes are in `assets/audio/source/kenney/manifest.json`.
   Sources: https://kenney.nl/assets/interface-sounds,
   https://kenney.nl/assets/impact-sounds, https://kenney.nl/assets/rpg-audio,
-  https://kenney.nl/assets/sci-fi-sounds.
+  https://kenney.nl/assets/sci-fi-sounds, https://kenney.nl/assets/voiceover-pack,
+  https://kenney.nl/assets/voiceover-pack-fighter.
 - Inter: Rasmus Andersson, SIL OFL 1.1. Fira Mono: Mozilla and Telefonica, SIL OFL
   1.1. Fredoka: Milena Brandau, SIL OFL 1.1. Font licenses are in `assets/fonts`.
   Fredoka source: https://github.com/google/fonts/tree/main/ofl/fredoka.

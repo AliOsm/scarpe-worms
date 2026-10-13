@@ -38,9 +38,11 @@ the primary retrospective above supplies the verified production account.
 | Source | Fit and license | Decision |
 | --- | --- | --- |
 | [Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds) | CC0; compact click, open, close, warning and tick cues | Selected five cues; source hashes and original notices retained |
-| [Kenney Impact Sounds](https://kenney.nl/assets/impact-sounds) | CC0; tactile impacts with useful short tails | Selected a punch impact |
+| [Kenney Impact Sounds](https://kenney.nl/assets/impact-sounds) | CC0; tactile impacts with useful short tails | Punch impact plus wooden bonk, heavy punch, bright metal clank and soft dirt thud |
 | [Kenney RPG Audio](https://kenney.nl/assets/rpg-audio) | CC0; physical equipment and movement sounds | Selected latch and throw cues |
 | [Kenney Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds) | CC0; explosive reports, thrust and beams | Selected launch, beam and two explosion weights |
+| [Kenney Voiceover Pack](https://kenney.nl/assets/voiceover-pack) | CC0; male and female short commands | Ten lines in each voice; natural-speed masters for runtime grub pitch shifts |
+| [Kenney Voiceover Pack (Fighter)](https://kenney.nl/assets/voiceover-pack-fighter) | CC0; theatrical arcade announcements | Fight, sudden death, multi-kill, flawless victory and tie, intended at normal pitch |
 | [Kenney Input Prompts](https://kenney.nl/assets/input-prompts) | CC0; coherent keyboard/mouse glyph set | Downloaded for comparison; use only if it improves the existing UI |
 | [GameArt2D freebies](https://www.gameart2d.com/freebies.html) | Freebies are CC0 under the creator's [license](https://www.gameart2d.com/license.html) | Good prototyping tiles; a different visual language from this game's grubs and destruction |
 | [CraftPix backgrounds](https://craftpix.net/freebies/free-horizontal-2d-game-backgrounds/) | Commercial game use allowed, with source-redistribution restrictions in the [license](https://craftpix.net/file-licenses/) | Not included in this public source repository |
@@ -78,6 +80,33 @@ original stereo music retained. Each weapon family gets a suitable report;
 healing and passing a turn no longer trigger the common rocket launch cue.
 See the [audio provenance](../assets/audio/source/kenney/manifest.json) and
 [distribution notices](../THIRD_PARTY.md).
+
+The audio-only cartoon expansion adds 54 cues: 20 recorded grub lines, five
+announcements, four material impacts and 25 original synthesized effects. The
+new masters use 6 ms edge fades and zero DC. Recorded speech is tightly trimmed
+with an 8 ms margin around the -48 dB activity threshold; no time or pitch change
+is baked in. Where necessary, RMS-envelope expansion with a consonant-preserving
+gain floor brings speech to -18.5 dBFS RMS before the standard 0.75 peak
+normalization. Exact treatments, archive hashes and original names are in the
+manifest. Other new speech measures -19.3 to -19.5 dBFS RMS; synthesized voices
+target -20 and foley -21 to -25. Material impacts measure about -19, below the
+existing explosion's -15.3 dBFS RMS.
+
+Impact selection used duration and spectral energy: `impactWood_light_004` is
+a compact, relatively bright wooden tap (90 ms); `impactPunch_heavy_001` has a
+bass-heavy body; `impactMetal_light_003` has a bright, brief metallic tail;
+`impactSoft_heavy_000` concentrates energy below 500 Hz. These are selections by
+name and signal analysis, not claims of an audible review.
+
+The original voices use a band-limited Rosenberg glottal source, cycle jitter and
+shimmer, aspiration, vibrato and five moving formant resonators. Plosive bursts,
+frication, lip trills and bubble chirps distinguish the performances. The choir
+is a short C-major vowel chord; the four-note trombone is an effect, not a music
+track. Existing cues and music remain byte-identical. Rebuilding still requires
+only Ruby and committed PCM masters. Event wiring belongs to the integration
+pass; only the runtime cue registry is extended here. LPC estimates at high F0
+are limited by sparse harmonics, especially /i/ whose first formant is below F0.
+Human audition remains necessary for humor, intelligibility and the final mix.
 
 ## Acceptance standard
 
