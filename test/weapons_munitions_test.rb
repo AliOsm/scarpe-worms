@@ -576,6 +576,27 @@ class WeaponsMunitionsTest < Minitest::Test
     end
   end
 
+  def test_legacy_fragment_track_keeps_the_authoritative_fragment_identity
+    match = arena
+    parent = fire(match, "mortar", fuse: 1)
+    parent.merge!(x: 700.0, y: 200.0, life: 1)
+    match.step(3)
+    saved = JSON.parse(JSON.generate(match.checkpoint))
+    saved["shot_tracks"].each_value do |track|
+      track.delete("fragment")
+      track["samples"].each { |sample| sample.slice!(8..) }
+    end
+    recovered = Burrow::Match.restore(saved)
+    recovered.step
+
+    timeline = Burrow::Client::Timeline.new
+    timeline.accept(JSON.parse(JSON.generate(recovered.snapshot)), now: 10)
+    timeline.accept(JSON.parse(JSON.generate(recovered.snapshot)), now: 10.4)
+    shot = timeline.sample(now: 10.4)["projectiles"].first
+    assert shot["fragment"], "old motion tracks must inherit the current host projectile identity"
+    assert_equal "fragment", shot["stage"]
+  end
+
   def test_camera_shake_is_bounded_decays_and_does_not_move_the_canonical_camera
     camera = Burrow::Client::Camera.new(4800, 1600)
     camera.navigate(2400, 900)
