@@ -184,6 +184,14 @@ module Burrow
       end
       match.instance_variable_set(:@damage_boost, false) if match.instance_variable_get(:@damage_boost).nil?
       match.instance_variable_set(:@low_gravity, false) if match.instance_variable_get(:@low_gravity).nil?
+      tool = match.instance_variable_get(:@tool)
+      if tool && %w[drill torch dash].include?(tool[:kind]) && !tool.key?(:explicit_motion)
+        # Older tools integrated gravity alongside their digging motion. That
+        # residual velocity is not a new impact; an actual blast still interrupts.
+        actor = match.active
+        actor[:vx] = actor[:vy] = 0.0 if actor && !actor[:launched]
+        tool[:explicit_motion] = true
+      end
       # Version-one checkpoints predate the explicit critter stages.
       match.projectiles.each do |p|
         next if p[:stage] || !%w[walker guided digger poisoner herd].include?(p[:kind])

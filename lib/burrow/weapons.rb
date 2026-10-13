@@ -126,7 +126,7 @@ module Burrow
         emit("build", x: x, y: y, rotation: tilt)
       when "drill", "torch"
         @tool = {kind: kind, until: tick + 60, direction: active[:facing], owner: team[:id], damage: damage,
-          lift: 0, input_until: tick, hits: {}}
+          lift: 0, input_until: tick, hits: {}, explicit_motion: true}
         active[:vx] = active[:vy] = 0.0
         active[:launched] = false
         active[:input] = active[:lift] = 0
@@ -458,7 +458,8 @@ module Burrow
 
     def melee(weapon, damage, angle)
       if weapon[:kind] == "dash"
-        @tool = {kind: "dash", until: tick + 12, direction: active[:facing], owner: team[:id], damage: damage, hits: []}
+        @tool = {kind: "dash", until: tick + 12, direction: active[:facing], owner: team[:id], damage: damage,
+          hits: [], explicit_motion: true}
         active[:input] = active[:lift] = active[:vx] = active[:vy] = 0
         active[:launched] = false
         emit("melee", x: active[:x], y: active[:y] - 10, style: weapon[:id], worm: active_id,
