@@ -260,6 +260,39 @@
         "log": "/tmp/munitions-lab/banana/log.json",
         "sheet": "/tmp/munitions-lab/banana-sheet.png"
       }
+    },
+    "holy_bomb": {
+      "defects_found": "Expired airborne fuse could freeze the bomb; grand finale lacked a warning moment.",
+      "changes": "Continue falling until rest; one 18-tick chord/glow before a huge blast, bounded by 12 seconds; rest/chord badges.",
+      "verification": [
+        "post-fuse falling",
+        "18-tick warning",
+        "support-loss checkpoint recovery",
+        "single warning then blast"
+      ],
+      "tests": [
+        "test/weapons_munitions_test.rb",
+        "test/weapon_physics_test.rb",
+        "test/munitions_presentation_test.rb"
+      ],
+      "native_lab": {
+        "result": "passed",
+        "frames": 15,
+        "start_turn": 1,
+        "final_turn": 2,
+        "event_counts": {
+          "fire": 1,
+          "bounce": 3,
+          "choir": 1,
+          "explosion": 1,
+          "turn": 1
+        },
+        "remaining_projectiles": 0,
+        "pending_hazards": 0,
+        "peak_flames": 0,
+        "log": "/tmp/munitions-lab/holy_bomb/log.json",
+        "sheet": "/tmp/munitions-lab/holy_bomb-sheet.png"
+      }
     }
   }
 }
