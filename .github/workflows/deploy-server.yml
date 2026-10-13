@@ -1,0 +1,150 @@
+name: Deploy server
+# A v* tag matching Burrow::VERSION tests, publishes and deploys the host image.
+# Running it by hand redeploys an already published version (e.g. a rollback).
+# Pull requests that touch the image only test and build it.
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - bin/server
+      - bin/healthcheck
+      - packaging/server/**
+      - .github/workflows/deploy-server.yml
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published server version to deploy, e.g. 0.5.2
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: deploy-server-${{ github.event_name == 'pull_request' && github.ref || 'production' }}
+  cancel-in-progress: false
+defaults:
+  run:
+    shell: bash
+jobs:
+  image:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: meta
+        name: Match the tag to the game version
+        run: |
+          version=$(sed -n 's/^  VERSION = "\(.*\)"$/\1/p' lib/burrow.rb)
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "${GITHUB_REF_NAME#v}" != "$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match Burrow::VERSION $version."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/burrow-brigade:$version" >> "$GITHUB_OUTPUT"
+      - name: Play a six-team TLS match in the image and restart it
+        run: python3 tools/check_container.py
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - if: github.event_name == 'push'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build for x86-64 and ARM servers
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          PUSH: ${{ github.event_name == 'push' }}
+        run: |
+          source_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+          args=(--platform "linux/amd64,linux/arm64" --tag "$IMAGE"
+            --label org.opencontainers.image.title=burrow-brigade
+            --label "org.opencontainers.image.source=$source_url"
+            --label "org.opencontainers.image.version=$VERSION"
+            --label "org.opencontainers.image.revision=$GITHUB_SHA")
+          if [ "$PUSH" = true ]; then
+            # The index annotation links the package to this repository on GitHub.
+            args+=(--annotation "index:org.opencontainers.image.source=$source_url" --push)
+          fi
+          docker buildx build "${args[@]}" .
+
+  deploy:
+    needs: image
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.image.result != 'failure' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+      - id: target
+        name: Choose the image
+        env:
+          BUILT: ${{ needs.image.outputs.image }}
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          image=$BUILT
+          if [ -z "$image" ]; then
+            version=${REQUESTED#v}
+            if ! [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Enter a published version such as 0.5.2."
+              exit 1
+            fi
+            image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/burrow-brigade:$version
+          fi
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+      - name: Deploy over SSH
+        env:
+          IMAGE: ${{ steps.target.outputs.image }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Add the $name secret to the production environment."
+              exit 1
+            fi
+          done
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # A pinned host key: the job refuses any server it does not recognise.
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host burrow
+            HostName $DEPLOY_HOST
+            User $DEPLOY_USER
+            Port ${DEPLOY_PORT:-22}
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            BatchMode yes
+          EOF
+          ssh burrow 'mkdir -p burrow-brigade'
+          scp packaging/server/compose.yaml packaging/server/deploy.sh burrow:burrow-brigade/
+          # The registry token travels on stdin; the arguments are quoted for the remote shell.
+          # shellcheck disable=SC2029
+          printf '%s' "$REGISTRY_TOKEN" |
+            ssh burrow "sh burrow-brigade/deploy.sh $(printf %q "$IMAGE") $(printf %q "$GITHUB_ACTOR")" |
+            tee deploy.log
+          {
+            echo "### Burrow Brigade server deployed"
+            echo
+            echo "Image: \`$IMAGE\` · port 4388/TCP"
+            echo
+            grep -E '^(Burrow Brigade|Fingerprint)' deploy.log | sed 's/^/    /'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -2,6 +2,20 @@
 
 Updated **2026-10-13** · game **0.5.2 (unreleased)** · protocol **4** · macOS preview.
 
+## Server deployment (unreleased)
+
+`.github/workflows/deploy-server.yml` deploys the host to one Linux server: a
+`v*` tag matching `Burrow::VERSION` runs the container check, publishes an
+x86-64/ARM image to GHCR and runs `packaging/server/deploy.sh` over SSH with a
+pinned host key. Running it by hand redeploys a published version. `bin/server`
+now enables YJIT, which cut the measured host tick from 1.10 to 0.80 ms (p95 4.8
+to 3.0 ms); Ruby 4.0.7 alone measured the same as 3.4.7. A local rehearsal with a
+stand-in registry redeployed during a six-team match in 7.1 s, keeping the room,
+session, certificate and in-flight shell, and a failed pull left the running host
+untouched ([report](validation/server-deploy-0.5.2.json)). Publishing to GHCR and
+the SSH step have not run: they need the owner's server and secrets, described in
+[Hosting](HOSTING.md#deploy-from-github-actions).
+
 ## 0.5.2 weapons sweep (unreleased)
 
 The owner found 0.5.1's weapons broken or cheap: the jetpack would not fly, the
@@ -371,6 +385,8 @@ audio lag is resolved.
 4. Launch the 0.5.0 archive on Macs and run the 30-minute soak; profile the isolated
    timing outlier if it reproduces, preserving the 0.2.4 precise-wait/playback fixes.
 5. Complete the [release requirements](RELEASE.md) before sales.
+6. Configure the deploy server and secrets, push `v0.5.2`, and connect from
+   another network to confirm the published host.
 
 ## Repository handoff
 
@@ -380,7 +396,8 @@ added 0014–0017, cadence and clock work added 0018–0019, and the zoom follow
 added 0020–0023. Protocol 4 hosts and clients must upgrade together.
 Runtime assets live in the source tree, so running the game needs no image service or
 asset download. Generated bundles, raw captures and player data remain ignored.
-No publishing or deployment was performed.
+No publishing or deployment was performed; the server deploy workflow awaits
+the owner's first `v0.5.2` tag.
 
 The [clean-checkout bootstrap report](validation/repository-bootstrap.json)
 belongs to the preceding 0.3.0 baseline, not a fresh 0.4.0 clone. Current checks

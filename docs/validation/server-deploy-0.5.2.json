@@ -1,0 +1,50 @@
+{
+  "title": "0.5.2 server deployment workflow and YJIT host — rehearsal",
+  "date": "2026-10-13",
+  "version": "0.5.2",
+  "protocol": 4,
+  "branch": "deploy/github-actions",
+  "platform": "x86_64-linux workstation, Docker 29.6.2 with Compose 5.3.1",
+  "static_checks": {
+    "actionlint": "clean (.github/workflows/deploy-server.yml, including shellcheck of run steps)",
+    "shellcheck": "clean (packaging/server/deploy.sh)"
+  },
+  "local_rehearsal": {
+    "setup": "registry:2 on 127.0.0.1:5055 stood in for GHCR; a local directory stood in for ~/burrow-brigade on the server; deploy.sh and the production compose file ran unmodified",
+    "first_deploy": {
+      "seconds": 6.8,
+      "healthy": true,
+      "banner": "Burrow Brigade 0.5.2 · protocol 4 · YJIT",
+      "registry_login_removed_after_pull": true
+    },
+    "redeploy_during_match": {
+      "seconds": 7.1,
+      "match": "six teams, 36 grubs, grenade in flight",
+      "tick_before": 10,
+      "tick_after_reconnect": 28,
+      "projectile_still_in_flight": true,
+      "session_preserved": true,
+      "room_preserved": true,
+      "certificate_fingerprint_preserved": true,
+      "previous_image_pruned": true
+    },
+    "failed_pull": {
+      "exit_status": 1,
+      "running_host_unchanged": true,
+      "env_unchanged": true
+    },
+    "idle_container_memory_mib": 17.14
+  },
+  "host_tick_cost_ms": {
+    "workload": "Match#step plus JSON snapshot; six bot teams, three seeds, 1,800 ticks each; budget 33.3 ms",
+    "ruby_3.4.7_interpreter": {"mean": 1.101, "p95": 4.829, "p99": 9.443},
+    "ruby_3.4.7_yjit": {"mean": 0.795, "p95": 3.021, "p99": 5.927},
+    "ruby_4.0.7_interpreter": {"mean": 1.095, "p95": 4.903, "p99": 9.461},
+    "ruby_4.0.7_yjit": {"mean": 0.806, "p95": 3.041, "p99": 5.919},
+    "four_six_team_matches_rss_mib": 31
+  },
+  "not_run": [
+    "Publishing to ghcr.io and the SSH deploy step: they need the owner's server and production secrets",
+    "A match between players on separate internet connections"
+  ]
+}

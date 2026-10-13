@@ -5,6 +5,7 @@ their scope; generic filenames are outputs of individual tools.
 
 | Evidence | Start here |
 | --- | --- |
+| 0.5.2 server deployment and YJIT host | [GitHub Actions deploy rehearsal, redeploy during a match, tick cost](server-deploy-0.5.2.json) |
 | 0.5.2 weapons sweep (48 weapons, integrated) | [Linux tests, native lab, checkers and performance](weapons-0.5.2-linux.json); family reports for [mobility](weapons-mobility-linux.json), [munitions](munitions-sweep.json) and [critters](weapons-critters-linux.json) |
 | 0.5.1 smooth zoom and stall attribution | [Linux A/B, Apple silicon, exact pixels and remaining limits](zoom-0.5.1.json) |
 | 0.5.0 Mac update cadence | [Mac and Linux comparisons, timer checks and limits](mac-cadence-0.5.0.json) |

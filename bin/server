@@ -5,6 +5,8 @@ require "optparse"
 require_relative "../lib/burrow/server/reactor"
 require_relative "../lib/burrow/server/certificate"
 $stdout.sync = true
+# YJIT cuts the host's simulation and snapshot work per tick by about a quarter.
+RubyVM::YJIT.enable if defined?(RubyVM::YJIT.enable) && !RubyVM::YJIT.enabled?
 
 options = {host: "0.0.0.0", port: 4388, data_dir: ENV.fetch("BURROW_SERVER_DATA", File.expand_path("../var/server", __dir__))}
 local = false
@@ -23,7 +25,7 @@ unless local || options[:certificate]
   options[:certificate], options[:key] = Burrow::Server::Certificate.ensure_pair(File.join(options[:data_dir], "tls"))
 end
 server = Burrow::Server::Reactor.new(**options)
-puts "Burrow Brigade #{Burrow::VERSION} · protocol #{Burrow::PROTOCOL}"
+puts "Burrow Brigade #{Burrow::VERSION} · protocol #{Burrow::PROTOCOL}#{' · YJIT' if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?}"
 puts "Address: #{server.fingerprint ? 'tls' : 'tcp'}://YOUR-HOST:#{server.port}"
 puts "Fingerprint: #{server.fingerprint}" if server.fingerprint
 puts "Up to 6 teams per room, 16 rooms. Ctrl-C saves and stops."

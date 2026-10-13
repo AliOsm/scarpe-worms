@@ -40,4 +40,5 @@ Release procedure: run all repository checks → build the preview → run nativ
 Mac and human acceptance → sign/notarize → rerun native tests on the signed
 artifact → test the quarantined download → archive hashes/evidence → publish
 through the chosen channel. No publishing or external deployment has been
-performed as part of this implementation.
+performed as part of this implementation. The game server deploys from a `v*` tag
+through GitHub Actions once a server is configured ([Hosting](HOSTING.md)).

@@ -50,6 +50,63 @@ needs a TCP stream listener. Keep server and client protocol versions matched.
 isolated temporary volume and an ephemeral loopback port. It removes both after
 verifying play, health checks, and restart recovery.
 
+## Deploy from GitHub Actions
+
+`.github/workflows/deploy-server.yml` deploys to one Linux server over SSH. A
+`v*` tag that matches `Burrow::VERSION` runs `check_container.py`, publishes
+`ghcr.io/<owner>/burrow-brigade:<version>` for x86-64 and ARM, then runs
+`packaging/server/deploy.sh` in `~/burrow-brigade` on the server. That script
+pulls the image while the old host keeps playing, then Compose stops the old
+container (which saves) and starts the new one from the same `burrow-data`
+volume. Players see a few seconds of reconnecting; rooms, matches, sessions and
+the certificate survive. A failed pull leaves the running host untouched.
+Pull requests that change the image only test and build it.
+
+One-time server setup (Debian/Ubuntu shown; any Docker host with the Compose
+plugin works):
+
+```sh
+curl -fsSL https://get.docker.com | sh
+adduser --disabled-password --gecos "" deploy
+usermod -aG docker deploy   # docker access is root-equivalent: use a game-only server
+```
+
+Open TCP 4388 in the provider's firewall. On your own computer, create a key used
+only for deploys, install it for `deploy`, and record the server's host key:
+
+```sh
+ssh-keygen -t ed25519 -N "" -C burrow-deploy -f burrow-deploy
+ssh-copy-id -i burrow-deploy.pub deploy@SERVER
+ssh-keyscan SERVER > burrow-known-hosts
+```
+
+Compare the scanned key with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`
+on the server. Then store the secrets in a `production` environment:
+
+```sh
+gh api -X PUT repos/OWNER/REPO/environments/production
+gh secret set DEPLOY_HOST --env production --body SERVER
+gh secret set DEPLOY_USER --env production --body deploy
+gh secret set DEPLOY_SSH_KEY --env production < burrow-deploy
+gh secret set DEPLOY_KNOWN_HOSTS --env production < burrow-known-hosts
+```
+
+Add `DEPLOY_PORT` if SSH is not on port 22, and optionally require a reviewer on
+the environment. Deploy by tagging the release on `main`:
+
+```sh
+git tag v0.5.2 && git push origin v0.5.2
+```
+
+The run summary shows the version and certificate fingerprint; players connect
+to `tls://SERVER:4388` with it. **Run workflow** with a published version
+redeploys or rolls back without rebuilding. The job logs the server in to GHCR
+with its short-lived token and logs out after pulling; if a pull is denied, make
+the package public in its settings. Workflow logs of a public repository are
+public: secrets are masked, and the fingerprint is meant to be shared. Older
+servers cannot always read newer saves, so roll back across save changes only
+with a backup.
+
 ## Direct Ruby or systemd
 
 The server needs Ruby 3.4+, `base64` 0.3, and `logger` 1.7. It does not need the
@@ -96,3 +153,9 @@ and 2,048 saved sessions. These are defensive limits, not a certified hosting
 capacity. The included checks validate one full six-team room. Size a shared
 host by measuring it with your expected number of rooms and computer players.
 No public matchmaking, NAT relay, or provider-operated lobby is bundled.
+
+`bin/server` turns on YJIT when its Ruby includes it, and its banner then ends
+with `· YJIT`. On the Linux workstation, a six-bot-team match averaged 0.80 ms of
+simulation and snapshot work per 33 ms tick (p95 3.0 ms) with YJIT, against
+1.10 ms (p95 4.8 ms) without; Ruby 4.0.7 and 3.4.7 measured the same. The idle
+deployed container used about 17 MiB of memory.

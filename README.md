@@ -61,7 +61,8 @@ docker compose logs burrow
 
 Share the reachable host, port **4388/TCP**, room code, and certificate fingerprint.
 The host saves matches and supports reconnects. [Hosting](docs/HOSTING.md) covers
-port forwarding, direct Ruby, systemd, TLS, and backups.
+port forwarding, deploying to a server from GitHub Actions on a `v*` tag, direct
+Ruby, systemd, TLS, and backups.
 
 ## Develop
 
