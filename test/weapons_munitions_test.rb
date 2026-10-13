@@ -119,6 +119,23 @@ class WeaponsMunitionsTest < Minitest::Test
     assert_includes match.projectiles, shot
   end
 
+  def test_sticky_bomb_detonates_at_a_moving_grubs_terminal_position
+    match = arena
+    victim = match.worms[1]
+    shot = fire(match, "sticky", fuse: 5)
+    shot.merge!(x: victim[:x] - 17, y: victim[:y] - 10, vx: 200.0, vy: 0.0)
+    match.step
+    assert_equal victim[:id], shot[:attached_to]
+    shot[:life] = 1
+    attach_dx = shot[:attach_dx]
+    victim.merge!(vx: 600.0, vy: -100.0, launched: true)
+    match.step
+    explosion = match.events.find { |event| event[:kind] == "explosion" && event[:style] == "sticky" }
+    assert explosion
+    assert_in_delta victim[:x] + attach_dx, explosion[:x], 0.001,
+      "an attached bomb follows its victim on the terminal tick"
+  end
+
   def test_dynamite_uses_its_fixed_fuse_and_leaves_the_owner_free_to_retreat
     match = arena(retreat_seconds: 4)
     shot = fire(match, "dynamite", fuse: 1, power: 1)

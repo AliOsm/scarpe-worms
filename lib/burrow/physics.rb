@@ -240,7 +240,11 @@ module Burrow
         # An expired choir fuse waits for rest, but its physics must keep
         # running. Resetting life to one without advancing made it hover.
         choir_waiting = p[:weapon] == "holy_bomb" && !p[:choir_at] && p[:age] < 12 * TICK_RATE
-        if p[:life] > 0 || choir_waiting
+        # An attached sticky charge must follow its victim on the tick its
+        # fuse expires, so the blast is evaluated at the terminal position.
+        attached_victim = p[:stuck] && p[:attached_to] &&
+          worms.any? { |worm| worm[:id] == p[:attached_to] && worm[:hp] > 0 }
+        if p[:life] > 0 || choir_waiting || attached_victim
           if p[:stage] == "digging"
             advance_digger(p)
           elsif p[:walker]
