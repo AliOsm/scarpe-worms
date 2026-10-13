@@ -163,3 +163,40 @@ PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
 serially under `/tmp/burrow-bench.lock`. For the image-cycle timing test, set
 `SCARPE_IMAGE_BENCH_PATHS` to four local image paths separated by the platform path
 separator. Its loop alternates paths 2,400 times and requests an exact 21×29 copy.
+
+Mac update-cadence patch (independent of game code):
+
+- `0018-native-appkit-update-cadence.patch`: request a redraw as soon as a complete
+  dirty update is ready on macOS. Ruby animation already follows an absolute
+  monotonic grid; imposing another refresh interval after each actual native draw
+  adds run-loop wake lateness and coalesces otherwise timely updates. AppKit
+  coalesces queued redraw requests and CoreAnimation composes submitted images;
+  neither the redraw callback nor our presentation timestamp proves physical
+  scanout. Other platforms retain the existing software pacing. The IPC batch
+  guard and native input's existing batch-interruption behavior are unchanged;
+  idle apps still sleep, and patch 0012's critical/timerfd waits
+  are unchanged. `software_frame_pacing` records the selected path. Rust tests
+  cover 60/120 Hz update jitter, idle/resume and refresh changes, and preservation
+  of the software burst limit. High-rate Mac producers can submit more frames
+  than the display shows; no display-link protocol is introduced.
+
+```sh
+PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
+  --manifest-path vendor/scarpe/native/Cargo.toml \
+  --test compositor_cadence --test frame_deadlines
+```
+
+- `0019-native-live-frame-wall-clock.patch`: append live Unix time to each
+  bounded frame sample. On macOS, Rust's `Instant` uses `CLOCK_UPTIME_RAW`, which
+  can drift from the OS-adjusted wall clock used by another process. Keep the
+  original monotonic timestamp for duration measurements and use the live anchor
+  when correlating Ruby updates with native frames. Mapping elapsed raw time from
+  a single startup wall reading made already-presented camera changes appear to
+  stall on a Mac runner. The rendering analyzer accepts older captures and has
+  regressions for clock drift, real pending movement and backwards clock steps;
+  no performance budget is relaxed.
+
+The [Mac cadence report](../../docs/validation/mac-cadence-0.5.0.json) records
+packaged Apple silicon and Linux before/after results, including failed outlier
+gates. These patches improve submission cadence; the report does not establish
+one-to-one update delivery or physical display scanout.

@@ -5,6 +5,7 @@ their scope; generic filenames are outputs of individual tools.
 
 | Evidence | Start here |
 | --- | --- |
+| 0.5.0 Mac update cadence | [Mac and Linux comparisons, timer checks and limits](mac-cadence-0.5.0.json) |
 | 0.5.0 renderer per-frame investigation | [Linux before/after, Mac CI baseline, tests and limits](renderer-per-frame-0.5.0.json) |
 | 0.5.0 battlefield and blast physics (unreleased) | [battlefield-0.5.0-linux.json](battlefield-0.5.0-linux.json) |
 | Input latency, adaptive playback and immediate audio (unreleased) | [latency-audio-linux.json](latency-audio-linux.json) |

@@ -1,7 +1,7 @@
 """Regression checks for active-motion timing classification; no renderer needed."""
 import unittest
 
-from check_rendering import moving_intervals, stats, frame_profile_summary
+from check_rendering import moving_intervals, stats, frame_profile_summary, frame_unix
 
 
 def sample(at, moving):
@@ -10,6 +10,34 @@ def sample(at, moving):
 
 
 class MotionIntervalsTest(unittest.TestCase):
+    def test_live_frame_clock_does_not_charge_already_presented_motion_as_a_stall(self):
+        # Native elapsed has fallen 8 ms behind live wall time. This update
+        # finished before the first frame, then became idle on the next tick.
+        rows = [[16.258, 0, 0, 0, 0, 0, 0, 116.266],
+                [16.342, 0, 0, 0, 0, 0, 0, 116.350]]
+        samples = [sample(116.245, False), sample(116.262, True), sample(116.279, False)]
+        gaps = moving_intervals(rows, samples, 100)
+        self.assertAlmostEqual(13, gaps[0])
+        legacy = moving_intervals([[r[0]] for r in rows], samples, 100)
+        self.assertAlmostEqual(80, legacy[0], msg='the startup-only clock mapping invents a stall')
+
+    def test_live_clock_preserves_a_real_pending_motion_stall(self):
+        rows = [[16.258, 0, 0, 0, 0, 0, 0, 116.266],
+                [16.342, 0, 0, 0, 0, 0, 0, 116.350]]
+        samples = [sample(116.245, False), sample(116.270, True), sample(116.287, False)]
+        self.assertAlmostEqual(80, moving_intervals(rows, samples, 100)[0])
+
+    def test_continuous_motion_uses_monotonic_duration_despite_wall_clock_rate_changes(self):
+        rows = [[0, 0, 0, 0, 0, 0, 0, 100], [.016, 0, 0, 0, 0, 0, 0, 100.020]]
+        self.assertAlmostEqual(16, moving_intervals(rows, [sample(100, True)], 100)[0])
+        self.assertEqual(100.020, frame_unix(rows[1], 100))
+        self.assertEqual(100.016, frame_unix([.016], 100))
+
+    def test_backwards_wall_clock_invalidates_cross_process_correlation(self):
+        rows = [[0, 0, 0, 0, 0, 0, 0, 100], [.016, 0, 0, 0, 0, 0, 0, 99]]
+        with self.assertRaisesRegex(ValueError, 'clock moved backwards'):
+            moving_intervals(rows, [sample(100, True)], 100)
+
     def test_idle_after_a_turn_handoff_does_not_become_an_animation_stall(self):
         gaps = moving_intervals([[0], [.092]], [sample(100, True), sample(100.016, False)], 100)
         self.assertEqual(1, len(gaps))

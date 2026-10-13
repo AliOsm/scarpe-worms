@@ -1,0 +1,86 @@
+Subject: Submit complete animation updates promptly to AppKit
+
+diff --git a/native/src/window.rs b/native/src/window.rs
+--- a/native/src/window.rs
++++ b/native/src/window.rs
+@@ -244,7 +244,14 @@
+         let compositor_scaling = configure_surface_scaling(&window);
+         let refresh = window.current_monitor().and_then(|m| m.refresh_rate_millihertz());
+         self.rt.stats.set("refresh_millihertz", refresh.unwrap_or(0) as u64);
++        // The producer already supplies complete animation frames. Do not put
++        // a late software refresh deadline between those frames and AppKit's
++        // redraw drain / CoreAnimation commit. Other backends retain pacing.
++        #[cfg(target_os = "macos")]
++        let pacing = Pacing::unthrottled();
++        #[cfg(not(target_os = "macos"))]
+         let pacing = Pacing::new(refresh);
++        self.rt.stats.set("software_frame_pacing", u64::from(!cfg!(target_os = "macos")));
+         window.request_redraw();
+         let id = window.id();
+         self.windows.insert(
+diff --git a/native/src/window/pacing.rs b/native/src/window/pacing.rs
+--- a/native/src/window/pacing.rs
++++ b/native/src/window/pacing.rs
+@@ -19,6 +19,15 @@
+ const UNKNOWN_REFRESH_HZ: f64 = 120.0;
+ 
+ impl Pacing {
++    /// Submit complete updates to the compositor without a second refresh timer.
++    /// AppKit's run loop coalesces redraw requests and CoreAnimation owns display
++    /// presentation. A deadline measured from the last actual draw adds its wake
++    /// latency to every refresh, dropping otherwise timely animation updates.
++    /// This mode does not promise a display tick for each submitted frame.
++    pub fn unthrottled() -> Self {
++        Pacing { interval: Duration::ZERO, started: None, due: None }
++    }
++
+     /// `refresh_millihertz` as winit's MonitorHandle reports it.
+     pub fn new(refresh_millihertz: Option<u32>) -> Self {
+         let hz = refresh_millihertz.filter(|m| *m > 0).map_or(UNKNOWN_REFRESH_HZ, |m| m as f64 / 1000.0);
+diff --git a/native/tests/compositor_cadence.rs b/native/tests/compositor_cadence.rs
+new file mode 100644
+--- /dev/null
++++ b/native/tests/compositor_cadence.rs
+@@ -0,0 +1,42 @@
++//! The compositor path must not turn delivery jitter into skipped refreshes.
++use scarpe_native::window::pacing::Pacing;
++use std::time::{Duration, Instant};
++
++#[test]
++fn each_complete_animation_update_can_request_a_redraw_despite_jitter() {
++    for interval_us in [16_667, 8_333] {
++        let mut pacing = Pacing::unthrottled();
++        let origin = Instant::now();
++        for frame in 0..240 {
++            // Alternate early/late batch arrivals, followed by run-loop latency.
++            let jitter_us = [300, 1_900, 100, 800][frame as usize % 4];
++            let arrived = origin + Duration::from_micros(frame * interval_us + jitter_us);
++            assert!(pacing.want_frame(arrived), "update {frame} was held for another timer");
++            assert!(pacing.due().is_none());
++            pacing.drawing(arrived + Duration::from_micros(2_000));
++        }
++    }
++}
++
++#[test]
++fn compositor_cadence_resumes_immediately_after_idle_or_refresh_changes() {
++    let mut pacing = Pacing::unthrottled();
++    let origin = Instant::now();
++    for ms in [0, 17, 33, 42, 50, 67, 1_000, 1_008, 1_025] {
++        let arrived = origin + Duration::from_millis(ms);
++        assert!(pacing.want_frame(arrived));
++        pacing.drawing(arrived);
++        assert!(pacing.take_due(arrived + Duration::from_secs(1), true).is_none());
++    }
++}
++
++#[test]
++fn software_pacing_still_coalesces_bursts_on_other_backends() {
++    let mut pacing = Pacing::new(Some(60_000));
++    let origin = Instant::now();
++    pacing.drawing(origin);
++    assert!(!pacing.want_frame(origin + Duration::from_millis(4)));
++    let due = pacing.due().unwrap();
++    assert!(pacing.take_due(due, false).is_none(), "partial batches stay pending");
++    assert_eq!(pacing.take_due(due, true), Some(Duration::ZERO));
++}

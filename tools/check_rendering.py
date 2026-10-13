@@ -27,6 +27,16 @@ def stats(values):
                 max_ms=max(values), over_33ms=sum(v > 33.4 for v in values), over_50ms=sum(v > 50 for v in values))
 
 
+def frame_unix(row, started_unix):
+    """Use a live wall-clock anchor to join Ruby and native frame samples.
+
+    Rust Instant uses CLOCK_UPTIME_RAW on macOS. Mapping its elapsed time to
+    wall time once at startup drifts when the OS disciplines the wall clock.
+    Older captures retain their original, approximate mapping.
+    """
+    return row[7] if len(row) > 7 else started_unix + row[0]
+
+
 def moving_intervals(rows, samples, started_unix):
     """Measure motion gaps using completed updates, never update start times.
 
@@ -39,7 +49,9 @@ def moving_intervals(rows, samples, started_unix):
     times = [s[0] for s in samples]
     intervals = []
     for a, b in zip(rows, rows[1:]):
-        start, end = started_unix + a[0], started_unix + b[0]
+        start, end = frame_unix(a, started_unix), frame_unix(b, started_unix)
+        if end <= start:
+            raise ValueError('Frame wall clock moved backwards; repeat the timing capture')
         index = bisect.bisect_right(times, start) - 1
         stop = bisect.bisect_right(times, end)
         updates = samples[index + 1:stop]
@@ -53,7 +65,9 @@ def moving_intervals(rows, samples, started_unix):
             pending_start = start if active and pending_at < idle_at else pending_at
             duration = max(duration, end - pending_start)
         if duration > 0:
-            intervals.append(duration * 1000)
+            # Correlate against the live wall clock, but measure the selected
+            # fraction of this frame interval with the monotonic native clock.
+            intervals.append(duration / (end - start) * (b[0] - a[0]) * 1000)
     return intervals
 
 
@@ -153,7 +167,7 @@ def main():
         results = {}
         for stage in report.pop('stages'):
             first, last = stage['from'], stage['to']
-            rows = [r for r in native['frames'] if first <= native['started_unix']+r[0] <= last]
+            rows = [r for r in native['frames'] if first <= frame_unix(r, native['started_unix']) <= last]
             if stage['name'] == 'combat':
                 intervals = moving_intervals(rows, [s for s in samples if s[1] == 'combat'], native['started_unix'])
             else:
@@ -172,7 +186,8 @@ def main():
         index = gameplay['columns'].index('backlog_ms')
         report['playback_backlog'] = stats([r[index] for r in gameplay['frames'] if r[index] is not None])
         report['audio_output'] = 'Linux OpenAL null driver' if args.audio and sys.platform=='linux' else 'device' if args.audio else 'muted'
-        report['motion_analysis_version'] = 2
+        report['motion_analysis_version'] = 3
+        report['frame_clock_correlation'] = 'per-frame wall clock' if 'unix' in native['frame_columns'] else 'startup wall clock plus native elapsed (legacy)'
         report['motion_interval_selection'] = 'completed updates; already-presented motion may end at idle, new unpainted movement is charged until the next presentation; at most one sample per gap'
         if args.linux_ruby:
             report['linux_substitutions'] = dict(ruby=str(args.linux_ruby), renderer=env['SCARPE_NATIVE_BIN'],

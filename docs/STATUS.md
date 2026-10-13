@@ -1,6 +1,6 @@
 # Current status
 
-Updated **2026-10-12** · game **0.5.0 (unreleased)** · protocol **4** · macOS preview.
+Updated **2026-10-13** · game **0.5.0 (unreleased)** · protocol **4** · macOS preview.
 
 ## Implemented
 
@@ -149,6 +149,38 @@ paint/present means below 4 ms each. Its 1280×653, 1× surface does not test th
 owner's Retina display. The new patches need a packaged Mac run, device listening
 and an M3 Pro comparison before claiming the reported 0.5.0 regression is fixed.
 
+## Mac cadence follow-up (2026-10-13)
+
+The packaged integration run on Apple silicon still coalesced continuous pan:
+357 moving Ruby updates produced 274 paints (21.90 ms mean / 29.44 ms p95).
+Software frame deadlines arrived 5.70 ms late on average. Patch 0018 requests
+AppKit redraws when complete dirty updates arrive, preserving Linux pacing and
+all precise-timer protections. Ruby timers already use a fixed monotonic grid.
+The 144.8 ms maximum redraw in that capture belongs to startup, before combat;
+a separate 268.8 ms combat gap included a large layout/system stall.
+
+Patch 0019 appends live frame wall-clock anchors to correct drift between Rust's
+raw clock and Ruby wall time; durations remain monotonic and budgets unchanged.
+Two packaged captures with corrected correlation restored pan means to
+16.77/16.66 ms (358/359 and 361/361 paints/updates), with p95 20.93/17.96 ms.
+Combat mean/p95 was 15.98/22.13 and 16.23/18.78 ms. Both runs still failed the
+strict maximum-interval gate: a 67.09 ms pan gap and a 95.43 ms combat gap.
+The first overlaps a 32.04 ms native paint and a Ruby wait overshoot of 24.67 ms;
+the exact cause remains unresolved. The second gap includes 44.25 ms accumulated
+layout and 44.15 ms outside measured native phases, while Ruby keeps updating.
+Timestamped batch receipt/redraw events and native layout CPU time are the next
+diagnostics needed to attribute that delay. The
+[cadence report](validation/mac-cadence-0.5.0.json) retains all four Mac attempts,
+the clock defect and Linux before/after captures.
+
+Patch verification, 368 Rust tests (11 ignored), 133 Ruby tests/5,979 assertions,
+seven native journeys/228 assertions, timer regressions and rendering-analysis
+tests passed. Final Linux rendering passed both normally and with 100 ms timer
+slack. This establishes a submission-cadence improvement, not every-update
+delivery: combat motion selection is heuristic, paint/update counts do not
+identify individual batches, and physical scanout, ProMotion/Retina and audible
+device output still require physical Mac validation.
+
 ## Next checks
 
 The owner reports dropped frames and lagging audio in packaged 0.5.0 on an M3 Pro.
@@ -160,8 +192,9 @@ the idle 36-grub/60-flame scene drops from 4,039 to 182 allocations per frame;
 animated flames drop from 4,711 to 825. Both core suites and seven native journeys
 pass. The [Ruby frame report](validation/ruby-frame-0.5.0-linux.json) records live
 measurements, failed captures under CPU contention, and remaining zoom bursts.
-These Ruby changes have not been tested on a Mac; they do not establish that
-every frame meets its deadline or that the reported audio lag is resolved.
+These Ruby changes are included in the packaged Mac cadence captures above;
+they do not establish that every frame meets its deadline or that the reported
+audio lag is resolved.
 
 1. Play 0.5.0 with people: tune blast force, tumbling, fire damage and the new maps
    (island size, cave frequency, set-piece density) from their feedback.
@@ -175,9 +208,10 @@ every frame meets its deadline or that the reported audio lag is resolved.
 
 ## Repository handoff
 
-The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 17
+The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 19
 independent patches; the arcade interface added 0013 and the renderer investigation
-added 0014–0017. Protocol 4 hosts and clients must upgrade together.
+added 0014–0017; patch 0018 removes redundant Mac refresh deadlines and 0019
+records live clock anchors. Protocol 4 hosts and clients must upgrade together.
 Runtime assets live in the source tree, so running the game needs no image service or
 asset download. Generated bundles, raw captures and player data remain ignored.
 No publishing or deployment was performed.
