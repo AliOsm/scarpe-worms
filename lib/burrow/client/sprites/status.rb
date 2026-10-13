@@ -125,6 +125,10 @@ module Burrow
         style = event["style"]
         angle = Math.atan2(y2 - y, x2 - x) * 180 / Math::PI
         if style == "flame"
+          # The stream conveys attack reach even when decorative animation is
+          # disabled. Lines survive reduced motion, just like bullet tracers.
+          scene.fx_line(x, y, x2, y2, color: "#f57c49bb", width: 7, life: 0.16)
+          scene.fx_line(x, y, x2, y2, color: "#ffe0a0", width: 3, life: 0.14)
           length = Math.hypot(x2 - x, y2 - y)
           count = (length / 40).ceil.clamp(1, 4)
           count.times do |i|
