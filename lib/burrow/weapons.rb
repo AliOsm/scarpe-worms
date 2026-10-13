@@ -2,6 +2,11 @@
 
 module Burrow
   module Weapons
+    # Half-width and height from the foot anchor, including the solid inked
+    # bodies of the status sprites. Placement and bullets share these bounds.
+    HAZARD_BOUNDS = {"mine" => [15, 21], "barrel" => [17, 45],
+      "turret" => [21, 40], "crate" => [13, 26]}.transform_values(&:freeze).freeze
+
     def use_weapon(values)
       id = values.fetch("weapon")
       weapon = Catalog.fetch(id)
@@ -214,8 +219,7 @@ module Burrow
     end
 
     def validate_hazard_place(kind, x, y)
-      width = kind == "mine" ? 9 : 15
-      height = kind == "mine" ? 9 : 21
+      width, height = HAZARD_BOUNDS.fetch(kind)
       unless x.between?(width + 8, world_width - width - 8) &&
           y.between?(height + 10, water - 4)
         raise RuleError, "There is no clear ground ahead for that #{kind}."
@@ -435,16 +439,9 @@ module Burrow
         end
         prop = hazards.find do |h|
           next false if prop_ids.include?(h[:id])
+          bounds = HAZARD_BOUNDS[h[:kind]]
           across, above = (h[:x] - x).abs, h[:y] - y
-          case h[:kind]
-          # Bounds follow the status sprites' foot anchors, including their ink
-          # and the sentry's raised head, so visible upper bodies stop bullets.
-          when "barrel" then across < 17 && above.between?(-1, 45)
-          when "turret" then across < 21 && above.between?(-2, 40)
-          when "mine" then across < 9 && (above - 4).abs < 5
-          when "crate" then across < 13 && (above - 12).abs < 14
-          else false
-          end
+          bounds && across <= bounds[0] && above.between?(0, bounds[1])
         end
         if prop
           prop_hits[prop[:id]] += damage
