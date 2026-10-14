@@ -276,3 +276,17 @@ PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
 PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
   --manifest-path vendor/scarpe/native/Cargo.toml --lib --test images
 ```
+
+- `0025-native-windows-runtime.patch`: use Windows process groups and supported
+  forced termination, discover the `.exe` renderer, and build it with the GUI
+  subsystem to avoid a console window. Honor the existing `icon:` application
+  style in the native window, including its Windows taskbar icon. POSIX process
+  groups and EOF-based graceful shutdown are retained. The new portable Ruby
+  tests launch a child through an explicit interpreter from a Unicode/space
+  path and terminate a child that ignores EOF. Windows package verification
+  additionally checks the real renderer, window and taskbar icons.
+
+```sh
+bundle exec ruby -Ivendor/scarpe/lib -Ivendor/scarpe/lacci/lib \
+  -Ivendor/scarpe/scarpe-components/lib vendor/scarpe/test/native/windows_runtime_test.rb
+```

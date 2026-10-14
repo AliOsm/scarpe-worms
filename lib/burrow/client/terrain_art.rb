@@ -34,7 +34,9 @@ module Burrow
       def close
         @mutex.synchronize { @stopped = true; @condition.signal }
         begin
-          Process.kill("TERM", @pid) if @pid
+          # Windows Ruby cannot deliver SIGTERM to another process. The terrain
+          # worker has no persistent state; terminate it before removing tiles.
+          Process.kill(RUBY_PLATFORM.match?(/mingw|mswin/) ? "KILL" : "TERM", @pid) if @pid
         rescue Errno::ESRCH
           nil
         end

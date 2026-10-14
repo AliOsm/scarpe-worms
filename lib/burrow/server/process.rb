@@ -45,7 +45,7 @@ module Burrow
         deadline = Burrow.clock + 3
         while @pid && Process.waitpid(@pid, Process::WNOHANG).nil?
           if Burrow.clock > deadline
-            Process.kill("TERM", @pid)
+            Process.kill(RUBY_PLATFORM.match?(/mingw|mswin/) ? "KILL" : "TERM", @pid)
             unless IO.select([@io], nil, nil, 1)
               Process.kill("KILL", @pid)
             end

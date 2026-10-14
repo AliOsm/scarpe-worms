@@ -1,0 +1,37 @@
+[
+  {
+    "name": "traveling-ruby-20251122-3.4.7-windows-x86_64.tar.gz",
+    "url": "https://github.com/trubygems/traveling-ruby/releases/download/rel-20251122/traveling-ruby-20251122-3.4.7-windows-x86_64.tar.gz",
+    "digest": "sha256:25105b5a0e43bf3a41591f926ac9b033c482d1787a7c6e150b33c200d41ab5d0"
+  },
+  {
+    "name": "openal-soft-1.25.2-bin.zip",
+    "url": "https://github.com/kcat/openal-soft/releases/download/1.25.2/openal-soft-1.25.2-bin.zip",
+    "digest": "sha256:67a0c4b800bd860c93c04f38caf8cbe4875f9c84700ac430efc451f70e265434"
+  },
+  {
+    "name": "base64-0.3.0.gem",
+    "url": "https://rubygems.org/downloads/base64-0.3.0.gem",
+    "digest": "sha256:27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b"
+  },
+  {
+    "name": "logger-1.7.0.gem",
+    "url": "https://rubygems.org/downloads/logger-1.7.0.gem",
+    "digest": "sha256:196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203"
+  },
+  {
+    "name": "fastimage-2.4.1.gem",
+    "url": "https://rubygems.org/downloads/fastimage-2.4.1.gem",
+    "digest": "sha256:c64bebd46b6fd8943ab70c1e6e85ff728f970f2e48f92ecd249b6bc3a540ad20"
+  },
+  {
+    "name": "ffi-1.17.4-x64-mingw-ucrt.gem",
+    "url": "https://rubygems.org/downloads/ffi-1.17.4-x64-mingw-ucrt.gem",
+    "digest": "sha256:f6ff9618cfccc494138bddade27aa06c74c6c7bc367a1ea1103d80c2fcb9ed35"
+  },
+  {
+    "name": "chunky_png-1.4.0.gem",
+    "url": "https://rubygems.org/downloads/chunky_png-1.4.0.gem",
+    "digest": "sha256:89d5b31b55c0cf4da3cf89a2b4ebc3178d8abe8cbaf116a1dba95668502fdcfe"
+  }
+]

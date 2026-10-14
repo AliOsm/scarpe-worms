@@ -1,0 +1,99 @@
+name: Windows package and native smoke
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to build (defaults to the selected branch)
+        type: string
+  pull_request:
+    paths:
+      - .github/workflows/package-windows.yml
+      - packaging/windows/**
+      - tools/*windows*
+      - tools/package_macos.py
+      - tools/verify_scarpe.py
+      - packaging/macos/licenses/**
+      - setup-windows.ps1
+      - run-windows.ps1
+      - lib/**
+      - test/**
+      - game.rb
+      - assets/**
+      - Gemfile*
+      - SCARPE_REVISION
+      - rust-toolchain.toml
+      - patches/scarpe/**
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      RUSTFLAGS: '-C target-feature=+crt-static'
+      PYTHONUTF8: '1'
+      RUBYOPT: '-EUTF-8'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.7'
+          bundler: '4.0.16'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/cache/restore@v4
+        id: native-cache
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            vendor/scarpe/native/target
+          key: windows-native-${{ hashFiles('rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch') }}
+          restore-keys: windows-native-
+      - name: Prepare pinned dependencies and build native renderer
+        run: ./setup-windows.ps1
+      - uses: actions/cache/save@v4
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            vendor/scarpe/native/target
+          key: ${{ steps.native-cache.outputs.cache-primary-key }}
+      - name: Core Ruby regressions
+        run: bundle exec rake test
+      - name: Renderer subprocess lifecycle regressions
+        run: bundle exec ruby -Ivendor/scarpe/lib -Ivendor/scarpe/lacci/lib -Ivendor/scarpe/scarpe-components/lib vendor/scarpe/test/native/windows_runtime_test.rb
+      - name: Build portable archive and per-user installer
+        run: python -I tools/package_windows.py
+      - name: Install, play, resume, upgrade, uninstall, and run portable
+        run: python -I tools/check_windows.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: burrow-brigade-windows
+          if-no-files-found: error
+          path: |
+            dist/*-windows-x64.zip
+            dist/*-windows-x64-setup.exe
+            dist/*.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-execution-evidence
+          path: .cache/windows/evidence/
+          include-hidden-files: true

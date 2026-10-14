@@ -1,0 +1,176 @@
+--- a/lib/scarpe/native/child.rb
++++ b/lib/scarpe/native/child.rb
+@@ -132,13 +132,14 @@
+     extend self
+ 
+     CRATE = File.join(ROOT, "native")
+-    DEV_BINARY = File.join(CRATE, "target", "release", "scarpe-native")
++    NAME = RUBY_PLATFORM.match?(/mingw|mswin/) ? "scarpe-native.exe" : "scarpe-native"
++    DEV_BINARY = File.join(CRATE, "target", "release", NAME)
+ 
+     def path
+       explicit = ENV["SCARPE_NATIVE_BIN"].to_s
+       return explicit unless explicit.empty?
+ 
+-      packaged_binary || which("scarpe-native") || (dev_binary if checkout?) ||
++      packaged_binary || which(NAME) || (dev_binary if checkout?) ||
+         raise(ChildNotFound, "Can't find the scarpe-native binary. Set SCARPE_NATIVE_BIN to its path.")
+     end
+ 
+@@ -180,7 +181,7 @@
+ 
+     def packaged_binary
+       beside_script = File.dirname(File.expand_path($PROGRAM_NAME))
+-      candidates = [beside_script, File.expand_path("../MacOS", beside_script)].map { |dir| File.join(dir, "scarpe-native") }
++      candidates = [beside_script, File.expand_path("../MacOS", beside_script)].map { |dir| File.join(dir, NAME) }
+       candidates.find { |candidate| File.executable?(candidate) }
+     end
+ 
+@@ -387,7 +388,8 @@
+     # and a double-click passes no flags, so "ZARKING (Rust).app" died there. An env hash may lead.
+     def spawn(command)
+       env, (program, *args) = command.partition { |part| part.is_a?(Hash) }
+-      Open3.popen3(*env, [program, program], *args, pgroup: true)
++      group = RUBY_PLATFORM.match?(/mingw|mswin/) ? {new_pgroup: true} : {pgroup: true}
++      Open3.popen3(*env, [program, program], *args, **group)
+     rescue SystemCallError => e
+       raise ChildNotFound, "Can't start #{program}: #{e.message}"
+     end
+@@ -502,7 +504,12 @@
+ 
+     # To the child's whole process group (it leads one), so what it started goes with it.
+     def signal(name)
+-      Process.kill(name, -@pid)
++      if RUBY_PLATFORM.match?(/mingw|mswin/)
++        # Ruby can terminate a Windows child, but cannot send it POSIX SIGTERM.
++        Process.kill("KILL", @pid)
++      else
++        Process.kill(name, -@pid)
++      end
+     rescue SystemCallError
+       nil
+     end
+--- a/native/src/main.rs
++++ b/native/src/main.rs
+@@ -1,5 +1,7 @@
+ //! scarpe-native [--headless] [--scale F] [--fonts system|bundled] [--trace]
+ //!               [--exit-after SECS] [--inactive] [--ghost]
++
++#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+ 
+ use scarpe_native::runtime::Options;
+ use scarpe_native::text::FontMode;
+--- a/lacci/lib/shoes.rb
++++ b/lacci/lib/shoes.rb
+@@ -186,11 +186,12 @@
+       features: [],
+       margin: nil,
+       owner: nil,
++      icon: nil,
+       **_extras,
+       &app_code_body
+     )
+       f = [features].flatten # Make sure this is a list, not a single symbol
+-      app = Shoes::App.new(title:, width:, height:, resizable:, features: f, owner:, &app_code_body)
++      app = Shoes::App.new(title:, width:, height:, resizable:, features: f, owner:, icon:, &app_code_body)
+ 
+       # If there's a pending Shoes subclass (e.g., class Book < Shoes), use it
+       if Shoes.pending_app_class
+--- a/lacci/lib/shoes/app.rb
++++ b/lacci/lib/shoes/app.rb
+@@ -24,7 +24,7 @@
+     # `owner` method returns the parent app.
+     attr_reader :owner
+ 
+-    shoes_styles :title, :width, :height, :resizable, :features, :opacity, :cursor, :owner
++    shoes_styles :title, :width, :height, :resizable, :features, :opacity, :cursor, :owner, :icon
+ 
+     # This is defined to avoid the linkable-id check in the Shoes-style method_missing def'n
+     attr_reader :features
+@@ -59,6 +59,7 @@
+       resizable: true,
+       features: [],
+       owner: nil,
++      icon: nil,
+       &app_code_body
+     )
+       log_init('Shoes::App')
+--- a/native/src/window.rs
++++ b/native/src/window.rs
+@@ -30,7 +30,7 @@
+ use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy};
+ use winit::keyboard::{Key as WKey, ModifiersState, NamedKey};
+ use winit::platform::modifier_supplement::KeyEventExtModifierSupplement;
+-use winit::window::{CursorIcon, Window, WindowId};
++use winit::window::{CursorIcon, Icon, Window, WindowId};
+ 
+ pub enum UserEvent {
+     /// Every complete line stdin had ready, so a batch wakes the loop once.
+@@ -188,12 +188,23 @@
+         let props = self.rt.doc.get(app).map(|n| n.props.clone()).unwrap_or_default();
+         let title = self.rt.window_title(app);
+         let resizable = !view.standalone && props.get("resizable").and_then(|v| v.as_bool()).unwrap_or(true);
++        let icon = props.str("icon").and_then(|path| image::open(path).ok()).and_then(|image| {
++            let rgba = image.to_rgba8();
++            let (width, height) = rgba.dimensions();
++            Icon::from_rgba(rgba.into_raw(), width, height).ok()
++        });
+         // Hidden until its screen reader adapter is in place: AccessKit has to come first.
+         let attrs = Window::default_attributes()
+             .with_title(title)
++            .with_window_icon(icon.clone())
+             .with_inner_size(LogicalSize::new(view.size.0 as f64, view.size.1 as f64))
+             .with_resizable(resizable)
+             .with_visible(false);
++        #[cfg(target_os = "windows")]
++        let attrs = {
++            use winit::platform::windows::WindowAttributesExtWindows;
++            attrs.with_taskbar_icon(icon)
++        };
+         let attrs = if self.ghost { ghost::attributes(attrs) } else { attrs.with_active(!self.inactive) };
+         let window = match el.create_window(attrs) {
+             Ok(w) => Rc::new(w),
+--- /dev/null
++++ b/test/native/windows_runtime_test.rb
+@@ -0,0 +1,41 @@
++# frozen_string_literal: true
++
++require_relative "helper"
++
++# These tests run on POSIX and Windows. Invoke the interpreter explicitly;
++# Windows cannot execute a Ruby file by its shebang.
++class WindowsRuntimeTest < Minitest::Test
++  Child = Scarpe::Native::Child
++
++  def teardown
++    @child&.close
++  end
++
++  def test_pipe_handshake_and_graceful_shutdown_without_a_posix_shell
++    Dir.mktmpdir do |directory|
++      script = File.join(directory, "Renderer Équipe (test).rb")
++      FileUtils.cp(NativeTestHelpers::FAKE_CHILD, script)
++      @child = Child.new([RbConfig.ruby, "-EUTF-8", script])
++      assert_equal "fake", @child.version
++      assert_equal "pong", @child.request(:ping)["value"]
++      @child.close
++      assert @child.exit_status.success?
++    end
++  end
++
++  def test_a_child_that_ignores_pipe_eof_is_terminated
++    source = <<~'CODE'
++      STDOUT.sync = true
++      STDIN.gets
++      puts '{"t":"ready","v":1,"version":"stalled"}'
++      sleep 60
++      exit 77
++    CODE
++    @child = Child.new([RbConfig.ruby, "-e", source])
++    assert_equal "stalled", @child.version
++    @child.close(grace: 0.02)
++    refute_nil @child.exit_status, "the forced shutdown must reap the renderer"
++    # TerminateProcess can report exit code zero; it has no POSIX signal status.
++    refute_equal 77, @child.exit_status.exitstatus, "the child must not finish its stalled workload"
++  end
++end

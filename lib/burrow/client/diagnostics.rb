@@ -89,10 +89,25 @@ module Burrow
 
       # Local timings only. Keep three sessions, with each renderer retaining
       # only its latest 10,000 frames. Explicit benchmark directories take priority.
+      def self.log_dir(platform: RUBY_PLATFORM, env: ENV, home: Dir.home)
+        return env["BURROW_LOG_DIR"] if env.key?("BURROW_LOG_DIR")
+
+        case platform
+        when /darwin/
+          File.join(home, "Library/Logs/Burrow Brigade")
+        when /mingw|mswin/
+          File.join(env.fetch("LOCALAPPDATA", File.join(home, "AppData/Local")), "Burrow Brigade/Logs")
+        else
+          state = env["XDG_STATE_HOME"]
+          state = File.join(home, ".local/state") if state.to_s.empty?
+          File.join(state, "burrow-brigade/logs")
+        end
+      end
+
       def self.start
         return if ENV.key?("SCARPE_NATIVE_STATS")
 
-        root = File.join(ENV.fetch("BURROW_LOG_DIR") { File.join(Dir.home, "Library/Logs/Burrow Brigade") }, "performance")
+        root = File.join(log_dir, "performance")
         FileUtils.mkdir_p(root, mode: 0o700)
         name = "session-#{Time.now.utc.strftime('%Y%m%dT%H%M%S')}-#{Process.pid}"
         directory = File.join(root, name)

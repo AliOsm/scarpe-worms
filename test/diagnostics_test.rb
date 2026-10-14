@@ -5,6 +5,23 @@ require_relative "../lib/burrow/client/diagnostics"
 require_relative "../lib/burrow/mac_activity"
 
 class DiagnosticsTest < Minitest::Test
+  def test_log_directory_follows_platform_conventions_and_explicit_overrides
+    diagnostics = Burrow::Client::Diagnostics
+    assert_equal "/users/Pip/Library/Logs/Burrow Brigade",
+      diagnostics.log_dir(platform: "arm64-darwin", env: {}, home: "/users/Pip")
+    assert_equal "C:/Users/Zoë Q/AppData/Local/Burrow Brigade/Logs",
+      diagnostics.log_dir(platform: "x64-mingw-ucrt", env: {"LOCALAPPDATA" => "C:/Users/Zoë Q/AppData/Local"})
+    assert_equal "/state/burrow-brigade/logs",
+      diagnostics.log_dir(platform: "x86_64-linux", env: {"XDG_STATE_HOME" => "/state"})
+    assert_equal "/users/Pip/.local/state/burrow-brigade/logs",
+      diagnostics.log_dir(platform: "x86_64-linux", env: {}, home: "/users/Pip")
+    assert_equal "/users/Pip/.local/state/burrow-brigade/logs",
+      diagnostics.log_dir(platform: "x86_64-linux", env: {"XDG_STATE_HOME" => ""}, home: "/users/Pip")
+    %w[arm64-darwin x64-mingw-ucrt x86_64-linux].each do |platform|
+      assert_equal "/custom/logs", diagnostics.log_dir(platform: platform, env: {"BURROW_LOG_DIR" => "/custom/logs"})
+    end
+  end
+
   def test_frame_log_keeps_recent_updates_in_order_without_player_content
     Dir.mktmpdir do |directory|
       log = Burrow::Client::Diagnostics::FrameLog.new(directory: directory)

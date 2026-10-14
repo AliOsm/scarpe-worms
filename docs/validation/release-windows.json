@@ -1,0 +1,64 @@
+{
+ "version": "0.5.4",
+ "date": "2026-10-14",
+ "scope": "Windows x64 client: build, package and functional verification on a GitHub-hosted runner",
+ "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38528316309",
+ "commit": "075dcf35c328f3bbaca123e9e0b5602f78f2ed62",
+ "runner": {
+  "image": "win22",
+  "image_version": "20261004.326.1",
+  "platform": "Windows-2022Server-10.0.20348-SP0"
+ },
+ "toolchain": {
+  "ruby": "3.4.7 (RubyInstaller x64-mingw-ucrt via ruby/setup-ruby)",
+  "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "target": "x86_64-pc-windows-msvc",
+  "scarpe_revision": "eb883bc1778839735a6d8d1921911c656409bb2c",
+  "scarpe_patches": "0001-0025 (0025: Windows runtime)"
+ },
+ "assets": [
+  {
+   "name": "Burrow-Brigade-0.5.4-windows-x64.zip",
+   "bytes": 56256144,
+   "sha256": "8b3325388a1d7b79343b8cb22542d072435f81f9735553df6f45d04326aab5c3"
+  },
+  {
+   "name": "Burrow-Brigade-0.5.4-windows-x64-setup.exe",
+   "bytes": 48417228,
+   "sha256": "c63f90419f10e7ece511de001079fc81f5dcb89cc82e875cd843f9f6bf4f43d8"
+  }
+ ],
+ "verified": {
+  "core_suite_on_windows": "bundle exec rake test passed on the runner",
+  "renderer_subprocess_lifecycle": "vendor/scarpe/test/native/windows_runtime_test.rb passed",
+  "installer": "per-user setup.exe installed silently into a path with spaces and non-ASCII characters, then upgraded in place and uninstalled",
+  "installed_app": {
+   "windowed": true,
+   "menu": true,
+   "teams": 3,
+   "terrain": true,
+   "openal_available": true,
+   "decoded_cues": 76,
+   "single_taskbar_window_with_icons": true,
+   "gui_ruby_without_console": true
+  },
+  "portable_zip": {
+   "headless": true,
+   "menu": true,
+   "terrain": true
+  },
+  "both_layouts": "first launch starts a three-team bot match and presents a fired shot; second launch resumes the same match and player; saves, preferences and per-session timing logs (%LOCALAPPDATA%\\Burrow Brigade\\Logs) exist; no orphan processes; terrain scratch removed; Unicode profile and data paths"
+ },
+ "local_checks_linux": {
+  "ruby_4_0_7": "328 runs, 10,166 assertions, 0 failures",
+  "ruby_3_4_7": "328 runs, 10,166 assertions, 0 failures",
+  "native_journeys": "7/7",
+  "verify_scarpe": "passed"
+ },
+ "limits": [
+  "Binaries are unsigned: Windows SmartScreen warns on first run.",
+  "Verified on Windows Server 2022 runner images (x64); Windows 10/11 desktops and ARM64 Windows were not run.",
+  "Audio was opened and cues decoded on the runner; nobody has listened on a Windows machine.",
+  "The agent's session ended before writing its own report; the coordinator compiled this record from the run's evidence artifact."
+ ]
+}

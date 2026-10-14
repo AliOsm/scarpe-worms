@@ -1,0 +1,21 @@
+Burrow Brigade for Windows 10 (1903+) and Windows 11, x64
+
+Run Burrow Brigade.exe. The complete folder must remain together. Ruby, Rust,
+OpenAL and the game assets are included; no development tools are needed.
+The setup.exe installs for your user, adds a Start menu shortcut and provides
+an uninstaller. The ZIP runs from any extracted folder without installation.
+
+Settings, saved matches and host state: %LOCALAPPDATA%\burrow-brigade
+Launcher and timing logs: %LOCALAPPDATA%\Burrow Brigade\Logs
+Updates and uninstalling keep your saved matches. To transfer a save, quit the
+game first and copy its data folder. The portable ZIP uses the same data folder.
+
+These binaries are unsigned. Windows SmartScreen may warn about an unknown
+publisher. Only run a download you trust; compare its .sha256 file if needed.
+
+Choose Quick battle for a match against computer teams. See the bundled docs
+for controls and hosting. Hosting for friends may require a Windows Firewall
+rule and port forwarding for TCP 4388.
+
+Licenses and dependency source links: resources\licenses\WINDOWS-NOTICES.md
+Project and source: https://github.com/AliOsm/scarpe-worms
