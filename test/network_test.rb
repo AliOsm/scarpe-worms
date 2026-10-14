@@ -406,13 +406,44 @@ class NetworkTest < Minitest::Test
     accepted(host, "start")
     packet = host.state { |s| s.dig("match", "tick").to_i >= 21 }
     frames = packet.dig("match", "motion", "frames")
-    assert_operator frames.length, :<=, 4
     last = packet.dig("match", "tick")
+    # A descheduled reactor may catch up four ticks at once, plus the overlap.
+    # Backpressure may skip broadcasts too. The wire contract is a contiguous
+    # suffix within the retained history, not a wall-clock packet length.
+    assert_operator frames.length, :<=, 18
+    assert_equal (frames.first.fetch("tick")..last).to_a, frames.map { |frame| frame.fetch("tick") }
     following = host.state { |s| s.dig("match", "tick").to_i > last }
     assert_equal last, following.dig("match", "motion", "frames", 0, "tick")
+    assert_equal (last..following.dig("match", "tick")).to_a, following.dig("match", "motion", "frames").map { |frame| frame.fetch("tick") }
     accepted(host, "sync")
     synced = host.state { |s| s.dig("match", "terrain") && s.dig("match", "tick").to_i >= 21 }
     assert_equal 18, synced.dig("match", "motion", "frames").length
+  end
+
+  def test_incremental_history_covers_all_four_catch_up_ticks
+    stop_server
+    room = Burrow::Server::Room.new(code: "TICKS1", host: {id: "p0", name: "History"}, name: "History",
+      config: {"mines" => 0, "barrels" => 0, "crates" => false})
+    room.command("p0", "add_bot", {})
+    room.command("p0", "start", {})
+    room.match.step(21)
+    reactor = Burrow::Server::Reactor.allocate
+    reactor.define_singleton_method(:room_for) { |_| room }
+    peer = Burrow::Server::Peer.new(nil, "127.0.0.1")
+    reactor.send(:send_state, peer, full: true)
+    peer.output.clear
+    first = room.match.tick
+    room.match.step(4)
+    reactor.send(:send_state, peer)
+    delta = JSON.parse(peer.output)
+    assert_equal (first..first + 4).to_a, delta.dig("match", "motion", "frames").map { |frame| frame["tick"] }
+    peer.output.clear
+    room.match.step
+    reactor.send(:send_state, peer)
+    assert_equal [first + 4, first + 5], JSON.parse(peer.output).dig("match", "motion", "frames").map { |frame| frame["tick"] }
+    peer.output.clear
+    reactor.send(:send_state, peer, full: true)
+    assert_equal 18, JSON.parse(peer.output).dig("match", "motion", "frames").length
   end
 
   def test_queuing_an_intent_wakes_the_connection_wait_without_polling
