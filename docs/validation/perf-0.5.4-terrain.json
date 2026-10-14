@@ -1,0 +1,577 @@
+{
+  "format": 2,
+  "area": "terrain",
+  "release": "0.5.4",
+  "baseline_commit": "8bf41ed",
+  "candidate_base": "e3dfa9b",
+  "terrain_source_sha256": "4638c737a919a185f45f8bdb246c6c49fe3acdc0e6bffe895c5c86cf5b63e440",
+  "machine": {
+    "os": "Linux 7.0.0-31-generic x86_64",
+    "cpu": "Intel Core i5-8500, 6 cores, 3.00 GHz",
+    "ruby_primary": "3.4.7",
+    "ruby_secondary": "4.0.7",
+    "measurement_lock": ".perf-round/bin/bench",
+    "heavy_lock": ".perf-round/bin/heavy"
+  },
+  "scenario": {
+    "name": "heavy",
+    "seed": "perf-heavy-6",
+    "teams": 6,
+    "worms_per_team": 6,
+    "ticks": 900,
+    "budget_ms": 33.333333333333336,
+    "pairs": 5,
+    "method": "Interleaved A/B; unpaced logical ticks; full-frame encode included on terrain revisions. Canonical checkpoint hashing is outside timed ticks.",
+    "attribution": "Candidate includes accepted host hot-loop changes; ordinary tick p50 gains are not solely terrain gains.",
+    "spread": "Statistics summarize the five per-run percentiles/maxima; raw captures retain all 900 tick samples."
+  },
+  "experiments": [
+    {
+      "id": "terrain-rle-guarded-openssl",
+      "hypothesis": "Run-oriented deflate and accelerated SHA-256 remove revision stalls while retaining protocol-4 decoding.",
+      "change": "Use BEST_SPEED + RLE, falling back to default deflate above 192 KiB compressed; compute memoized SHA-256 with OpenSSL.",
+      "files": [
+        "lib/burrow/terrain.rb"
+      ],
+      "metric": "Median run maximum tick latency; cold export/checksum and packet/playback guards",
+      "baseline": {
+        "n": 5,
+        "ticks_per_run": 900,
+        "ticks_over_budget": [
+          16,
+          16,
+          16,
+          16,
+          16
+        ],
+        "tick_p50_ms": {"n": 5, "median": 1.0128, "min": 1.0027, "max": 1.0187, "iqr": 0.0097},
+        "tick_p95_ms": {"n": 5, "median": 1.945, "min": 1.9312, "max": 1.9905, "iqr": 0.0283},
+        "tick_max_ms": {"n": 5, "median": 70.6317, "min": 64.485, "max": 71.2046, "iqr": 5.2728},
+        "tick_cpu_p50_ms": {"n": 5, "median": 1.0098, "min": 1.0023, "max": 1.0154, "iqr": 0.0065},
+        "tick_cpu_max_ms": {"n": 5, "median": 63.8444, "min": 63.6585, "max": 71.2, "iqr": 7.0001},
+        "terrain_export_p50_ms": {"n": 5, "median": 47.5669, "min": 47.5199, "max": 47.8368, "iqr": 0.0589},
+        "terrain_export_p95_ms": {"n": 5, "median": 48.7253, "min": 48.0978, "max": 48.8351, "iqr": 0.2643},
+        "terrain_export_max_ms": {"n": 5, "median": 55.4525, "min": 49.2512, "max": 57.8958, "iqr": 6.5559},
+        "terrain_checksum_p50_ms": {"n": 5, "median": 11.5799, "min": 11.5724, "max": 11.591, "iqr": 0.0008},
+        "terrain_checksum_max_ms": {"n": 5, "median": 11.6923, "min": 11.6748, "max": 13.3531, "iqr": 0.5856},
+        "blast_to_encoded_packet_p50_ms": {"n": 5, "median": 61.4407, "min": 61.1699, "max": 61.9258, "iqr": 0.4041},
+        "blast_to_encoded_packet_max_ms": {"n": 5, "median": 64.4874, "min": 62.6063, "max": 69.8944, "iqr": 6.2192},
+        "persist_p50_ms": {"n": 5, "median": 6.5133, "min": 5.6706, "max": 11.2676, "iqr": 0.2257},
+        "persist_max_ms": {"n": 5, "median": 12.6607, "min": 11.4236, "max": 15.1774, "iqr": 1.3991},
+        "terrain_packet_bytes_max": 91825.0,
+        "terrain_packet_data_bytes_max": 22068.0,
+        "terrain_packet_compressed_bytes_max": 16550.0
+      },
+      "candidate": {
+        "n": 5,
+        "ticks_per_run": 900,
+        "ticks_over_budget": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "tick_p50_ms": {"n": 5, "median": 0.9001, "min": 0.8964, "max": 0.9034, "iqr": 0.0018},
+        "tick_p95_ms": {"n": 5, "median": 1.8296, "min": 1.819, "max": 1.8566, "iqr": 0.0247},
+        "tick_max_ms": {"n": 5, "median": 26.2832, "min": 25.5834, "max": 28.5672, "iqr": 0.5103},
+        "tick_cpu_p50_ms": {"n": 5, "median": 0.8992, "min": 0.8961, "max": 0.9002, "iqr": 0.0002},
+        "tick_cpu_max_ms": {"n": 5, "median": 26.2763, "min": 25.583, "max": 27.4465, "iqr": 0.501},
+        "terrain_export_p50_ms": {"n": 5, "median": 16.7545, "min": 16.6794, "max": 16.78, "iqr": 0.0529},
+        "terrain_export_p95_ms": {"n": 5, "median": 17.64, "min": 16.8246, "max": 17.6867, "iqr": 0.7695},
+        "terrain_export_max_ms": {"n": 5, "median": 17.8269, "min": 17.7696, "max": 18.2403, "iqr": 0.0999},
+        "terrain_checksum_p50_ms": {"n": 5, "median": 5.0219, "min": 5.0139, "max": 5.038, "iqr": 0.0118},
+        "terrain_checksum_max_ms": {"n": 5, "median": 5.0816, "min": 5.0562, "max": 5.2477, "iqr": 0.115},
+        "blast_to_encoded_packet_p50_ms": {"n": 5, "median": 23.9708, "min": 23.9338, "max": 24.1163, "iqr": 0.1423},
+        "blast_to_encoded_packet_max_ms": {"n": 5, "median": 25.2286, "min": 24.5916, "max": 27.8575, "iqr": 0.4915},
+        "persist_p50_ms": {"n": 5, "median": 6.5304, "min": 5.8435, "max": 10.0473, "iqr": 0.3656},
+        "persist_max_ms": {"n": 5, "median": 12.3187, "min": 11.5718, "max": 15.434, "iqr": 2.4347},
+        "terrain_packet_bytes_max": 90225.0,
+        "terrain_packet_data_bytes_max": 20296.0,
+        "terrain_packet_compressed_bytes_max": 15220.0
+      },
+      "verdict": "ACCEPT",
+      "reason": "All five paired tick maxima and cold-export/checksum medians improve; zero candidate late ticks; heavy packets shrink. Expanded packet/save checks, deterministic checkpoints and both core/native suites pass."
+    },
+    {
+      "id": "ab-level1",
+      "hypothesis": "Reduce full terrain export cost without changing protocol 4.",
+      "change": "ab-level1",
+      "files": [
+        "lib/burrow/terrain.rb"
+      ],
+      "metric": "Heavy tick maximum, cold export and packet size",
+      "baseline": {
+        "n": 5,
+        "tick_max_ms": {"n": 5, "median": 64.1849, "min": 63.6536, "max": 66.6691, "iqr": 2.6578},
+        "export_p50_ms": {"n": 5, "median": 47.7805, "min": 47.5904, "max": 47.8909, "iqr": 0.1653},
+        "ticks_over_budget": [
+          16,
+          16,
+          16,
+          16,
+          16
+        ],
+        "frame_max_bytes": 91825.0
+      },
+      "candidate": {
+        "n": 5,
+        "tick_max_ms": {"n": 5, "median": 31.8528, "min": 31.7948, "max": 33.4609, "iqr": 0.4039},
+        "export_p50_ms": {"n": 5, "median": 15.949, "min": 15.9328, "max": 15.9812, "iqr": 0.0198},
+        "ticks_over_budget": [
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        "frame_max_bytes": 113405.0
+      },
+      "verdict": "REJECT",
+      "reason": "Packet guard regresses: frame max 113405 vs 91825 bytes (+23.5%). RLE provides a comparable latency win with smaller packets.",
+      "rejected_patch": "<scratch>/terrain/rejected/terrain-level1.patch"
+    },
+    {
+      "id": "ab-final",
+      "hypothesis": "Reduce full terrain export cost without changing protocol 4.",
+      "change": "ab-final",
+      "files": [
+        "lib/burrow/terrain.rb"
+      ],
+      "metric": "Heavy tick maximum, cold export and packet size",
+      "baseline": {
+        "n": 5,
+        "tick_max_ms": {"n": 5, "median": 67.4615, "min": 63.4306, "max": 71.6873, "iqr": 5.0496},
+        "export_p50_ms": {"n": 5, "median": 47.6077, "min": 47.5557, "max": 48.0458, "iqr": 0.0645},
+        "ticks_over_budget": [
+          16,
+          16,
+          16,
+          16,
+          16
+        ],
+        "frame_max_bytes": 91825.0
+      },
+      "candidate": {
+        "n": 5,
+        "tick_max_ms": {"n": 5, "median": 32.2295, "min": 31.8283, "max": 34.2572, "iqr": 0.4888},
+        "export_p50_ms": {"n": 5, "median": 16.1601, "min": 16.1463, "max": 16.2947, "iqr": 0.0216},
+        "ticks_over_budget": [
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "frame_max_bytes": 108917.0
+      },
+      "verdict": "REJECT",
+      "reason": "Level 3 increases frame max 18.6%; one of five confirmation runs is late. The isolated tail is not attributed to scheduling. Guarded RLE plus accelerated SHA is preferred.",
+      "rejected_patch": "<scratch>/terrain/rejected/terrain-level3.patch"
+    },
+    {
+      "id": "ab-rle",
+      "hypothesis": "Reduce full terrain export cost without changing protocol 4.",
+      "change": "ab-rle",
+      "files": [
+        "lib/burrow/terrain.rb"
+      ],
+      "metric": "Heavy tick maximum, cold export and packet size",
+      "baseline": {
+        "n": 5,
+        "tick_max_ms": {"n": 5, "median": 63.7468, "min": 63.1689, "max": 66.5523, "iqr": 1.6069},
+        "export_p50_ms": {"n": 5, "median": 47.5287, "min": 47.4874, "max": 47.7342, "iqr": 0.1913},
+        "ticks_over_budget": [
+          16,
+          16,
+          16,
+          16,
+          16
+        ],
+        "frame_max_bytes": 91825.0
+      },
+      "candidate": {
+        "n": 5,
+        "tick_max_ms": {"n": 5, "median": 33.1317, "min": 32.9809, "max": 41.6278, "iqr": 0.1988},
+        "export_p50_ms": {"n": 5, "median": 16.8211, "min": 16.8015, "max": 16.9617, "iqr": 0.1142},
+        "ticks_over_budget": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "frame_max_bytes": 90225.0
+      },
+      "verdict": "REJECT",
+      "reason": "RLE alone improves typical speed/size but lacks budget margin and expands the valid striped-save fixture beyond both packet limits. Retain its strategy only in the guarded final combination.",
+      "rejected_patch": "<scratch>/terrain/rejected/terrain-rle.patch"
+    },
+    {
+      "id": "ab-rle-sha",
+      "hypothesis": "Reduce full terrain export cost without changing protocol 4.",
+      "change": "ab-rle-sha",
+      "files": [
+        "lib/burrow/terrain.rb"
+      ],
+      "metric": "Heavy tick maximum, cold export and packet size",
+      "baseline": {
+        "n": 5,
+        "tick_max_ms": {"n": 5, "median": 64.4678, "min": 63.2851, "max": 111.1592, "iqr": 4.7924},
+        "export_p50_ms": {"n": 5, "median": 47.5769, "min": 47.4644, "max": 48.479, "iqr": 0.1955},
+        "ticks_over_budget": [
+          16,
+          16,
+          16,
+          16,
+          16
+        ],
+        "frame_max_bytes": 91825.0
+      },
+      "candidate": {
+        "n": 5,
+        "tick_max_ms": {"n": 5, "median": 25.9098, "min": 25.5559, "max": 27.2463, "iqr": 0.7247},
+        "export_p50_ms": {"n": 5, "median": 16.7704, "min": 16.7447, "max": 16.7802, "iqr": 0.0153},
+        "ticks_over_budget": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "frame_max_bytes": 90225.0
+      },
+      "verdict": "REJECT",
+      "reason": "Zero heavy overruns, but an old-loadable striped mask expands from 3760 to 834120 base64 bytes. This unguarded version fails compatibility; the final version uses default compression for it.",
+      "rejected_patch": "<scratch>/terrain/rejected/terrain-rle-sha-unguarded.patch"
+    },
+    {
+      "id": "background-encoder",
+      "hypothesis": "Remove remaining synchronous work from the reactor.",
+      "change": "Not implemented",
+      "files": [
+        "lib/burrow/server/reactor.rb"
+      ],
+      "metric": "Not measured",
+      "baseline": null,
+      "candidate": null,
+      "verdict": "PROPOSAL",
+      "reason": "A bounded immutable revision snapshot, newest-wins publication and safe persistence lifecycle would be required. Final synchronous gameplay measurements meet the target."
+    },
+    {
+      "id": "burst-coalescing",
+      "hypothesis": "Remove remaining synchronous work from the reactor.",
+      "change": "Not implemented",
+      "files": [
+        "lib/burrow/server/reactor.rb"
+      ],
+      "metric": "Not measured",
+      "baseline": null,
+      "candidate": null,
+      "verdict": "PROPOSAL",
+      "reason": "No prototype kept: delaying publication could add first-crater latency. Measure independently if burst workloads still exceed the budget."
+    }
+  ],
+  "sessions": {
+    "local": {
+      "baseline": {
+        "blast_to_sent_ms": {"n": 5, "median": 62.4277, "min": 61.4863, "max": 83.3837, "iqr": 0.8484},
+        "finished_to_sent_ms": {"n": 5, "median": 62.0974, "min": 61.1504, "max": 82.2861, "iqr": 0.8877},
+        "blast_to_worker_ready_ms": {"n": 5, "median": 371.2424, "min": 366.2037, "max": 438.9194, "iqr": 11.2035},
+        "request_to_worker_ready_ms": {"n": 5, "median": 300.221, "min": 300.189, "max": 350.2328, "iqr": 0.1991},
+        "packet_bytes": {"n": 5, "median": 43881, "min": 43881, "max": 43881, "iqr": 0},
+        "underruns": [
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        "resyncs": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "full_history": [
+          18,
+          18,
+          18,
+          18,
+          18
+        ],
+        "frame_cpu_p95": {"n": 5, "median": 0.7843, "min": 0.6896, "max": 0.8239, "iqr": 0.0593},
+        "receive_cpu_p95": {"n": 5, "median": 0.1584, "min": 0.1505, "max": 0.1695, "iqr": 0.0133},
+        "initial_terrain_frame_max": {"n": 5, "median": 66100, "min": 66099, "max": 66103, "iqr": 3}
+      },
+      "candidate": {
+        "blast_to_sent_ms": {"n": 5, "median": 31.5241, "min": 23.7323, "max": 50.6798, "iqr": 19.8549},
+        "finished_to_sent_ms": {"n": 5, "median": 30.1712, "min": 23.4234, "max": 49.5553, "iqr": 19.0057},
+        "blast_to_worker_ready_ms": {"n": 5, "median": 351.7491, "min": 334.678, "max": 360.236, "iqr": 13.0806},
+        "request_to_worker_ready_ms": {"n": 5, "median": 300.2698, "min": 300.2119, "max": 316.8929, "iqr": 1.247},
+        "packet_bytes": {"n": 5, "median": 41645, "min": 41645, "max": 41645, "iqr": 0},
+        "underruns": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "resyncs": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "full_history": [
+          18,
+          18,
+          18,
+          18,
+          18
+        ],
+        "frame_cpu_p95": {"n": 5, "median": 0.7594, "min": 0.6972, "max": 0.8838, "iqr": 0.0174},
+        "receive_cpu_p95": {"n": 5, "median": 0.167, "min": 0.1487, "max": 0.1801, "iqr": 0.0031},
+        "initial_terrain_frame_max": {"n": 5, "median": 63867, "min": 63867, "max": 63869, "iqr": 0}
+      },
+      "paired_improvements": {
+        "blast_to_sent_ms": 5,
+        "blast_to_worker_ready_ms": 5
+      }
+    },
+    "remote": {
+      "baseline": {
+        "blast_to_sent_ms": {"n": 5, "median": 118.9264, "min": 62.0287, "max": 155.6235, "iqr": 39.2926},
+        "finished_to_sent_ms": {"n": 5, "median": 117.8156, "min": 61.7104, "max": 154.5116, "iqr": 39.4488},
+        "blast_to_worker_ready_ms": {"n": 5, "median": 474.3451, "min": 415.0514, "max": 559.7039, "iqr": 65.1093},
+        "request_to_worker_ready_ms": {"n": 5, "median": 300.2288, "min": 300.1952, "max": 355.6835, "iqr": 31.6992},
+        "packet_bytes": {"n": 5, "median": 46695, "min": 46677, "max": 46701, "iqr": 6},
+        "underruns": [
+          0,
+          3,
+          0,
+          2,
+          1
+        ],
+        "resyncs": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "full_history": [
+          18,
+          18,
+          18,
+          18,
+          18
+        ],
+        "frame_cpu_p95": {"n": 5, "median": 0.7061, "min": 0.6106, "max": 0.7966, "iqr": 0.0291},
+        "receive_cpu_p95": {"n": 5, "median": 0.1699, "min": 0.1038, "max": 0.3373, "iqr": 0.0078},
+        "initial_terrain_frame_max": {"n": 5, "median": 66099, "min": 66099, "max": 66100, "iqr": 0}
+      },
+      "candidate": {
+        "blast_to_sent_ms": {"n": 5, "median": 57.7064, "min": 23.5041, "max": 87.7068, "iqr": 34.6583},
+        "finished_to_sent_ms": {"n": 5, "median": 57.389, "min": 23.1878, "max": 87.4069, "iqr": 34.4984},
+        "blast_to_worker_ready_ms": {"n": 5, "median": 429.5072, "min": 414.8642, "max": 479.7174, "iqr": 27.4044},
+        "request_to_worker_ready_ms": {"n": 5, "median": 300.2188, "min": 300.1773, "max": 333.6173, "iqr": 33.3387},
+        "packet_bytes": {"n": 5, "median": 44459, "min": 44441, "max": 44459, "iqr": 18},
+        "underruns": [
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "resyncs": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "full_history": [
+          18,
+          18,
+          18,
+          18,
+          18
+        ],
+        "frame_cpu_p95": {"n": 5, "median": 0.7124, "min": 0.6518, "max": 0.7728, "iqr": 0.0502},
+        "receive_cpu_p95": {"n": 5, "median": 0.1634, "min": 0.1517, "max": 0.1801, "iqr": 0.0038},
+        "initial_terrain_frame_max": {"n": 5, "median": 63863, "min": 63863, "max": 63863, "iqr": 0}
+      },
+      "paired_improvements": {
+        "blast_to_sent_ms": 5,
+        "blast_to_worker_ready_ms": 3
+      }
+    }
+  },
+  "compatibility": {
+    "protocol": 4,
+    "terrain_packets_each_direction": 73,
+    "fixtures": "All shapes/biomes at 1440x720, 2880x1280, 3840x1440, 4800x1600; all huge shapes/biomes with 200 and 1000 craters; striped saved mask.",
+    "fixture_max_bytes": {
+      "baseline": {
+        "base64_bytes": 72424,
+        "compressed_bytes": 54318,
+        "server_frame_bytes": 114412
+      },
+      "candidate": {
+        "base64_bytes": 68324,
+        "compressed_bytes": 51242,
+        "server_frame_bytes": 110312
+      }
+    },
+    "legacy_fixture_size_increases_bytes": [
+      88,
+      308,
+      596,
+      720,
+      764
+    ],
+    "patterned_save_base64_bytes": {
+      "baseline": 3760,
+      "candidate": 3760
+    },
+    "checkpoints": "Both directions reserialize restored state and compare 180 subsequent ticks.",
+    "reverse_sessions": {
+      "tcp": {
+        "rounds": 3,
+        "interop": {
+          "reconnect_identity": true,
+          "resumed_sequence": 21,
+          "full_terrain_checksum": "0e50038f32097ef6a0549a04580658708485abd2014cc50e518ad401140bd0ab",
+          "full_history": 18,
+          "sync_sequence": 22,
+          "input_events_presented": 9
+        },
+        "guards": [
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "underruns": 1,
+            "resyncs": 0
+          },
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "phase": "after_crater",
+            "underruns": 0,
+            "resyncs": 0
+          }
+        ]
+      },
+      "tls": {
+        "rounds": 3,
+        "interop": {
+          "reconnect_identity": true,
+          "resumed_sequence": 21,
+          "full_terrain_checksum": "0e50038f32097ef6a0549a04580658708485abd2014cc50e518ad401140bd0ab",
+          "full_history": 18,
+          "sync_sequence": 22,
+          "input_events_presented": 9
+        },
+        "guards": [
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "phase": "after_crater",
+            "underruns": 0,
+            "resyncs": 0
+          }
+        ]
+      }
+    }
+  },
+  "checks": {
+    "core": {
+      "3.4.7": {
+        "tests": 313,
+        "assertions": 9822,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      "4.0.7": {
+        "tests": 313,
+        "assertions": 9822,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      }
+    },
+    "native": {
+      "ruby": "4.0.7",
+      "updated_at": "2026-10-14T01:59:57Z",
+      "counts": {
+        "pass": 7,
+        "fail": 0,
+        "error": 0,
+        "skip": 0,
+        "expected_fail": 0,
+        "unexpected_pass": 0,
+        "not_applicable": 0,
+        "timeout": 0
+      }
+    },
+    "determinism": {
+      "seeds": 6,
+      "ticks_per_seed": 3000,
+      "canonical_checkpoints_equal": 18000,
+      "final_heavy_ticks_equal": 4500,
+      "canonicalization": "Independently inflate/verify bytes, then recompress using baseline default outside timing; all checkpoint fields retained."
+    },
+    "presentation_replay": "test/presentation_test.rb included in both core suites",
+    "syntax": "All new tools pass Ruby syntax checks",
+    "diff_check": "git diff --check passes"
+  },
+  "limits": {
+    "max_server_frame_bytes": 524288,
+    "max_terrain_base64_bytes_exclusive": 700000,
+    "rle_fallback_threshold_compressed_bytes": 196608,
+    "random_material_mask_base64_bytes_default_and_final": 861232,
+    "random_material_note": "An artificial per-cell random 0..4 mask exceeds both pre-existing limits even with default zlib; final fallback preserves that limitation. It is not a generated gameplay map.",
+    "latency_endpoints": "Socket acceptance of last frame byte; terrain-worker ready at client poll. No native update acknowledgement, physical crater scanout or acoustic measurement.",
+    "real_session_workload": "One rocket crater on a six-team/36-grub map; the scripted burst workload is measured separately by the host bench.",
+    "remote": "Ordered local proxy with 15 ms upstream and 15 ms plus 0/10/35/5/55/0 ms downstream; no bandwidth shaping or real internet link.",
+    "session_candidate": "Sessions measure RLE + OpenSSL. Added size fallback is inactive for all their terrain packets; final guarded fast path is rechecked by five heavy pairs.",
+    "mac": "No Apple-silicon runtime, physical display, audible output or human-play claim."
+  },
+  "raw_captures": "<scratch>/terrain/captures",
+  "files": [
+    "lib/burrow/terrain.rb",
+    "tools/perf_host_bench.rb",
+    "tools/perf_terrain_export.rb",
+    "tools/perf_terrain_strategies.rb",
+    "tools/perf_terrain_compat.rb",
+    "tools/perf_terrain_checkpoint.rb",
+    "tools/perf_terrain_session.rb",
+    "docs/validation/perf-0.5.4-terrain.json"
+  ]
+}

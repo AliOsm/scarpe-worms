@@ -2,6 +2,7 @@
 
 require "zlib"
 require "base64"
+require "openssl"
 
 module Burrow
   class Terrain
@@ -28,7 +29,11 @@ module Burrow
 
     def solid?(x, y)
       return false unless x >= 0 && x < width && y >= 0 && y < height
-      @data.getbyte((y / CELL).floor * cols + (x / CELL).floor) != 0
+      # Simulation coordinates are non-negative after the bounds check.  The
+      # integer conversion preserves the old floor semantics for floats while
+      # avoiding two float divisions and floor calls on every collision sample.
+      data = @data
+      data.getbyte((y.to_i >> 1) * cols + (x.to_i >> 1)) != 0
     end
 
     def free_body?(x, feet)
@@ -141,8 +146,22 @@ module Burrow
       nil
     end
 
-    def checksum = (@checksum ||= Digest::SHA256.hexdigest(data))
-    def export = (@export ||= {"revision" => revision, "seed" => seed, "shape" => shape, "width" => width, "height" => height, "data" => Base64.strict_encode64(Zlib::Deflate.deflate(data)), "checksum" => checksum}.freeze)
+    def checksum = (@checksum ||= OpenSSL::Digest::SHA256.hexdigest(data))
+
+    def export
+      return @export if @export
+      # Material rows contain long runs. RLE avoids expensive match searches
+      # while retaining a standard zlib stream readable by protocol-4 clients.
+      deflater = Zlib::Deflate.new(Zlib::BEST_SPEED, Zlib::MAX_WBITS, Zlib::DEF_MEM_LEVEL, Zlib::RLE)
+      compressed = deflater.deflate(data, Zlib::FINISH)
+      # Unusual saved masks (such as repeated stripes) can expand under RLE.
+      # Fall back before base64 terrain alone uses half the server frame limit.
+      compressed = Zlib::Deflate.deflate(data) if compressed.bytesize > 192 * 1024
+      @export = {"revision" => revision, "seed" => seed, "shape" => shape, "width" => width, "height" => height,
+        "data" => Base64.strict_encode64(compressed), "checksum" => checksum}.freeze
+    ensure
+      deflater&.close
+    end
 
     def self.restore(value)
       raise RuleError, "Invalid terrain packet." unless value.is_a?(Hash) && value["data"].is_a?(String) && value["data"].bytesize < 700_000
