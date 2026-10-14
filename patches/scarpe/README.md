@@ -264,3 +264,15 @@ PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
   timestamps do not identify individual Ruby updates, windows or presentation.
   Rust tests cover coalescing, fragmented updates and bounded-log eviction;
   use the `runtime::stats::tests` command above.
+
+- `0024-native-opaque-image-runs.patch`: fully opaque decoded images already
+  have their alpha classification, so build one opaque span per row directly
+  instead of scanning every pixel again. Resized copies of those images use the
+  same bounded index; translucent and fragmented images retain the scanned
+  path. The run bounds and row spans are covered by focused unit tests, and the
+  deterministic frame fixture confirms byte-identical screenshots.
+
+```sh
+PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
+  --manifest-path vendor/scarpe/native/Cargo.toml --lib --test images
+```

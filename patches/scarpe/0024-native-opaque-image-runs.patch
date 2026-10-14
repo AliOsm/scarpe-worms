@@ -1,0 +1,84 @@
+diff --git a/native/src/paint/image_runs.rs b/native/src/paint/image_runs.rs
+index f8ccc3c..051ca99 100644
+--- a/native/src/paint/image_runs.rs
++++ b/native/src/paint/image_runs.rs
+@@ -15,6 +15,17 @@ pub(super) struct Run {
+ }
+ 
+ impl ImageRuns {
++    /// Builds the single opaque span in each row without scanning every pixel.
++    /// ImageCache has already classified these pictures while decoding them, and
++    /// resized copies preserve their fully opaque alpha channel.
++    pub(crate) fn opaque(width: u32, height: u32) -> Option<Self> {
++        let limit = ((width as u64 * height as u64 * 4) / std::mem::size_of::<Run>() as u64).clamp(64, 262_144);
++        if height as u64 > limit { return None; }
++        let rows = (0..=height as usize).collect();
++        let spans = (0..height).map(|_| Run { left: 0, right: width as usize, opaque: true }).collect();
++        Some(Self { width, rows, spans })
++    }
++
+     /// Returns None when fragmented alpha would make the index expensive. The
+     /// caller then blends normally. Metadata is bounded by the pixel buffer's
+     /// size (apart from tiny images), and never exceeds 262,144 spans.
+@@ -65,3 +76,33 @@ impl ImageRuns {
+             + self.spans.capacity() * std::mem::size_of::<Run>()
+     }
+ }
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use tiny_skia::{Color, Pixmap};
++
++    #[test]
++    fn opaque_indexes_keep_the_scanned_memory_bound() {
++        for (w, h) in [(1, 64), (1, 65), (5, 600), (6, 600), (1, 16384)] {
++            let mut image = Pixmap::new(w, h).unwrap();
++            image.fill(Color::WHITE);
++            assert_eq!(ImageRuns::opaque(w, h).is_some(), ImageRuns::new(image.as_ref()).is_some());
++        }
++    }
++
++    #[test]
++    fn opaque_rows_match_the_scanned_index() {
++        let mut image = Pixmap::new(7, 3).unwrap();
++        image.fill(Color::WHITE);
++        let scanned = ImageRuns::new(image.as_ref()).unwrap();
++        let direct = ImageRuns::opaque(7, 3).unwrap();
++        assert_eq!(direct.rows, scanned.rows);
++        for y in 0..3 {
++            assert_eq!(direct.row(y).len(), 1);
++            assert_eq!(direct.row(y)[0].left, scanned.row(y)[0].left);
++            assert_eq!(direct.row(y)[0].right, scanned.row(y)[0].right);
++            assert!(direct.row(y)[0].opaque);
++        }
++    }
++}
+diff --git a/native/src/elements/image.rs b/native/src/elements/image.rs
+index f79c9d3..bb465f0 100644
+--- a/native/src/elements/image.rs
++++ b/native/src/elements/image.rs
+@@ -80,7 +80,9 @@ impl ImageCache {
+         let image = file.and_then(|_| decode(path)).map(Rc::new);
+         let opaque = image.as_ref().is_some_and(|image| image.pixels().iter().all(|p| p.alpha() == 255));
+         let transparent = image.as_ref().is_some_and(|image| image.pixels().iter().all(|p| p.alpha() == 0));
+-        let runs = image.as_ref().and_then(|pm| ImageRuns::new(pm.as_ref().as_ref())).map(Rc::new);
++        let runs = image.as_ref().and_then(|pm| {
++            if opaque { ImageRuns::opaque(pm.width(), pm.height()) } else { ImageRuns::new(pm.as_ref().as_ref()) }
++        }).map(Rc::new);
+         self.entries.insert(path.to_path_buf(), Entry { file, image: image.clone(), opaque, transparent, runs, looked: batch, sized: Vec::new() });
+         image
+     }
+@@ -131,7 +133,11 @@ impl ImageCache {
+             }
+         }
+         let copy = Rc::new(copy);
+-        let runs = ImageRuns::new(copy.as_ref().as_ref()).map(Rc::new);
++        let runs = if entry.opaque {
++            ImageRuns::opaque(w, h).map(Rc::new)
++        } else {
++            ImageRuns::new(copy.as_ref().as_ref()).map(Rc::new)
++        };
+         entry.sized.insert(0, (copy.clone(), runs));
+         entry.sized.truncate(SIZES_KEPT);
+         self.resampled += 1;

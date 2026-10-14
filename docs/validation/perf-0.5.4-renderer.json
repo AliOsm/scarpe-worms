@@ -1,0 +1,640 @@
+{
+  "version": "0.5.4",
+  "date": "2026-10-14",
+  "area": "renderer",
+  "branch": "perf2/renderer",
+  "base_commit": "8bf41edf524e518c15bc38889b4425e26d31fa15",
+  "scarpe_revision": "eb883bc1778839735a6d8d1921911c656409bb2c",
+  "machine": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "architecture": "x86_64",
+    "shared_machine": true,
+    "kernel": "7.0.0-31-generic",
+    "ruby_primary": "3.4.7",
+    "ruby_secondary": "4.0.7",
+    "rust": "1.99.0"
+  },
+  "scenario": {
+    "command": "<scratch>/bin/bench env SCARPE_NATIVE_BIN=... xvfb-run -a -s \"-screen 0 3840x2400x24\" mise exec ruby@3.4.7 -- python3 tools/check_rendering.py --scale 2 --size 1920x1200 --audio --record-only",
+    "pairs": 5,
+    "order": "A1 B1 A2 B2 A3 B3 A4 B4 A5 B5",
+    "input": "<scratch>/renderer/captures/opaque-ab"
+  },
+  "experiments": [
+    {
+      "id": "0024",
+      "hypothesis": "Opaque image alpha runs are rescanned for every decoded and resized copy; constructing their one span per row from the existing opacity classification will reduce zoom paint CPU without changing pixels.",
+      "change": "Added bounded ImageRuns::opaque and selected it for fully opaque source and resized images; translucent/fragmented images keep the scanned path.",
+      "files": [
+        "patches/scarpe/0024-native-opaque-image-runs.patch",
+        "vendor/scarpe/native/src/paint/image_runs.rs",
+        "vendor/scarpe/native/src/elements/image.rs"
+      ],
+      "metric": {
+        "primary": "zoom native paint mean_ms across five interleaved pairs",
+        "decision_rule": "median improvement >=5% and >=80% paired direction; no guard regression"
+      },
+      "baseline": {
+        "zoom_paint_mean_run_median_ms": 3.953427191044776,
+        "zoom_paint_p95_run_median_ms": 14.18854,
+        "zoom_sweep_presented_mean_run_median_ms": 22.49327256279071
+      },
+      "candidate": {
+        "zoom_paint_mean_run_median_ms": 3.7478802956521737,
+        "zoom_paint_p95_run_median_ms": 12.963792999999999,
+        "zoom_sweep_presented_mean_run_median_ms": 21.063868908695643
+      },
+      "verdict": "accept",
+      "reason": "Zoom paint mean improved 5.20% by run medians (paired median -7.74%, 4/5 wins); zoom-sweep presented mean improved 6.36% by run medians (paired median -6.08%, 4/5). Combat/pan paint and present remained within run noise; deterministic fixtures are byte-identical."
+    }
+  ],
+  "run_medians": {
+    "A": {
+      "combat": {
+        "presented": {
+          "mean_ms": 16.49498655962766,
+          "p95_ms": 20.93299600000087,
+          "max_ms": 68.9598560000011,
+          "over_33ms": 3
+        },
+        "layout": {
+          "mean_ms": 1.4518967536382537,
+          "p95_ms": 2.674789,
+          "max_ms": 7.8242069999999995,
+          "over_33ms": 0
+        },
+        "paint": {
+          "mean_ms": 2.592636712230216,
+          "p95_ms": 5.993233,
+          "max_ms": 16.762276,
+          "over_33ms": 0
+        },
+        "present": {
+          "mean_ms": 3.3052558355342136,
+          "p95_ms": 4.40984,
+          "max_ms": 10.223631000000001,
+          "over_33ms": 0
+        }
+      },
+      "pan": {
+        "presented": {
+          "mean_ms": 16.66822674722222,
+          "p95_ms": 19.771261999999012,
+          "max_ms": 34.31178299999971,
+          "over_33ms": 1
+        },
+        "layout": {
+          "mean_ms": 1.4796371364902507,
+          "p95_ms": 2.17983,
+          "max_ms": 4.831163,
+          "over_33ms": 0
+        },
+        "paint": {
+          "mean_ms": 4.259150027700831,
+          "p95_ms": 5.7359230000000005,
+          "max_ms": 12.107391,
+          "over_33ms": 0
+        },
+        "present": {
+          "mean_ms": 3.1630662853185596,
+          "p95_ms": 3.691806,
+          "max_ms": 6.237334,
+          "over_33ms": 0
+        }
+      },
+      "zoom": {
+        "presented": {
+          "mean_ms": 21.89251897904192,
+          "p95_ms": 39.24877299999707,
+          "max_ms": 77.35828399999889,
+          "over_33ms": 40
+        },
+        "layout": {
+          "mean_ms": 1.7936522688821752,
+          "p95_ms": 3.766083,
+          "max_ms": 5.70197,
+          "over_33ms": 0
+        },
+        "paint": {
+          "mean_ms": 3.953427191044776,
+          "p95_ms": 14.18854,
+          "max_ms": 19.628781,
+          "over_33ms": 0
+        },
+        "present": {
+          "mean_ms": 3.4036123202416917,
+          "p95_ms": 4.694418,
+          "max_ms": 9.58943,
+          "over_33ms": 0
+        }
+      },
+      "zoom_sweep": {
+        "presented": {
+          "mean_ms": 22.49327256279071,
+          "p95_ms": 32.23573800000423,
+          "max_ms": 56.798129000000586,
+          "over_33ms": 7
+        },
+        "layout": {
+          "mean_ms": 2.634367599078341,
+          "p95_ms": 5.2613010000000004,
+          "max_ms": 10.053735,
+          "over_33ms": 0
+        },
+        "paint": {
+          "mean_ms": 11.393384199074074,
+          "p95_ms": 15.187493,
+          "max_ms": 24.254306,
+          "over_33ms": 0
+        },
+        "present": {
+          "mean_ms": 3.3829906313364058,
+          "p95_ms": 3.986607,
+          "max_ms": 9.447784,
+          "over_33ms": 0
+        }
+      }
+    },
+    "B": {
+      "combat": {
+        "presented": {
+          "mean_ms": 16.42288049713161,
+          "p95_ms": 20.767073000000025,
+          "max_ms": 34.51018500000025,
+          "over_33ms": 1
+        },
+        "layout": {
+          "mean_ms": 1.4037817145811788,
+          "p95_ms": 2.286551,
+          "max_ms": 8.739184,
+          "over_33ms": 0
+        },
+        "paint": {
+          "mean_ms": 2.5367272244053773,
+          "p95_ms": 5.814456,
+          "max_ms": 14.34276,
+          "over_33ms": 0
+        },
+        "present": {
+          "mean_ms": 3.308672908551069,
+          "p95_ms": 4.3047830000000005,
+          "max_ms": 9.948528,
+          "over_33ms": 0
+        }
+      },
+      "pan": {
+        "presented": {
+          "mean_ms": 16.855255528089884,
+          "p95_ms": 19.91670999999684,
+          "max_ms": 46.43744899999902,
+          "over_33ms": 1
+        },
+        "layout": {
+          "mean_ms": 1.452963095505618,
+          "p95_ms": 1.967,
+          "max_ms": 8.681432,
+          "over_33ms": 0
+        },
+        "paint": {
+          "mean_ms": 4.320224314606741,
+          "p95_ms": 5.9316059999999995,
+          "max_ms": 10.768274,
+          "over_33ms": 0
+        },
+        "present": {
+          "mean_ms": 3.2088127737430168,
+          "p95_ms": 3.872084,
+          "max_ms": 6.640871,
+          "over_33ms": 0
+        }
+      },
+      "zoom": {
+        "presented": {
+          "mean_ms": 21.30167515116278,
+          "p95_ms": 42.87379400000191,
+          "max_ms": 84.11784599999805,
+          "over_33ms": 37
+        },
+        "layout": {
+          "mean_ms": 1.6681099867374005,
+          "p95_ms": 3.44266,
+          "max_ms": 6.0159970000000005,
+          "over_33ms": 0
+        },
+        "paint": {
+          "mean_ms": 3.7478802956521737,
+          "p95_ms": 12.963792999999999,
+          "max_ms": 18.841249,
+          "over_33ms": 0
+        },
+        "present": {
+          "mean_ms": 3.3212985305039786,
+          "p95_ms": 4.397415,
+          "max_ms": 9.498418,
+          "over_33ms": 0
+        }
+      },
+      "zoom_sweep": {
+        "presented": {
+          "mean_ms": 21.063868908695643,
+          "p95_ms": 27.997897999995303,
+          "max_ms": 40.88422899999955,
+          "over_33ms": 3
+        },
+        "layout": {
+          "mean_ms": 2.3059871659388644,
+          "p95_ms": 4.695543,
+          "max_ms": 9.264067,
+          "over_33ms": 0
+        },
+        "paint": {
+          "mean_ms": 10.738523333333333,
+          "p95_ms": 14.085082,
+          "max_ms": 19.313654,
+          "over_33ms": 0
+        },
+        "present": {
+          "mean_ms": 3.182173113537118,
+          "p95_ms": 3.704035,
+          "max_ms": 6.400398,
+          "over_33ms": 0
+        }
+      }
+    }
+  },
+  "paired_changes": {
+    "combat": {
+      "presented.mean_ms": {
+        "median_change_pct": -0.4371392618926495,
+        "wins": 3,
+        "pairs": 5
+      },
+      "presented.p95_ms": {
+        "median_change_pct": -0.577645344899036,
+        "wins": 3,
+        "pairs": 5
+      },
+      "presented.max_ms": {
+        "median_change_pct": -49.956123748286686,
+        "wins": 4,
+        "pairs": 5
+      },
+      "presented.over_33ms": {
+        "median_change_pct": -50.0,
+        "wins": 3,
+        "pairs": 5
+      },
+      "layout.mean_ms": {
+        "median_change_pct": -1.9653770079713362,
+        "wins": 5,
+        "pairs": 5
+      },
+      "layout.p95_ms": {
+        "median_change_pct": -8.53355033966664,
+        "wins": 4,
+        "pairs": 5
+      },
+      "layout.max_ms": {
+        "median_change_pct": 33.10521578994583,
+        "wins": 2,
+        "pairs": 5
+      },
+      "layout.over_33ms": {
+        "median_change_pct": -100.0,
+        "wins": 1,
+        "pairs": 1
+      },
+      "paint.mean_ms": {
+        "median_change_pct": -2.204218905889266,
+        "wins": 4,
+        "pairs": 5
+      },
+      "paint.p95_ms": {
+        "median_change_pct": -3.839984929947582,
+        "wins": 4,
+        "pairs": 5
+      },
+      "paint.max_ms": {
+        "median_change_pct": -20.943015823116408,
+        "wins": 5,
+        "pairs": 5
+      },
+      "paint.over_33ms": {
+        "median_change_pct": -100.0,
+        "wins": 1,
+        "pairs": 1
+      },
+      "present.mean_ms": {
+        "median_change_pct": 0.49596459230463186,
+        "wins": 1,
+        "pairs": 5
+      },
+      "present.p95_ms": {
+        "median_change_pct": -2.7794098537021528,
+        "wins": 3,
+        "pairs": 5
+      },
+      "present.max_ms": {
+        "median_change_pct": 0.04911144735000317,
+        "wins": 2,
+        "pairs": 5
+      },
+      "present.over_33ms": {
+        "median_change_pct": -100.0,
+        "wins": 1,
+        "pairs": 1
+      }
+    },
+    "pan": {
+      "presented.mean_ms": {
+        "median_change_pct": 1.122067654250225,
+        "wins": 0,
+        "pairs": 5
+      },
+      "presented.p95_ms": {
+        "median_change_pct": -0.3125853722712235,
+        "wins": 4,
+        "pairs": 5
+      },
+      "presented.max_ms": {
+        "median_change_pct": 34.84645621527018,
+        "wins": 1,
+        "pairs": 5
+      },
+      "presented.over_33ms": {
+        "median_change_pct": 0.0,
+        "wins": 0,
+        "pairs": 3
+      },
+      "layout.mean_ms": {
+        "median_change_pct": -3.728807860825234,
+        "wins": 4,
+        "pairs": 5
+      },
+      "layout.p95_ms": {
+        "median_change_pct": -9.763605418771181,
+        "wins": 3,
+        "pairs": 5
+      },
+      "layout.max_ms": {
+        "median_change_pct": 7.978318755030123,
+        "wins": 1,
+        "pairs": 5
+      },
+      "layout.over_33ms": {
+        "median_change_pct": null,
+        "wins": 0,
+        "pairs": 0
+      },
+      "paint.mean_ms": {
+        "median_change_pct": 0.10912962719693553,
+        "wins": 2,
+        "pairs": 5
+      },
+      "paint.p95_ms": {
+        "median_change_pct": -0.0667253871960094,
+        "wins": 3,
+        "pairs": 5
+      },
+      "paint.max_ms": {
+        "median_change_pct": -4.9583664440138175,
+        "wins": 3,
+        "pairs": 5
+      },
+      "paint.over_33ms": {
+        "median_change_pct": null,
+        "wins": 0,
+        "pairs": 0
+      },
+      "present.mean_ms": {
+        "median_change_pct": 0.9698712292532274,
+        "wins": 2,
+        "pairs": 5
+      },
+      "present.p95_ms": {
+        "median_change_pct": 1.9437137588533382,
+        "wins": 1,
+        "pairs": 5
+      },
+      "present.max_ms": {
+        "median_change_pct": 11.573087649576607,
+        "wins": 1,
+        "pairs": 5
+      },
+      "present.over_33ms": {
+        "median_change_pct": null,
+        "wins": 0,
+        "pairs": 0
+      }
+    },
+    "zoom": {
+      "presented.mean_ms": {
+        "median_change_pct": -4.427136364783701,
+        "wins": 3,
+        "pairs": 5
+      },
+      "presented.p95_ms": {
+        "median_change_pct": 8.936591174883702,
+        "wins": 2,
+        "pairs": 5
+      },
+      "presented.max_ms": {
+        "median_change_pct": 0.44567881105903595,
+        "wins": 2,
+        "pairs": 5
+      },
+      "presented.over_33ms": {
+        "median_change_pct": -15.555555555555555,
+        "wins": 3,
+        "pairs": 5
+      },
+      "layout.mean_ms": {
+        "median_change_pct": -6.760230995960848,
+        "wins": 4,
+        "pairs": 5
+      },
+      "layout.p95_ms": {
+        "median_change_pct": -2.900480225563651,
+        "wins": 5,
+        "pairs": 5
+      },
+      "layout.max_ms": {
+        "median_change_pct": -15.591839311676491,
+        "wins": 3,
+        "pairs": 5
+      },
+      "layout.over_33ms": {
+        "median_change_pct": null,
+        "wins": 0,
+        "pairs": 0
+      },
+      "paint.mean_ms": {
+        "median_change_pct": -7.7432323539245225,
+        "wins": 4,
+        "pairs": 5
+      },
+      "paint.p95_ms": {
+        "median_change_pct": -9.711798858857046,
+        "wins": 5,
+        "pairs": 5
+      },
+      "paint.max_ms": {
+        "median_change_pct": -4.058006024696715,
+        "wins": 4,
+        "pairs": 5
+      },
+      "paint.over_33ms": {
+        "median_change_pct": null,
+        "wins": 0,
+        "pairs": 0
+      },
+      "present.mean_ms": {
+        "median_change_pct": -2.307040622281442,
+        "wins": 4,
+        "pairs": 5
+      },
+      "present.p95_ms": {
+        "median_change_pct": -10.954168864263147,
+        "wins": 4,
+        "pairs": 5
+      },
+      "present.max_ms": {
+        "median_change_pct": -1.2489793449662945,
+        "wins": 4,
+        "pairs": 5
+      },
+      "present.over_33ms": {
+        "median_change_pct": null,
+        "wins": 0,
+        "pairs": 0
+      }
+    },
+    "zoom_sweep": {
+      "presented.mean_ms": {
+        "median_change_pct": -6.079422843842297,
+        "wins": 4,
+        "pairs": 5
+      },
+      "presented.p95_ms": {
+        "median_change_pct": -12.872824756959977,
+        "wins": 3,
+        "pairs": 5
+      },
+      "presented.max_ms": {
+        "median_change_pct": -43.71948766129531,
+        "wins": 4,
+        "pairs": 5
+      },
+      "presented.over_33ms": {
+        "median_change_pct": -57.14285714285714,
+        "wins": 3,
+        "pairs": 5
+      },
+      "layout.mean_ms": {
+        "median_change_pct": -13.515974791084073,
+        "wins": 4,
+        "pairs": 5
+      },
+      "layout.p95_ms": {
+        "median_change_pct": -11.32814868413725,
+        "wins": 4,
+        "pairs": 5
+      },
+      "layout.max_ms": {
+        "median_change_pct": -26.88168128561176,
+        "wins": 3,
+        "pairs": 5
+      },
+      "layout.over_33ms": {
+        "median_change_pct": -100.0,
+        "wins": 1,
+        "pairs": 1
+      },
+      "paint.mean_ms": {
+        "median_change_pct": -4.3405406641464195,
+        "wins": 4,
+        "pairs": 5
+      },
+      "paint.p95_ms": {
+        "median_change_pct": -7.258676596591684,
+        "wins": 4,
+        "pairs": 5
+      },
+      "paint.max_ms": {
+        "median_change_pct": -27.659456691824968,
+        "wins": 3,
+        "pairs": 5
+      },
+      "paint.over_33ms": {
+        "median_change_pct": -100.0,
+        "wins": 1,
+        "pairs": 1
+      },
+      "present.mean_ms": {
+        "median_change_pct": -6.502719451046168,
+        "wins": 3,
+        "pairs": 5
+      },
+      "present.p95_ms": {
+        "median_change_pct": -4.816193291983584,
+        "wins": 3,
+        "pairs": 5
+      },
+      "present.max_ms": {
+        "median_change_pct": -24.813935768751925,
+        "wins": 3,
+        "pairs": 5
+      },
+      "present.over_33ms": {
+        "median_change_pct": null,
+        "wins": 0,
+        "pairs": 0
+      }
+    }
+  },
+  "images_resampled_run_median": {
+    "baseline": 11931,
+    "candidate": 12314
+  },
+  "pixel_identity": {
+    "static": {
+      "baseline": "31c765a3de60345a6db2344f2c02c41b680f82e8d5f5803771ab6fd5564235e1",
+      "candidate": "31c765a3de60345a6db2344f2c02c41b680f82e8d5f5803771ab6fd5564235e1"
+    },
+    "flames": {
+      "baseline": "f8c9fd348aaafdf9099e53b42887a4e69aef11a1126516cb581973c2d2239f11",
+      "candidate": "f8c9fd348aaafdf9099e53b42887a4e69aef11a1126516cb581973c2d2239f11"
+    },
+    "pan": {
+      "baseline": "f8c9fd348aaafdf9099e53b42887a4e69aef11a1126516cb581973c2d2239f11",
+      "candidate": "f8c9fd348aaafdf9099e53b42887a4e69aef11a1126516cb581973c2d2239f11"
+    },
+    "zoom": {
+      "baseline": "1dd9108d26dee9ed4d15b0ff0621718f8dc42a4d1f90c88b9a458946d26bfaea",
+      "candidate": "1dd9108d26dee9ed4d15b0ff0621718f8dc42a4d1f90c88b9a458946d26bfaea"
+    }
+  },
+  "binary_sha256": {
+    "baseline": "81e2bc63b1d9d6ab3abc75c504a4149ea6beb4c06aab72e00d4dad3332f0b23f",
+    "candidate": "974cb21d5bfaffba544c1bcd724f427fd6379148441039fa906fb28d347fe23b"
+  },
+  "checks": {
+    "verify_scarpe": "passed",
+    "cargo_test_release_locked": "passed (all tests; 11 ignored timing fixtures)",
+    "native_check": "passed (7/7 cases, 228 assertions; 220.7s)",
+    "pixel_identity": "passed (static, flames, pan, zoom PNGs byte-identical)",
+    "ruby_core_3_4_7": "passed (313 runs, 9822 assertions, 0 failures)",
+    "ruby_core_4_0_7": "passed (313 runs, 9822 assertions, 0 failures)",
+    "rendering_analyzer": "passed (perf_renderer_opaque.py)"
+  },
+  "mac_runs": [],
+  "limits": [
+    "Linux Xvfb is not an Apple silicon Mac and does not establish physical scanout or audible-device latency.",
+    "Whole-stage discrete zoom intervals include intentional idle gaps; active_motion_intervals and native paint are the useful motion signals.",
+    "The interleaved captures had unrelated scheduling outliers in pan/zoom p95; no claim is made for those isolated maxima."
+  ],
+  "open_proposals": [
+    "A nearest-cached-size zoom prototype was not measured or retained because settled/transient correctness was incomplete.",
+    "If Mac confirmation is required, dispatch up to four macos-preview runs for patch 0024."
+  ]
+}
