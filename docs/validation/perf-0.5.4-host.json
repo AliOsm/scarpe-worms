@@ -1,0 +1,136 @@
+{
+  "format": 1,
+  "area": "host",
+  "machine": "Linux x86_64, shared 6-core performance-round runner",
+  "ruby": "3.4.7 (performance); 4.0.7 core-suite check required",
+  "baseline_commit": "8bf41ed",
+  "scenario": {
+    "bot": "2 teams \u00d7 6 seeded bot grubs; 3,000-tick determinism run",
+    "heavy": "6 teams \u00d7 6 grubs, scripted napalm/cluster/airstrike/mine_strike/earthquake with seeded graves and props"
+  },
+  "experiments": [
+    {
+      "id": "host-collision-hot-loops",
+      "hypothesis": "Integer terrain-cell indexing and allocation-free collision/proximity scans reduce host tick CPU without changing state.",
+      "change": "Use integer cell indexing in Terrain#solid?, fixed-order boolean body collision samples, and short-circuit find in hazard motion.",
+      "files": [
+        "lib/burrow/terrain.rb",
+        "lib/burrow/physics.rb"
+      ],
+      "metric": "Five interleaved heavy six-team A/B runs; tick/step wall distributions, persist guard, CPU/s, and per-tick checkpoint SHA-256.",
+      "baseline": {
+        "n": 5,
+        "tick_p50_ms": 1.0022,
+        "tick_p95_ms": 1.9676,
+        "tick_max_ms": 68.9388,
+        "step_p50_ms": 0.8521,
+        "step_p95_ms": 1.6534,
+        "step_max_ms": 3.3343,
+        "ticks_over_budget": 16,
+        "persist_p50_ms": 5.2551,
+        "persist_p95_ms": 8.022,
+        "persist_max_ms": 9.1285,
+        "persist_size_bytes": 87834,
+        "cpu_ms_per_sim_second": 64.6145
+      },
+      "candidate": {
+        "n": 5,
+        "tick_p50_ms": 0.8923,
+        "tick_p95_ms": 1.8117,
+        "tick_max_ms": 63.096,
+        "step_p50_ms": 0.7418,
+        "step_p95_ms": 1.4955,
+        "step_max_ms": 2.0635,
+        "ticks_over_budget": 16,
+        "persist_p50_ms": 5.2107,
+        "persist_p95_ms": 6.9936,
+        "persist_max_ms": 7.705,
+        "persist_size_bytes": 87834,
+        "cpu_ms_per_sim_second": 61.0526
+      },
+      "verdict": "accept",
+      "reason": "Tick p50 is 10.97% lower in the five-run median and wins 5/5 pairs; tick p95 is 7.92% lower and wins 4/5. Step p50 is 12.94% lower, CPU/s is 5.51% lower, all runs retain 16 late ticks, persist size is unchanged, and all 900/900 checkpoint hashes match in every pair.",
+      "paired": {
+        "n": 5,
+        "tick_p50_candidate_wins": 5,
+        "tick_p95_candidate_wins": 4,
+        "tick_max_candidate_wins": 3
+      }
+    },
+    {
+      "id": "host-persist-path",
+      "hypothesis": "The synchronous two-second full checkpoint could dominate a late tick.",
+      "change": "Measurement-only investigation; no persistence code change retained.",
+      "files": [
+        "lib/burrow/server/reactor.rb"
+      ],
+      "metric": "Five heavy captures of persist wall/CPU duration and checkpoint byte size.",
+      "baseline": {
+        "n": 5,
+        "persist_p50_ms": 5.2551,
+        "persist_p95_ms": 8.022,
+        "persist_max_ms": 9.1285,
+        "size_bytes": 87834
+      },
+      "candidate": {
+        "n": 5,
+        "persist_p50_ms": 5.2107,
+        "persist_p95_ms": 6.9936,
+        "persist_max_ms": 7.705,
+        "size_bytes": 87834
+      },
+      "verdict": "no-change",
+      "reason": "Persist is a 4\u20138 ms wall pause, below the roughly 60 ms terrain full-snapshot spikes. A bounded asynchronous or incremental writer remains an open proposal because save lifecycle and crash-recovery behavior need design review."
+    }
+  ],
+  "checks": {
+    "focused_host_ruby_3.4.7": {
+      "command": "PERF_AGENT=host TMPDIR=<scratch>/host/tmp <scratch>/bin/heavy mise exec ruby@3.4.7 -- bundle exec ruby -Itest test/match_test.rb test/battlefield_physics_test.rb test/weapon_physics_test.rb test/weapons_close_test.rb test/weapons_critters_test.rb test/weapons_mobility_test.rb test/weapons_munitions_test.rb test/network_test.rb",
+      "result": "passed",
+      "runs": 14,
+      "assertions": 202,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "log": "<scratch>/host/focused-host.log"
+    },
+    "core_ruby_3.4.7": {
+      "command": "PERF_AGENT=host TMPDIR=<scratch>/host/tmp <scratch>/bin/heavy mise exec ruby@3.4.7 -- bundle exec rake test",
+      "result": "passed",
+      "runs": 313,
+      "assertions": 9822,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "log": "<scratch>/host/core-r347-rerun.log"
+    },
+    "core_ruby_4.0.7": {
+      "command": "PERF_AGENT=host TMPDIR=<scratch>/host/tmp <scratch>/bin/heavy mise exec ruby@4.0.7 -- bundle exec rake test",
+      "result": "passed",
+      "runs": 313,
+      "assertions": 9822,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "log": "<scratch>/host/core-r407.log"
+    },
+    "native_journeys": {
+      "command": "PERF_AGENT=host TMPDIR=<scratch>/host/tmp <scratch>/bin/heavy mise exec ruby@3.4.7 -- ./bin/check-native",
+      "result": "passed",
+      "cases": 7,
+      "passed": 7,
+      "failed": 0,
+      "timeouts": 0,
+      "seconds": 244.3,
+      "log": "<scratch>/host/check-native-r347-rerun.log"
+    },
+    "syntax_and_diff": {
+      "command": "ruby -c lib/burrow/terrain.rb && ruby -c lib/burrow/physics.rb && ruby -c tools/perf_host_bench.rb && git diff --check",
+      "result": "passed"
+    }
+  },
+  "limits": [
+    "Linux measurements do not establish Apple silicon scheduling, Retina/display cadence, or audible output.",
+    "Full terrain snapshot compression is owned by the network agent and was not changed here."
+  ]
+}

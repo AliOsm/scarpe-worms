@@ -202,7 +202,12 @@ module Burrow
     end
 
     def body_clear?(x, y)
-      [-6, 0, 6].all? { |dx| [-18, -9, -1].all? { |dy| !terrain.solid?(x + dx, y + dy) } }
+      # Keep the historical sample order (left, centre, right; head, body,
+      # feet) while avoiding two short-lived arrays and nested block dispatches
+      # on every movement/collision sweep.
+      !terrain.solid?(x - 6, y - 18) && !terrain.solid?(x - 6, y - 9) && !terrain.solid?(x - 6, y - 1) &&
+        !terrain.solid?(x, y - 18) && !terrain.solid?(x, y - 9) && !terrain.solid?(x, y - 1) &&
+        !terrain.solid?(x + 6, y - 18) && !terrain.solid?(x + 6, y - 9) && !terrain.solid?(x + 6, y - 1)
     end
 
     def hurt(w, amount, source:, poison: false)
@@ -639,18 +644,23 @@ module Burrow
             h[:arm_reported] = true
             emit("mine_arm", hazard_id: h[:id], style: "mine", hazard_kind: "mine", x: h[:x], y: h[:y], owner: h[:owner], fuse: 0)
           end
-          proximity = h[:kind] == "mine" ? MINE_PROXIMITY : 25
-          near = worms.select do |w|
-            w[:hp] > 0 && Math.hypot(w[:x] - h[:x], w[:y] - h[:y]) < proximity &&
-              (h[:kind] != "mine" || clear_line?(h[:x], h[:y] - 4, w[:x], w[:y] - 10))
+          # Only mines and crates consume a proximity result. Barrels and
+          # turrets used to allocate and fill an ignored array on every tick.
+          near = if h[:kind] == "mine"
+            worms.find do |w|
+              w[:hp] > 0 && Math.hypot(w[:x] - h[:x], w[:y] - h[:y]) < MINE_PROXIMITY &&
+                clear_line?(h[:x], h[:y] - 4, w[:x], w[:y] - 10)
+            end
+          elsif h[:kind] == "crate"
+            worms.find { |w| w[:hp] > 0 && Math.hypot(w[:x] - h[:x], w[:y] - h[:y]) < 25 }
           end
-          if h[:kind] == "mine" && tick >= h[:armed].to_i && !near.empty?
+          if h[:kind] == "mine" && tick >= h[:armed].to_i && near
             unless h[:trigger]
               h[:trigger] = tick + 18
               emit("mine_trigger", hazard_id: h[:id], style: "mine", hazard_kind: "mine", x: h[:x], y: h[:y], owner: h[:owner], fuse: 18)
             end
-          elsif h[:kind] == "crate" && !near.empty? && !h[:trigger]
-            collector = near.first
+          elsif h[:kind] == "crate" && near && !h[:trigger]
+            collector = near
             if h[:supply] == "health"
               collector[:hp] = [collector[:hp] + 30, collector[:max_hp]].min
               collector[:poisoned] = false
@@ -662,8 +672,11 @@ module Burrow
             emit("pickup", x: h[:x], y: h[:y], text: h[:supply] == "health" ? "+30 health" : Catalog.fetch(h[:supply])[:name])
             next
           elsif h[:kind] == "turret" && tick >= h[:armed].to_i && tick % 35 == 0 && h[:shots].to_i > 0
-            target = worms.select { |w| w[:hp] > 0 && !w[:frozen] && w[:team] != h[:owner] && Math.hypot(w[:x] - h[:x], w[:y] - h[:y]) < 420 }
-              .find { |w| clear_line?(h[:x], h[:y] - 20, w[:x], w[:y] - 10) }
+            target = worms.find do |w|
+              w[:hp] > 0 && !w[:frozen] && w[:team] != h[:owner] &&
+                Math.hypot(w[:x] - h[:x], w[:y] - h[:y]) < 420 &&
+                clear_line?(h[:x], h[:y] - 20, w[:x], w[:y] - 10)
+            end
             if target
               h[:facing] = target[:x] < h[:x] ? -1 : 1
               h[:angle] = Math.atan2(target[:y] - 10 - (h[:y] - 20), target[:x] - h[:x])
