@@ -2,7 +2,8 @@
 set -eu
 BURROW_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cd "$BURROW_ROOT"
-command -v ruby >/dev/null || { echo 'Install Ruby 3.4 or newer.' >&2; exit 1; }
+command -v ruby >/dev/null || { echo 'Install Ruby 4.0 or newer.' >&2; exit 1; }
+ruby -e 'abort("Install Ruby 4.0 or newer.") if RUBY_VERSION.to_i < 4'
 command -v cargo >/dev/null || { echo 'Install Rust with rustup and put cargo on PATH.' >&2; exit 1; }
 command -v python3 >/dev/null || { echo 'Install Python 3.' >&2; exit 1; }
 if [ ! -d vendor/scarpe/.git ]; then

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run one <=150s lease of a persistent memory probe UNDER THE BENCH WRAPPER.
 
-bench mise exec ruby@3.4.7 -- python3 tools/perf_startup_memory.py \
+bench mise exec ruby@4.0.7 -- python3 tools/perf_startup_memory.py \
   --state /scratch/memory-lease.json --output /scratch/memory.json --source /tree
 Repeat the identical command until the output exists. Every workload process is
 SIGSTOPped before the lock is released, then resumed in the next lease. The native

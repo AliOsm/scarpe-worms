@@ -164,7 +164,7 @@ with a backup.
 
 ## Direct Ruby or systemd
 
-The server needs Ruby 3.4+, `base64` 0.3, and `logger` 1.7. It does not need the
+The server needs Ruby 4.0+, `base64` 0.3, and `logger` 1.7. It does not need the
 Scarpe checkout, graphics assets, ffi, or ChunkyPNG.
 
 ```sh
@@ -175,7 +175,7 @@ gem install logger -v 1.7.0
 
 For a service, copy the source to `/opt/burrow-brigade` and install
 `packaging/burrow-brigade.service`. Adjust its Ruby executable to the installed
-Ruby 3.4+ path, then enable it with systemd. StateDirectory creates a private
+Ruby 4.0+ path, then enable it with systemd. StateDirectory creates a private
 writable directory; application files remain read-only. SIGTERM and Ctrl-C
 save state before shutdown. Two processes cannot share the same save directory.
 

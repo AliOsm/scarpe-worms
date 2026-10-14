@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Exploratory zlib strategy and SHA-256 implementation sweep. Run under the
-# exclusive bench wrapper with Ruby 3.4.7. This is a screen for candidates,
+# exclusive bench wrapper with Ruby 4.0.7. This is a screen for candidates,
 # not the interleaved host acceptance test. All streams must inflate exactly.
 # Usage: bundle exec ruby tools/perf_terrain_strategies.rb --output capture.json
 require "json"

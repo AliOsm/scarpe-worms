@@ -1,0 +1,114 @@
+diff --git a/lacci/lacci.gemspec b/lacci/lacci.gemspec
+index e5a8d62..308f971 100644
+--- a/lacci/lacci.gemspec
++++ b/lacci/lacci.gemspec
+@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
+   spec.summary = "Lacci - a portable Shoes DSL with switchable display backends, part of Scarpe"
+   spec.homepage = "https://github.com/scarpe-team/scarpe"
+   spec.license = "MIT"
+-  spec.required_ruby_version = ">= 3.2.0"
++  spec.required_ruby_version = ">= 4.0.0"
+ 
+   # spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
+ 
+diff --git a/lacci/lib/lacci/scarpe_cli.rb b/lacci/lib/lacci/scarpe_cli.rb
+index d57c4f2..f145477 100644
+--- a/lacci/lib/lacci/scarpe_cli.rb
++++ b/lacci/lib/lacci/scarpe_cli.rb
+@@ -24,8 +24,8 @@ module Scarpe
+     USAGE
+ 
+     def version_check
+-      if RUBY_VERSION[0..2] < "3.2"
+-        raise "Scarpe and Lacci require Ruby 3.2 or higher!"
++      if RUBY_VERSION.to_i < 4
++        raise "Scarpe and Lacci require Ruby 4.0 or newer!"
+       end
+     end
+ 
+diff --git a/lacci/lib/lacci/scarpe_core.rb b/lacci/lib/lacci/scarpe_core.rb
+index 17a6862..83f7b14 100644
+--- a/lacci/lib/lacci/scarpe_core.rb
++++ b/lacci/lib/lacci/scarpe_core.rb
+@@ -7,10 +7,7 @@
+ # So we need a simple require-able Scarpe core here in Lacci that can be
+ # required from display services that cannot link with the base Scarpe gem.
+ 
+-if RUBY_VERSION[0..2] < "3.2"
+-  Shoes::Log.logger("Scarpe").error("Scarpe requires Ruby 3.2 or higher!")
+-  exit(-1)
+-end
++abort "Scarpe requires Ruby 4.0 or newer." if RUBY_VERSION.to_i < 4
+ 
+ module Scarpe; end
+ 
+diff --git a/lacci/lib/shoes.rb b/lacci/lib/shoes.rb
+index bd71724..27cca38 100644
+--- a/lacci/lib/shoes.rb
++++ b/lacci/lib/shoes.rb
+@@ -7,10 +7,7 @@
+ # to handle the DSL and command-line parts of Shoes without knowing anything about how the
+ # display side works at all.
+ 
+-if RUBY_VERSION[0..2] < '3.2'
+-  Shoes::Log.logger('Shoes').error('Lacci (Scarpe, Shoes) requires Ruby 3.2 or higher!')
+-  exit(-1)
+-end
++abort "Scarpe requires Ruby 4.0 or newer." if RUBY_VERSION.to_i < 4
+ 
+ class Shoes; end
+ class Shoes::Error < StandardError; end
+diff --git a/lib/scarpe.rb b/lib/scarpe.rb
+index 74ceabc..f3276d7 100644
+--- a/lib/scarpe.rb
++++ b/lib/scarpe.rb
+@@ -1,9 +1,6 @@
+ # frozen_string_literal: true
+ 
+-if RUBY_VERSION[0..2] < "3.2"
+-  Shoes::Log.logger("Scarpe").error("Scarpe requires Ruby 3.2 or higher!")
+-  exit(-1)
+-end
++abort "Scarpe requires Ruby 4.0 or newer." if RUBY_VERSION.to_i < 4
+ 
+ require "shoes"
+ require "lacci/scarpe_core"
+diff --git a/native/Cargo.toml b/native/Cargo.toml
+index fe23fd1..65b581e 100644
+--- a/native/Cargo.toml
++++ b/native/Cargo.toml
+@@ -2,7 +2,7 @@
+ name = "scarpe-native"
+ version = "0.1.0"
+ edition = "2021"
+-rust-version = "1.89"
++rust-version = "1.99"
+ description = "Native display service for Scarpe: draws Shoes apps with tiny-skia and cosmic-text"
+ license = "MIT"
+ publish = false
+diff --git a/scarpe-components/scarpe-components.gemspec b/scarpe-components/scarpe-components.gemspec
+index 5943d02..ded86bc 100644
+--- a/scarpe-components/scarpe-components.gemspec
++++ b/scarpe-components/scarpe-components.gemspec
+@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
+   spec.summary = "Reusable components for Scarpe display libraries"
+   spec.homepage = "https://github.com/scarpe-team/scarpe"
+   spec.license = "MIT"
+-  spec.required_ruby_version = ">= 3.2.0"
++  spec.required_ruby_version = ">= 4.0.0"
+ 
+   # spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
+ 
+diff --git a/scarpe.gemspec b/scarpe.gemspec
+index ad65655..81e17ff 100644
+--- a/scarpe.gemspec
++++ b/scarpe.gemspec
+@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
+   spec.summary = 'Scarpe - shoes but running on webview'
+   spec.homepage = 'https://github.com/scarpe-team/scarpe'
+   spec.license = 'MIT'
+-  spec.required_ruby_version = '>= 3.2.0'
++  spec.required_ruby_version = '>= 4.0.0'
+ 
+   # spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
+ 

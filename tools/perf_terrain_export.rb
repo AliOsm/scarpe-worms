@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 # Terrain compression/packet-size sweep for the 0.5.4 performance round.
-# Run under .perf-round/bin/bench with Ruby 3.4.7.  It measures zlib default,
+# Run under .perf-round/bin/bench with Ruby 4.0.7.  It measures zlib default,
 # level 1, level 3, level 6, level 9 and RLE on every biome/shape at standard, large
 # and huge dimensions, plus a deliberately high-entropy huge mask.  The latter
 # is a protocol-limit guard: it documents the existing restore ceiling rather
 # than changing the wire format.
 #
-#   PERF_AGENT=terrain TMPDIR=<scratch>/tmp .../bin/bench mise exec ruby@3.4.7 \
+#   PERF_AGENT=terrain TMPDIR=<scratch>/tmp .../bin/bench mise exec ruby@4.0.7 \
 #     -- bundle exec ruby tools/perf_terrain_export.rb > export-levels.json
 
 require "base64"

@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+
+abort "Packaged Ruby must be 4.0.7" unless RUBY_VERSION == "4.0.7"
 # The delivered launcher's --smoke entry uses only bundled libraries/binaries.
 require "json"
 require "scarpe"

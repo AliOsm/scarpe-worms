@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+
+abort "Packaged Ruby must be 4.0.7" unless RUBY_VERSION == "4.0.7"
 # Injected by the Windows verifier before the packaged game's normal startup.
 require "scarpe/native"
 

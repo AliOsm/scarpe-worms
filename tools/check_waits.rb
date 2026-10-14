@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# Run with Ruby 3.4+; optional first argument names an extracted app bundle.
+# Run with Ruby 4.0+; optional first argument names an extracted app bundle.
 require "json"
 require "fiddle"
 module Scarpe

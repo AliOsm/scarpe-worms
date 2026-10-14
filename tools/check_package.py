@@ -21,8 +21,10 @@ def package_environment(app, linux_ruby=None, windowed=False):
         env.pop(key, None)
     paths = [res / 'scarpe' / p for p in ['lib', 'lacci/lib', 'scarpe-components/lib']]
     paths.extend(res / 'gems' / name / 'lib' for name in ['ffi', 'chunky_png', 'base64', 'logger', 'fastimage'])
-    ruby = linux_ruby.resolve() if linux_ruby else res / 'runtime/ruby/bin.real/ruby'
+    ruby = linux_ruby.resolve() if linux_ruby else res / 'runtime/ruby/bin/ruby'
     if linux_ruby:
+        # Substitute Fiddle's native gem together with the Linux interpreter.
+        gems = subprocess.check_output([str(ruby), '-e', 'print Gem.default_dir'], text=True)
         abi = subprocess.check_output([str(ruby), '--disable-gems', '-e', "print RUBY_VERSION.split('.')[0,2].join('.')"], text=True)
         # Keep the delivered ffi Ruby code; only substitute its platform binary,
         # just as this mode explicitly substitutes Ruby and scarpe-native.
@@ -30,17 +32,13 @@ def package_environment(app, linux_ruby=None, windowed=False):
         if extensions:
             paths.append(extensions[0].parent)
             env['BURROW_TEST_FFI_EXTENSION'] = str(extensions[0])
-    if not linux_ruby:
-        base = res / 'runtime/ruby/lib/ruby'
-        paths.extend(base / p for p in ['site_ruby/3.4.0', 'site_ruby/3.4.0/arm64-darwin22', 'site_ruby',
-                     'vendor_ruby/3.4.0', 'vendor_ruby/3.4.0/arm64-darwin22', 'vendor_ruby',
-                     '3.4.0', '3.4.0/arm64-darwin22'])
-        env['RUBYOPT'] = '-rtraveling_ruby_restore_environment'
     native = ROOT / 'vendor/scarpe/native/target/release/scarpe-native' if linux_ruby else res.parent / 'MacOS/scarpe-native'
-    env.update(RUBYLIB=os.pathsep.join(map(str, paths)), GEM_HOME=str(res / 'runtime/gems'),
-               GEM_PATH=str(res / 'runtime/gems'), SCARPE_DISPLAY_SERVICE='native',
+    env.update(RUBYLIB=os.pathsep.join(map(str, paths)), GEM_HOME=str(res / 'runtime/ruby/lib/ruby/gems/4.0.0'),
+               GEM_PATH=str(res / 'runtime/ruby/lib/ruby/gems/4.0.0'), SCARPE_DISPLAY_SERVICE='native',
                SCARPE_NATIVE_BIN=str(native), SCARPE_NATIVE_HEADLESS='0' if windowed else '1',
                BURROW_PACKAGE_RES=str(res), BURROW_RUBY=str(ruby))
+    if linux_ruby:
+        env['GEM_HOME'] = env['GEM_PATH'] = gems
     # Execute the same interpreter wrapper as the Finder launcher. In
     # particular it chooses a UTF-8 locale before Ruby tags startup load paths;
     # -EUTF-8 alone does not fix RubyGems paths in a Unicode installation.
@@ -50,7 +48,7 @@ def package_environment(app, linux_ruby=None, windowed=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('app', type=Path)
-    parser.add_argument('--linux-ruby', type=Path, help='Ruby 3.4 on Linux; this does NOT test Mac binaries')
+    parser.add_argument('--linux-ruby', type=Path, help='Ruby 4.0+ on Linux; this does NOT test Mac binaries')
     parser.add_argument('--windowed', action='store_true', help='Open the actual native window on a Mac')
     parser.add_argument('--locale', choices=['unset', 'c', 'inherit'], default='unset',
                         help='Default: remove shell locale variables as on a Finder launch; c forces ASCII')

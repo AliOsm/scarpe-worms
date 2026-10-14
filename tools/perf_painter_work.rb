@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 # Isolated painter attribution and pixel evidence. Run under the round's bench
-# wrapper, Ruby 3.4.7, PERF_AGENT=painter and scratch TMPDIR. Select the A/B source
+# wrapper, Ruby 4.0.7, PERF_AGENT=painter and scratch TMPDIR. Select the A/B source
 # with BURROW_BENCH_SOURCE; write JSON with PERF_PAINTER_OUTPUT. --verify expands
 # the matrix (run under heavy; no timings are recorded). Add --extra-seeds to
 # verify seven more seeds on a world whose dimensions do not divide into tiles.

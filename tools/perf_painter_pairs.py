@@ -6,7 +6,7 @@ python3 -I tools/perf_painter_pairs.py final-net /archived/net /candidate \
     --scratch <scratch>/painter \
     --modes app,crater,worker
 Do not wrap this entire driver with bench: that would nest the lock. It invokes
-the sibling bin/bench wrapper and Ruby 3.4.7 for every capture. 'app' is the
+the sibling bin/bench wrapper and Ruby 4.0.7 for every capture. 'app' is the
 unprofiled windowed/audio-null native start; 'worker' adds separate attribution;
 'work' profiles two direct painter fixtures; 'crater' reuses the net session.
 """
@@ -55,7 +55,7 @@ def main():
                 else:
                     cmd = ['bundle', 'exec', 'ruby', 'tools/perf_net_session.rb', '--rounds', '0',
                            '--terrain', '--output', str(output)]
-                subprocess.run([str(scratch.parent / 'bin/bench'), 'mise', 'exec', 'ruby@3.4.7',
+                subprocess.run([str(scratch.parent / 'bin/bench'), 'mise', 'exec', 'ruby@4.0.7',
                                 '--', *cmd], cwd=ROOT, env=env, check=True)
 
 

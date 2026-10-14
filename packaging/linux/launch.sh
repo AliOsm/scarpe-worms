@@ -4,7 +4,7 @@ set -eu
 BURROW_BUNDLE=$(dirname -- "$(readlink -f -- "$0")")
 export BURROW_PACKAGE_RES="$BURROW_BUNDLE/resources"
 RES=$BURROW_PACKAGE_RES
-export BURROW_RUBY="$RES/runtime/ruby/bin.real/ruby"
+export BURROW_RUBY="$RES/runtime/ruby/bin/ruby"
 export BURROW_LOG_DIR="${BURROW_LOG_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/burrow-brigade/logs}"
 export BURROW_DATA_DIR="${BURROW_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/burrow-brigade}"
 umask 077
@@ -17,9 +17,8 @@ unset RUBYOPT RUBYLIB GEM_HOME GEM_PATH BUNDLE_GEMFILE BUNDLE_PATH BUNDLE_BIN_PA
 unset SSL_CERT_DIR RUBYGEMS_GEMDEPS
 export LD_LIBRARY_PATH="$BURROW_BUNDLE/lib:$RES/runtime/ruby/lib"
 export SSL_CERT_FILE="$RES/runtime/ruby/lib/ca-bundle.crt"
-export GEM_HOME="$RES/runtime/gems" GEM_PATH="$RES/runtime/gems"
-RUBY_LIB="$RES/runtime/ruby/lib/ruby"
-export RUBYLIB="$RES/scarpe/lib:$RES/scarpe/lacci/lib:$RES/scarpe/scarpe-components/lib:$RES/gems/ffi/lib:$RES/gems/chunky_png/lib:$RES/gems/base64/lib:$RES/gems/logger/lib:$RES/gems/fastimage/lib:$RUBY_LIB/site_ruby/3.4.0:$RUBY_LIB/site_ruby/3.4.0/x86_64-linux:$RUBY_LIB/site_ruby:$RUBY_LIB/vendor_ruby/3.4.0:$RUBY_LIB/vendor_ruby/3.4.0/x86_64-linux:$RUBY_LIB/vendor_ruby:$RUBY_LIB/3.4.0:$RUBY_LIB/3.4.0/x86_64-linux"
+export GEM_HOME="$RES/runtime/ruby/lib/ruby/gems/4.0.0" GEM_PATH="$RES/runtime/ruby/lib/ruby/gems/4.0.0"
+export RUBYLIB="$RES/scarpe/lib:$RES/scarpe/lacci/lib:$RES/scarpe/scarpe-components/lib:$RES/gems/ffi/lib:$RES/gems/chunky_png/lib:$RES/gems/base64/lib:$RES/gems/logger/lib:$RES/gems/fastimage/lib"
 export SCARPE_NATIVE_BIN="$RES/bin/scarpe-native" SCARPE_DISPLAY_SERVICE=native
 # libcrypt.so.1 is separate from glibc on Fedora; report it before Ruby starts.
 if command -v ldd >/dev/null 2>&1; then

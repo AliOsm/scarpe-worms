@@ -14,5 +14,13 @@
   "winpthreads-COPYING": {
     "url": "https://raw.githubusercontent.com/mingw-w64/mingw-w64/v13.0.0/mingw-w64-libraries/winpthreads/COPYING",
     "sha256": "63263614cdd29f2f93cba85e992f041b31f9fc7b4033692f31269489a8a1b177"
-  }
+  },
+  "Ruby-COPYING": "https://raw.githubusercontent.com/ruby/ruby/v4_0_7/COPYING",
+  "Ruby-BSDL": "https://raw.githubusercontent.com/ruby/ruby/v4_0_7/BSDL",
+  "Ruby-LEGAL": "https://raw.githubusercontent.com/ruby/ruby/v4_0_7/LEGAL",
+  "OpenSSL-LICENSE": "https://raw.githubusercontent.com/openssl/openssl/openssl-3.6.0/LICENSE.txt",
+  "libffi-LICENSE": "https://raw.githubusercontent.com/libffi/libffi/v3.5.2/LICENSE",
+  "libyaml-LICENSE": "https://raw.githubusercontent.com/yaml/libyaml/0.2.5/License",
+  "GMP-LGPLv3": "https://raw.githubusercontent.com/gmp-mirror/gmp/master/COPYING.LESSERv3",
+  "GMP-GPLv3": "https://raw.githubusercontent.com/gmp-mirror/gmp/master/COPYINGv3"
 }

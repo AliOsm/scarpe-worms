@@ -21,6 +21,8 @@ on:
       - Gemfile*
       - setup.sh
       - tools/package_macos.py
+      - tools/build_ruby.py
+      - packaging/ruby/**
       - tools/check_package.py
       - tools/package_smoke.rb
       - tools/check_distributable.py
@@ -34,8 +36,10 @@ defaults:
     shell: bash
 jobs:
   package:
-    runs-on: ubuntu-24.04
+    runs-on: macos-15
     timeout-minutes: 60
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '13.0'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,9 +47,15 @@ jobs:
           persist-credentials: false
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.4.7'
+          ruby-version: '4.0.7'
           bundler: '4.0.16'
-      - run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libxkbcommon-dev libfontconfig1-dev libffi-dev
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Require Apple silicon and prepare build tools
+        run: |
+          test "$(uname -m)" = arm64
+          brew install pkg-config
       - uses: actions/cache@v4
         with:
           path: |
@@ -58,13 +68,11 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .cache/macos
-          key: macos-arm64-${{ hashFiles('packaging/macos/dependencies.json', 'rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch') }}
+          key: macos-ruby4-arm64-${{ hashFiles('packaging/macos/dependencies.json', 'packaging/ruby/dependencies.json', 'tools/build_ruby.py', 'rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch') }}
       - run: python3 -I tools/package_macos.py
       # These helpers import other repository helpers; isolated mode explicitly
       # adds only the trusted tools directory, never downloaded Python code.
       - run: python3 -I -c 'import runpy,sys; sys.path.insert(0,"tools"); runpy.run_path("tools/check_distributable.py",run_name="__main__")'
-      - run: python3 -I tools/check_package.py 'dist/Burrow Brigade.app' --linux-ruby "$(command -v ruby)"
-      - run: python3 -I tools/check_package.py 'dist/Burrow Brigade.app' --linux-ruby "$(command -v ruby)" --locale c
       - uses: actions/upload-artifact@v4
         with:
           name: macos-package-candidate
@@ -79,7 +87,6 @@ jobs:
           name: macos-build-evidence
           path: |
             docs/validation/macos-arm64-package.json
-            docs/validation/package-relocated-linux*.json
             docs/validation/distributable.json
 
   verify:

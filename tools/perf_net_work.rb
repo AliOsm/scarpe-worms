@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 # Network/terrain CPU and allocation fixtures; run each capture under .perf-round/bin/bench.
 # PERF_AGENT=net TMPDIR=<scratch>/tmp BURROW_NET_ROOT=<source tree> \
-#   mise exec ruby@3.4.7 -- bundle exec ruby tools/perf_net_work.rb --mode terrain --output <capture.json>
+#   mise exec ruby@4.0.7 -- bundle exec ruby tools/perf_net_work.rb --mode terrain --output <capture.json>
 # Modes: decode (JSON alternatives + timed receiver/GUI heartbeat), terrain (real
 # worker and identical PNG digests), playback (deterministic jitter/UI stalls),
 # timeline (36-grub interpolation CPU/allocations and exact presentation digest),

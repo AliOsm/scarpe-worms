@@ -38,7 +38,7 @@ module PainterPerf
     {ruby: RUBY_DESCRIPTION, platform: RUBY_PLATFORM, source: ENV["BURROW_BENCH_SOURCE"],
       yjit: defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?,
       yjit_stats: defined?(RubyVM::YJIT) && RubyVM::YJIT.runtime_stats,
-      gc_config: GC.respond_to?(:config) ? GC.config : nil,
+      gc_config: GC.config,
       environment: ENV.to_h.select { |key, _| key.start_with?("RUBY_GC_", "PERF_PAINTER_") || %w[RUBYOPT RUBY_YJIT_ENABLE].include?(key) }}
   end
 

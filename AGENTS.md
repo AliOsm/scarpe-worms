@@ -55,7 +55,7 @@ Dependencies, app bundles, raw diagnostics, credentials, and player state are
 ignored. Keep concise, versioned validation summaries and selected screenshots.
 Reports in `docs/validation/` describe the build and machine actually measured.
 
-Linux cross-builds do not execute Darwin binaries. Do not claim native Mac tests,
+The Mac package is built and tested on Apple silicon CI. Do not claim native Mac tests,
 audible Mac sound, notarization, or sales readiness without new evidence.
 Update `docs/STATUS.md` with completed work, gaps, and next checks at handoff.
 Use licensed/original assets and preserve third-party notices.

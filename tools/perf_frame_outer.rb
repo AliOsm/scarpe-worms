@@ -4,7 +4,7 @@
 # Unlike FrameProfile's attribution mode, this retains one sample per frame and
 # does not inspect native messages or wrap inner methods. This checks whether
 # GC/frame tails seen with the full profiler survive its removal. Example:
-#   PERF_AGENT=frame TMPDIR=... bench mise exec ruby@3.4.7 -- env \
+#   PERF_AGENT=frame TMPDIR=... bench mise exec ruby@4.0.7 -- env \
 #     SCARPE_DISPLAY_SERVICE=native SCARPE_NATIVE_HEADLESS=1 \
 #     BURROW_BENCH_SOURCE=/source BURROW_FRAME_OUTPUT=/captures/outer \
 #     bundle exec ./bin/scarpe tools/perf_frame_outer.rb

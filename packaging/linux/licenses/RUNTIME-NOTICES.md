@@ -1,43 +1,23 @@
-# Bundled Linux runtime notices
+# Bundled runtime notices
 
-The game's MIT license is in `../app/LICENSE`; art, fonts and audio credits
-are in `../app/THIRD_PARTY.md` and the assets' own notices. Scarpe's notice is
-in `../scarpe/LICENSE.txt`. Every shipped gem retains its license in
-`../gems/<name>/`. Rust crate notices and their version/source index are in
-`rust/`, and Rust standard-library notices are in `rust-runtime/`.
+The game is MIT licensed; see `../app/LICENSE` and `../app/THIRD_PARTY.md`.
+Scarpe's notice is in `../scarpe/LICENSE.txt`. Gem notices remain beside their
+sources. Rust crate notices are in `rust/`, with standard-library notices in
+`rust-runtime/`. Fonts retain their SIL Open Font Licenses.
 
-Traveling Ruby 3.4.7 comes from the checksum-pinned **minimal** Linux x86-64
-archive, rel-20251122. It was built in Holy Build Box on CentOS 7; its sources
-and build recipes are at https://github.com/trubygems/traveling-ruby/tree/rel-20251122/linux.
-The exact URLs and hashes are in `../build-dependencies.json`. The game retains the
-interpreter and standard libraries, not the archive's unrelated gem executables,
-libtinfo or libffi.so.6. The retained extensions have no dependency on those two
-shared libraries; packaging audits every ELF dependency.
-Packaging removes the Ruby executable's original `/tmp/ruby/lib` ELF RPATH.
+Ruby 4.0.7 is built from source with relocatable load paths. OpenSSL 3.5.9,
+libffi 3.8.0, libyaml 0.2.5 and zlib 1.3.2 are statically linked. Exact source
+URLs and SHA-256 digests are in `../ruby-build-dependencies.json`. Their original
+license texts are collected from those sources into `ruby/`. Build instructions
+are in `tools/build_ruby.py` in the game source repository. Fiddle 1.1.8 is a
+separate bundled gem and retains its license with its source.
 
-| Component | Source | Notice |
-| --- | --- | --- |
-| Ruby 3.4.7 and standard libraries | https://github.com/ruby/ruby/tree/v3_4_7 | Ruby-COPYING, Ruby-BSDL, Ruby-LEGAL |
-| Traveling Ruby | https://github.com/trubygems/traveling-ruby/tree/rel-20251122 | Traveling-Ruby-LICENSE |
-| OpenSSL 3.6.0 (Ruby extension) | https://github.com/openssl/openssl/tree/openssl-3.6.0 | OpenSSL-LICENSE |
-| libffi 3.5.2 (Fiddle extension) | https://github.com/libffi/libffi/tree/v3.5.2 | libffi-LICENSE |
-| libyaml 0.2.5 (Psych extension) | https://github.com/yaml/libyaml/tree/0.2.5 | libyaml-LICENSE |
-| zlib 1.3 | https://github.com/madler/zlib/tree/v1.3 | zlib-LICENSE |
-| CA certificate bundle | https://github.com/trubygems/traveling-ruby/blob/rel-20251122/shared/ca-bundle.crt | Mozilla-MPL-2.0 |
-| OpenAL Soft 1.24.3 | https://github.com/kcat/openal-soft/releases/tag/1.24.3 | openal-soft/COPYING (LGPL v2 or later), LICENSE-pffft, fmt-LICENSE |
+The Mozilla CA bundle from curl.se is distributed as PEM source at
+`../runtime/ruby/lib/ca-bundle.crt`. Its original URL and checksum are recorded
+with the build dependencies; the MPL 2.0 text is `Mozilla-MPL-2.0`.
 
-The CA bundle is copied unchanged from Traveling Ruby. Its upstream commit
-`ccfda25664d9290dc704719b86fd2c5ecfdd93d6` identifies it as CentOS 8's bundle,
-derived from Mozilla's certificate store. The PEM source is shipped at
-`../runtime/ruby/lib/ca-bundle.crt`; the MPL 2.0 text accompanies this notice.
-
-OpenAL Soft is dynamically linked at `../../lib/libopenal.so.1`. Its complete
-corresponding source archive and the actual CMake build flags accompany the
-library in `openal-soft/`. You may modify or replace it with an ABI-compatible
-build and reverse engineer the application to debug those modifications.
-There is no signature or loader restriction preventing replacement.
-
-The operating system supplies glibc, libcrypt, libgcc, libstdc++, the desktop
-connection libraries and audio server/client libraries. They are not copied
-into this archive. The renderer paints with tiny-skia and softbuffer; it does
-not require OpenGL, Vulkan, GTK, WebKit or a web browser.
+OpenAL Soft 1.24.3 is dynamically linked at `../../lib/libopenal.so.1`. Its
+complete corresponding source, LGPL and third-party notices, and actual CMake
+flags accompany it in `openal-soft/`. You may replace it with an ABI-compatible
+modified build and debug those modifications. System desktop/audio libraries,
+glibc, libcrypt, libgcc and libstdc++ are supplied by the operating system.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-build a self-contained arm64 macOS test app on Linux, with independently verified engine patches.
+"""Build a self-contained arm64 macOS app on Apple silicon.
 
 Requires Python 3.12+, tar, Git and the pinned Rust toolchain. Downloads are
 checksum-pinned in packaging/macos/dependencies.json. No Apple credentials are
@@ -10,6 +10,7 @@ import hashlib
 import io
 import json
 import os
+import platform
 import plistlib
 import re
 import shutil
@@ -18,17 +19,20 @@ import struct
 import subprocess
 import sys
 import tarfile
+import tomllib
 import urllib.request
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'tools'))
+import build_ruby
 CONFIG = ROOT / 'packaging/macos'
 CACHE = ROOT / '.cache/macos'
 DIST = ROOT / 'dist'
 APP = DIST / 'Burrow Brigade.app'
 RES = APP / 'Contents/Resources'
 TARGET = 'aarch64-apple-darwin'
-RUST_VERSION = '1.99.0'
+RUST_VERSION = tomllib.loads((ROOT / 'rust-toolchain.toml').read_text())['toolchain']['channel']
 VERSION = re.search(r'^  VERSION = "([^"]+)"', (ROOT / 'lib/burrow.rb').read_text(), re.MULTILINE).group(1)
 
 
@@ -52,21 +56,6 @@ def download(asset):
     return path
 
 
-def unpack(archive, directory):
-    marker = directory / '.extracted'
-    if marker.exists():
-        return
-    # A failed extraction is not a reusable cache. Start with an empty owned
-    # directory rather than mixing old files into a verified download.
-    if directory.exists():
-        shutil.rmtree(directory)
-    directory.mkdir(parents=True, exist_ok=True)
-    # Python's data filter rejects paths/symlinks escaping the destination.
-    with tarfile.open(archive) as source:
-        source.extractall(directory, filter='data')
-    marker.touch()
-
-
 def copy_tree(source, destination, **options):
     shutil.copytree(source, destination, symlinks=True, dirs_exist_ok=True, **options)
 
@@ -81,7 +70,7 @@ def install_gem(archive, name):
     # Keep source/license notices; discard native extensions for other Ruby ABIs.
     if name == 'ffi':
         for directory in (destination / 'lib').iterdir():
-            if directory.is_dir() and re.fullmatch(r'\d+\.\d+', directory.name) and directory.name != '3.4':
+            if directory.is_dir() and re.fullmatch(r'\d+\.\d+', directory.name) and directory.name != '4.0':
                 shutil.rmtree(directory)
 
 
@@ -141,38 +130,29 @@ def copy_rust_notices(cargo, scarpe, sysroot, env):
 
 
 def main():
-    if sys.platform != 'linux':
-        raise SystemExit('This cross-build recipe runs on Linux. The resulting app runs on Apple silicon Macs.')
+    if sys.platform != 'darwin' or platform.machine() != 'arm64':
+        raise SystemExit('Build on an Apple silicon Mac with Xcode Command Line Tools.')
     scarpe = ROOT / 'vendor/scarpe'
-    pin = (ROOT / 'SCARPE_REVISION').read_text().strip()
-    revision = subprocess.check_output(['git', '-C', str(scarpe), 'rev-parse', 'HEAD'], text=True).strip()
     run(sys.executable, ROOT / 'tools/verify_scarpe.py')
     assets = json.loads((CONFIG / 'dependencies.json').read_text())
     downloads = {item['name']: download(item) for item in assets}
-    unpack(downloads['MacOSX26.1.sdk.tar.xz'], CACHE / 'sdk')
-    unpack(downloads['traveling-ruby-20251122-3.4.7-macos-arm64-full.tar.gz'], CACHE / 'runtime')
-    unpack(downloads['apple-codesign-0.29.0-x86_64-unknown-linux-musl.tar.gz'], CACHE / 'signing')
+    runtime = build_ruby.build(CACHE / 'ruby4')
 
     rustup = Path(os.environ.get('BURROW_RUSTUP', str(Path.home() / '.cargo/bin/rustup')))
     run(rustup, 'target', 'add', '--toolchain', RUST_VERSION, TARGET)
     rustc = subprocess.check_output([str(rustup), 'which', '--toolchain', RUST_VERSION, 'rustc'], text=True).strip()
     cargo = subprocess.check_output([str(rustup), 'which', '--toolchain', RUST_VERSION, 'cargo'], text=True).strip()
     sysroot = Path(subprocess.check_output([rustc, '--print', 'sysroot'], text=True).strip())
-    linker = sysroot / 'lib/rustlib/x86_64-unknown-linux-gnu/bin/rust-lld'
     env = os.environ | {
         'RUSTC': rustc, 'RUSTUP_TOOLCHAIN': RUST_VERSION,
-        'LD_LIBRARY_PATH': str(sysroot / 'lib') + (':' + os.environ['LD_LIBRARY_PATH'] if os.environ.get('LD_LIBRARY_PATH') else ''),
-        'SDKROOT': str(CACHE / 'sdk/MacOSX26.1.sdk'), 'MACOSX_DEPLOYMENT_TARGET': '13.0',
-        'CARGO_TARGET_DIR': str(CACHE / 'target'),
-        'CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER': str(linker),
-        'CARGO_TARGET_AARCH64_APPLE_DARWIN_RUSTFLAGS': '-C linker-flavor=ld64.lld',
+        'MACOSX_DEPLOYMENT_TARGET': '13.0',
+        'CARGO_TARGET_DIR': str(scarpe / 'native/target'),
     }
     print('Building pinned Scarpe for Apple silicon', flush=True)
-    run(cargo, 'build', '--release', '--locked', '--target', TARGET,
+    run(cargo, 'build', '--release', '--locked',
         '--manifest-path', scarpe / 'native/Cargo.toml', env=env, cwd=ROOT)
     run(rustc, CONFIG / 'launcher.rs', '--edition=2021', '--target', TARGET,
-        '-C', 'opt-level=s', '-C', 'strip=symbols', '-C', 'linker-flavor=ld64.lld',
-        '-C', f'linker={linker}', '-o', CACHE / 'Burrow Brigade', env=env)
+        '-C', 'opt-level=s', '-C', 'strip=symbols', '-o', CACHE / 'Burrow Brigade', env=env)
 
     # Only this known generated bundle is replaced; never copy databases, cached
     # accounts, credentials, dependency checkouts or the development worktree.
@@ -181,7 +161,7 @@ def main():
     (APP / 'Contents/MacOS').mkdir(parents=True)
     (RES / 'app').mkdir(parents=True)
     shutil.copy2(CACHE / 'Burrow Brigade', APP / 'Contents/MacOS/Burrow Brigade')
-    shutil.copy2(CACHE / 'target' / TARGET / 'release/scarpe-native', APP / 'Contents/MacOS/scarpe-native')
+    shutil.copy2(scarpe / 'native/target/release/scarpe-native', APP / 'Contents/MacOS/scarpe-native')
     shutil.copy2(ROOT / 'game.rb', RES / 'app/game.rb')
     for directory in ('lib',):
         copy_tree(ROOT / directory, RES / 'app' / directory)
@@ -206,14 +186,14 @@ def main():
         elif path.exists():
             path.unlink()
 
-    runtime = CACHE / 'runtime'
-    for directory in ('bin.real', 'lib'):
+    for directory in ('bin', 'lib'):
         copy_tree(runtime / directory, RES / 'runtime/ruby' / directory,
-                  ignore=shutil.ignore_patterns('gems', '*.dSYM', '*.a'))
-    (RES / 'runtime/gems').mkdir(parents=True)
+                  ignore=shutil.ignore_patterns('*.dSYM', '*.a'))
     for name, version in [('ffi', '1.17.4-arm64-darwin'), ('chunky_png', '1.4.0'), ('base64', '0.3.0'), ('logger', '1.7.0'), ('fastimage', '2.4.1')]:
         install_gem(downloads[f'{name}-{version}.gem'], name)
     copy_tree(CONFIG / 'licenses', RES / 'licenses', ignore=shutil.ignore_patterns('rust-extra'))
+    copy_tree(runtime / 'notices', RES / 'licenses/ruby')
+    shutil.copy2(build_ruby.CONFIG, RES / 'ruby-build-dependencies.json')
     copy_rust_notices(cargo, scarpe, sysroot, env)
     copy_tree(scarpe / 'native/assets/fonts', RES / 'licenses/scarpe-fonts', ignore=shutil.ignore_patterns('*.ttf', '*.otf'))
 
@@ -227,7 +207,7 @@ def main():
     plist = {
         'CFBundleExecutable': 'Burrow Brigade', 'CFBundleIdentifier': 'com.burrowbrigade.game',
         'CFBundleName': 'Burrow Brigade', 'CFBundleDisplayName': 'Burrow Brigade',
-        'CFBundleShortVersionString': VERSION, 'CFBundleVersion': '20261013.1',
+        'CFBundleShortVersionString': VERSION, 'CFBundleVersion': VERSION,
         'CFBundlePackageType': 'APPL', 'CFBundleIconFile': 'Burrow Brigade.icns',
         'LSMinimumSystemVersion': '13.0', 'LSArchitecturePriority': ['arm64'],
         'NSHighResolutionCapable': True,
@@ -240,9 +220,14 @@ def main():
         path.chmod(0o755)
     (RES / 'launch.sh').chmod(0o755)
     (RES / 'ruby.sh').chmod(0o755)
-    signer = CACHE / 'signing/apple-codesign-0.29.0-x86_64-unknown-linux-musl/rcodesign'
     print('Ad-hoc signing the complete app', flush=True)
-    run(signer, '-C', '/dev/null', 'sign', APP)
+    for path in sorted(APP.rglob('*')):
+        if path.is_file() and not path.is_symlink():
+            with path.open('rb') as source:
+                if source.read(4) == b'\xcf\xfa\xed\xfe':
+                    run('codesign', '--force', '--sign', '-', path)
+    run('codesign', '--force', '--sign', '-', APP)
+    run('codesign', '--verify', '--deep', '--strict', APP)
     run(sys.executable, ROOT / 'tools/verify_macos.py', APP,
         '--report', ROOT / 'docs/validation/macos-arm64-package.json')
     archive = DIST / f'Burrow-Brigade-{VERSION}-macos-arm64.zip'
@@ -253,7 +238,7 @@ def main():
         digest = hashlib.file_digest(source, 'sha256').hexdigest()
     archive.with_suffix('.zip.sha256').write_text(f'{digest}  {archive.name}\n')
     print(f'Created {archive} ({archive.stat().st_size / 1024**2:.1f} MiB)', flush=True)
-    print('Mac binaries are cross-built; macOS launch testing remains required.', flush=True)
+    print('Native macOS package built; run the required functional smoke checks before release.', flush=True)
 
 
 if __name__ == '__main__':

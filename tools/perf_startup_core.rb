@@ -3,7 +3,7 @@
 # Deterministic terrain, host simulation/snapshot, and checkpoint probes.
 # PERF_STARTUP_MODE=terrain|host|verify; PERF_STARTUP_OUTPUT=/absolute/report.json
 # BURROW_BENCH_SOURCE=/frozen/tree selects code/assets independently of Bundler.
-# Run via: bench mise exec ruby@3.4.7 -- bundle exec ruby tools/perf_startup_core.rb
+# Run via: bench mise exec ruby@4.0.7 -- bundle exec ruby tools/perf_startup_core.rb
 # "verify" hashes every full checkpoint (including RNG and terrain) separately
 # from timing. Host timing includes one JSON snapshot/tick and a save/60 ticks,
 # but excludes socket I/O, idle waits, and the separate correctness hashes.

@@ -18,6 +18,7 @@ on:
       - tools/package_macos.py
       - tools/verify_scarpe.py
       - packaging/macos/licenses/**
+      - packaging/ruby/licenses/**
       - setup-windows.ps1
       - run-windows.ps1
       - lib/**
@@ -51,7 +52,7 @@ jobs:
           arch: x64
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.4.7'
+          ruby-version: '4.0.7'
           bundler: '4.0.16'
       - uses: actions/setup-python@v5
         with:

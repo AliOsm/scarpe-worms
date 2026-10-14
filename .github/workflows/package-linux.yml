@@ -18,6 +18,8 @@ on:
       - packaging/linux/**
       - packaging/macos/licenses/**
       - tools/package_linux.py
+      - tools/build_ruby.py
+      - packaging/ruby/**
       - tools/check_linux_package.py
       - tools/verify_scarpe.py
       - SCARPE_REVISION
@@ -43,7 +45,7 @@ jobs:
       - name: Install baseline build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake patchelf pkg-config libxkbcommon-dev libfontconfig1-dev libasound2-dev libpulse-dev libpipewire-0.3-dev
+          sudo apt-get install -y build-essential cmake pkg-config perl libxkbcommon-dev libfontconfig1-dev libasound2-dev libpulse-dev libpipewire-0.3-dev
           rustup toolchain install "$(python3 -c 'import tomllib; print(tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])')" --profile minimal
       - uses: actions/cache@v4
         with:
@@ -52,7 +54,8 @@ jobs:
             ~/.cargo/git
             .cache/linux/target
             .cache/linux/downloads
-          key: linux-ubuntu22-${{ hashFiles('rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch', 'packaging/linux/dependencies.json') }}
+            .cache/linux/ruby4
+          key: linux-ruby4-ubuntu22-${{ hashFiles('rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch', 'packaging/linux/dependencies.json', 'packaging/ruby/dependencies.json', 'tools/build_ruby.py') }}
       - name: Build, collect notices and audit all ELF requirements
         run: python3 -I tools/package_linux.py
       - uses: actions/upload-artifact@v4

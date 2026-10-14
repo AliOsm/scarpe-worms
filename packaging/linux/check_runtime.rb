@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+abort "Packaged Ruby must be 4.0.7" unless RUBY_VERSION == "4.0.7"
+
 require "fiddle"
 require "json"
 require "openssl"

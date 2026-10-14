@@ -5,7 +5,7 @@ The repository is `scarpe-worms`; the game and bundle are **Burrow Brigade**.
 
 ## Setup
 
-Use Ruby **4.0.7** for development or **3.4.7** to match the packaged runtime.
+Use Ruby **4.0.7** for development. Ruby **4.0 or newer** is required.
 Rust **1.99.0** is pinned in `rust-toolchain.toml`; install it through rustup.
 You also need Git, Bundler (the lockfile records its version), and Python 3.12+.
 
@@ -115,7 +115,7 @@ tree with `python3 tools/verify_scarpe.py`. Do not commit the dependency checkou
 - Keep saves, tokens, certificates, caches, and build archives out of commits.
 - Follow the platform guides ([macOS](docs/MACOS.md), [Windows](docs/WINDOWS.md), [Linux](docs/LINUX.md)) and the [release process](docs/RELEASE.md) for distribution.
 
-CI runs core and native checks on Ruby 3.4.7 and 4.0.7. The `package-macos`,
+CI runs core and native checks on Ruby 4.0.7. The `package-macos`,
 `package-windows` and `package-linux` workflows build and exercise each client on
 its own runner for packaging pull requests, manual runs and `v*` release tags;
 `release.yml` publishes a tag's GitHub Release only after all of them pass

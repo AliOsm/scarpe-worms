@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+abort "Burrow Brigade requires Ruby 4.0 or newer." if RUBY_VERSION.to_i < 4
+
 require "json"
 require "securerandom"
 require "digest"
@@ -7,7 +9,7 @@ require "fileutils"
 
 module Burrow
   ROOT = File.expand_path("..", __dir__)
-  VERSION = "0.5.5"
+  VERSION = "0.5.6"
   PROTOCOL = 4
   TICK_RATE = 30
   DT = 1.0 / TICK_RATE

@@ -91,7 +91,7 @@ Retina performance patches (still independent of game code):
   Ordinary sleep timeouts can be coalesced past animation deadlines even while
   native rendering is cheap. Input cancels the pending timer, idle apps still
   sleep, and close releases the descriptor. Fiddle is a declared dependency for
-  Ruby 4 (bundled Ruby 3.4 already includes it). Tests cover real descriptor waits,
+  Ruby 4. Tests cover real descriptor waits,
   early input, rearming, fallback, cleanup, the Darwin ABI, and Linux 100 ms timer
   slack. `ruby.json` reports the selected backend and runtime fallback errors.
 
@@ -290,3 +290,9 @@ PATH="$HOME/.cargo/bin:$PATH" nice -n 10 cargo test --release --locked \
 bundle exec ruby -Ivendor/scarpe/lib -Ivendor/scarpe/lacci/lib \
   -Ivendor/scarpe/scarpe-components/lib vendor/scarpe/test/native/windows_runtime_test.rb
 ```
+
+- `0026-ruby4-rust199-requirements.patch`: require Ruby 4.0+ in Scarpe,
+  Lacci and Components metadata and entry points, and Rust 1.99+ in the native
+  crate. Early Ruby rejection uses `abort` before the logging subsystem loads.
+  The game's root toolchain pins Rust 1.99.0. Scarpe's unused upstream packager
+  is excluded from game distributions; the platform tools build Ruby 4 packages.

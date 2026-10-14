@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 # Reproducible OpenAL submission/voice-pressure and delayed-deadline probes.
-# Run under .perf-round/bin/bench with Ruby 3.4.7. Set BURROW_BENCH_SOURCE to
+# Run under .perf-round/bin/bench with Ruby 4.0.7. Set BURROW_BENCH_SOURCE to
 # an archived source tree; dependencies always come from this worktree's bundle.
 # Examples: bundle exec ruby tools/perf_audio_bench.rb --scenario combat --output /path/result.json
 #           ... --scenario deadline (real App#update, controlled 9 ms frame work)

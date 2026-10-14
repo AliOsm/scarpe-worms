@@ -15,7 +15,6 @@ import shutil
 import struct
 import subprocess
 import sys
-import tarfile
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -95,28 +94,26 @@ def main():
     downloads = {item['name']: shared.download(item) for item in json.loads((CONFIG / 'dependencies.json').read_text())}
     runtime = CACHE / 'runtime-extracted'
     fresh_directory(runtime)
-    with tarfile.open(downloads['traveling-ruby-20251122-3.4.7-windows-x86_64.tar.gz']) as source:
-        source.extractall(runtime, filter='data')
+    # The checksum-pinned official RubyInstaller archive is already relocatable.
+    run('7z', 'x', downloads['rubyinstaller-4.0.7-1-x64.7z'], f'-o{runtime}', '-y')
+    runtime = runtime / 'rubyinstaller-4.0.7-1-x64'
     openal = CACHE / 'openal-extracted'
     extract_zip(downloads['openal-soft-1.25.2-bin.zip'], openal)
     openal = openal / 'openal-soft-1.25.2-bin'
 
     fresh_directory(APP)
-    (RES / 'ruby/bin.real').mkdir(parents=True)
-    # Database/curl DLLs in Traveling Ruby are not used by this game. Keep only
-    # Ruby's interpreter and dependencies; stdlib extension DLLs live in lib/.
-    for name in ('rubyw.exe', 'x64-ucrt-ruby340.dll'):
-        shutil.copy2(runtime / 'bin.real' / name, RES / 'ruby/bin.real' / name)
-    copy_tree(runtime / 'bin.real/ruby_builtin_dlls', RES / 'ruby/bin.real/ruby_builtin_dlls')
+    (RES / 'ruby/bin').mkdir(parents=True)
+    for name in ('ruby.exe', 'rubyw.exe', 'x64-ucrt-ruby400.dll'):
+        shutil.copy2(runtime / 'bin' / name, RES / 'ruby/bin' / name)
+    copy_tree(runtime / 'bin/ruby_builtin_dlls', RES / 'ruby/bin/ruby_builtin_dlls')
     copy_tree(runtime / 'lib', RES / 'ruby/lib', ignore=shutil.ignore_patterns('*.a'))
     shutil.copy2(runtime / 'LICENSE.txt', RES / 'ruby/LICENSE.txt')
-    (RES / 'empty-gems').mkdir()
-    ruby = RES / 'ruby/bin.real/rubyw.exe'
+    ruby = RES / 'ruby/bin/rubyw.exe'
     manifest = CACHE / 'ruby-original.manifest'
     run('mt.exe', '-nologo', f'-inputresource:{ruby};#1', f'-out:{manifest}')
     run('mt.exe', '-nologo', '-manifest', manifest, CONFIG / 'ruby.manifest', f'-outputresource:{ruby};#1')
     # Soft_oal is the actual mixer, not OpenAL's optional system router.
-    shutil.copy2(openal / 'bin/Win64/soft_oal.dll', RES / 'ruby/bin.real/OpenAL32.dll')
+    shutil.copy2(openal / 'bin/Win64/soft_oal.dll', RES / 'ruby/bin/OpenAL32.dll')
 
     (RES / 'app').mkdir()
     shutil.copy2(ROOT / 'game.rb', RES / 'app/game.rb')
@@ -145,10 +142,8 @@ def main():
         shared.install_gem(downloads[f'{name}-{version}.gem'], name)
 
     copy_tree(CONFIG / 'licenses', RES / 'licenses', ignore=shutil.ignore_patterns('rust-extra'))
+    copy_tree(ROOT / 'packaging/ruby/licenses', RES / 'licenses')
     common = ROOT / 'packaging/macos/licenses'
-    for name in ('Ruby-COPYING', 'Ruby-BSDL', 'Ruby-LEGAL', 'Traveling-Ruby-LICENSE',
-                 'OpenSSL-LICENSE', 'libffi-LICENSE', 'libyaml-LICENSE', 'GMP-LGPLv3', 'GMP-GPLv3'):
-        shutil.copy2(common / name, RES / 'licenses' / name)
     (RES / 'licenses/openal-soft').mkdir()
     for name in ('COPYING', 'LICENSE-pffft'):
         shutil.copy2(openal / name, RES / 'licenses/openal-soft' / name)
@@ -178,7 +173,7 @@ def main():
     run('rustc', CONFIG / 'launcher.rs', '--edition=2021', '-O', '-C', 'target-feature=+crt-static',
         '-C', f'linker={linker}', '-C', f'link-arg={resource}', '-o', APP / 'Burrow Brigade.exe')
     build = {
-        'version': VERSION, 'target': TARGET, 'ruby': '3.4.7',
+        'version': VERSION, 'target': TARGET, 'ruby': '4.0.7',
         'revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
         'scarpe_revision': (ROOT / 'SCARPE_REVISION').read_text().strip(),
         'rustc': subprocess.check_output(['rustc', '--version'], text=True).strip(),

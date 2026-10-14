@@ -1,6 +1,24 @@
 # Current status
 
-Updated **2026-10-14** · game **0.5.5** · protocol **4** · macOS, Windows and Linux previews.
+Updated **2026-10-14** · game **0.5.6** · protocol **4** · macOS, Windows and Linux previews.
+
+## 0.5.6 Ruby 4 and Rust 1.99
+
+Source installations require Ruby 4.0+. Development, CI, all packaged clients
+and the server image use Ruby 4.0.7. Rust is pinned to 1.99.0, and patch 0026
+raises the framework's Ruby and Rust minimums. Ruby 3 CI, Traveling Ruby
+archives, environment-restoration shims and unused ffi ABI directories are
+removed. Optional GC API checks now use Ruby 4's API directly.
+
+macOS and Linux build relocatable Ruby from checksum-pinned sources with static
+OpenSSL, libffi, libyaml and zlib. Fiddle is packaged as a gem. Windows uses the
+official RubyInstaller 4.0.7-1 archive. macOS builds run on Apple silicon.
+Protocol 4 and checkpoint format 1 are unchanged.
+
+Validation and publication are in progress. The pre-change Ruby 4 baseline
+passed 328 tests / 10,166 assertions. Final source, native, container and
+platform package results will replace this paragraph before the release tag.
+Historical evidence below retains the runtime versions actually measured.
 
 ## 0.5.5 releases for macOS, Windows and Linux
 

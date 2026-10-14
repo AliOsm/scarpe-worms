@@ -2,6 +2,9 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Set-Location $PSScriptRoot
 
+if (!(Get-Command ruby -ErrorAction SilentlyContinue)) { throw 'Install Ruby 4.0 or newer.' }
+if ([version]((ruby -e 'print RUBY_VERSION')) -lt [version]'4.0') { throw 'Install Ruby 4.0 or newer.' }
+
 # Use an x64 Visual Studio developer shell (ilammy/msvc-dev-cmd on CI).
 if (!$env:VCToolsInstallDir) { throw 'Run this in an x64 Visual Studio developer PowerShell with the C++ build tools installed.' }
 $env:RUSTFLAGS = '-C target-feature=+crt-static'

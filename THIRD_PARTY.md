@@ -32,17 +32,17 @@ official Worms title.
 - The macOS packaging scripts and native test runner were adapted from
   asda-scarpe / Lanternfall, Copyright (c) 2026 Lanternfall contributors, MIT.
   Its full notice is retained in `packaging/macos/licenses/Lanternfall-MIT`.
-- Ruby, Traveling Ruby, OpenSSL, libyaml, libedit, GMP, and Ruby standard library
-  components: notices and source links in `packaging/macos/licenses` and the
-  packaged `Contents/Resources/licenses`. GMP remains a separate, replaceable
-  shared library. Traveling Ruby's runtime is distributed unmodified apart from
-  ad-hoc code signatures. The SDK and build tools are not included in the app.
+- Ruby 4.0.7, OpenSSL, libffi, libyaml, zlib and Ruby standard library
+  components: source links and notices accompany each platform's runtime.
+  macOS and Linux build checksum-pinned sources with `tools/build_ruby.py`;
+  Windows uses the official RubyInstaller archive. Windows GMP and other
+  supporting DLLs remain separate and replaceable. SDKs/build tools are omitted.
 - chunky_png (MIT), ffi/libffi (BSD/MIT), base64 and logger (Ruby/BSD-2-Clause),
   fastimage (MIT): complete gem sources and licenses included in the Mac app.
 - Native Rust dependency notices are collected from the exact Cargo lockfile
   during packaging into `Contents/Resources/licenses/rust`, with an index.
   The Rust runtime notices are included separately.
 
-Build downloads are checksum-pinned in `packaging/macos/dependencies.json`.
+Build downloads are checksum-pinned in `packaging/{macos,windows,linux,ruby}/dependencies.json`.
 No customer data, session tokens, host keys, or development caches are included
 in the distributable. Read `docs/RELEASE.md` for the remaining release checks.

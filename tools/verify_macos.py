@@ -93,10 +93,10 @@ def validate(app):
     required = ['boot.rb', 'launch.sh', 'app/game.rb', 'app/lib/burrow/server/reactor.rb',
                 'app/assets/art/manifest.json', 'app/assets/art/menu-scene.png',
                 'app/assets/fonts/InterVariable.ttf', 'app/assets/fonts/Fredoka.ttf',
-                'gems/ffi/lib/3.4/ffi_c.bundle', 'gems/chunky_png/lib/chunky_png.rb',
+                'gems/ffi/lib/4.0/ffi_c.bundle', 'gems/chunky_png/lib/chunky_png.rb',
                 'app/assets/art/grubs/0-walk-0.png', 'app/assets/art/weapons/rocket.png',
                 'app/assets/audio/explosion.wav', 'app/assets/audio/music.wav',
-                'runtime/ruby/bin.real/ruby', 'runtime/ruby/lib/ca-bundle.crt']
+                'runtime/ruby/bin/ruby', 'runtime/ruby/lib/ca-bundle.crt']
     for name in required:
         assert (resources / name).is_file(), f'Missing runtime file: {name}'
     binaries = []
@@ -115,7 +115,7 @@ def validate(app):
         assert record['signature'], f'Unsigned binary: {path}'
         assert record['minimum'] <= 0x000D0000, f'Requires newer than macOS 13: {path}'
         executable_directory = (app / 'Contents/MacOS' if path.parent == app / 'Contents/MacOS'
-                                else resources / 'runtime/ruby/bin.real')
+                                else resources / 'runtime/ruby/bin')
 
         def expand_loader_path(value):
             for token, base in [('@loader_path', path.parent), ('@executable_path', executable_directory)]:

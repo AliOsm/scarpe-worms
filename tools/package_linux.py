@@ -18,6 +18,8 @@ import tarfile
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'tools'))
+import build_ruby
 CONFIG = ROOT / 'packaging/linux'
 CACHE = ROOT / '.cache/linux'
 DIST = ROOT / 'dist'
@@ -78,7 +80,7 @@ def install_gem(archive, name):
         data.extractall(destination, filter='data')
     if name == 'ffi':
         for directory in (destination / 'lib').iterdir():
-            if directory.is_dir() and re.fullmatch(r'\d+\.\d+', directory.name) and directory.name != '3.4':
+            if directory.is_dir() and re.fullmatch(r'\d+\.\d+', directory.name) and directory.name != '4.0':
                 shutil.rmtree(directory)
 
 
@@ -176,7 +178,7 @@ def main():
     run(sys.executable, '-I', ROOT / 'tools/verify_scarpe.py', '--apply')
     assets = json.loads((CONFIG / 'dependencies.json').read_text())
     downloads = {item['name']: download(item) for item in assets}
-    unpack(downloads['traveling-ruby-20251122-3.4.7-linux-x86_64.tar.gz'], CACHE / 'runtime')
+    ruby_runtime = build_ruby.build(CACHE / 'ruby4')
     unpack(downloads['openal-soft-1.24.3.tar.bz2'], CACHE / 'openal-source')
     # A fresh baseline build, never the developer's newer-glibc renderer.
     env = os.environ.copy()
@@ -217,14 +219,8 @@ def main():
         elif path.exists():
             path.unlink()
     runtime = RES / 'runtime/ruby'
-    (runtime / 'bin.real').mkdir(parents=True)
-    shutil.copy2(CACHE / 'runtime/bin.real/ruby', runtime / 'bin.real/ruby')
-    # The upstream executable retains /tmp/ruby/lib from its build prefix.
-    # All shipped dependencies use our explicit bundle paths or system SONAMEs.
-    run('patchelf', '--remove-rpath', runtime / 'bin.real/ruby')
-    copy_tree(CACHE / 'runtime/lib/ruby', runtime / 'lib/ruby', ignore=shutil.ignore_patterns('gems', '*.a'))
-    shutil.copy2(CACHE / 'runtime/lib/ca-bundle.crt', runtime / 'lib')
-    (RES / 'runtime/gems').mkdir()
+    for directory in ('bin', 'lib'):
+        copy_tree(ruby_runtime / directory, runtime / directory)
     for name, gem_version in [('ffi', '1.17.4-x86_64-linux-gnu'), ('chunky_png', '1.4.0'),
                               ('base64', '0.3.0'), ('logger', '1.7.0'), ('fastimage', '2.4.1')]:
         install_gem(downloads[f'{name}-{gem_version}.gem'], name)
@@ -237,6 +233,8 @@ def main():
     shutil.copy2(CONFIG / 'READ-ME.txt', APP)
     shutil.copy2(CONFIG / 'dependencies.json', RES / 'build-dependencies.json')
     copy_tree(CONFIG / 'licenses', RES / 'licenses', ignore=shutil.ignore_patterns('rust-extra'))
+    copy_tree(ruby_runtime / 'notices', RES / 'licenses/ruby')
+    shutil.copy2(build_ruby.CONFIG, RES / 'ruby-build-dependencies.json')
     rust_notices(scarpe, env)
     copy_tree(scarpe / 'native/assets/fonts', RES / 'licenses/scarpe-fonts', ignore=shutil.ignore_patterns('*.ttf', '*.otf'))
     openal_licenses = RES / 'licenses/openal-soft'
@@ -248,7 +246,7 @@ def main():
     (openal_licenses / 'build.txt').write_text('cmake -S openal-soft-1.24.3 -B build ' + ' '.join(OPENAL_FLAGS) + '\ncmake --build build --parallel 2\n')
     elf = audit_elf()
     build = {'version': version, 'revision': output('git', 'rev-parse', 'HEAD', cwd=ROOT),
-             'platform': TARGET, 'ruby': '3.4.7', 'openal_soft': '1.24.3', 'scarpe': pin,
+             'platform': TARGET, 'ruby': build_ruby.VERSION, 'openal_soft': '1.24.3', 'scarpe': pin,
              'rust': output('rustc', '--version', env=env), 'build_os': platform.freedesktop_os_release(),
              'glibc_floor': '2.35', 'elf': elf}
     (RES / 'build.json').write_text(json.dumps(build, indent=2) + '\n')

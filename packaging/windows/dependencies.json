@@ -1,8 +1,8 @@
 [
   {
-    "name": "traveling-ruby-20251122-3.4.7-windows-x86_64.tar.gz",
-    "url": "https://github.com/trubygems/traveling-ruby/releases/download/rel-20251122/traveling-ruby-20251122-3.4.7-windows-x86_64.tar.gz",
-    "digest": "sha256:25105b5a0e43bf3a41591f926ac9b033c482d1787a7c6e150b33c200d41ab5d0"
+    "name": "rubyinstaller-4.0.7-1-x64.7z",
+    "url": "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-4.0.7-1/rubyinstaller-4.0.7-1-x64.7z",
+    "digest": "sha256:7a9be96d3448ecbd9a81eccae1f619131dfcc761f2c98dded03ece6c05d0474f"
   },
   {
     "name": "openal-soft-1.25.2-bin.zip",

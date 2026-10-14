@@ -1,7 +1,7 @@
 # Linux client
 
 The release download is `Burrow-Brigade-<version>-linux-x86_64.tar.gz` plus its
-SHA-256 sidecar. It contains Ruby 3.4.7, the gems, the patched Scarpe native
+SHA-256 sidecar. It contains Ruby 4.0.7, the gems, the patched Scarpe native
 renderer, OpenAL Soft 1.24.3, fonts, art, audio and dependency notices.
 
 ## Install and launch
@@ -94,7 +94,7 @@ Both the in-app host and terrain worker execute the bundled Ruby through
 ## Build and verify
 
 Build on Ubuntu 22.04 x86-64 with Python 3.12+, the pinned Rust toolchain,
-Git, build-essential, CMake, patchelf, pkg-config, libxkbcommon-dev, libfontconfig1-dev,
+Git, build-essential, CMake, Perl, pkg-config, libxkbcommon-dev, libfontconfig1-dev,
 libasound2-dev, libpulse-dev and libpipewire-0.3-dev:
 
 ```sh
@@ -107,12 +107,11 @@ xvfb-run -a -s '-screen 0 1600x1000x24' \
 
 The build verifies the complete Scarpe patch series and the SHA-256 of each
 download, extracts into separate empty directories and uses Cargo's lockfile.
-Traveling Ruby's relocatable Linux runtime comes from the CentOS 7 based Holy
-Build Box build; packaging removes its obsolete `/tmp/ruby/lib` ELF RPATH.
-Ruby/setup-ruby installations are not used as distributable
-runtimes because their build prefixes and external dependencies are not the
-same portable runtime contract. The renderer and OpenAL are built on Ubuntu
-22.04. A final audit checks every ELF, rejects unexpected linked libraries or
+The shared `tools/build_ruby.py` builds Ruby 4.0.7 with relocatable load paths
+and statically linked OpenSSL, libffi, libyaml and zlib. All sources and the
+Mozilla CA bundle are pinned in `packaging/ruby/dependencies.json`. Fiddle is
+shipped as a gem because Ruby 4 no longer includes it in the standard library.
+Ruby, the renderer and OpenAL are built on Ubuntu 22.04. A final audit checks every ELF, rejects unexpected linked libraries or
 embedded search paths and rejects requirements above glibc 2.35 or
 GLIBCXX_3.4.30. `resources/build.json` records the commit, build OS and each
 binary's requirements.

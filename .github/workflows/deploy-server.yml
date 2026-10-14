@@ -12,6 +12,7 @@ on:
       - bin/server
       - bin/healthcheck
       - packaging/server/**
+      - packaging/ruby/licenses/**
       - .github/workflows/deploy-server.yml
   workflow_dispatch:
     inputs:

@@ -92,5 +92,8 @@ CHECKSUMS
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
   scarpe-components (1.0.0)
 
+RUBY VERSION
+  ruby 4.0.7
+
 BUNDLED WITH
   4.0.16

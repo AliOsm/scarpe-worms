@@ -2,7 +2,7 @@
 # Real mixed-version host/client sessions, TCP/TLS and a userspace jitter proxy.
 # Always run captures under .perf-round/bin/bench (one invocation is < 2 minutes).
 # PERF_AGENT=terrain TMPDIR=<scratch>/tmp BURROW_NET_ROOT=<client tree> \
-# BURROW_NET_HOST_ROOT=<host tree> mise exec ruby@3.4.7 -- bundle exec ruby \
+# BURROW_NET_HOST_ROOT=<host tree> mise exec ruby@4.0.7 -- bundle exec ruby \
 #   tools/perf_terrain_session.rb --transport tls --remote --terrain --rounds 3 \
 #   --output <capture.json>
 # Remote uses the machine's non-loopback address upstream of a separate-process

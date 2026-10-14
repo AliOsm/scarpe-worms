@@ -4,7 +4,7 @@
 # It replays a multi-kill blast, three deaths/poofs, a drowning, dizzy/tumble
 # overlays and lingering effects through the real Scene/Scarpe boundary. Run
 # with BURROW_BENCH_SOURCE pointing at the frozen tree to compare source arms:
-#   PERF_AGENT=frame TMPDIR=... bench mise exec ruby@3.4.7 -- env \
+#   PERF_AGENT=frame TMPDIR=... bench mise exec ruby@4.0.7 -- env \
 #     SCARPE_DISPLAY_SERVICE=native SCARPE_NATIVE_HEADLESS=1 bundle exec \
 #     ./bin/scarpe tools/perf_frame_reactions.rb
 # Output is a profile JSON plus six screenshots under BURROW_FRAME_OUTPUT.

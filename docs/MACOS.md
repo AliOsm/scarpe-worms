@@ -6,9 +6,10 @@ on an Apple silicon `macos-15` runner before the
 [release pipeline](RELEASE.md) accepts them. This does not establish physical
 display/audio acceptance or notarization. Intel Mac packages are not provided.
 
-## Build the standalone app on Linux
+## Build the standalone app on Apple silicon
 
-After [development setup](../CONTRIBUTING.md), with Python 3.12+:
+After [development setup](../CONTRIBUTING.md), with Xcode Command Line Tools,
+Python 3.12+, make, Perl and pkg-config:
 
 ```sh
 python3 -I tools/package_macos.py
@@ -16,13 +17,14 @@ python3 -I tools/verify_macos.py 'dist/Burrow Brigade.app'
 python3 tools/check_distributable.py
 ```
 
-Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.5) and its `.sha256` sidecar.
-The archive bundles Ruby 3.4.7, patched native Scarpe, gems, fonts, art, and audio.
+Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.6) and its `.sha256` sidecar.
+The archive bundles Ruby 4.0.7, patched native Scarpe, gems, fonts, art, and audio.
 Players do not need a separate Ruby, Rust, browser, or server installation.
 
-Build downloads are checksum-pinned in `packaging/macos/dependencies.json`.
-The script verifies all Scarpe patches, cross-compiles, collects notices, and
-applies ad-hoc signatures. It checks Mach-O architecture/deployment targets,
+Build downloads are checksum-pinned in `packaging/macos/dependencies.json` and
+`packaging/ruby/dependencies.json`. The shared builder compiles relocatable Ruby
+with static OpenSSL, libffi, libyaml and zlib. The script verifies all Scarpe
+patches, builds the native renderer, collects notices and applies ad-hoc signatures. It checks Mach-O architecture/deployment targets,
 library paths, executable hashes, resource seals, and leaked state.
 **Static verification does not execute the app or establish Gatekeeper acceptance.**
 
@@ -74,7 +76,7 @@ Linux can exercise bundled Ruby code with explicit executable substitutions:
 
 ```sh
 python3 tools/check_package.py 'dist/Burrow Brigade.app' \
-  --linux-ruby /path/to/ruby-3.4/bin/ruby
+  --linux-ruby /path/to/ruby-4.0/bin/ruby
 ```
 
 This tests fresh/resumed matches, Unicode paths, input, resize, and diagnostics.

@@ -3,10 +3,10 @@
 # Emit and restore protocol-4 terrain packets with a selected source tree.
 # Run both directions under the round's bench lock:
 #
-#   BURROW_TERRAIN_SOURCE=$PWD .../bin/bench mise exec ruby@3.4.7 -- \
+#   BURROW_TERRAIN_SOURCE=$PWD .../bin/bench mise exec ruby@4.0.7 -- \
 #     bundle exec ruby tools/perf_terrain_compat.rb --emit --output packets.json
 #   BURROW_TERRAIN_SOURCE=/path/to/other/tree .../bin/bench mise exec \
-#     ruby@3.4.7 -- bundle exec ruby tools/perf_terrain_compat.rb --restore \
+#     ruby@4.0.7 -- bundle exec ruby tools/perf_terrain_compat.rb --restore \
 #     --input packets.json --output restore.json
 #
 # The fixture covers every biome/shape at legacy, standard, large and huge

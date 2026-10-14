@@ -14,11 +14,11 @@ GitHub has received and verified every asset.
    Preserve protocol/save compatibility or document its migration. Commit and
    merge the version change.
 2. Tag that commit and push the tag over SSH. For example, after changing the
-   source version to `0.5.5`:
+   source version to `0.5.6`:
 
    ```sh
-   git tag -a v0.5.5 -m 'Burrow Brigade 0.5.5'
-   git push origin v0.5.5
+   git tag -a v0.5.6 -m 'Burrow Brigade 0.5.6'
+   git push origin v0.5.6
    ```
 
 3. Watch **GitHub Release** in Actions. Its successful publication is the download
@@ -38,9 +38,9 @@ production SSH secrets or push images to GHCR.
 `.github/workflows/release.yml` resolves an existing tag to an immutable commit,
 validates the version, and passes that commit through the common `ref` input to:
 
-- `package-macos.yml`: cross-build on Ubuntu 24.04, verify archive contents and
-  relocated packaged code, then run the actual Apple silicon binaries on
-  `macos-15`. Required checks cover ad-hoc signatures, the menu, a bot match,
+- `package-macos.yml`: build Ruby 4.0.7 and the native renderer on Apple silicon,
+  verify archive contents, then run the relocated package on a separate
+  `macos-15` runner. Required checks cover ad-hoc signatures, the menu, a bot match,
   movement, focus/charge handling, resize, clean shutdown, diagnostics and
   recovery of the same saved match and player. The install/data paths include
   Unicode and spaces, including a windowed launch with the C locale.
@@ -102,9 +102,9 @@ image; Debian and gem notices remain with their respective packages.
 Download an asset and its sidecar into the same directory:
 
 ```sh
-sha256sum -c Burrow-Brigade-0.5.5-linux-x86_64.tar.gz.sha256
+sha256sum -c Burrow-Brigade-0.5.6-linux-x86_64.tar.gz.sha256
 # macOS equivalent:
-shasum -a 256 -c Burrow-Brigade-0.5.5-macos-arm64.zip.sha256
+shasum -a 256 -c Burrow-Brigade-0.5.6-macos-arm64.zip.sha256
 # With every payload downloaded:
 sha256sum -c SHA256SUMS
 ```
@@ -112,7 +112,7 @@ sha256sum -c SHA256SUMS
 On Windows, use PowerShell and compare the result with the sidecar:
 
 ```powershell
-Get-FileHash .\Burrow-Brigade-0.5.5-windows-x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Burrow-Brigade-0.5.6-windows-x64-setup.exe -Algorithm SHA256
 ```
 
 Checksums detect damaged/substituted downloads; they are not developer signatures.
@@ -124,7 +124,7 @@ all release workflows, enter the existing tag, and choose **draft** (the safe
 manual default). From the CLI:
 
 ```sh
-gh workflow run release.yml --ref main -f tag=v0.5.5 -F draft=true
+gh workflow run release.yml --ref main -f tag=v0.5.6 -F draft=true
 ```
 
 Once the workflows are on `main`, this also works for older tags that contain

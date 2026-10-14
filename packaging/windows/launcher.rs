@@ -43,7 +43,7 @@ fn launch() -> io::Result<i32> {
         .ok_or_else(|| io::Error::other("Missing application directory"))?;
     let res = root.join("resources");
     let runtime = res.join("ruby");
-    let ruby = runtime.join("bin.real/rubyw.exe");
+    let ruby = runtime.join("bin/rubyw.exe");
     let log_dir = logs();
     fs::create_dir_all(&log_dir)?;
     let path = log_dir.join("launcher.log");
@@ -79,21 +79,9 @@ fn launch() -> io::Result<i32> {
     for gem in ["ffi", "chunky_png", "base64", "logger", "fastimage"] {
         libs.push(res.join("gems").join(gem).join("lib"));
     }
-    for path in [
-        "site_ruby/3.4.0",
-        "site_ruby/3.4.0/x64-mingw-ucrt",
-        "site_ruby",
-        "vendor_ruby/3.4.0",
-        "vendor_ruby/3.4.0/x64-mingw-ucrt",
-        "vendor_ruby",
-        "3.4.0",
-        "3.4.0/x64-mingw-ucrt",
-    ] {
-        libs.push(runtime.join("lib/ruby").join(path));
-    }
     let mut command = Command::new(&ruby);
     let inherited_path = env::var_os("PATH").unwrap_or_default();
-    let mut search_paths = vec![runtime.join("bin.real")];
+    let mut search_paths = vec![runtime.join("bin")];
     search_paths.extend(env::split_paths(&inherited_path));
     let runtime_path = env::join_paths(search_paths).map_err(io::Error::other)?;
     command
@@ -104,9 +92,9 @@ fn launch() -> io::Result<i32> {
         .env("BURROW_RUBY", &ruby)
         .env("SCARPE_NATIVE_BIN", root.join("scarpe-native.exe"))
         .env("PATH", runtime_path)
-        .env("GEM_HOME", res.join("empty-gems"))
-        .env("GEM_PATH", res.join("empty-gems"))
-        .env("SSL_CERT_FILE", runtime.join("lib/ca-bundle.crt"))
+        .env("GEM_HOME", runtime.join("lib/ruby/gems/4.0.0"))
+        .env("GEM_PATH", runtime.join("lib/ruby/gems/4.0.0"))
+        .env("SSL_CERT_FILE", runtime.join("lib/ruby/4.0.0/etc/ssl/cert.pem"))
         .env_remove("SSL_CERT_DIR");
     for key in [
         "RUBYOPT",

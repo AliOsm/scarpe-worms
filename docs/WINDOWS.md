@@ -1,7 +1,7 @@
 # Windows client
 
 Target: **Windows 10 1903 or newer and Windows 11, x64**. The package contains
-Ruby 3.4.7, the patched native Scarpe renderer, Ruby libraries, fonts, art,
+Ruby 4.0.7, the patched native Scarpe renderer, Ruby libraries, fonts, art,
 audio, and OpenAL Soft. Players need no Ruby, Rust, browser, or separate server.
 Windows on ARM and 32-bit Windows are not validated targets.
 
@@ -42,7 +42,7 @@ closes the host's input pipe so it checkpoints, then stops the terrain worker.
 
 ## Build from source
 
-Install Git, RubyInstaller **3.4.7 x64 UCRT with Devkit**, Bundler **4.0.16**,
+Install Git, RubyInstaller **4.0.7 x64 UCRT with Devkit**, Bundler **4.0.16**,
 Python **3.13+**, rustup, Visual Studio 2022 C++ build tools with a Windows SDK,
 and PowerShell 7. Rust **1.99.0** is selected by `rust-toolchain.toml`.
 Open an **x64 Visual Studio developer PowerShell**, then:
@@ -65,7 +65,8 @@ Install **Inno Setup 6** to package, then use the same developer shell:
 python -I tools/package_windows.py
 ```
 
-The script uses `packaging/windows/dependencies.json` for pinned download URLs
+The packaged interpreter comes from the official RubyInstaller 4.0.7-1 archive,
+including the Fiddle gem. The script uses `packaging/windows/dependencies.json` for pinned download URLs
 and SHA-256 digests, extracts archives into separate generated directories,
 and stages only application/runtime files under `.cache/windows/stage/`.
 It creates the two assets and checksum sidecars in `dist/`. Set `ISCC` to an

@@ -1,13 +1,12 @@
 # frozen_string_literal: true
+
+abort "Packaged Ruby must be 4.0.7" unless RUBY_VERSION == "4.0.7"
 # Runs the package's real boot and game code using only its vendored Ruby libraries.
 require "json"
 require "scarpe"
 require "scarpe/native"
 require "rbconfig"
 
-# Preserve the packaged runtime's missing bin/ruby wrapper in the Linux
-# substitution test too. Both subprocesses must use the launcher's interpreter.
-RbConfig::CONFIG["bindir"] = File.join(ENV.fetch("BURROW_PACKAGE_RES"), "runtime/ruby/bin")
 
 failed = false
 at_exit { exit(1) if failed }

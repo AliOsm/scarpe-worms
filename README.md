@@ -5,8 +5,8 @@ Up to six teams, destructible random maps, 48 weapons and tools, and self-hosted
 
 ![Burrow Brigade battlefield](docs/evidence/battlefield/glacier-islands-overview.png)
 
-**Status: 0.5.5 preview.** The first downloadable release, with clients for macOS
-(Apple silicon), Windows and Linux and a Docker image for the server. 0.5.4 removed
+**Status: 0.5.6 preview.** Ruby 4.0+ only, with Ruby 4.0.7 bundled in the macOS
+(Apple silicon), Windows and Linux clients and server image. Rust is pinned to 1.99.0. 0.5.4 removed
 the host stall at every crater and made matches start a second faster. 0.5.3 made
 grubs squeak when hit, call for a medic, say "buh-bye" and pop into a little ghost,
 leaving their team's gravestone; big hits land with comic POW!, BONK! and KABOOM!
@@ -31,7 +31,7 @@ ready-to-use Compose file for hosting your own server; see [Hosting](docs/HOSTIN
 
 ## Run from source
 
-Install Ruby 3.4+, Bundler, Rust via rustup, Python 3.12+, and Git.
+Install Ruby 4.0+, Bundler, Rust 1.99 via rustup, Python 3.12+, and Git.
 [Development setup](CONTRIBUTING.md) lists the platform dependencies.
 
 ```sh

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """One capture; caller MUST wrap this command with bench (heavy for verification).
 
-Example: bench mise exec ruby@3.4.7 -- python3 tools/perf_painter_run.py \
+Example: bench mise exec ruby@4.0.7 -- python3 tools/perf_painter_run.py \
     --mode app --source /frozen/baseline --output /scratch/baseline-1.json
 Pass --ruby-option=--yjit / --env RUBY_GC_HEAP_FREE_SLOTS=... for runtime A/B.
 App runs are headless unless --windowed is set (requires a display); --audio

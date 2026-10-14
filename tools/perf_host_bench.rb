@@ -19,7 +19,7 @@
 # Example (all wall-clock captures must use the round's bench wrapper):
 #   PERF_AGENT=terrain TMPDIR=<scratch>/terrain/tmp \
 #     <scratch>/bin/bench \
-#     mise exec ruby@3.4.7 -- bundle exec ruby tools/perf_host_bench.rb \
+#     mise exec ruby@4.0.7 -- bundle exec ruby tools/perf_host_bench.rb \
 #       --scenario heavy --teams 6 --ticks 900 --output capture.json
 
 require "digest"
