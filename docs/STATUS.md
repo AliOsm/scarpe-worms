@@ -2,64 +2,58 @@
 
 Updated **2026-10-14** · client **0.5.7** · published release **0.5.6** · protocol **4**.
 
-## 0.5.7 combat responsiveness (release validation)
+## 0.5.7 combat responsiveness
 
-The movement experiment is accepted for release with its comparison switch.
-Combat work now includes quiet-frame preparation of damage labels and faster
-lossless terrain PNGs. The Mac app bundles OpenAL Soft 1.24.3 through CoreAudio;
-24 effect voices preserve busy sound bursts. Source installations using the old
-Apple mixer retain 12 voices. Protocol 4, saves and authoritative outcomes stay
-compatible.
-
-Linux evidence so far: all six native reaction screenshots are byte-identical;
-84 terrain revisions have identical decoded pixels; the heavy-blast fixture's
-cold preparation CPU maximum drops from a median 18.12 to 11.54 ms across three
-alternating pairs. A real mixed-PCM probe confirms that the former 12-voice pool
-cuts off an existing tone while the new pool preserves it through its full tail.
-The controlled heavy audio workload drops from nine cut-offs to zero. Mac audio
-backend comparisons and all-platform package checks are in progress. Release
-publication follows those checks.
-
-## 0.5.7 movement experiment (earlier build)
-
-`experiment/client-prediction` adds **Settings → Responsive movement**, on by
-default. Walking, jumping and backflips receive local presentation before the
-host responds. Changed movement/steering controls send immediately; unchanged
-controls keep their bounded refresh. Disabling the setting restores the original
-movement gate and server playback for comparison. Shared movement physics,
+The accepted movement experiment is included with **Settings → Responsive
+movement**, on by default. Walking, jumping and backflips appear locally while
+the host confirms them; changed controls send immediately. Disabling the setting
+restores the original movement gate and server playback. Shared movement physics,
 sequence acknowledgement, collision checks and a 400 ms / 96-command bound keep
-the preview disposable; the server owns all gameplay outcomes. Weapons and
-mobility tools remain server-driven. Protocol 4 and existing saves are unchanged.
+the preview disposable. Weapons, damage, terrain and turns remain authoritative
+on the host. Protocol 4 and existing saves remain compatible.
 
-The [Apple silicon Mac build](https://github.com/AliOsm/scarpe-worms/actions/runs/38568085517/artifacts/11896308974)
-is ready for playtesting on macOS 13+. Extract the download, then the app ZIP
-inside. Its checksum and all 40 packaged Ruby source files match the tested
-commit `dcf3f9e`. [Validation report](validation/client-prediction-0.5.7.json).
+Combat preparation now creates damage labels during quiet frames and encodes
+terrain PNGs faster. The Mac app bundles OpenAL Soft 1.24.3 through CoreAudio.
+Its 24 effect voices preserve busy sound bursts; source installations using the
+old Apple mixer retain 12 voices. Windows and Linux also use 24 effects.
 
-Final Linux and Apple silicon CI each pass 345 Ruby tests / 13,889 assertions.
-All eight native journeys, 93 Rust integration tests, audio, windowed action and
-six-team TLS container recovery pass. The native prediction journey delays
-commands by 150 ms and verifies movement before the host update, convergence,
-the settings switch, focus/charge cancellation and small-window layout. All 900
-authoritative checkpoint hashes match 0.5.6; mixed-version TLS sessions and
-reconnects pass in both directions. Mac packaged launch, Unicode relocation,
-input, resize, saved-match recovery, archive/signature and deadline checks pass.
+[Combat validation](validation/responsiveness-0.5.7.json) records three Linux A/B
+pairs: the cold blast preparation CPU maximum falls from a median 18.12 to
+11.54 ms. Six native screenshots are byte-identical, and 84 terrain revisions
+retain identical decoded pixels and collision checksums. A mixed-PCM probe
+confirms that the former 12-voice pool cuts off a tone while the new pool retains
+its tail. The controlled heavy audio workload drops from nine cut-offs to zero.
+Two rounds of three Apple silicon audio-backend pairs show OpenAL Soft submission
+medians around 0.03–0.04 ms, versus 0.4–0.5 ms with Apple's old mixer, and no
+stolen voices with OpenAL Soft.
 
-The deterministic transport experiment covers loopback, 100/200 ms RTT, 450 ms
-fallback, ordered jitter, 800 ms upstream/downstream stalls and a 600 ms UI pause.
-With 100 ms RTT and 10 Hz snapshots, median walking onset is 267 → 8 ms and
-jumping 238 → 7 ms at a 60 Hz sampling cadence. These are model/presentation
-measurements, not display photons. The playback buffer retains its existing
-underrun behavior; unacknowledged previews expire after 400 ms.
+The Mac scheduling profile selects two 256-frame OpenAL periods. This is not
+measured acoustic latency: the runner still reports a 512-frame CoreAudio buffer
+at 48 kHz and a 12.75 ms device path. Frame outliers remain with both backends.
+One ordinary Mac capture reached a 404.77 ms combat gap; its large wall/CPU
+differences, timer overshoots and native layout work implicate scheduling and
+event-loop delays, not expensive audio calls. These runner measurements do not
+establish the cause of every stall on the player's Mac or promise stall-free play.
 
-Rendering remains a limitation: Linux captures exceed the strict 60 ms frame
-threshold with prediction on, off and untouched 0.5.6. The final Mac capture
-also fails that informational threshold (combat mean 16.20 ms, p95 21.08 ms,
-max 98.27 ms), although the required package checks pass. The cause of the
-outliers is not established. Human Mac feel, visible corrections and audible
-output still need the owner's playtest. `game.json` records prediction activity,
-replay work and correction sizes. The build remains an experiment on its branch;
-the published release and production server remain 0.5.6.
+The existing core/native checks pass 346 Ruby tests / 13,899 assertions, eight
+native journeys, 93 Rust integration tests, audio, windowed action and six-team
+TLS container recovery. All required Windows, Mac and Linux package checks
+pass. The Windows smoke verifies the renderer and its actual voice pool; the
+Mac audio checker loads the delivered library and scheduling configuration,
+then exercises all 76 cues, panning, mute and resume. The release is ready for
+tagged builds and publication.
+
+## Earlier movement experiment evidence
+
+The [historical experiment report](validation/client-prediction-0.5.7.json)
+retains its original build, checks and rendering limits. Its deterministic
+100 ms RTT / 10 Hz snapshot comparison reduced median walking onset from
+267 to 8 ms and jumping from 238 to 7 ms at a 60 Hz sampling cadence. These
+measure presentation state, not display photons. All 900 authoritative
+checkpoint hashes matched 0.5.6; mixed-version TLS and reconnects passed.
+The native journey verified movement before a delayed host response,
+convergence, the settings switch and focus/charge cancellation. The experiment
+was accepted by the owner; combat and audible output are the current follow-up.
 
 ## 0.5.6 Ruby 4 and Rust 1.99
 

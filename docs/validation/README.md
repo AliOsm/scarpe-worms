@@ -5,6 +5,7 @@ their scope; generic filenames are outputs of individual tools.
 
 | Evidence | Start here |
 | --- | --- |
+| 0.5.7 combat responsiveness | [Damage-label preparation, terrain equivalence, mixed audio, Mac backend comparisons and remaining frame stalls](responsiveness-0.5.7.json) |
 | 0.5.7 movement experiment | [Apple silicon build, prediction latency, native checks, compatibility and rendering limits](client-prediction-0.5.7.json) |
 | 0.5.6 Ruby 4 and Rust 1.99 | [Source, runtime relocation, packaged clients and server checks](runtime-0.5.6.json) |
 | 0.5.4 optimization round | [Final Linux A/B vs 0.5.3](perf-0.5.4-final-linux.json), [Apple silicon runner captures](perf-0.5.4-mac.json); per-area experiments for [audio](perf-0.5.4-audio.json), [frame loop](perf-0.5.4-frame.json), [renderer](perf-0.5.4-renderer.json), [host](perf-0.5.4-host.json), [network/playback](perf-0.5.4-net.json), [startup/runtime](perf-0.5.4-startup.json), [terrain packets](perf-0.5.4-terrain.json), [terrain painting](perf-0.5.4-painter.json) and the [Apple OpenAL voice follow-up](perf-0.5.4-voices.json) |

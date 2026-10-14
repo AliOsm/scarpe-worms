@@ -1,0 +1,322 @@
+{
+  "schema": 1,
+  "version": "0.5.7",
+  "recorded_date": "2026-10-14",
+  "scope": "Combat responsiveness follow-up to the accepted movement experiment; publication is recorded separately after tagged builds pass.",
+  "movement_evidence": "client-prediction-0.5.7.json",
+  "linux": {
+    "platform": "x86_64-linux",
+    "ruby": "4.0.7",
+    "baseline_gameplay_commit": "dcf3f9e845e87d2be93693fd52c5418a286f6813",
+    "combat_implementation_commit": "3b831d635ddb5d575f2ef7b699d133a78ca84c65",
+    "damage_labels": {
+      "workload": "36-grub reaction fixture; three alternating A/B pairs, outer Scene/HUD timing only",
+      "cold_burst_max_cpu_ms": {
+        "baseline": [
+          18.090344999999953,
+          18.119723999999948,
+          18.241412000000068
+        ],
+        "candidate": [
+          10.670257999999988,
+          11.536466000000022,
+          11.846835999999916
+        ]
+      },
+      "median_of_max_cpu_ms": {
+        "baseline": 18.119723999999948,
+        "candidate": 11.536466000000022
+      },
+      "identical_native_screenshots": [
+        "before.png",
+        "burst.png",
+        "replay.png",
+        "settle.png",
+        "warm_burst.png",
+        "warm_repeat.png"
+      ]
+    },
+    "terrain": {
+      "cases": 28,
+      "revisions": 84,
+      "all_decoded_tile_and_overview_pixels_equal": true,
+      "all_collision_checksums_equal": true,
+      "encoding": "RGBA, no adaptive palette scan, Zlib BEST_SPEED; larger temporary PNG files trade bytes for worker time"
+    },
+    "audio": {
+      "workload": "Controlled combat burst, null mixer; separate wave-output probe measures actual mixed PCM",
+      "old_effect_voices": 12,
+      "new_effect_voices": 24,
+      "old_steals": 9,
+      "new_steals": 0,
+      "mixed_tone_energy_ratios": {
+        "baseline": {
+          "voices": 12,
+          "rate": 48000,
+          "channels": 2,
+          "after_burst_ratio": 6.523719814429532e-05,
+          "tail_ratio": 3.266093720156422e-05
+        },
+        "candidate": {
+          "voices": 24,
+          "rate": 48000,
+          "channels": 2,
+          "after_burst_ratio": 0.9999661173273781,
+          "tail_ratio": 1.0000059323063901
+        }
+      },
+      "interpretation": "The old pool cuts off an existing tone; the new pool retains its tail. Intentional cue throttling remains."
+    }
+  },
+  "macos": {
+    "platform": "Apple silicon macos-15 CI, arm64-darwin24",
+    "ruby": "4.0.7",
+    "paired_backend_runs": [
+      {
+        "source_commit": "3b831d635ddb5d575f2ef7b699d133a78ca84c65",
+        "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38572656977",
+        "comparisons": [
+          {
+            "pair": 1,
+            "backend": "apple",
+            "voices": 12,
+            "steals": 4,
+            "submit_median_ms": 0.439,
+            "submit_p95_ms": 1.181,
+            "combat_mean_ms": 15.903,
+            "combat_p95_ms": 20.74,
+            "combat_max_ms": 28.549
+          },
+          {
+            "pair": 1,
+            "backend": "soft",
+            "voices": 24,
+            "steals": 0,
+            "submit_median_ms": 0.04,
+            "submit_p95_ms": 0.076,
+            "combat_mean_ms": 16.337,
+            "combat_p95_ms": 21.762,
+            "combat_max_ms": 206.074
+          },
+          {
+            "pair": 2,
+            "backend": "soft",
+            "voices": 24,
+            "steals": 0,
+            "submit_median_ms": 0.04,
+            "submit_p95_ms": 0.113,
+            "combat_mean_ms": 16.296,
+            "combat_p95_ms": 22.654,
+            "combat_max_ms": 78.975
+          },
+          {
+            "pair": 2,
+            "backend": "apple",
+            "voices": 12,
+            "steals": 2,
+            "submit_median_ms": 0.499,
+            "submit_p95_ms": 1.828,
+            "combat_mean_ms": 15.918,
+            "combat_p95_ms": 21.926,
+            "combat_max_ms": 50.625
+          },
+          {
+            "pair": 3,
+            "backend": "apple",
+            "voices": 12,
+            "steals": 3,
+            "submit_median_ms": 0.544,
+            "submit_p95_ms": 1.488,
+            "combat_mean_ms": 16.105,
+            "combat_p95_ms": 21.713,
+            "combat_max_ms": 42.407
+          },
+          {
+            "pair": 3,
+            "backend": "soft",
+            "voices": 24,
+            "steals": 0,
+            "submit_median_ms": 0.04,
+            "submit_p95_ms": 0.105,
+            "combat_mean_ms": 16.514,
+            "combat_p95_ms": 23.602,
+            "combat_max_ms": 79.861
+          }
+        ]
+      },
+      {
+        "source_commit": "9d8fdc618437f44fcea2270c40ea93aceab9cadb",
+        "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38577284656",
+        "comparisons": [
+          {
+            "pair": 1,
+            "backend": "apple",
+            "voices": 12,
+            "steals": 12,
+            "submit_median_ms": 0.394,
+            "submit_p95_ms": 0.789,
+            "combat_mean_ms": 15.971,
+            "combat_p95_ms": 20.544,
+            "combat_max_ms": 27.5
+          },
+          {
+            "pair": 1,
+            "backend": "soft",
+            "voices": 24,
+            "steals": 0,
+            "submit_median_ms": 0.035,
+            "submit_p95_ms": 0.1,
+            "combat_mean_ms": 15.986,
+            "combat_p95_ms": 20.11,
+            "combat_max_ms": 27.977
+          },
+          {
+            "pair": 2,
+            "backend": "soft",
+            "voices": 24,
+            "steals": 0,
+            "submit_median_ms": 0.033,
+            "submit_p95_ms": 0.088,
+            "combat_mean_ms": 16.203,
+            "combat_p95_ms": 21.637,
+            "combat_max_ms": 80.744
+          },
+          {
+            "pair": 2,
+            "backend": "apple",
+            "voices": 12,
+            "steals": 3,
+            "submit_median_ms": 0.454,
+            "submit_p95_ms": 1.125,
+            "combat_mean_ms": 16.394,
+            "combat_p95_ms": 21.764,
+            "combat_max_ms": 95.923
+          },
+          {
+            "pair": 3,
+            "backend": "apple",
+            "voices": 12,
+            "steals": 2,
+            "submit_median_ms": 0.517,
+            "submit_p95_ms": 1.368,
+            "combat_mean_ms": 16.155,
+            "combat_p95_ms": 22.363,
+            "combat_max_ms": 46.153
+          },
+          {
+            "pair": 3,
+            "backend": "soft",
+            "voices": 24,
+            "steals": 0,
+            "submit_median_ms": 0.034,
+            "submit_p95_ms": 0.093,
+            "combat_mean_ms": 16.153,
+            "combat_p95_ms": 22.007,
+            "combat_max_ms": 46.114
+          }
+        ]
+      }
+    ],
+    "reported_coreaudio_path": {
+      "status": "queried",
+      "transport": "built_in",
+      "sample_rate_hz": 48000.0,
+      "buffer_frames": 512,
+      "device_latency_frames": 0,
+      "safety_offset_frames": 100,
+      "stream_latency_frames": 0,
+      "reported_path_ms": 12.75
+    },
+    "ordinary_capture": {
+      "source_commit": "9d8fdc618437f44fcea2270c40ea93aceab9cadb",
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38577284656",
+      "combat_active_motion_intervals": {
+        "count": 510,
+        "mean_ms": 18.538696473822494,
+        "p95_ms": 29.407416999999825,
+        "p99_ms": 58.38101702653946,
+        "max_ms": 404.7710000000002,
+        "over_33ms": 20,
+        "over_50ms": 8
+      }
+    },
+    "largest_gap_attribution": {
+      "native_frame_gap_ms": 404.771,
+      "ui_update_wall_ms": 141.843,
+      "ui_update_thread_cpu_ms": 2.826,
+      "ui_gc_ms": 0,
+      "layout_wall_ms": 64.687,
+      "layout_thread_cpu_ms": 17.505,
+      "paint_wall_ms": 32.837,
+      "paint_thread_cpu_ms": 7.179,
+      "nearby_max_audio_submit_ms": 2.064,
+      "interpretation": "Large wall/CPU differences and timer overshoots implicate scheduling and event-loop delays alongside layout work. Cheap OpenAL calls do not explain this gap; shared-runner contention is not proof of the cause on the player Mac."
+    },
+    "profile": "Two 256-frame periods reduce the generic OpenAL scheduling cushion/configured latency estimate. CoreAudio MixerProc renders hardware-requested frames directly; the queried device remains 512 frames at 48 kHz. No acoustic latency reduction is established."
+  },
+  "checks": {
+    "core_and_native": {
+      "source_commit": "cc4554124b9f993578a4873f71929b8877f67baf",
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38592579581",
+      "result": "passed",
+      "ruby_tests": 346,
+      "ruby_assertions": 13899,
+      "rust_integration_tests": 93,
+      "includes": [
+        "eight native journeys",
+        "windowed action",
+        "76 audio cues",
+        "six-team TLS container play and restart recovery"
+      ]
+    },
+    "linux_package": {
+      "source_commit": "9d8fdc618437f44fcea2270c40ea93aceab9cadb",
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38577285899",
+      "result": "passed"
+    },
+    "windows_recheck": {
+      "source_commit": "cc4554124b9f993578a4873f71929b8877f67baf",
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38592631481",
+      "result": "passed",
+      "reason": "Installed smoke expected the former 12 effects plus music; now verifies the actual renderer and configured pool."
+    },
+    "macos_recheck": {
+      "source_commit": "cc4554124b9f993578a4873f71929b8877f67baf",
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38592636564",
+      "result": "passed",
+      "reason": "Direct packaged audio checker now loads the delivered alsoftrc, matching app boot.",
+      "combat_active_motion_intervals": {
+        "count": 942,
+        "mean_ms": 16.27606176691802,
+        "p95_ms": 20.717541999999867,
+        "p99_ms": 23.74295800000148,
+        "max_ms": 47.044749999999524,
+        "over_33ms": 3,
+        "over_50ms": 0
+      },
+      "audio_cues": 76
+    },
+    "focused_followup": {
+      "source_commit": "cc4554124b9f993578a4873f71929b8877f67baf",
+      "audio_tests": 17,
+      "audio_assertions": 329,
+      "release_helper_tests": 12,
+      "scarpe_patches_verified": true,
+      "mac_audio_checker_unicode_environment_probe": "passed"
+    }
+  },
+  "reproduce": [
+    "bundle exec ruby tools/perf_audio_bench.rb --scenario combat --cycles 3 --output /tmp/audio.json",
+    "bundle exec ruby tools/perf_audio_wave.rb --output /tmp/audio-wave.json",
+    "SCARPE_DISPLAY_SERVICE=native SCARPE_NATIVE_HEADLESS=1 BURROW_OUTER_SCENARIO=reactions ./bin/scarpe tools/perf_frame_outer.rb",
+    "PERF_PAINTER_OUTPUT=/tmp/painter.json bundle exec ruby tools/perf_painter_work.rb --verify --extra-seeds",
+    "python3 tools/compare_macos_audio.py \"/path/to/Burrow Brigade.app\""
+  ],
+  "limits": [
+    "Frame outliers remain in both Mac audio backends; this release does not establish stall-free rendering.",
+    "Automated native presentation timings do not measure display scanout. Audio submission/PCM measurements do not measure speakers or wired headphones.",
+    "Mac runner output was queried as built-in; no human listened to that output. Player testing remains necessary.",
+    "Protocol 4, saved games and authoritative weapon outcomes are unchanged."
+  ],
+  "reproduce_notes": "Run benchmarks serially without builds. Set BURROW_BENCH_SOURCE to the archived baseline for the other arm. Detailed setup and output options are in each tool header."
+}
