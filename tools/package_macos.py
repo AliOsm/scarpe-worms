@@ -129,6 +129,25 @@ def copy_rust_notices(cargo, scarpe, sysroot, env):
     shutil.copy2(sysroot / 'share/doc/rust/COPYRIGHT-library.html', runtime / 'COPYRIGHT-library.html')
 
 
+def build_openal(archive):
+    """Build the same pinned mixer used by Linux, with the CoreAudio backend."""
+    source = CACHE / 'openal-source'
+    if source.exists():
+        shutil.rmtree(source)
+    source.mkdir()
+    with tarfile.open(archive) as package:
+        package.extractall(source, filter='data')
+    source /= 'openal-soft-1.24.3'
+    build = CACHE / 'openal-build'
+    run('cmake', '-S', source, '-B', build, '-DCMAKE_BUILD_TYPE=Release',
+        '-DCMAKE_OSX_ARCHITECTURES=arm64', '-DCMAKE_OSX_DEPLOYMENT_TARGET=13.0',
+        '-DCMAKE_INSTALL_NAME_DIR=@rpath', '-DALSOFT_REQUIRE_COREAUDIO=ON',
+        '-DALSOFT_UTILS=OFF', '-DALSOFT_EXAMPLES=OFF', '-DALSOFT_TESTS=OFF',
+        '-DALSOFT_UPDATE_BUILD_VERSION=OFF')
+    run('cmake', '--build', build, '--parallel', os.environ.get('CMAKE_BUILD_PARALLEL_LEVEL', '2'))
+    return source, build / 'libopenal.1.dylib'
+
+
 def main():
     if sys.platform != 'darwin' or platform.machine() != 'arm64':
         raise SystemExit('Build on an Apple silicon Mac with Xcode Command Line Tools.')
@@ -137,6 +156,7 @@ def main():
     assets = json.loads((CONFIG / 'dependencies.json').read_text())
     downloads = {item['name']: download(item) for item in assets}
     runtime = build_ruby.build(CACHE / 'ruby4')
+    openal_source, openal_library = build_openal(downloads['openal-soft-1.24.3.tar.bz2'])
 
     rustup = Path(os.environ.get('BURROW_RUSTUP', str(Path.home() / '.cargo/bin/rustup')))
     run(rustup, 'target', 'add', '--toolchain', RUST_VERSION, TARGET)
@@ -189,6 +209,12 @@ def main():
     for directory in ('bin', 'lib'):
         copy_tree(runtime / directory, RES / 'runtime/ruby' / directory,
                   ignore=shutil.ignore_patterns('*.dSYM', '*.a'))
+    (RES / 'runtime/lib').mkdir(parents=True)
+    shutil.copy2(openal_library, RES / 'runtime/lib/libopenal.1.dylib')
+    (RES / 'licenses/openal-soft').mkdir(parents=True)
+    for notice in ('COPYING', 'LICENSE', 'README.md'):
+        if (openal_source / notice).is_file():
+            shutil.copy2(openal_source / notice, RES / 'licenses/openal-soft' / notice)
     for name, version in [('ffi', '1.17.4-arm64-darwin'), ('chunky_png', '1.4.0'), ('base64', '0.3.0'), ('logger', '1.7.0'), ('fastimage', '2.4.1')]:
         install_gem(downloads[f'{name}-{version}.gem'], name)
     copy_tree(CONFIG / 'licenses', RES / 'licenses', ignore=shutil.ignore_patterns('rust-extra'))

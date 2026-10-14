@@ -96,7 +96,8 @@ def validate(app):
                 'gems/ffi/lib/4.0/ffi_c.bundle', 'gems/chunky_png/lib/chunky_png.rb',
                 'app/assets/art/grubs/0-walk-0.png', 'app/assets/art/weapons/rocket.png',
                 'app/assets/audio/explosion.wav', 'app/assets/audio/music.wav',
-                'runtime/ruby/bin/ruby', 'runtime/ruby/lib/ca-bundle.crt']
+                'runtime/ruby/bin/ruby', 'runtime/ruby/lib/ca-bundle.crt',
+                'runtime/lib/libopenal.1.dylib', 'licenses/openal-soft/COPYING']
     for name in required:
         assert (resources / name).is_file(), f'Missing runtime file: {name}'
     binaries = []

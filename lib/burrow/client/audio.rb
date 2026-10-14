@@ -6,10 +6,10 @@ module Burrow
   module Client
     # One native OpenAL context mixes all voices in process. No per-effect subprocesses.
     class Audio
-      # Twenty-four voices removed cut-offs in busy blasts, but on a GitHub Apple
-      # silicon runner they slowed zoom rendering in every capture (Apple's
-      # OpenAL mixer), so effects keep twelve until cheaper mixing is measured.
-      MAX_VOICES = 12
+      # OpenAL Soft can mix a busy blast without cutting off its preceding cues.
+      # Retain the smaller pool when source installations use Apple's old mixer.
+      MAX_VOICES = 24
+      LEGACY_VOICES = 12
       ROOT = File.join(Burrow::ROOT, "assets/audio")
       CUES = %w[ann-fight ann-flawless-victory ann-its-a-tie ann-multi-kill ann-sudden-death
         baa beam blub boing bomb-whistle bonk bounce choir clank click close equip error
@@ -70,7 +70,7 @@ module Burrow
         @preferences = preferences
         log = Diagnostics::AudioLog.new
         @timing = log if log.enabled?
-        @timing.device = {backend: RUBY_PLATFORM.include?("darwin") ? "Apple OpenAL.framework" : "system OpenAL",
+        @timing.device = {backend: "OpenAL",
           status: "disabled", effect_voices: MAX_VOICES} if @timing
         @available, @buffers, @sources, @last, @gains = false, {}, [], {}, {}
         @predicted, @voice_priority, @voice_started = {}, {}, {}
@@ -79,11 +79,11 @@ module Burrow
         require "ffi"
         @al = Module.new do
           extend FFI::Library
-          ffi_lib(case RUBY_PLATFORM
+          ffi_lib(ENV.fetch("BURROW_OPENAL_LIBRARY") { case RUBY_PLATFORM
           when /darwin/ then "/System/Library/Frameworks/OpenAL.framework/OpenAL"
           when /mingw|mswin/ then "OpenAL32.dll"
           else "libopenal.so.1"
-          end)
+          end })
           attach_function :alcOpenDevice, [:pointer], :pointer
           attach_function :alcCreateContext, [:pointer, :pointer], :pointer
           attach_function :alcMakeContextCurrent, [:pointer], :bool
@@ -118,11 +118,13 @@ module Burrow
           return close
         end
         @al.alcMakeContextCurrent(@context)
-        ptr = FFI::MemoryPointer.new(:uint, MAX_VOICES + 1)
-        @al.alGenSources(MAX_VOICES + 1, ptr)
-        @sources = ptr.read_array_of_uint(MAX_VOICES + 1)
+        @voice_limit = @al.alGetString(0xb003).to_s.include?("OpenAL Soft") ? MAX_VOICES : LEGACY_VOICES
+        @timing.device[:effect_voices] = @voice_limit if @timing
+        ptr = FFI::MemoryPointer.new(:uint, @voice_limit + 1)
+        @al.alGenSources(@voice_limit + 1, ptr)
+        @sources = ptr.read_array_of_uint(@voice_limit + 1)
         @music_source = @sources.last
-        @sources.first(MAX_VOICES).each do |source|
+        @sources.first(@voice_limit).each do |source|
           @al.alSourcei(source, 0x202, 1) # Positions are relative to the listener.
           @al.alSourcef(source, 0x1021, 0) # Pan without distance attenuation.
         end

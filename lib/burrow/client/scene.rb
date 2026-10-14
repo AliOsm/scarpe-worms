@@ -240,6 +240,11 @@ module Burrow
         end
         render_navigation
         render_turn_notice(started, active)
+        # Construct one hidden caption during quiet frames, instead of all five
+        # paragraphs per victim when the first blast arrives. Work and retained
+        # nodes stay bounded; busy frames never pay for preparation.
+        prepare_effect_text if @terrain_revision >= 0 && @state["phase"] == "aiming" &&
+          @effects.empty? && Burrow.clock - started < 0.004
         elapsed = (Burrow.clock - started) * 1000
         @last_frame_ms = elapsed
         @frame_times << elapsed
@@ -1151,17 +1156,30 @@ module Burrow
           end
           node.show
         else
-          node = nil
-          @effect_layer.append do
-            node = @shoes.stack(left: px(left), top: px(top), width: width, height: height) do
-              EFFECT_TEXT_OFFSETS.each do |dx, dy|
-                @shoes.para(text, left: dx * edge, top: padding + dy * edge, width: width, size: size,
-                  stroke: dx.zero? && dy.zero? ? fill : outline, font: Theme.display, weight: 700, align: "center", margin: 0)
-              end
+          node = build_effect_text(text, left: px(left), top: px(top), width: width, height: height,
+            size: size, padding: padding, edge: edge, fill: fill, outline: outline)
+        end
+        retain_effect(node: node, born: Burrow.clock, life: life, kind: kind, x: x, y: y, width: width, height: height)
+      end
+
+      def build_effect_text(text, left:, top:, width:, height:, size:, padding:, edge:, fill:, outline:, hidden: false)
+        node = nil
+        @effect_layer.append do
+          node = @shoes.stack(left: left, top: top, width: width, height: height, hidden: hidden) do
+            EFFECT_TEXT_OFFSETS.each do |dx, dy|
+              @shoes.para(text, left: dx * edge, top: padding + dy * edge, width: width, size: size,
+                stroke: dx.zero? && dy.zero? ? fill : outline, font: Theme.display, weight: 700, align: "center", margin: 0)
             end
           end
         end
-        retain_effect(node: node, born: Burrow.clock, life: life, kind: kind, x: x, y: y, width: width, height: height)
+        node
+      end
+
+      def prepare_effect_text
+        pool = (@effect_text_pool ||= [])
+        return unless @effects.empty? && pool.length < EFFECT_TEXT_POOL_LIMIT
+        pool << build_effect_text("", left: 0, top: 0, width: 1, height: 1,
+          size: 15, padding: 3, edge: 1, fill: Theme::WHITE, outline: Theme::INK, hidden: true)
       end
 
       # Presentation-only reactions to the host's reports: who reels, who spins,

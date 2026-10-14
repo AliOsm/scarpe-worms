@@ -205,7 +205,7 @@ class AudioTest < Minitest::Test
   def test_reaction_bursts_use_every_effect_voice_but_never_the_music_source
     audio, al = fake_mixer
     Burrow.stub(:clock, 100) do
-      18.times { audio.play("explosion", throttle: false) }
+      (Burrow::Client::Audio::MAX_VOICES + 6).times { audio.play("explosion", throttle: false) }
     end
     sources = al.calls.select { |call| call.first == :play }.map(&:last)
     assert_equal Burrow::Client::Audio::MAX_VOICES, sources.uniq.length

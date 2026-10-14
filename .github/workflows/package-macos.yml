@@ -11,6 +11,10 @@ on:
       ref:
         description: Git ref to package (empty means this workflow revision)
         type: string
+      compare_audio:
+        description: Compare Apple OpenAL and packaged OpenAL Soft on the same runner
+        type: boolean
+        default: false
   pull_request:
     paths:
       - .github/workflows/package-macos.yml
@@ -55,7 +59,7 @@ jobs:
       - name: Require Apple silicon and prepare build tools
         run: |
           test "$(uname -m)" = arm64
-          brew install pkg-config
+          brew install pkg-config cmake
       - uses: actions/cache@v4
         with:
           path: |
@@ -134,6 +138,10 @@ jobs:
           RENDERING: ${{ steps.rendering.outcome }}
         run: |
           echo "macOS benchmarks (informational): waits=$WAITS; rendering=$RENDERING" >> "$GITHUB_STEP_SUMMARY"
+      - name: Compare audio backends under combat and rendering load
+        if: inputs.compare_audio == true
+        run: |
+          python3 tools/compare_macos_audio.py 'relocated/Brigade Équipe/Burrow Brigade.app'
       - uses: actions/upload-artifact@v4
         with:
           name: burrow-brigade-macos
@@ -150,3 +158,4 @@ jobs:
             docs/validation/package-macos-native*
             docs/validation/rendering-macos*
             docs/validation/waits-macos.json
+            .cache/macos-audio-comparison/

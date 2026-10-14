@@ -124,7 +124,10 @@ module Burrow
               (0...w).step(4) { |lx| @overview.pixels[target + lx / 4] = png.pixels[source + lx] }
             end
             path = File.join(@directory, "tile-#{id}-#{@sequence}.png")
-            png.save(path)
+            # These are disposable local textures, not download assets. Palette
+            # selection and maximum compression delayed every crater; RGBA at
+            # level 1 keeps the same pixels and avoids that worker-side pause.
+            png.save(path, :fast_rgba)
             @tiles[id] = {id: id, x: x * 2, y: y * 2, width: w * 2, height: h * 2, path: path}
             # Keep older versions long enough for Ruby/Rust to retire the previous frame.
             Dir[File.join(@directory, "tile-#{id}-*.png")].sort_by { |p| File.mtime(p) }.reverse.drop(3).each { |p| File.unlink(p) }

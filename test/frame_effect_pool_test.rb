@@ -123,4 +123,24 @@ class FrameEffectPoolTest < Minitest::Test
     view.send(:render_effects, 2)
     assert node.removed
   end
+
+  def test_quiet_preparation_builds_one_hidden_caption_at_a_time_and_reuses_it
+    view = scene
+    view.send(:prepare_effect_text)
+    layer = view.instance_variable_get(:@effect_layer)
+    assert_equal 1, layer.children.length
+    prepared = layer.children.first
+    assert prepared.hidden
+    assert_empty view.instance_variable_get(:@effects)
+    reused = caption(view, "55", at: 0)
+    assert_same prepared, reused
+    refute reused.hidden
+    assert_equal ["55"] * 5, reused.children.map(&:text)
+    view.send(:prepare_effect_text)
+    assert_equal 1, layer.children.length, "preparation waits for a quiet frame"
+    view.send(:render_effects, 2)
+    30.times { view.send(:prepare_effect_text) }
+    assert_equal Burrow::Client::Scene::EFFECT_TEXT_POOL_LIMIT, layer.children.length
+    assert layer.children.all?(&:hidden)
+  end
 end

@@ -23,5 +23,11 @@
     "name": "chunky_png-1.4.0.gem",
     "url": "https://rubygems.org/downloads/chunky_png-1.4.0.gem",
     "digest": "sha256:89d5b31b55c0cf4da3cf89a2b4ebc3178d8abe8cbaf116a1dba95668502fdcfe"
+  },
+  {
+    "name": "openal-soft-1.24.3.tar.bz2",
+    "url": "https://github.com/kcat/openal-soft/releases/download/1.24.3/openal-soft-1.24.3.tar.bz2",
+    "digest": "sha256:cb5e6197a1c0da0edcf2a81024953cc8fa8545c3b9474e48c852af709d587892",
+    "bytes": 1025568
   }
 ]
