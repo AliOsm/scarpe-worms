@@ -26,22 +26,78 @@ module Burrow
 
       Kit = Struct.new(:fill, :deep, :shade, :edge, :crust, :tufts, :masonry, :girder, :masonry_edge, :scorch)
 
+      # Apply PNG's UP filter to a whole scanline using Ruby's C-backed integer
+      # operations. Each byte has a high-bit guard during subtraction, preventing
+      # a borrow into its neighbor; the XOR restores the original high bits.
+      # The filtered bytes, palette and compression are identical to ChunkyPNG.
+      class TileImage < ChunkyPNG::Image
+        protected
+
+        def encode_png_image_without_interlacing(color_mode, bit_depth = 8, filtering = ChunkyPNG::FILTER_NONE)
+          return super unless filtering == ChunkyPNG::FILTER_UP
+          stream = super(color_mode, bit_depth, ChunkyPNG::FILTER_NONE)
+          bytes = ChunkyPNG::Color.scanline_bytesize(color_mode, bit_depth, width)
+          high = ("\x80".b * bytes).unpack1("H*").to_i(16)
+          low = high - (high >> 7)
+          current = stream.byteslice((height - 1) * (bytes + 1) + 1, bytes).unpack1("H*").to_i(16)
+          (height - 1).downto(1) do |y|
+            pos = y * (bytes + 1)
+            previous = stream.byteslice(pos - bytes, bytes).unpack1("H*").to_i(16)
+            delta = ((current | high) - (previous & low)) ^ ((current ^ ~previous) & high)
+            stream.setbyte(pos, ChunkyPNG::FILTER_UP)
+            stream[pos + 1, bytes] = [delta.to_s(16).rjust(bytes * 2, "0")].pack("H*")
+            current = previous
+          end
+          stream.setbyte(0, ChunkyPNG::FILTER_UP)
+          stream
+        end
+      end
+
+      # The baked kit is RGBA8. Reconstruct its average-filtered rows a pixel at
+      # a time, with independent arithmetic in the four packed color channels.
+      class KitImage < ChunkyPNG::Image
+        class << self
+          protected
+
+          def decode_png_str_scanline_average(stream, pos, prev_pos, line_length, pixel_size)
+            return super unless pixel_size == 4
+            pixels = stream.byteslice(pos + 1, line_length).unpack("N*")
+            above = prev_pos ? stream.byteslice(prev_pos + 1, line_length).unpack("N*") : Array.new(pixels.length, 0)
+            left = 0
+            pixels.each_index do |x|
+              up, value = above[x], pixels[x]
+              average = ((left & 0xfefefefe) >> 1) + ((up & 0xfefefefe) >> 1) + (left & up & 0x01010101)
+              left = ((value & 0x7f7f7f7f) + (average & 0x7f7f7f7f)) ^ ((value ^ average) & 0x80808080)
+              pixels[x] = left
+            end
+            stream[pos + 1, line_length] = pixels.pack("N*")
+          end
+        end
+      end
+
       def self.kit(biome)
         @kits ||= {}
         @kits[biome] ||= begin
-          read = ->(name) { ChunkyPNG::Image.from_file(File.join(KIT, name)).pixels.freeze }
+          read = ->(name) { KitImage.from_file(File.join(KIT, name)).pixels.freeze }
           Kit.new(*%w[fill deep shade edge crust tufts masonry].map { |k| read.call("#{biome}-#{k}.png") },
             read.call("girder.png"), read.call("#{biome}-masonry-edge.png"), read.call("#{biome}-scorch.png")).freeze
         end
       end
 
       def initialize(directory)
-        @directory, @tiles, @hashes, @images, @sequence = directory, {}, {}, {}, 0
+        @directory, @tiles, @hashes, @sequence = directory, {}, {}, 0
       end
 
       def render(terrain, biome)
         @sequence += 1
         kit = self.class.kit(biome)
+        dimensions = [terrain.cols, terrain.rows]
+        if @dimensions != dimensions
+          @dimensions = dimensions
+          @tiles.clear
+          @hashes.clear
+          @overview = ChunkyPNG::Image.new((terrain.cols / 4.0).ceil, (terrain.rows / 4.0).ceil, 0)
+        end
         tiles_x = (terrain.cols.to_f / TILE).ceil
         tiles_y = (terrain.rows.to_f / TILE).ceil
         tiles_y.times do |ty|
@@ -59,23 +115,23 @@ module Burrow
             next if @hashes[id] == signature
             @hashes[id] = signature
             png = self.class.tile(terrain, x, y, w, h, kit)
-            @images[id] = png
+            # TILE is divisible by four: these are exactly the global overview
+            # samples. Keep unchanged regions instead of resampling every tile
+            # after a small crater, and retain only the much smaller overview.
+            (0...h).step(4) do |ly|
+              source = ly * w
+              target = (y / 4 + ly / 4) * @overview.width + x / 4
+              (0...w).step(4) { |lx| @overview.pixels[target + lx / 4] = png.pixels[source + lx] }
+            end
             path = File.join(@directory, "tile-#{id}-#{@sequence}.png")
-            png.save(path, fast_rgba: true)
+            png.save(path)
             @tiles[id] = {id: id, x: x * 2, y: y * 2, width: w * 2, height: h * 2, path: path}
             # Keep older versions long enough for Ruby/Rust to retire the previous frame.
             Dir[File.join(@directory, "tile-#{id}-*.png")].sort_by { |p| File.mtime(p) }.reverse.drop(3).each { |p| File.unlink(p) }
           end
         end
-        overview = ChunkyPNG::Image.new((terrain.cols / 4.0).ceil, (terrain.rows / 4.0).ceil, 0)
-        overview.height.times do |y|
-          overview.width.times do |x|
-            gx, gy = x * 4, y * 4
-            overview[x, y] = @images.fetch("#{gx / TILE}-#{gy / TILE}")[gx % TILE, gy % TILE]
-          end
-        end
         path = File.join(@directory, "overview-#{@sequence}.png")
-        overview.save(path, fast_rgba: true)
+        @overview.save(path, :fast_rgba)
         File.unlink(File.join(@directory, "overview-#{@sequence - 3}.png")) if @sequence > 3
         {tiles: @tiles.values, overview: path, revision: terrain.revision, checksum: terrain.checksum}
       end
@@ -86,7 +142,7 @@ module Burrow
       # the lip and over cave ceilings, and a slightly darker body deep inside.
       # Colours are ChunkyPNG 0xRRGGBBAA integers.
       def self.tile(terrain, ox, oy, width, height, kit)
-        png = ChunkyPNG::Image.new(width, height, 0)
+        png = TileImage.new(width, height, 0)
         out = png.pixels
         cols, rows, data = terrain.cols, terrain.rows, terrain.data
         fill, deep, shade, edge, crust, tufts, masonry, girder, masonry_edge, scorch = kit.to_a
