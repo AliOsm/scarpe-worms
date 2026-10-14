@@ -1,0 +1,39 @@
+[
+  {
+    "name": "base64-0.3.0.gem",
+    "url": "https://rubygems.org/downloads/base64-0.3.0.gem",
+    "digest": "sha256:27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b"
+  },
+  {
+    "name": "logger-1.7.0.gem",
+    "url": "https://rubygems.org/downloads/logger-1.7.0.gem",
+    "digest": "sha256:196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203"
+  },
+  {
+    "name": "fastimage-2.4.1.gem",
+    "url": "https://rubygems.org/downloads/fastimage-2.4.1.gem",
+    "digest": "sha256:c64bebd46b6fd8943ab70c1e6e85ff728f970f2e48f92ecd249b6bc3a540ad20"
+  },
+  {
+    "name": "chunky_png-1.4.0.gem",
+    "url": "https://rubygems.org/downloads/chunky_png-1.4.0.gem",
+    "digest": "sha256:89d5b31b55c0cf4da3cf89a2b4ebc3178d8abe8cbaf116a1dba95668502fdcfe"
+  },
+  {
+    "name": "traveling-ruby-20251122-3.4.7-linux-x86_64.tar.gz",
+    "url": "https://github.com/trubygems/traveling-ruby/releases/download/rel-20251122/traveling-ruby-20251122-3.4.7-linux-x86_64.tar.gz",
+    "digest": "sha256:8c0d8ed1d5e6a1b90fbf3c65d66c1cca984d313f0cd0671cc935875c8a35c96b",
+    "bytes": 10486869
+  },
+  {
+    "name": "ffi-1.17.4-x86_64-linux-gnu.gem",
+    "url": "https://rubygems.org/downloads/ffi-1.17.4-x86_64-linux-gnu.gem",
+    "digest": "sha256:9d3db14c2eae074b382fa9c083fe95aec6e0a1451da249eab096c34002bc752d"
+  },
+  {
+    "name": "openal-soft-1.24.3.tar.bz2",
+    "url": "https://github.com/kcat/openal-soft/releases/download/1.24.3/openal-soft-1.24.3.tar.bz2",
+    "digest": "sha256:cb5e6197a1c0da0edcf2a81024953cc8fa8545c3b9474e48c852af709d587892",
+    "bytes": 1025568
+  }
+]

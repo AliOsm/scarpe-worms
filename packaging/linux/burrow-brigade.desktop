@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Burrow Brigade
+Comment=An original artillery game for friends and computer teams
+Exec=burrow-brigade
+Icon=burrow-brigade
+Terminal=false
+Categories=Game;StrategyGame;
+StartupNotify=false

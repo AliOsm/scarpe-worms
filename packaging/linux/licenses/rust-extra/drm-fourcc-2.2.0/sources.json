@@ -1,0 +1,5 @@
+{
+  "url": "https://raw.githubusercontent.com/danielzfranklin/drm-fourcc-rs/bb1b81f184650e1418e1dce512e34071675206d7/LICENSE",
+  "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+  "note": "The 2.2.0 crate and its source revision declare MIT but omit the license text. This is the upstream commit adding that text."
+}

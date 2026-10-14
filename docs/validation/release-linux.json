@@ -1,0 +1,126 @@
+{
+  "date": "2026-10-14",
+  "version": "0.5.4",
+  "protocol": 4,
+  "tested_revision": "4c906765587d7939622266d3ce16fe2469ea0243",
+  "workflow": ".github/workflows/package-linux.yml",
+  "run_url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38522197538",
+  "conclusion": "success",
+  "artifact": "burrow-brigade-linux",
+  "assets": [
+    {
+      "name": "Burrow-Brigade-0.5.4-linux-x86_64.tar.gz",
+      "bytes": 53303023,
+      "sha256": "fd27c32e16e94fcdc0cf2a3831e6a8092bb299097a9ffa1d9ffd2d40c4a099b7"
+    },
+    {
+      "name": "Burrow-Brigade-0.5.4-linux-x86_64.tar.gz.sha256",
+      "bytes": 107
+    }
+  ],
+  "format": "Relocatable tar.gz; no FUSE, system Ruby, gems or Rust required",
+  "runtime": {
+    "ruby": "Traveling Ruby 3.4.7 rel-20251122, minimal x86_64 Linux archive; /tmp/ruby/lib RPATH removed",
+    "openssl": "3.6.0",
+    "openal_soft": "1.24.3, replaceable shared library; source archive and build flags included",
+    "scarpe": "eb883bc1778839735a6d8d1921911c656409bb2c + existing patches 0001-0024",
+    "rust": "1.99.0"
+  },
+  "build": {
+    "runner": "ubuntu-22.04",
+    "os": "Ubuntu 22.04.5 LTS",
+    "runner_image": "20261004.315.1",
+    "elf_files_audited": 95,
+    "maximum_glibc": "2.35",
+    "maximum_glibcxx": "3.4.29",
+    "embedded_rpaths": 0
+  },
+  "verification": {
+    "environments": [
+      "Ubuntu 22.04.5 LTS (separate hosted runner)",
+      "Ubuntu 24.04.5 LTS (separate hosted runner)",
+      "Debian GNU/Linux 12 bookworm container on ubuntu-24.04",
+      "Fedora Linux 40 container on ubuntu-24.04"
+    ],
+    "modes": [
+      "headless, unset locale",
+      "X11/Xvfb window, C locale, OpenAL null"
+    ],
+    "audio_backends_ubuntu24": [
+      "OpenAL null",
+      "PulseAudio private null sink",
+      "ALSA null PCM"
+    ],
+    "audio_cues_requested_per_windowed_launch": 76,
+    "checks": [
+      "menu; three-team match with two bots; visible terrain and presented grenade",
+      "movement, focus-loss charge cancellation, arsenal, resize retaining worker/timeline",
+      "saved match and player restored after quitting and relaunching",
+      "actual /proc executable identity confirms bundled Ruby for host and terrain",
+      "all worker PIDs reaped; no bundled processes remain",
+      "read-only relocated bundle in Unicode/spaced path; file hashes unchanged",
+      "XDG data/state directories; bounded diagnostic sessions and TimerFD backend",
+      "desktop entry install, validation and uninstall retain saves",
+      "container has no Ruby/Rust/Bundler, runs unprivileged without external networking"
+    ],
+    "evidence_artifacts": [
+      "linux-evidence-ubuntu-22.04",
+      "linux-evidence-ubuntu-24.04",
+      "linux-evidence-debian",
+      "linux-evidence-fedora"
+    ],
+    "performance_budgets_are_release_gates": false
+  },
+  "local_source_checks": {
+    "os": "Ubuntu 26.04 LTS x86_64",
+    "ruby_4.0.7": {
+      "command": "bundle exec rake test",
+      "tests": 327,
+      "assertions": 10156,
+      "failures": 0,
+      "errors": 0
+    },
+    "ruby_3.4.7": {
+      "command": "mise exec ruby@3.4.7 -- bundle exec rake test",
+      "tests": 327,
+      "assertions": 10156,
+      "failures": 0,
+      "errors": 0
+    },
+    "native": {
+      "command": "./bin/check-native",
+      "cases": 7,
+      "passed": 7
+    },
+    "scarpe_patch_verification": "passed",
+    "shellcheck": "passed",
+    "archive_extraction_negative_checks": "path traversal, absolute paths, links and devices rejected; executable permissions preserved without set-ID bits"
+  },
+  "earlier_runs": [
+    {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38520546412",
+      "outcome": "ELF audit caught upstream Ruby absolute RPATH; removed with patchelf"
+    },
+    {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38521051521",
+      "outcome": "Corrected filesystem-encoding comparison in smoke, Debian 12 archive extraction support, and Fedora Wayland package names"
+    },
+    {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38521812657",
+      "outcome": "All four environments passed headless and windowed checks"
+    }
+  ],
+  "limits": [
+    "x86_64 glibc 2.35+ desktops only; unsigned tarball",
+    "native Wayland and native PipeWire backend not exercised",
+    "silent software audio devices do not establish audible output or hardware latency",
+    "physical displays, Internet multiplayer and human acceptance remain separate checks"
+  ],
+  "integration": [
+    "Call package-linux.yml with input ref; download burrow-brigade-linux for its tarball and checksum",
+    "Version/asset names follow Burrow::VERSION automatically; coordinator chooses the release version/tag",
+    "No game code, shared package helpers or Scarpe patches changed; launcher sets BURROW_LOG_DIR independently",
+    "Add Linux guide to integrated README/documentation index and make shared THIRD_PARTY.md runtime paths platform-neutral",
+    "The evidence describes tested_revision above; final handoff run and artifact details are in uncommitted REPORT.md"
+  ]
+}

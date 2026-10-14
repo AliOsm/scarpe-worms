@@ -1,0 +1,43 @@
+Burrow Brigade — portable Linux x86-64 client
+
+Extract the whole archive. Open a terminal in the extracted Burrow Brigade
+folder and run ./burrow-brigade. Ruby, gems, the renderer, fonts, art and
+OpenAL Soft are included. No Ruby, Rust, Bundler, FUSE or root installation
+is required. Keep all files together; the folder may be read-only.
+
+Supported baseline: glibc 2.35+, e.g. Ubuntu 22.04+, Debian 12+, Fedora 40+.
+Use a normal X11/Wayland desktop. This is not an Alpine/musl or ARM build.
+
+If desktop libraries are missing:
+  Ubuntu/Debian:
+    sudo apt-get install libcrypt1 libstdc++6 libgcc-s1 libx11-6 libx11-xcb1 \
+      libxcursor1 libxi6 libxrandr2 libxcb1 libxkbcommon0 libxkbcommon-x11-0 \
+      libwayland-client0 libwayland-cursor0 libpulse0 libasound2
+    (On Ubuntu 24.04+, use libasound2t64 in place of libasound2.)
+  Fedora:
+    sudo dnf install libxcrypt-compat libstdc++ libgcc libX11 libXcursor libXi \
+      libXrandr libxcb libxkbcommon libxkbcommon-x11 libwayland-client libwayland-cursor \
+      pulseaudio-libs alsa-lib
+Audio uses the desktop's PipeWire, PulseAudio (including pipewire-pulse) or
+ALSA service/device. The game still runs silently without an audio device.
+No OpenGL/Vulkan driver is required: Scarpe renders on the CPU.
+
+Optional application-menu entry (no sudo):
+  ./burrow-brigade --install-desktop
+Remove it with --uninstall-desktop. Reinstall it after moving the folder.
+Check runtime dependencies with ./burrow-brigade --check.
+
+Data: $XDG_DATA_HOME/burrow-brigade (default ~/.local/share/burrow-brigade).
+Logs: $XDG_STATE_HOME/burrow-brigade/logs (default ~/.local/state/.../logs).
+Timing reports: logs/performance, latest three sessions. Nothing is uploaded.
+Upgrade by replacing the game folder; keep your data directory.
+
+Quick battle starts a match with two computer teams. Move: A/D or arrows.
+Jump: W/Enter. Aim: mouse. Charge/fire: hold/release Space or left mouse.
+Arsenal: E. Match menu: Escape. M mutes sound.
+
+Licenses: resources/app/THIRD_PARTY.md and resources/licenses/.
+OpenAL Soft is a separate LGPL shared library at lib/libopenal.so.1;
+its corresponding source and build flags are in resources/licenses/openal-soft/.
+You may replace it with an ABI-compatible build and debug your modifications.
+The package is unsigned; compare its SHA-256 with the trusted release sidecar.

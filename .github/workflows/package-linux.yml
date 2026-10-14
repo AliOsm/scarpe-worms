@@ -1,0 +1,138 @@
+name: Linux package and portable runtime smoke
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref to package
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to package (defaults to selected branch)
+        required: false
+        type: string
+  pull_request:
+    paths:
+      - .github/workflows/package-linux.yml
+      - packaging/linux/**
+      - packaging/macos/licenses/**
+      - tools/package_linux.py
+      - tools/check_linux_package.py
+      - tools/verify_scarpe.py
+      - SCARPE_REVISION
+      - patches/scarpe/**
+      - rust-toolchain.toml
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install baseline build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake patchelf pkg-config libxkbcommon-dev libfontconfig1-dev libasound2-dev libpulse-dev libpipewire-0.3-dev
+          rustup toolchain install "$(python3 -c 'import tomllib; print(tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])')" --profile minimal
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            .cache/linux/target
+            .cache/linux/downloads
+          key: linux-ubuntu22-${{ hashFiles('rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch', 'packaging/linux/dependencies.json') }}
+      - name: Build, collect notices and audit all ELF requirements
+        run: python3 -I tools/package_linux.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: burrow-brigade-linux
+          path: |
+            dist/Burrow-Brigade-*-linux-x86_64.tar.gz
+            dist/Burrow-Brigade-*-linux-x86_64.tar.gz.sha256
+          if-no-files-found: error
+
+  verify-ubuntu:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: burrow-brigade-linux
+          path: dist
+      - name: Install desktop runtime and virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcrypt1 libstdc++6 libgcc-s1 libx11-6 libx11-xcb1 libxcursor1 libxi6 libxrandr2 libxcb1 libxkbcommon0 libxkbcommon-x11-0 libwayland-client0 libwayland-cursor0 xvfb xauth desktop-file-utils
+      - name: Headless fresh battle, shot, save, resume and child shutdown
+        run: python3 -I tools/check_linux_package.py dist/*.tar.gz --output .cache/linux-evidence/headless
+      - name: X11 window and bundled audio with ASCII locale and Unicode paths
+        run: xvfb-run -a -s '-screen 0 1600x1000x24' python3 -I tools/check_linux_package.py dist/*.tar.gz --windowed --locale c --output .cache/linux-evidence/windowed
+      - name: Exercise PulseAudio and ALSA through silent devices
+        if: matrix.os == 'ubuntu-24.04'
+        run: |
+          sudo apt-get install -y pulseaudio libasound2t64
+          bash packaging/linux/verify-audio.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-evidence-${{ matrix.os }}
+          path: .cache/linux-evidence
+          if-no-files-found: error
+
+  verify-containers:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [debian, fedora]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: burrow-brigade-linux
+          path: dist
+      - name: Verify without developer runtimes in a different distribution
+        env:
+          DISTRO: ${{ matrix.distro }}
+        run: |
+          mkdir -p .cache/linux-evidence
+          docker build -f "packaging/linux/verify-$DISTRO.Dockerfile" -t burrow-linux-verify packaging/linux
+          docker run --rm --network none --user "$(id -u):$(id -g)" \
+            --mount "type=bind,src=$PWD,dst=/source,readonly" \
+            --mount "type=bind,src=$PWD/.cache/linux-evidence,dst=/evidence" \
+            burrow-linux-verify bash /source/packaging/linux/verify-container.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-evidence-${{ matrix.distro }}
+          path: .cache/linux-evidence
+          if-no-files-found: error
