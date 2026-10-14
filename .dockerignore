@@ -4,3 +4,10 @@
 !bin/
 !bin/server
 !bin/healthcheck
+!LICENSE
+!packaging/
+!packaging/server/
+!packaging/server/NOTICES.md
+!packaging/macos/
+!packaging/macos/licenses/
+!packaging/macos/licenses/Ruby-*

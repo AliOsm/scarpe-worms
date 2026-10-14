@@ -41,7 +41,10 @@ def package_environment(app, linux_ruby=None, windowed=False):
                GEM_PATH=str(res / 'runtime/gems'), SCARPE_DISPLAY_SERVICE='native',
                SCARPE_NATIVE_BIN=str(native), SCARPE_NATIVE_HEADLESS='0' if windowed else '1',
                BURROW_PACKAGE_RES=str(res), BURROW_RUBY=str(ruby))
-    return env, ruby
+    # Execute the same interpreter wrapper as the Finder launcher. In
+    # particular it chooses a UTF-8 locale before Ruby tags startup load paths;
+    # -EUTF-8 alone does not fix RubyGems paths in a Unicode installation.
+    return env, ruby if linux_ruby else res / 'ruby.sh'
 
 
 def main():

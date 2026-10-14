@@ -56,6 +56,10 @@ def unpack(archive, directory):
     marker = directory / '.extracted'
     if marker.exists():
         return
+    # A failed extraction is not a reusable cache. Start with an empty owned
+    # directory rather than mixing old files into a verified download.
+    if directory.exists():
+        shutil.rmtree(directory)
     directory.mkdir(parents=True, exist_ok=True)
     # Python's data filter rejects paths/symlinks escaping the destination.
     with tarfile.open(archive) as source:
@@ -187,7 +191,7 @@ def main():
     copy_tree(ROOT / 'assets', RES / 'app/assets', ignore=shutil.ignore_patterns('source', '*.svg'))
     for name in ('LICENSE', 'THIRD_PARTY.md', 'SCARPE_REVISION', 'README.md'):
         shutil.copy2(ROOT / name, RES / 'app' / name)
-    for name in ('boot.rb', 'launch.sh'):
+    for name in ('boot.rb', 'launch.sh', 'ruby.sh'):
         shutil.copy2(CONFIG / name, RES / name)
     shutil.copy2(CONFIG / 'dependencies.json', RES / 'build-dependencies.json')
     for directory in ('lib', 'lacci/lib', 'scarpe-components/lib'):
@@ -235,6 +239,7 @@ def main():
     for path in (APP / 'Contents/MacOS').iterdir():
         path.chmod(0o755)
     (RES / 'launch.sh').chmod(0o755)
+    (RES / 'ruby.sh').chmod(0o755)
     signer = CACHE / 'signing/apple-codesign-0.29.0-x86_64-unknown-linux-musl/rcodesign'
     print('Ad-hoc signing the complete app', flush=True)
     run(signer, '-C', '/dev/null', 'sign', APP)

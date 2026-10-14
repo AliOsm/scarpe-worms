@@ -1,13 +1,15 @@
-Burrow Brigade 0.2.1 — macOS preview
+Burrow Brigade — macOS preview
 
 Apple silicon (M1 or later), macOS 13 or later.
 Extract the ZIP and move Burrow Brigade.app to Applications.
 Ruby and the native renderer are included. No development tools are needed.
 
-This preview is ad-hoc signed, not Developer ID signed or notarized. It was
-cross-built on Linux. A real Mac launch and Gatekeeper check are still required
-before a public release. macOS may refuse to open this preview; use a trusted
-local developer build until a signed release is available.
+This preview is ad-hoc signed, not Developer ID signed or notarized. Release
+packages are cross-built on Linux and checked on an Apple silicon Mac runner.
+Physical display/audio and clean-machine Gatekeeper acceptance remain separate.
+Verify the ZIP's SHA-256 sidecar before installing. If Gatekeeper blocks a
+download you trust, use System Settings > Privacy & Security > Open Anyway, or:
+  xattr -dr com.apple.quarantine '/Applications/Burrow Brigade.app'
 
 Quick battle starts a game with two computer teams. Create a match opens a
 custom lobby. Play with friends can host a TLS server or connect to another host.

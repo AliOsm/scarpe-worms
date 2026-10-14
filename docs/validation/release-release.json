@@ -1,0 +1,13 @@
+{
+  "area": "release",
+  "version": "0.5.4",
+  "evidence": "release-pipeline.json",
+  "verified": [
+    "macOS native package",
+    "native amd64 and arm64 server archives",
+    "draft release creation and replacement",
+    "checksum and version gates"
+  ],
+  "windows_linux": "Orchestration fixtures only; removed from final branch.",
+  "cleanup": "Two draft releases and all four test tags deleted; no temporary triggers or stubs remain."
+}

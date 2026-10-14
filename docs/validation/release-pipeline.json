@@ -1,0 +1,196 @@
+{
+  "date": "2026-10-14",
+  "version": "0.5.4",
+  "protocol": 4,
+  "tested_source_commit": "4a7d91242422cc78d366dcb3f137272d7a4f535d",
+  "scope": "Release orchestration with real macOS and server packages; Windows/Linux client artifacts were explicit test fixtures, not native validation.",
+  "successful_runs": [
+    {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38522046071",
+      "event": "test tag push",
+      "verified": "Fresh draft creation; all 18 uploaded assets match GitHub SHA-256 digests, size and upload state."
+    },
+    {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38521392870",
+      "event": "workflow_dispatch, draft=true",
+      "verified": "Same release ID retained, all assets replaced and verified, obsolete-fixture.txt removed; release remained a draft."
+    },
+    {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38522045907",
+      "verified": "Source checks, native journeys and default container check passed on the final tested source."
+    }
+  ],
+  "failure_gate_evidence": [
+    {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38519875517",
+      "failure": "Unicode installation with an unset Mac locale failed in RubyGems; release job skipped, no draft created. Fixed by shared packaged ruby.sh bootstrap."
+    },
+    {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38520731069",
+      "failure": "All native package checks passed; REST by-tag draft lookup returned 404 after upload. Draft remained unpublished. Fixed by numeric release-ID lookup."
+    },
+    {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38521086360",
+      "failure": "Intentional tag/version mismatch rejected before all package/release jobs."
+    }
+  ],
+  "macos": {
+    "build_runner": "ubuntu-24.04",
+    "execution_runner": "macos-15 (Apple silicon)",
+    "ruby": "3.4.7",
+    "required_checks": [
+      "ZIP SHA-256",
+      "codesign --deep --strict",
+      "Mach-O/resource integrity",
+      "Unicode/spaced relocated installation",
+      "headless unset-locale launch",
+      "windowed incoming-C-locale launch",
+      "menu and three-team bot match",
+      "movement, focus/charge cancellation, arsenal, resize",
+      "clean shutdown and bounded diagnostics",
+      "same match and player recovered on relaunch"
+    ],
+    "launches": 4,
+    "benchmarks": {
+      "deadline_timer": "passed, informational",
+      "rendering_combat_camera_audio": "passed, informational"
+    },
+    "notarized": false
+  },
+  "server": {
+    "runners": {
+      "amd64": "ubuntu-24.04",
+      "arm64": "ubuntu-24.04-arm"
+    },
+    "base_image": "ruby:3.4.7-slim@sha256:93dd13e28987e373857fbda4a7f4ae99e9f7acb6fcc266035e551229974d1c89",
+    "export": "Single native-architecture buildx --load, docker save | gzip -n, remove image, docker load, then verify loaded image.",
+    "evidence": {
+      "amd64": {
+        "image": "ghcr.io/aliosm/burrow-brigade:0.5.4",
+        "image_id": "sha256:0665a5ac2ae7c69467755cb1c3b9f6fd710463b05cda9b0dd3262009536da6f4",
+        "architecture": "amd64",
+        "source_revision": "4a7d91242422cc78d366dcb3f137272d7a4f535d",
+        "tls": true,
+        "teams": 6,
+        "grubs": 36,
+        "container_restart_recovered": true,
+        "session_preserved": true,
+        "certificate_preserved": true,
+        "healthcheck": true
+      },
+      "arm64": {
+        "image": "ghcr.io/aliosm/burrow-brigade:0.5.4",
+        "image_id": "sha256:fd52e4ec7452eedc3f0509d9d597316165d6b7e87a4f7ce4e2fad6fd775c7297",
+        "architecture": "arm64",
+        "source_revision": "4a7d91242422cc78d366dcb3f137272d7a4f535d",
+        "tls": true,
+        "teams": 6,
+        "grubs": 36,
+        "container_restart_recovered": true,
+        "session_preserved": true,
+        "certificate_preserved": true,
+        "healthcheck": true
+      }
+    },
+    "registry_push_performed": false,
+    "production_deployment_performed": false
+  },
+  "payloads": {
+    "Burrow-Brigade-0.5.4-linux-x86_64.tar.gz": {
+      "bytes": 37,
+      "sha256": "9de4687330de95175629e6c31c3c9da7395eccc856db7ee031c1f9789e7aef7f",
+      "fixture": true
+    },
+    "Burrow-Brigade-0.5.4-macos-arm64.zip": {
+      "bytes": 52759323,
+      "sha256": "5d8866ab085d847dd5c6b006bd7f29ce61bd738bae6a9f6ad40efe85692b98a3",
+      "fixture": false
+    },
+    "Burrow-Brigade-0.5.4-windows-x64-setup.exe": {
+      "bytes": 37,
+      "sha256": "9de4687330de95175629e6c31c3c9da7395eccc856db7ee031c1f9789e7aef7f",
+      "fixture": true
+    },
+    "Burrow-Brigade-0.5.4-windows-x64.zip": {
+      "bytes": 37,
+      "sha256": "9de4687330de95175629e6c31c3c9da7395eccc856db7ee031c1f9789e7aef7f",
+      "fixture": true
+    },
+    "Burrow-Brigade-server-0.5.4-docker-linux-amd64.tar.gz": {
+      "bytes": 73375222,
+      "sha256": "6bc84e77770b77d38829032d1d7cd09843b792b8c36904afd255df7f58657228",
+      "fixture": false
+    },
+    "Burrow-Brigade-server-0.5.4-docker-linux-arm64.tar.gz": {
+      "bytes": 73627631,
+      "sha256": "f05db83c840566e1f54d09437cfa5a19180e6595218e20ab5c461ce46ba93d9b",
+      "fixture": false
+    },
+    "compose.yaml": {
+      "bytes": 719,
+      "sha256": "6e6d6c0413957fbfe49114d4e65e1db57ef618751a8fe5cd0a85adf0b81f7e46",
+      "fixture": false
+    },
+    "release.json": {
+      "bytes": 1509,
+      "sha256": "623065540abcfc0fed2226b25713419f8bb0be3be5f7eb80ca25589f7884e48a",
+      "fixture": false
+    },
+    "SHA256SUMS": {
+      "bytes": 820,
+      "sha256": "a7f088a115d498aa578172f5f7e9df6d0f1f54762da5d47b440e3fd2cd0158ea",
+      "fixture": false
+    }
+  },
+  "downloaded_metadata_check": "Compose, provenance and SHA256SUMS sidecars matched; docker compose config --quiet passed.",
+  "local_checks": {
+    "ruby_4.0.7": {
+      "tests": 327,
+      "assertions": 10156,
+      "failures": 0,
+      "errors": 0
+    },
+    "ruby_3.4.7": {
+      "tests": 327,
+      "assertions": 10156,
+      "failures": 0,
+      "errors": 0
+    },
+    "native": {
+      "journeys": 7,
+      "assertions": 242,
+      "failures": 0
+    },
+    "scarpe": "24 independent patches verified",
+    "release_regressions": 12,
+    "static": "Python compilation, actionlint 1.7.12 and shellcheck 0.11.0 passed"
+  },
+  "contract_lint": {
+    "windows_snapshot": "0ade395af70a38d5e4b7f98bf5d51928970ba2b6",
+    "linux_snapshot": "4c906765587d7939622266d3ce16fe2469ea0243",
+    "result": "Final release/macOS workflows linted with real peer workflow definitions in an isolated scratch repository."
+  },
+  "other_observed_failure": {
+    "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38520731042",
+    "detail": "Unchanged camera native test saw 2 scenes instead of 1 after resize. Same-commit branch run 38520724985 and local/final source checks passed; root cause not established."
+  },
+  "cleanup": {
+    "draft_releases_deleted": 2,
+    "test_tags_deleted": [
+      "test-rel-0.5.4-release-01",
+      "test-rel-0.5.4-release-02",
+      "test-rel-0.5.4-release-03",
+      "test-rel-0.0.0-release-invalid"
+    ],
+    "remote_test_tags_remaining": [],
+    "test_releases_remaining": [],
+    "temporary_triggers_removed": true,
+    "windows_linux_fixtures_removed": true,
+    "production_tags_changed": false
+  },
+  "limits": [
+    "Windows/Linux native client evidence belongs to their agents; integrate all three branches and run a real-client draft before publishing.",
+    "Publication transition is regression-tested with a mock GitHub transport; no non-draft release was created in this round.",
+    "Mac minimum-OS/physical display and audible audio acceptance, Gatekeeper/notarization, Windows signing, and Internet play are not established by these CI runs."
+  ]
+}

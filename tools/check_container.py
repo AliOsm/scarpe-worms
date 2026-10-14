@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build the host image and verify TLS play plus recovery in disposable containers."""
 from pathlib import Path
+import argparse
 import hashlib
 import json
 import re
@@ -52,14 +53,21 @@ def read(wire, predicate):
 
 
 def main():
-    subprocess.run(['docker', 'build', '-t', 'burrow-brigade:validation', '.'], cwd=ROOT, check=True)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--image', help='Verify an already built/loaded image instead of building')
+    parser.add_argument('--report', type=Path, default=ROOT / 'docs/validation/container.json')
+    args = parser.parse_args()
+    image = args.image or 'burrow-brigade:validation'
+    if not args.image:
+        subprocess.run(['docker', 'build', '-t', image, '.'], cwd=ROOT, check=True)
+    image_info = json.loads(run('docker', 'image', 'inspect', image))[0]
     name = 'burrow-validation-' + uuid.uuid4().hex[:10]
     volume = name + '-data'
     run('docker', 'volume', 'create', volume)
     try:
         run('docker', 'run', '-d', '--name', name, '--read-only', '--cap-drop=ALL',
             '--security-opt=no-new-privileges:true', '--tmpfs', '/tmp:size=16m,mode=1777',
-            '-p', '127.0.0.1::4388', '-v', volume + ':/var/lib/burrow', 'burrow-brigade:validation')
+            '-p', '127.0.0.1::4388', '-v', volume + ':/var/lib/burrow', image)
         port = int(run('docker', 'port', name, '4388/tcp').rsplit(':', 1)[1])
         stream, wire, welcome, pin = connect(port)
         send(wire, {'type': 'create', 'seq': 1, 'name': 'Container room', 'bots': 5, 'config': {'worms': 6}})
@@ -91,9 +99,11 @@ def main():
         run('docker', 'exec', name, 'ruby', 'bin/healthcheck')
         wire.close()
         stream.close()
-        result = {'tls': True, 'teams': 6, 'grubs': 36, 'container_restart_recovered': True,
+        result = {'image': image, 'image_id': image_info['Id'], 'architecture': image_info['Architecture'],
+                  'source_revision': (image_info['Config'].get('Labels') or {}).get('org.opencontainers.image.revision'),
+                  'tls': True, 'teams': 6, 'grubs': 36, 'container_restart_recovered': True,
                   'session_preserved': True, 'certificate_preserved': True, 'healthcheck': True}
-        path = ROOT / 'docs/validation/container.json'
+        path = args.report
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(result, indent=2) + '\n')
         print(json.dumps(result, indent=2))

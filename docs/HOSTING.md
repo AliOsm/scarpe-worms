@@ -19,6 +19,53 @@ use the same hosted identity. Both listeners stop when the desktop app closes.
 
 ## Persistent Docker host
 
+Download the server archive for your host from
+[GitHub Releases](https://github.com/AliOsm/scarpe-worms/releases): `linux-amd64`
+for x86-64 servers or `linux-arm64` for ARM64 servers. The desktop client's
+architecture does not determine the server's architecture. Verify its `.sha256`
+sidecar, then load it (replace `0.5.5` with the downloaded version):
+
+```sh
+sha256sum -c Burrow-Brigade-server-0.5.5-docker-linux-amd64.tar.gz.sha256
+docker load --input Burrow-Brigade-server-0.5.5-docker-linux-amd64.tar.gz
+```
+
+Download that release's `compose.yaml` and its checksum into an empty directory:
+
+```sh
+sha256sum -c compose.yaml.sha256
+docker compose up -d
+docker compose logs burrow
+```
+
+The release Compose file defaults to the matching versioned image. If you
+loaded the archive, it uses that local image without a registry download. The
+independent deploy workflow also publishes a multi-architecture image to
+`ghcr.io/aliosm/burrow-brigade:<version>`; once it succeeds, Compose can pull the
+image automatically instead. Release archives are built and verified directly
+from the tag and do not depend on GHCR availability. Use a version tag, not
+`latest`, to keep upgrades explicit. No application secrets are needed to host.
+
+For a standalone container without Compose:
+
+```sh
+docker run -d --name burrow-brigade --restart unless-stopped \
+  -p 4388:4388 -v burrow-data:/var/lib/burrow \
+  --read-only --tmpfs /tmp:size=16m,mode=1777 --cap-drop=ALL \
+  --security-opt=no-new-privileges:true --stop-timeout 20 \
+  ghcr.io/aliosm/burrow-brigade:0.5.5
+docker logs burrow-brigade
+```
+
+Use either Compose or the standalone container; both bind the same port. When
+upgrading with Compose, keep the same directory/project name so the existing
+named volume is reused. Back up state first, load/pull the new image, replace
+the release Compose file and run `docker compose up -d`. An explicit
+`BURROW_IMAGE` in `.env` overrides the file's default, so update it as well if
+you set one. Do not run `docker compose down --volumes` during an upgrade.
+
+To build from a source checkout instead, use the repository's root Compose file:
+
 ```sh
 docker compose up -d --build
 docker compose logs burrow
@@ -46,9 +93,12 @@ set the service command to `--cert /certs/fullchain.pem --key /certs/key.pem`.
 The game protocol is TLS over TCP, not HTTP/WebSocket; a web-only reverse proxy
 needs a TCP stream listener. Keep server and client protocol versions matched.
 
-`python3 tools/check_container.py` builds and checks the same image using an
+`python3 -I tools/check_container.py` builds and checks the same image using an
 isolated temporary volume and an ephemeral loopback port. It removes both after
 verifying play, health checks, and restart recovery.
+`--image IMAGE` checks an already loaded image without rebuilding it; the release
+workflow uses this mode after reloading each exported Docker archive on its
+native architecture. `--report PATH` selects its JSON evidence file.
 
 ## Deploy from GitHub Actions
 
@@ -95,8 +145,13 @@ If SSH is not on port 22, add `DEPLOY_PORT` and scan with `ssh-keyscan -p PORT`.
 Optionally require a reviewer on the environment. Deploy by tagging the release on `main`:
 
 ```sh
-git tag v0.5.4 && git push origin v0.5.4
+git tag v0.5.5 && git push origin v0.5.5
 ```
+
+The source version must already be `0.5.5` for that example. The same tag also
+starts the [GitHub Release pipeline](RELEASE.md), which builds client downloads
+and server archives without changing this deployment's environment or secrets.
+A manually dispatched draft release does not deploy the production server.
 
 The run summary shows the version and certificate fingerprint; players connect
 to `tls://SERVER:4388` with it. **Run workflow** with a published version

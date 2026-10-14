@@ -1,19 +1,22 @@
 # macOS build and diagnostics
 
-Target: **Apple silicon (arm64), macOS 13+**. Version 0.5.0 (unreleased) is an ad-hoc
-signed preview; its archive has been cross-built and statically checked, not yet launched on a Mac. Intel/Windows packages and a notarized sales release are not provided.
+Target: **Apple silicon (arm64), macOS 13+**. The Mac ZIP is an ad-hoc signed,
+unnotarized preview. The reusable package workflow runs the delivered binaries
+on an Apple silicon `macos-15` runner before the
+[release pipeline](RELEASE.md) accepts them. This does not establish physical
+display/audio acceptance or notarization. Intel Mac packages are not provided.
 
 ## Build the standalone app on Linux
 
 After [development setup](../CONTRIBUTING.md), with Python 3.12+:
 
 ```sh
-python3 tools/package_macos.py
-python3 tools/verify_macos.py 'dist/Burrow Brigade.app'
+python3 -I tools/package_macos.py
+python3 -I tools/verify_macos.py 'dist/Burrow Brigade.app'
 python3 tools/check_distributable.py
 ```
 
-Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.4) and its `.sha256` sidecar.
+Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.5) and its `.sha256` sidecar.
 The archive bundles Ruby 3.4.7, patched native Scarpe, gems, fonts, art, and audio.
 Players do not need a separate Ruby, Rust, browser, or server installation.
 
@@ -23,14 +26,26 @@ applies ad-hoc signatures. It checks Mach-O architecture/deployment targets,
 library paths, executable hashes, resource seals, and leaked state.
 **Static verification does not execute the app or establish Gatekeeper acceptance.**
 
-Build outputs are ignored by Git. The macOS preview workflow can also build and
-upload the archive through Actions; it runs manually or on `v*` tags.
+Build outputs are ignored by Git. `package-macos.yml` can build and upload the
+archive manually, for packaging pull requests, or through `release.yml` on a
+release tag. Its `ref` input selects the source commit. The verified artifact
+`burrow-brigade-macos` contains only the ZIP and its sidecar; diagnostic evidence
+is uploaded separately. The retired preview workflow no longer duplicates tag
+builds. See [release validation](validation/release-pipeline.json) for actual runs.
 
 ## Install and find data
 
-Extract the ZIP and move **Burrow Brigade.app** to Applications. Quit an older
-copy before replacing it. An unnotarized preview may be refused by Gatekeeper;
-use a trusted Developer ID build for normal distribution.
+Verify the ZIP's `.sha256` sidecar, extract it and move **Burrow Brigade.app** to
+Applications. Quit an older copy before replacing it. Gatekeeper may refuse this
+unnotarized preview. For a verified download you trust, use **System Settings →
+Privacy & Security → Open Anyway**, or remove quarantine from that app only:
+
+```sh
+xattr -dr com.apple.quarantine '/Applications/Burrow Brigade.app'
+```
+
+A Developer ID signed/notarized build is still needed for standard Gatekeeper
+acceptance. Ad-hoc codesign verification checks integrity, not developer identity.
 
 | Data | Location |
 | --- | --- |
@@ -39,7 +54,7 @@ use a trusted Developer ID build for normal distribution.
 | Latest three timing sessions | `~/Library/Logs/Burrow Brigade/performance/` |
 
 The app bundle stays read-only. Existing settings and unfinished matches remain
-compatible. Host and client must both use protocol 4 (0.5.0). Do not delete data to upgrade.
+compatible. Host and client must both use protocol 4. Do not delete data to upgrade.
 
 After reproducing a problem, quit normally, including Command-Q, then:
 
@@ -79,9 +94,11 @@ python3 tools/check_waits.py --app 'dist/Burrow Brigade.app' --output docs/valid
 python3 tools/check_rendering.py --app 'dist/Burrow Brigade.app' --audio
 ```
 
-Repeat rendering at `--size 1920x1200` on the actual display. The preview workflow
-runs these checks on an Apple silicon runner; human audio, display, and internet
-acceptance still follow [RELEASE.md](RELEASE.md).
+Repeat rendering at `--size 1920x1200` on the actual display. The package workflow
+runs these checks serially on an Apple silicon runner. Native menu/bot-match,
+input, save/recovery and signature checks gate releases; deadline/rendering
+benchmarks are informational because shared-runner timing is noisy. Human audio,
+display and internet acceptance still follow [RELEASE.md](RELEASE.md).
 
 ## Sign for distribution
 

@@ -24,7 +24,7 @@ def main():
     for source in expected:
         target = RES / 'app' / source.relative_to(ROOT)
         assert target.is_file() and digest(source) == digest(target), f'Stale or absent packaged file: {source.relative_to(ROOT)}'
-    for name in ('boot.rb', 'launch.sh'):
+    for name in ('boot.rb', 'launch.sh', 'ruby.sh'):
         assert digest(ROOT / 'packaging/macos' / name) == digest(RES / name), f'Stale packaged launcher: {name}'
     info = plistlib.loads((APP / 'Contents/Info.plist').read_bytes())
     assert info['CFBundleShortVersionString'] == VERSION, 'App version differs from game source'
@@ -52,7 +52,7 @@ def main():
             assert stat.S_ISLNK(mode) == path.is_symlink(), f'Symlink flag differs: {name}'
             if not path.is_symlink() and os.access(path, os.X_OK):
                 assert mode & 0o111, f'Executable bit missing: {name}'
-    report = dict(version=VERSION, current_launcher_files=2,
+    report = dict(version=VERSION, current_launcher_files=3,
                   current_game_source_and_asset_files=len(expected), current_scarpe_runtime_files=runtime_files,
                   zip_entries_matched=len(inventory), zip_crc=True, zip_executable_permissions=True,
                   symlinks_preserved=True, sha256=sha256, zip_bytes=archive.stat().st_size)

@@ -1,0 +1,143 @@
+name: Package macOS
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref or immutable commit to package
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to package (empty means this workflow revision)
+        type: string
+  pull_request:
+    paths:
+      - .github/workflows/package-macos.yml
+      - packaging/macos/**
+      - patches/scarpe/**
+      - SCARPE_REVISION
+      - rust-toolchain.toml
+      - Gemfile*
+      - setup.sh
+      - tools/package_macos.py
+      - tools/check_package.py
+      - tools/package_smoke.rb
+      - tools/check_distributable.py
+      - tools/verify_macos.py
+      - tools/check_waits.*
+      - tools/check_rendering.*
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.7'
+          bundler: '4.0.16'
+      - run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libxkbcommon-dev libfontconfig1-dev libffi-dev
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            vendor/scarpe/native/target
+          key: native-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch') }}
+      - run: ./setup.sh
+      - run: bundle exec rake test
+      - uses: actions/cache@v4
+        with:
+          path: .cache/macos
+          key: macos-arm64-${{ hashFiles('packaging/macos/dependencies.json', 'rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch') }}
+      - run: python3 -I tools/package_macos.py
+      # These helpers import other repository helpers; isolated mode explicitly
+      # adds only the trusted tools directory, never downloaded Python code.
+      - run: python3 -I -c 'import runpy,sys; sys.path.insert(0,"tools"); runpy.run_path("tools/check_distributable.py",run_name="__main__")'
+      - run: python3 -I tools/check_package.py 'dist/Burrow Brigade.app' --linux-ruby "$(command -v ruby)"
+      - run: python3 -I tools/check_package.py 'dist/Burrow Brigade.app' --linux-ruby "$(command -v ruby)" --locale c
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-package-candidate
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-build-evidence
+          path: |
+            docs/validation/macos-arm64-package.json
+            docs/validation/package-relocated-linux*.json
+            docs/validation/distributable.json
+
+  verify:
+    needs: package
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-package-candidate
+          path: dist
+      - name: Require an Apple silicon runner
+        run: |
+          test "$(uname -m)" = arm64
+          sw_vers
+      - name: Verify and extract the delivered archive
+        run: |
+          (cd dist && shasum -a 256 -c ./*.sha256)
+          mkdir -p 'relocated/Brigade Équipe'
+          ditto -x -k dist/Burrow-Brigade-*-macos-arm64.zip 'relocated/Brigade Équipe'
+          codesign --verify --deep --strict --verbose=2 'relocated/Brigade Équipe/Burrow Brigade.app'
+          python3 -I tools/verify_macos.py 'relocated/Brigade Équipe/Burrow Brigade.app'
+      - name: Required packaged menu, bot match, input, clean quit and saved-match recovery
+        run: |
+          python3 -I tools/check_package.py 'relocated/Brigade Équipe/Burrow Brigade.app'
+          python3 -I tools/check_package.py 'relocated/Brigade Équipe/Burrow Brigade.app' --windowed --locale c
+      - name: Informational packaged deadline timer benchmark
+        id: waits
+        continue-on-error: true
+        run: python3 -I -c 'import runpy,sys; sys.path.insert(0,"tools"); runpy.run_path("tools/check_waits.py",run_name="__main__")' --app 'relocated/Brigade Équipe/Burrow Brigade.app' --output docs/validation/waits-macos.json
+      - name: Informational sustained combat, camera and audio benchmark
+        id: rendering
+        continue-on-error: true
+        run: python3 -I -c 'import runpy,sys; sys.path.insert(0,"tools"); runpy.run_path("tools/check_rendering.py",run_name="__main__")' --app 'relocated/Brigade Équipe/Burrow Brigade.app' --audio --output docs/validation/rendering-macos.json --capture docs/validation/rendering-macos.png
+      - name: Record benchmark outcomes
+        if: always()
+        env:
+          WAITS: ${{ steps.waits.outcome }}
+          RENDERING: ${{ steps.rendering.outcome }}
+        run: |
+          echo "macOS benchmarks (informational): waits=$WAITS; rendering=$RENDERING" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: burrow-brigade-macos
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-execution-evidence
+          path: |
+            docs/validation/package-macos-native*
+            docs/validation/rendering-macos*
+            docs/validation/waits-macos.json
