@@ -45,8 +45,11 @@ On GitHub's Apple silicon runner ([report](validation/perf-0.5.4-mac.json)), the
 integrated build measured combat p95 19.1/19.7 ms and zoom 19.3/20.6 ms mean,
 against 21.9/24.1 and 23.5/24.3 ms for 0.5.3 in the same hour. Raising effect
 voices from 12 to 24 removed cut-off sounds on Linux but slowed Mac zoom in all
-four captures (28–29 ms), so 0.5.4 keeps 12 voices; whether Apple's OpenAL can
-mix 24 more cheaply is being measured separately.
+four captures (28–29 ms), so 0.5.4 keeps 12 voices. A follow-up tried 24 sources
+capped at 12 playing, low spatial quality, stereo output, a matched mixer size,
+other output rates and 14 or 16 voices on eight more runner captures; none kept
+zoom at the 12-voice level ([report](validation/perf-0.5.4-voices.json)). Idle
+sources cost nothing measurable; playing voices did.
 
 Rejected on data: YJIT (faster match start but higher frame/tick maxima and
 memory; the packaged Mac Ruby has no YJIT), GC tuning, deferred requires, four

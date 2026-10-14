@@ -1,0 +1,5937 @@
+{
+  "coordinator_note": "Decision record only. The measurement harness (tools/perf_voices_*) and the startup getters for Apple's ALC_EXT_MAC_OSX settings stayed on the unmerged perf2/voices branch: they changed no shipped behaviour or timing, so 0.5.4 ships without them.",
+  "schema_version": 1,
+  "area": "voices",
+  "date": "2026-10-14",
+  "round": "0.5.4",
+  "baseline_commit": "8874dc3ecf44743a7b023a39c44ce7f42d1a4e33",
+  "reported_game_version": "0.5.3 (unchanged in the integrated pre-release baseline)",
+  "decision": {
+    "effect_voices": 12,
+    "tuning_accepted": false,
+    "accepted": "startup diagnostic getters and reusable measurement tools only"
+  },
+  "environment": {
+    "linux": {
+      "os": "Ubuntu 26.04 LTS",
+      "kernel": "7.0.0-31-generic",
+      "cpu": "Intel Core i5-8500, 6 cores",
+      "ruby_primary": "3.4.7",
+      "ruby_compatibility": "4.0.7",
+      "openal": "OpenAL Soft, null driver"
+    },
+    "mac": {
+      "runner": "GitHub macos-15-arm64, Apple silicon VM; not the owner Mac",
+      "os_observed_run1": "macOS 15.7.9 (24G830)",
+      "image_observed_run1": "20260907.0337.1",
+      "ruby": "3.4.7 arm64-darwin22",
+      "backend": "Apple OpenAL.framework 1.1, Apple Computer Inc., Software",
+      "defaults": {
+        "quality": "low (rdlo)",
+        "channel_policy": "multichannel (rcmc)",
+        "maximum_busses": 64,
+        "mixer_output_hz": 48000
+      },
+      "core_audio_output": {
+        "transport": "built_in",
+        "rate_hz": 48000,
+        "buffer_frames": 512,
+        "safety_offset_frames": 100,
+        "reported_path_ms": 12.75
+      }
+    }
+  },
+  "method": {
+    "local_timing_lock": "<scratch>/bin/bench",
+    "local_heavy_lock": "<scratch>/bin/heavy",
+    "scenario": "Existing rendering bot battle: 1280x800 window, 4800x1600 world, 36 grubs; combat, pan, discrete zoom, continuous zoom, separate real-context audio stress. Linux production combat fixture: 7 seconds, 2 cycles.",
+    "mac_pairing": "Five interleaved rounds per workflow, fresh process per arm, unchanged journey and thresholds. Runs 1-6 include identical source-play FFI instrumentation in every arm; runs 7-8 omit it in every arm.",
+    "linux_pairing": "Five 12/16/24 triples, five 12/14 pairs, five frozen-baseline/rejected-production24 pairs. Same Ruby and fixture in each pair.",
+    "statistics": "n, median, nearest-rank p95 and min/max across captures; p95_ms denotes each capture frame-p95; over_33ms counts intervals greater than 33.4 ms.",
+    "mac_stage_distribution_columns": [
+      "n",
+      "median",
+      "p95",
+      "min",
+      "max"
+    ],
+    "acceptance": "Primary improvement >=5% and >=80% paired direction (or nonoverlapping distributions), no guard regression beyond noise, correctness passes; Mac zoom mean/p95/over-33 and combat/pan at 12-voice control level across at least two workflows, plus fewer Linux combat steals.",
+    "historical_control_zoom_envelope": {
+      "mean_ms": [
+        18.6,
+        24.3
+      ],
+      "p95_ms": [
+        33.5,
+        53.9
+      ],
+      "over_33ms": [
+        25,
+        72
+      ]
+    },
+    "raw_root": "<scratch>/voices"
+  },
+  "diagnosis": {
+    "allocation_and_playing_cpu_run1": {
+      "allocated24-cap12": {
+        "allocated_effect_voices": 24,
+        "cpu_percent_of_one_core": {
+          "0": {
+            "n": 5,
+            "median": 0.412305,
+            "p95": 0.538111,
+            "range": [
+              0.386255,
+              0.538111
+            ]
+          },
+          "1": {
+            "n": 5,
+            "median": 0.560404,
+            "p95": 0.699042,
+            "range": [
+              0.513918,
+              0.699042
+            ]
+          },
+          "6": {
+            "n": 5,
+            "median": 0.686219,
+            "p95": 0.841285,
+            "range": [
+              0.640921,
+              0.841285
+            ]
+          },
+          "12": {
+            "n": 5,
+            "median": 0.831958,
+            "p95": 1.058578,
+            "range": [
+              0.798794,
+              1.058578
+            ]
+          },
+          "24": {
+            "n": 5,
+            "median": 1.255859,
+            "p95": 1.470842,
+            "range": [
+              1.159579,
+              1.470842
+            ]
+          }
+        }
+      },
+      "control12": {
+        "allocated_effect_voices": 12,
+        "cpu_percent_of_one_core": {
+          "0": {
+            "n": 5,
+            "median": 0.417659,
+            "p95": 0.476833,
+            "range": [
+              0.337499,
+              0.476833
+            ]
+          },
+          "1": {
+            "n": 5,
+            "median": 0.553155,
+            "p95": 0.5858,
+            "range": [
+              0.512892,
+              0.5858
+            ]
+          },
+          "6": {
+            "n": 5,
+            "median": 0.738368,
+            "p95": 0.899868,
+            "range": [
+              0.642184,
+              0.899868
+            ]
+          },
+          "12": {
+            "n": 5,
+            "median": 0.867733,
+            "p95": 0.989547,
+            "range": [
+              0.817,
+              0.989547
+            ]
+          }
+        }
+      },
+      "default24": {
+        "allocated_effect_voices": 24,
+        "cpu_percent_of_one_core": {
+          "0": {
+            "n": 5,
+            "median": 0.421475,
+            "p95": 0.549692,
+            "range": [
+              0.366782,
+              0.549692
+            ]
+          },
+          "1": {
+            "n": 5,
+            "median": 0.720241,
+            "p95": 1.242182,
+            "range": [
+              0.496943,
+              1.242182
+            ]
+          },
+          "6": {
+            "n": 5,
+            "median": 0.680778,
+            "p95": 1.418132,
+            "range": [
+              0.543596,
+              1.418132
+            ]
+          },
+          "12": {
+            "n": 5,
+            "median": 1.054616,
+            "p95": 1.204425,
+            "range": [
+              0.78485,
+              1.204425
+            ]
+          },
+          "24": {
+            "n": 5,
+            "median": 1.275096,
+            "p95": 1.615602,
+            "range": [
+              1.067204,
+              1.615602
+            ]
+          }
+        }
+      }
+    },
+    "ordinary_source_play_ms_run2": {
+      "control12": {
+        "wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 0.304,
+            "p95": 0.315,
+            "min": 0.29,
+            "max": 0.315,
+            "iqr": 0.004
+          },
+          "p95": {
+            "n": 5,
+            "median": 0.458,
+            "p95": 0.7,
+            "min": 0.416,
+            "max": 0.7,
+            "iqr": 0.05
+          },
+          "max": {
+            "n": 5,
+            "median": 0.628,
+            "p95": 1.943,
+            "min": 0.547,
+            "max": 1.943,
+            "iqr": 0.482
+          }
+        },
+        "thread_cpu_ms": {
+          "median": {
+            "n": 5,
+            "median": 0.117271,
+            "p95": 0.124105,
+            "min": 0.108542,
+            "max": 0.124105,
+            "iqr": 0.009917
+          },
+          "p95": {
+            "n": 5,
+            "median": 0.169,
+            "p95": 0.203167,
+            "min": 0.149042,
+            "max": 0.203167,
+            "iqr": 0.020126
+          },
+          "max": {
+            "n": 5,
+            "median": 0.190125,
+            "p95": 0.331625,
+            "min": 0.157208,
+            "max": 0.331625,
+            "iqr": 0.015417
+          }
+        }
+      },
+      "low24": {
+        "wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 0.301,
+            "p95": 0.323,
+            "min": 0.28,
+            "max": 0.323,
+            "iqr": 0.019
+          },
+          "p95": {
+            "n": 5,
+            "median": 0.457,
+            "p95": 0.574,
+            "min": 0.381,
+            "max": 0.574,
+            "iqr": 0.065
+          },
+          "max": {
+            "n": 5,
+            "median": 0.66,
+            "p95": 1.264,
+            "min": 0.39,
+            "max": 1.264,
+            "iqr": 0.176
+          }
+        },
+        "thread_cpu_ms": {
+          "median": {
+            "n": 5,
+            "median": 0.114062,
+            "p95": 0.123958,
+            "min": 0.109125,
+            "max": 0.123958,
+            "iqr": 0.003396
+          },
+          "p95": {
+            "n": 5,
+            "median": 0.170667,
+            "p95": 0.175583,
+            "min": 0.146959,
+            "max": 0.175583,
+            "iqr": 0.009375
+          },
+          "max": {
+            "n": 5,
+            "median": 0.187958,
+            "p95": 0.20975,
+            "min": 0.15725,
+            "max": 0.20975,
+            "iqr": 0.035667
+          }
+        }
+      },
+      "stereo24": {
+        "wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 0.018,
+            "p95": 0.024,
+            "min": 0.016,
+            "max": 0.024,
+            "iqr": 0.004
+          },
+          "p95": {
+            "n": 5,
+            "median": 0.039,
+            "p95": 0.063,
+            "min": 0.029,
+            "max": 0.063,
+            "iqr": 0.021
+          },
+          "max": {
+            "n": 5,
+            "median": 0.074,
+            "p95": 0.665,
+            "min": 0.048,
+            "max": 0.665,
+            "iqr": 0.019
+          }
+        },
+        "thread_cpu_ms": {
+          "median": {
+            "n": 5,
+            "median": 0.017437,
+            "p95": 0.023625,
+            "min": 0.014938,
+            "max": 0.023625,
+            "iqr": 0.004124
+          },
+          "p95": {
+            "n": 5,
+            "median": 0.039,
+            "p95": 0.056417,
+            "min": 0.028916,
+            "max": 0.056417,
+            "iqr": 0.013583
+          },
+          "max": {
+            "n": 5,
+            "median": 0.07425,
+            "p95": 0.664708,
+            "min": 0.03975,
+            "max": 0.664708,
+            "iqr": 0.020875
+          }
+        }
+      }
+    },
+    "source_path": "OALSource::Play -> SetupMixerBus -> UpdateBusRenderQuality -> OALContext::SetSourceDesiredRenderQualityOnBus -> OALDevice::GetDesiredRenderChannelCount; stereo returns 2, multichannel queries HAL device/layout properties.",
+    "source_inspection_limits": "Path comes from published source and agrees with timing-policy effect; not a native-stack sampling profile or proof of the zoom cause.",
+    "zoom_cpu_run8": {
+      "control12": {
+        "process_cpu_ms": {
+          "n": 5,
+          "median": 1222.93,
+          "p95": 1533.511,
+          "range": [
+            1144.252,
+            1533.511
+          ]
+        },
+        "gui_cpu_ms": {
+          "n": 5,
+          "median": 1097.770167,
+          "p95": 1418.390667,
+          "range": [
+            1023.95575,
+            1418.390667
+          ]
+        },
+        "openal_total_ms": {
+          "n": 5,
+          "median": 5.237,
+          "p95": 6.467,
+          "range": [
+            1.806,
+            6.467
+          ]
+        },
+        "played": {
+          "n": 5,
+          "median": 7,
+          "p95": 8,
+          "range": [
+            3,
+            8
+          ]
+        },
+        "max_busy": {
+          "n": 5,
+          "median": 2,
+          "p95": 2,
+          "range": [
+            0,
+            2
+          ]
+        },
+        "active_mean_ms": {
+          "n": 5,
+          "median": 15.332202,
+          "p95": 15.76478,
+          "range": [
+            13.873403,
+            15.76478
+          ]
+        },
+        "active_p95_ms": {
+          "n": 5,
+          "median": 21.680667,
+          "p95": 23.946334,
+          "range": [
+            20.007875,
+            23.946334
+          ]
+        }
+      },
+      "default24": {
+        "process_cpu_ms": {
+          "n": 5,
+          "median": 1292.878,
+          "p95": 1405.324,
+          "range": [
+            1265.784,
+            1405.324
+          ]
+        },
+        "gui_cpu_ms": {
+          "n": 5,
+          "median": 1175.022,
+          "p95": 1275.133375,
+          "range": [
+            1152.923584,
+            1275.133375
+          ]
+        },
+        "openal_total_ms": {
+          "n": 5,
+          "median": 4.113,
+          "p95": 11.697,
+          "range": [
+            3.022,
+            11.697
+          ]
+        },
+        "played": {
+          "n": 5,
+          "median": 6,
+          "p95": 7,
+          "range": [
+            5,
+            7
+          ]
+        },
+        "max_busy": {
+          "n": 5,
+          "median": 2,
+          "p95": 2,
+          "range": [
+            1,
+            2
+          ]
+        },
+        "active_mean_ms": {
+          "n": 5,
+          "median": 15.349853,
+          "p95": 17.395097,
+          "range": [
+            14.853463,
+            17.395097
+          ]
+        },
+        "active_p95_ms": {
+          "n": 5,
+          "median": 23.16125,
+          "p95": 26.955375,
+          "range": [
+            20.012166,
+            26.955375
+          ]
+        }
+      },
+      "stereo24-actual12": {
+        "process_cpu_ms": {
+          "n": 5,
+          "median": 1362.908,
+          "p95": 1470.069,
+          "range": [
+            1260.456,
+            1470.069
+          ]
+        },
+        "gui_cpu_ms": {
+          "n": 5,
+          "median": 1245.893542,
+          "p95": 1348.001958,
+          "range": [
+            1149.7155,
+            1348.001958
+          ]
+        },
+        "openal_total_ms": {
+          "n": 5,
+          "median": 0.859,
+          "p95": 1.337,
+          "range": [
+            0.409,
+            1.337
+          ]
+        },
+        "played": {
+          "n": 5,
+          "median": 7,
+          "p95": 8,
+          "range": [
+            2,
+            8
+          ]
+        },
+        "max_busy": {
+          "n": 5,
+          "median": 2,
+          "p95": 2,
+          "range": [
+            0,
+            2
+          ]
+        },
+        "active_mean_ms": {
+          "n": 5,
+          "median": 15.911118,
+          "p95": 16.103016,
+          "range": [
+            14.056796,
+            16.103016
+          ]
+        },
+        "active_p95_ms": {
+          "n": 5,
+          "median": 22.971708,
+          "p95": 25.005667,
+          "range": [
+            21.500833,
+            25.005667
+          ]
+        }
+      }
+    },
+    "startup_getter_cost": {
+      "7": {
+        "control12": {
+          "wall_us_per_call": {
+            "n": 5,
+            "median": 7.03,
+            "p95": 21.62,
+            "range": [
+              6.36,
+              21.62
+            ]
+          },
+          "thread_cpu_us_per_call": {
+            "n": 5,
+            "median": 6.71459,
+            "p95": 21.625,
+            "range": [
+              6.34958,
+              21.625
+            ]
+          }
+        },
+        "default24": {
+          "wall_us_per_call": {
+            "n": 5,
+            "median": 17.24,
+            "p95": 37.88,
+            "range": [
+              5.83,
+              37.88
+            ]
+          },
+          "thread_cpu_us_per_call": {
+            "n": 5,
+            "median": 16.84334,
+            "p95": 31.82458,
+            "range": [
+              5.83292,
+              31.82458
+            ]
+          }
+        },
+        "stereo24-actual12": {
+          "wall_us_per_call": {
+            "n": 5,
+            "median": 9.7,
+            "p95": 26.04,
+            "range": [
+              5.71,
+              26.04
+            ]
+          },
+          "thread_cpu_us_per_call": {
+            "n": 5,
+            "median": 9.70833,
+            "p95": 26.05084,
+            "range": [
+              5.70125,
+              26.05084
+            ]
+          }
+        }
+      },
+      "8": {
+        "control12": {
+          "wall_us_per_call": {
+            "n": 5,
+            "median": 15.78,
+            "p95": 27.43,
+            "range": [
+              6.49,
+              27.43
+            ]
+          },
+          "thread_cpu_us_per_call": {
+            "n": 5,
+            "median": 15.79709,
+            "p95": 26.95542,
+            "range": [
+              6.48791,
+              26.95542
+            ]
+          }
+        },
+        "default24": {
+          "wall_us_per_call": {
+            "n": 5,
+            "median": 14.13,
+            "p95": 46.42,
+            "range": [
+              5.31,
+              46.42
+            ]
+          },
+          "thread_cpu_us_per_call": {
+            "n": 5,
+            "median": 14.15375,
+            "p95": 46.41625,
+            "range": [
+              5.31292,
+              46.41625
+            ]
+          }
+        },
+        "stereo24-actual12": {
+          "wall_us_per_call": {
+            "n": 5,
+            "median": 5.95,
+            "p95": 23.02,
+            "range": [
+              5.51,
+              23.02
+            ]
+          },
+          "thread_cpu_us_per_call": {
+            "n": 5,
+            "median": 5.95125,
+            "p95": 22.48125,
+            "range": [
+              5.50584,
+              22.48125
+            ]
+          }
+        }
+      }
+    }
+  },
+  "experiments": [
+    {
+      "id": "allocated24-cap12",
+      "hypothesis": "Allocated sources alone impose substantial mixer overhead.",
+      "change": "Allocate 24 effects, cap the selector at 12 simultaneous effects.",
+      "files": [
+        "tools/perf_voices_setup.rb",
+        "tools/perf_voices_ci.json (experiment branches only)"
+      ],
+      "metric": "Linux combat steals; Mac whole-stage zoom mean/p95/over-33 and combat/pan guards",
+      "baseline": {
+        "mac": [
+          "mac_runs[1].variants.control12"
+        ],
+        "linux": "linux.combat-12"
+      },
+      "candidate": {
+        "mac": [
+          "mac_runs[1].variants.allocated24-cap12"
+        ],
+        "linux": null
+      },
+      "verdict": "REJECT",
+      "reason": "Idle process CPU is effectively unchanged (0.418% at 12 vs 0.421% at 24). Zoom is noisy and only one workflow exists. Capping at 12 does not provide the required extra capacity.",
+      "patch": "rejected/allocated24-cap12.patch"
+    },
+    {
+      "id": "default24",
+      "hypothesis": "Doubling the pool can meet the control rendering envelope without mixer tuning.",
+      "change": "24 effect sources; Apple default mixer.",
+      "files": [
+        "tools/perf_voices_setup.rb",
+        "tools/perf_voices_ci.json (experiment branches only)"
+      ],
+      "metric": "Linux combat steals; Mac whole-stage zoom mean/p95/over-33 and combat/pan guards",
+      "baseline": {
+        "mac": [
+          "mac_runs[1].variants.control12",
+          "mac_runs[7].variants.control12",
+          "mac_runs[8].variants.control12"
+        ],
+        "linux": "linux.combat-12"
+      },
+      "candidate": {
+        "mac": [
+          "mac_runs[1].variants.default24",
+          "mac_runs[7].variants.default24",
+          "mac_runs[8].variants.default24"
+        ],
+        "linux": "linux.combat-24"
+      },
+      "verdict": "REJECT",
+      "reason": "Run 8 reproduces slow zoom: medians 28.974/84.267 ms and 58 over-33 gaps vs 20.190/37.217 and 31. Runs 1 and 7 are faster but inconsistent; no reliable guard preservation.",
+      "patch": "rejected/default24.patch"
+    },
+    {
+      "id": "low24",
+      "hypothesis": "High spatialization quality causes excess source-start or mixing cost.",
+      "change": "24 effects and explicit low rendering quality rdlo.",
+      "files": [
+        "tools/perf_voices_setup.rb",
+        "tools/perf_voices_ci.json (experiment branches only)"
+      ],
+      "metric": "Linux combat steals; Mac whole-stage zoom mean/p95/over-33 and combat/pan guards",
+      "baseline": {
+        "mac": [
+          "mac_runs[2].variants.control12"
+        ],
+        "linux": "linux.combat-12"
+      },
+      "candidate": {
+        "mac": [
+          "mac_runs[2].variants.low24"
+        ],
+        "linux": "linux.combat-24"
+      },
+      "verdict": "REJECT",
+      "reason": "Apple already defaults to low. alSourcePlay median is unchanged (0.304 vs 0.301 ms); one workflow and no configuration-specific improvement.",
+      "patch": "rejected/low24.patch"
+    },
+    {
+      "id": "stereo24-benchmark",
+      "hypothesis": "Multichannel policy repeatedly queries HAL channel layouts on source start.",
+      "change": "24 effects, force stereo channel policy rcst before context creation, verify after context becomes current.",
+      "files": [
+        "tools/perf_voices_setup.rb",
+        "tools/perf_voices_ci.json (experiment branches only)"
+      ],
+      "metric": "Linux combat steals; Mac whole-stage zoom mean/p95/over-33 and combat/pan guards",
+      "baseline": {
+        "mac": [
+          "mac_runs[2].variants.control12"
+        ],
+        "linux": "linux.combat-12"
+      },
+      "candidate": {
+        "mac": [
+          "mac_runs[2].variants.stereo24"
+        ],
+        "linux": "linux.combat-24"
+      },
+      "verdict": "REJECT",
+      "reason": "Source-play median drops 0.304 to 0.018 ms, with nonoverlapping capture medians and 5/5 pairs improving. Only one valid 24-voice workflow; strict combat/pan frame gates also failed in two candidate captures. No mixed-output correctness evidence.",
+      "patch": "rejected/stereo24-benchmark.patch"
+    },
+    {
+      "id": "busses25",
+      "hypothesis": "Fewer mixer busses reduce scans of unused busses.",
+      "change": "24 effects plus music with maximum mixer busses 25, set before context creation.",
+      "files": [
+        "tools/perf_voices_setup.rb",
+        "tools/perf_voices_ci.json (experiment branches only)"
+      ],
+      "metric": "Linux combat steals; Mac whole-stage zoom mean/p95/over-33 and combat/pan guards",
+      "baseline": {
+        "mac": [
+          "mac_runs[3].variants.control12"
+        ],
+        "linux": "linux.combat-12"
+      },
+      "candidate": {
+        "mac": [
+          "mac_runs[3].variants.busses25"
+        ],
+        "linux": "linux.combat-24"
+      },
+      "verdict": "REJECT",
+      "reason": "Zoom median 22.557/52.079 vs 22.405/51.956 ms, within noise; idle CPU 0.408% vs 0.435%, playing24 1.343%. Two candidate rendering gates failed; no second qualifying run.",
+      "patch": "rejected/busses25.patch"
+    },
+    {
+      "id": "rate22050",
+      "hypothesis": "Matching 22.05 kHz assets reduces mixer/resampling work.",
+      "change": "24 effects and 22050 Hz mixer output rate before context creation.",
+      "files": [
+        "tools/perf_voices_setup.rb",
+        "tools/perf_voices_ci.json (experiment branches only)"
+      ],
+      "metric": "Linux combat steals; Mac whole-stage zoom mean/p95/over-33 and combat/pan guards",
+      "baseline": {
+        "mac": [
+          "mac_runs[4].variants.control12"
+        ],
+        "linux": "linux.combat-12"
+      },
+      "candidate": {
+        "mac": [
+          "mac_runs[4].variants.rate22050"
+        ],
+        "linux": "linux.combat-24"
+      },
+      "verdict": "REJECT",
+      "reason": "Zoom median improves against an unusually slow control, but every candidate capture fails a rendering gate. Isolated idle CPU rises 0.543% to 0.785%; no repeat or mixed-output validation.",
+      "patch": "rejected/rate22050.patch"
+    },
+    {
+      "id": "rate44100",
+      "hypothesis": "A lower mixer rate reduces per-voice CPU work.",
+      "change": "24 effects and 44100 Hz mixer output rate before context creation.",
+      "files": [
+        "tools/perf_voices_setup.rb",
+        "tools/perf_voices_ci.json (experiment branches only)"
+      ],
+      "metric": "Linux combat steals; Mac whole-stage zoom mean/p95/over-33 and combat/pan guards",
+      "baseline": {
+        "mac": [
+          "mac_runs[4].variants.control12"
+        ],
+        "linux": "linux.combat-12"
+      },
+      "candidate": {
+        "mac": [
+          "mac_runs[4].variants.rate44100"
+        ],
+        "linux": "linux.combat-24"
+      },
+      "verdict": "REJECT",
+      "reason": "Zoom median mean improves only 3.7%, with overlapping/noisy distributions. Idle CPU 0.764% and playing24 1.722%; no repeat or mixed-output validation.",
+      "patch": "rejected/rate44100.patch"
+    },
+    {
+      "id": "voices14",
+      "hypothesis": "Two additional effect voices remove the fixture steals with smaller Mac cost.",
+      "change": "14 effect sources, default Apple mixer.",
+      "files": [
+        "tools/perf_voices_setup.rb",
+        "tools/perf_voices_ci.json (experiment branches only)"
+      ],
+      "metric": "Linux combat steals; Mac whole-stage zoom mean/p95/over-33 and combat/pan guards",
+      "baseline": {
+        "mac": [
+          "mac_runs[5].variants.control12",
+          "mac_runs[6].variants.control12"
+        ],
+        "linux": "linux.small-combat-12"
+      },
+      "candidate": {
+        "mac": [
+          "mac_runs[5].variants.voices14",
+          "mac_runs[6].variants.voices14"
+        ],
+        "linux": "linux.small-combat-14"
+      },
+      "verdict": "REJECT",
+      "reason": "Linux 6 to 0 steals in 5/5 pairs, but Mac zoom p95 medians reverse: 50.166 to 48.418 ms in run 5, 49.595 to 60.624 ms in run 6. The second median exceeds the historical control envelope.",
+      "patch": "rejected/voices14.patch"
+    },
+    {
+      "id": "voices16",
+      "hypothesis": "A moderately larger pool is cheaper than 24 sources while removing steals.",
+      "change": "16 effect sources, default Apple mixer.",
+      "files": [
+        "tools/perf_voices_setup.rb",
+        "tools/perf_voices_ci.json (experiment branches only)"
+      ],
+      "metric": "Linux combat steals; Mac whole-stage zoom mean/p95/over-33 and combat/pan guards",
+      "baseline": {
+        "mac": [
+          "mac_runs[5].variants.control12",
+          "mac_runs[6].variants.control12"
+        ],
+        "linux": "linux.combat-12"
+      },
+      "candidate": {
+        "mac": [
+          "mac_runs[5].variants.voices16",
+          "mac_runs[6].variants.voices16"
+        ],
+        "linux": "linux.combat-16"
+      },
+      "verdict": "REJECT",
+      "reason": "Linux 6 to 0 steals in 5/5 pairs, but run 6 zoom mean/p95/over-33 rises from 22.044/49.595/44 to 28.473/81.242/67.",
+      "patch": "rejected/voices16.patch"
+    },
+    {
+      "id": "stereo24-current-device",
+      "hypothesis": "The promising stereo benchmark translates to verified production initialization.",
+      "change": "Proposed runtime MAX_VOICES=24 with stereo verification and 12-source fallback.",
+      "files": [
+        "lib/burrow/client/audio.rb",
+        "test/audio_test.rb"
+      ],
+      "metric": "Linux combat steals; Mac whole-stage zoom mean/p95/over-33 and combat/pan guards",
+      "baseline": {
+        "mac": [
+          "mac_runs[7].variants.control12",
+          "mac_runs[8].variants.control12"
+        ],
+        "linux": "linux.combat-12"
+      },
+      "candidate": {
+        "mac": [
+          "mac_runs[7].variants.stereo24-actual12",
+          "mac_runs[8].variants.stereo24-actual12"
+        ],
+        "linux": "linux_rejected_production_candidate.candidate"
+      },
+      "verdict": "REJECT",
+      "reason": "INVALID AS 24-VOICE CONFIRMATION: getter runs before alcMakeContextCurrent, returns zero and triggers the 12-effect fallback. All completed candidate captures and isolated probes allocated 12. No valid second 24-voice stereo run remains in the eight-run allowance.",
+      "patch": "rejected/stereo24-current-device.patch"
+    },
+    {
+      "id": "startup-mixer-diagnostics",
+      "hypothesis": "Startup-only read-only mixer properties make future Mac evidence interpretable at negligible cost.",
+      "change": "Log quality, channel policy, bus limit and mixer rate once when startup diagnostics are enabled. No setters, extra voices or gameplay calls.",
+      "files": [
+        "lib/burrow/client/audio.rb",
+        "test/audio_test.rb"
+      ],
+      "metric": "Repeated getter-report batch average, microseconds/call; 5 batches of 100 calls per process.",
+      "baseline": {
+        "fields": "not reported",
+        "extra_calls": 0
+      },
+      "candidate": {
+        "run7_control_wall_us": {
+          "n": 5,
+          "median": 7.03,
+          "p95": 21.62,
+          "range": [
+            6.36,
+            21.62
+          ]
+        },
+        "run8_control_wall_us": {
+          "n": 5,
+          "median": 15.78,
+          "p95": 27.43,
+          "range": [
+            6.49,
+            27.43
+          ]
+        }
+      },
+      "verdict": "ACCEPT_DIAGNOSTICS_ONLY",
+      "reason": "Brief explicitly permits negligible diagnostic overhead. Control medians 7.03 and 15.78 microseconds/call; maximum batch averages 21.62 and 27.43 microseconds. Zero normal-game calls when logging is disabled; getters run after the context is current. This is observability, not a performance improvement."
+    }
+  ],
+  "mac_runs": {
+    "1": {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38507248889",
+      "branch": "perf2/voices-mac-1",
+      "commit": "275f22fa1fbbeb7a4e2a62eb723d245dfd92c8de",
+      "conclusion": "failure",
+      "rounds": 5,
+      "source_play_hook": true,
+      "variants": {
+        "allocated24-cap12": {
+          "n": 5,
+          "requested_voices": 24,
+          "allocated_effect_voices": 24,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                15.890199,
+                16.024088,
+                15.814445,
+                16.024088
+              ],
+              "p95_ms": [
+                5,
+                20.589417,
+                21.444292,
+                20.181084,
+                21.444292
+              ],
+              "max_ms": [
+                5,
+                36.404625,
+                57.186583,
+                27.546208,
+                57.186583
+              ],
+              "over_33ms": [
+                5,
+                2,
+                5,
+                0,
+                5
+              ],
+              "count": [
+                5,
+                587,
+                598,
+                580,
+                598
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.754257,
+                16.842628,
+                16.647836,
+                16.842628
+              ],
+              "p95_ms": [
+                5,
+                21.817042,
+                22.706959,
+                20.483584,
+                22.706959
+              ],
+              "max_ms": [
+                5,
+                31.028208,
+                52.851792,
+                24.611834,
+                52.851792
+              ],
+              "over_33ms": [
+                5,
+                0,
+                4,
+                0,
+                4
+              ],
+              "count": [
+                5,
+                358,
+                360,
+                356,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                23.936274,
+                29.648428,
+                23.481159,
+                29.648428
+              ],
+              "p95_ms": [
+                5,
+                63.853333,
+                97.957834,
+                50.185666,
+                97.957834
+              ],
+              "max_ms": [
+                5,
+                124.768833,
+                168.158833,
+                85.657542,
+                168.158833
+              ],
+              "over_33ms": [
+                5,
+                51,
+                66,
+                47,
+                66
+              ],
+              "count": [
+                5,
+                305,
+                311,
+                247,
+                311
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.901551,
+                17.753211,
+                16.694127,
+                17.753211
+              ],
+              "p95_ms": [
+                5,
+                25.831459,
+                30.035333,
+                22.548958,
+                30.035333
+              ],
+              "max_ms": [
+                5,
+                42.104834,
+                70.482625,
+                38.74975,
+                70.482625
+              ],
+              "over_33ms": [
+                5,
+                3,
+                5,
+                1,
+                5
+              ],
+              "count": [
+                5,
+                266,
+                269,
+                256,
+                269
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-allocated24-cap12-1.json",
+            "rendering-macos-allocated24-cap12-2.json",
+            "rendering-macos-allocated24-cap12-3.json",
+            "rendering-macos-allocated24-cap12-4.json",
+            "rendering-macos-allocated24-cap12-5.json"
+          ]
+        },
+        "control12": {
+          "n": 5,
+          "requested_voices": 12,
+          "allocated_effect_voices": 12,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                15.997886,
+                16.025233,
+                15.866628,
+                16.025233
+              ],
+              "p95_ms": [
+                5,
+                21.163375,
+                21.576708,
+                20.549833,
+                21.576708
+              ],
+              "max_ms": [
+                5,
+                42.290708,
+                49.357,
+                27.800584,
+                49.357
+              ],
+              "over_33ms": [
+                5,
+                2,
+                3,
+                0,
+                3
+              ],
+              "count": [
+                5,
+                586,
+                598,
+                578,
+                598
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.654131,
+                16.762807,
+                16.637303,
+                16.762807
+              ],
+              "p95_ms": [
+                5,
+                21.479625,
+                22.113125,
+                20.099458,
+                22.113125
+              ],
+              "max_ms": [
+                5,
+                31.28675,
+                40.558875,
+                27.159709,
+                40.558875
+              ],
+              "over_33ms": [
+                5,
+                0,
+                1,
+                0,
+                1
+              ],
+              "count": [
+                5,
+                359,
+                360,
+                358,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                23.082597,
+                29.032897,
+                20.617077,
+                29.032897
+              ],
+              "p95_ms": [
+                5,
+                51.242167,
+                92.698958,
+                40.429583,
+                92.698958
+              ],
+              "max_ms": [
+                5,
+                117.546375,
+                166.039792,
+                81.11425,
+                166.039792
+              ],
+              "over_33ms": [
+                5,
+                46,
+                61,
+                44,
+                61
+              ],
+              "count": [
+                5,
+                317,
+                355,
+                252,
+                355
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.731203,
+                17.533701,
+                16.268998,
+                17.533701
+              ],
+              "p95_ms": [
+                5,
+                24.197792,
+                28.043,
+                20.329458,
+                28.043
+              ],
+              "max_ms": [
+                5,
+                37.078625,
+                66.012833,
+                23.123458,
+                66.012833
+              ],
+              "over_33ms": [
+                5,
+                1,
+                6,
+                0,
+                6
+              ],
+              "count": [
+                5,
+                269,
+                272,
+                259,
+                272
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-control12-1.json",
+            "rendering-macos-control12-2.json",
+            "rendering-macos-control12-3.json",
+            "rendering-macos-control12-4.json",
+            "rendering-macos-control12-5.json"
+          ]
+        },
+        "default24": {
+          "n": 5,
+          "requested_voices": 24,
+          "allocated_effect_voices": 24,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.143398,
+                16.625507,
+                16.026022,
+                16.625507
+              ],
+              "p95_ms": [
+                5,
+                21.458584,
+                24.149417,
+                20.328041,
+                24.149417
+              ],
+              "max_ms": [
+                5,
+                52.367708,
+                110.015667,
+                31.810667,
+                110.015667
+              ],
+              "over_33ms": [
+                5,
+                5,
+                9,
+                0,
+                9
+              ],
+              "count": [
+                5,
+                581,
+                808,
+                567,
+                808
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.69247,
+                16.780239,
+                16.617658,
+                16.780239
+              ],
+              "p95_ms": [
+                5,
+                21.622083,
+                21.757334,
+                20.52075,
+                21.757334
+              ],
+              "max_ms": [
+                5,
+                38.751625,
+                70.968416,
+                28.079,
+                70.968416
+              ],
+              "over_33ms": [
+                5,
+                1,
+                3,
+                0,
+                3
+              ],
+              "count": [
+                5,
+                359,
+                360,
+                357,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                19.868655,
+                29.568401,
+                19.203399,
+                29.568401
+              ],
+              "p95_ms": [
+                5,
+                43.141541,
+                88.796708,
+                34.060042,
+                88.796708
+              ],
+              "max_ms": [
+                5,
+                117.351375,
+                166.715167,
+                84.494125,
+                166.715167
+              ],
+              "over_33ms": [
+                5,
+                32,
+                58,
+                20,
+                58
+              ],
+              "count": [
+                5,
+                366,
+                380,
+                247,
+                380
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.872293,
+                17.804747,
+                16.323528,
+                17.804747
+              ],
+              "p95_ms": [
+                5,
+                25.636,
+                29.429791,
+                22.667333,
+                29.429791
+              ],
+              "max_ms": [
+                5,
+                49.57275,
+                69.794459,
+                35.245292,
+                69.794459
+              ],
+              "over_33ms": [
+                5,
+                3,
+                10,
+                1,
+                10
+              ],
+              "count": [
+                5,
+                268,
+                275,
+                256,
+                275
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-default24-1.json",
+            "rendering-macos-default24-2.json",
+            "rendering-macos-default24-3.json",
+            "rendering-macos-default24-4.json",
+            "rendering-macos-default24-5.json"
+          ]
+        }
+      },
+      "failed_children": [
+        {
+          "variant": "default24",
+          "repeat": 1,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "default24",
+          "repeat": 2,
+          "probe": "rendering",
+          "exit_code": 1
+        }
+      ]
+    },
+    "2": {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38507251890",
+      "branch": "perf2/voices-mac-2",
+      "commit": "de6d12ca297599712526bab586192e4521a4d3fc",
+      "conclusion": "failure",
+      "rounds": 5,
+      "source_play_hook": true,
+      "variants": {
+        "control12": {
+          "n": 5,
+          "requested_voices": 12,
+          "allocated_effect_voices": 12,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.048541,
+                16.409875,
+                15.959584,
+                16.409875
+              ],
+              "p95_ms": [
+                5,
+                19.564166,
+                20.249958,
+                18.595542,
+                20.249958
+              ],
+              "max_ms": [
+                5,
+                40.473916,
+                46.119959,
+                25.106125,
+                46.119959
+              ],
+              "over_33ms": [
+                5,
+                2,
+                5,
+                0,
+                5
+              ],
+              "count": [
+                5,
+                594,
+                796,
+                581,
+                796
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.744815,
+                17.158024,
+                16.694906,
+                17.158024
+              ],
+              "p95_ms": [
+                5,
+                19.32375,
+                22.259083,
+                18.612833,
+                22.259083
+              ],
+              "max_ms": [
+                5,
+                45.666166,
+                63.305667,
+                27.267167,
+                63.305667
+              ],
+              "over_33ms": [
+                5,
+                2,
+                6,
+                0,
+                6
+              ],
+              "count": [
+                5,
+                358,
+                359,
+                351,
+                359
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                22.75703,
+                27.307662,
+                19.850087,
+                27.307662
+              ],
+              "p95_ms": [
+                5,
+                51.483291,
+                85.081583,
+                35.305042,
+                85.081583
+              ],
+              "max_ms": [
+                5,
+                98.823334,
+                165.857333,
+                83.343833,
+                165.857333
+              ],
+              "over_33ms": [
+                5,
+                48,
+                58,
+                30,
+                58
+              ],
+              "count": [
+                5,
+                321,
+                367,
+                268,
+                367
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.339921,
+                16.395393,
+                15.844409,
+                16.395393
+              ],
+              "p95_ms": [
+                5,
+                19.652458,
+                20.546042,
+                19.17375,
+                20.546042
+              ],
+              "max_ms": [
+                5,
+                33.762958,
+                50.04925,
+                24.602,
+                50.04925
+              ],
+              "over_33ms": [
+                5,
+                1,
+                2,
+                0,
+                2
+              ],
+              "count": [
+                5,
+                272,
+                275,
+                266,
+                275
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-control12-1.json",
+            "rendering-macos-control12-2.json",
+            "rendering-macos-control12-3.json",
+            "rendering-macos-control12-4.json",
+            "rendering-macos-control12-5.json"
+          ]
+        },
+        "low24": {
+          "n": 5,
+          "requested_voices": 24,
+          "allocated_effect_voices": 24,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.157288,
+                16.298538,
+                16.113642,
+                16.298538
+              ],
+              "p95_ms": [
+                5,
+                19.103834,
+                19.881833,
+                19.033583,
+                19.881833
+              ],
+              "max_ms": [
+                5,
+                42.843208,
+                55.035875,
+                30.83075,
+                55.035875
+              ],
+              "over_33ms": [
+                5,
+                1,
+                1,
+                0,
+                1
+              ],
+              "count": [
+                5,
+                820,
+                929,
+                582,
+                929
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.660023,
+                16.704231,
+                16.620823,
+                16.704231
+              ],
+              "p95_ms": [
+                5,
+                19.0645,
+                20.182875,
+                18.611583,
+                20.182875
+              ],
+              "max_ms": [
+                5,
+                33.111666,
+                40.019583,
+                29.896333,
+                40.019583
+              ],
+              "over_33ms": [
+                5,
+                0,
+                1,
+                0,
+                1
+              ],
+              "count": [
+                5,
+                360,
+                360,
+                359,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                19.687259,
+                27.497578,
+                18.794193,
+                27.497578
+              ],
+              "p95_ms": [
+                5,
+                34.085625,
+                84.762792,
+                33.518417,
+                84.762792
+              ],
+              "max_ms": [
+                5,
+                68.666875,
+                168.855,
+                63.149833,
+                168.855
+              ],
+              "over_33ms": [
+                5,
+                36,
+                56,
+                21,
+                56
+              ],
+              "count": [
+                5,
+                370,
+                387,
+                265,
+                387
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.460792,
+                16.750306,
+                16.159662,
+                16.750306
+              ],
+              "p95_ms": [
+                5,
+                21.099083,
+                22.062125,
+                19.739333,
+                22.062125
+              ],
+              "max_ms": [
+                5,
+                43.538583,
+                66.019333,
+                33.939209,
+                66.019333
+              ],
+              "over_33ms": [
+                5,
+                3,
+                3,
+                1,
+                3
+              ],
+              "count": [
+                5,
+                268,
+                273,
+                264,
+                273
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-low24-1.json",
+            "rendering-macos-low24-2.json",
+            "rendering-macos-low24-3.json",
+            "rendering-macos-low24-4.json",
+            "rendering-macos-low24-5.json"
+          ]
+        },
+        "stereo24": {
+          "n": 5,
+          "requested_voices": 24,
+          "allocated_effect_voices": 24,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919120244,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919120244,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.081855,
+                16.302951,
+                15.922585,
+                16.302951
+              ],
+              "p95_ms": [
+                5,
+                19.100333,
+                19.213333,
+                18.757375,
+                19.213333
+              ],
+              "max_ms": [
+                5,
+                38.658917,
+                75.593084,
+                26.654334,
+                75.593084
+              ],
+              "over_33ms": [
+                5,
+                1,
+                2,
+                0,
+                2
+              ],
+              "count": [
+                5,
+                656,
+                828,
+                585,
+                828
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.661865,
+                16.733132,
+                16.656827,
+                16.733132
+              ],
+              "p95_ms": [
+                5,
+                19.234666,
+                19.806583,
+                18.609458,
+                19.806583
+              ],
+              "max_ms": [
+                5,
+                33.49375,
+                65.449875,
+                23.375916,
+                65.449875
+              ],
+              "over_33ms": [
+                5,
+                1,
+                1,
+                0,
+                1
+              ],
+              "count": [
+                5,
+                359,
+                360,
+                358,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                20.075952,
+                25.989786,
+                19.023159,
+                25.989786
+              ],
+              "p95_ms": [
+                5,
+                46.85975,
+                65.812667,
+                33.045166,
+                65.812667
+              ],
+              "max_ms": [
+                5,
+                135.535375,
+                166.596875,
+                84.9005,
+                166.596875
+              ],
+              "over_33ms": [
+                5,
+                33,
+                60,
+                18,
+                60
+              ],
+              "count": [
+                5,
+                363,
+                383,
+                281,
+                383
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.341169,
+                16.449324,
+                16.171054,
+                16.449324
+              ],
+              "p95_ms": [
+                5,
+                19.801167,
+                21.455167,
+                19.257667,
+                21.455167
+              ],
+              "max_ms": [
+                5,
+                33.241,
+                49.441917,
+                21.977042,
+                49.441917
+              ],
+              "over_33ms": [
+                5,
+                0,
+                3,
+                0,
+                3
+              ],
+              "count": [
+                5,
+                273,
+                276,
+                268,
+                276
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-stereo24-1.json",
+            "rendering-macos-stereo24-2.json",
+            "rendering-macos-stereo24-3.json",
+            "rendering-macos-stereo24-4.json",
+            "rendering-macos-stereo24-5.json"
+          ]
+        }
+      },
+      "failed_children": [
+        {
+          "variant": "stereo24",
+          "repeat": 1,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "stereo24",
+          "repeat": 2,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "control12",
+          "repeat": 3,
+          "probe": "rendering",
+          "exit_code": 1
+        }
+      ]
+    },
+    "3": {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38507255171",
+      "branch": "perf2/voices-mac-3",
+      "commit": "09ccf4134b8c39d09f20597225f12536ad5739f2",
+      "conclusion": "failure",
+      "rounds": 5,
+      "source_play_hook": true,
+      "variants": {
+        "busses25": {
+          "n": 5,
+          "requested_voices": 24,
+          "allocated_effect_voices": 24,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 25,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 25,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.14349,
+                16.286331,
+                15.991151,
+                16.286331
+              ],
+              "p95_ms": [
+                5,
+                20.336125,
+                24.304334,
+                19.063417,
+                24.304334
+              ],
+              "max_ms": [
+                5,
+                41.261792,
+                75.448,
+                23.322,
+                75.448
+              ],
+              "over_33ms": [
+                5,
+                2,
+                7,
+                0,
+                7
+              ],
+              "count": [
+                5,
+                586,
+                810,
+                580,
+                810
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.703082,
+                17.278958,
+                16.6544,
+                17.278958
+              ],
+              "p95_ms": [
+                5,
+                20.630125,
+                23.827917,
+                19.203584,
+                23.827917
+              ],
+              "max_ms": [
+                5,
+                38.589458,
+                160.178709,
+                27.269125,
+                160.178709
+              ],
+              "over_33ms": [
+                5,
+                1,
+                7,
+                0,
+                7
+              ],
+              "count": [
+                5,
+                359,
+                360,
+                346,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                22.556518,
+                27.661198,
+                19.659094,
+                27.661198
+              ],
+              "p95_ms": [
+                5,
+                52.078792,
+                97.3535,
+                34.920625,
+                97.3535
+              ],
+              "max_ms": [
+                5,
+                119.77025,
+                170.02325,
+                99.153875,
+                170.02325
+              ],
+              "over_33ms": [
+                5,
+                47,
+                51,
+                27,
+                51
+              ],
+              "count": [
+                5,
+                323,
+                373,
+                264,
+                373
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.579539,
+                16.994728,
+                16.282352,
+                16.994728
+              ],
+              "p95_ms": [
+                5,
+                23.633625,
+                24.753708,
+                20.421167,
+                24.753708
+              ],
+              "max_ms": [
+                5,
+                46.941125,
+                65.4945,
+                30.942334,
+                65.4945
+              ],
+              "over_33ms": [
+                5,
+                2,
+                4,
+                0,
+                4
+              ],
+              "count": [
+                5,
+                272,
+                275,
+                265,
+                275
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-busses25-1.json",
+            "rendering-macos-busses25-2.json",
+            "rendering-macos-busses25-3.json",
+            "rendering-macos-busses25-4.json",
+            "rendering-macos-busses25-5.json"
+          ]
+        },
+        "control12": {
+          "n": 5,
+          "requested_voices": 12,
+          "allocated_effect_voices": 12,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.016562,
+                16.488997,
+                15.895537,
+                16.488997
+              ],
+              "p95_ms": [
+                5,
+                20.374334,
+                21.506,
+                19.506708,
+                21.506
+              ],
+              "max_ms": [
+                5,
+                42.955125,
+                59.020042,
+                31.147875,
+                59.020042
+              ],
+              "over_33ms": [
+                5,
+                2,
+                4,
+                0,
+                4
+              ],
+              "count": [
+                5,
+                719,
+                919,
+                581,
+                919
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.658322,
+                16.711119,
+                16.655629,
+                16.711119
+              ],
+              "p95_ms": [
+                5,
+                20.018542,
+                22.289,
+                18.811834,
+                22.289
+              ],
+              "max_ms": [
+                5,
+                28.217208,
+                34.291917,
+                23.222916,
+                34.291917
+              ],
+              "over_33ms": [
+                5,
+                0,
+                1,
+                0,
+                1
+              ],
+              "count": [
+                5,
+                360,
+                360,
+                358,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                22.405484,
+                29.52483,
+                19.082173,
+                29.52483
+              ],
+              "p95_ms": [
+                5,
+                51.955584,
+                85.739375,
+                34.287875,
+                85.739375
+              ],
+              "max_ms": [
+                5,
+                132.807583,
+                1212.071625,
+                52.180417,
+                1212.071625
+              ],
+              "over_33ms": [
+                5,
+                45,
+                61,
+                29,
+                61
+              ],
+              "count": [
+                5,
+                325,
+                382,
+                247,
+                382
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.496265,
+                16.759721,
+                16.289609,
+                16.759721
+              ],
+              "p95_ms": [
+                5,
+                23.201667,
+                26.571916,
+                21.29325,
+                26.571916
+              ],
+              "max_ms": [
+                5,
+                63.848459,
+                85.058208,
+                26.192333,
+                85.058208
+              ],
+              "over_33ms": [
+                5,
+                2,
+                4,
+                0,
+                4
+              ],
+              "count": [
+                5,
+                271,
+                274,
+                265,
+                274
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-control12-1.json",
+            "rendering-macos-control12-2.json",
+            "rendering-macos-control12-3.json",
+            "rendering-macos-control12-4.json",
+            "rendering-macos-control12-5.json"
+          ]
+        }
+      },
+      "failed_children": [
+        {
+          "variant": "busses25",
+          "repeat": 3,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "busses25",
+          "repeat": 4,
+          "probe": "rendering",
+          "exit_code": 1
+        }
+      ]
+    },
+    "4": {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38507257499",
+      "branch": "perf2/voices-mac-4",
+      "commit": "8967b65438bf56a603e2b08387456f3284ab5eaa",
+      "conclusion": "failure",
+      "rounds": 5,
+      "source_play_hook": true,
+      "variants": {
+        "control12": {
+          "n": 5,
+          "requested_voices": 12,
+          "allocated_effect_voices": 12,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.141902,
+                16.784348,
+                15.951559,
+                16.784348
+              ],
+              "p95_ms": [
+                5,
+                22.125583,
+                26.358625,
+                19.959834,
+                26.358625
+              ],
+              "max_ms": [
+                5,
+                51.816292,
+                104.593042,
+                40.276792,
+                104.593042
+              ],
+              "over_33ms": [
+                5,
+                4,
+                16,
+                2,
+                16
+              ],
+              "count": [
+                5,
+                592,
+                901,
+                577,
+                901
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.728898,
+                17.406661,
+                16.61772,
+                17.406661
+              ],
+              "p95_ms": [
+                5,
+                22.622083,
+                26.86575,
+                19.508792,
+                26.86575
+              ],
+              "max_ms": [
+                5,
+                35.459375,
+                73.833416,
+                32.1825,
+                73.833416
+              ],
+              "over_33ms": [
+                5,
+                2,
+                8,
+                0,
+                8
+              ],
+              "count": [
+                5,
+                358,
+                360,
+                344,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                27.926432,
+                29.959791,
+                19.26375,
+                29.959791
+              ],
+              "p95_ms": [
+                5,
+                78.137792,
+                99.783167,
+                34.483208,
+                99.783167
+              ],
+              "max_ms": [
+                5,
+                155.473959,
+                179.21125,
+                86.663417,
+                179.21125
+              ],
+              "over_33ms": [
+                5,
+                58,
+                61,
+                23,
+                61
+              ],
+              "count": [
+                5,
+                262,
+                379,
+                245,
+                379
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                17.039948,
+                17.580292,
+                16.523358,
+                17.580292
+              ],
+              "p95_ms": [
+                5,
+                25.787916,
+                27.870875,
+                22.629708,
+                27.870875
+              ],
+              "max_ms": [
+                5,
+                64.441458,
+                86.686708,
+                50.14225,
+                86.686708
+              ],
+              "over_33ms": [
+                5,
+                6,
+                10,
+                2,
+                10
+              ],
+              "count": [
+                5,
+                264,
+                270,
+                261,
+                270
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-control12-1.json",
+            "rendering-macos-control12-2.json",
+            "rendering-macos-control12-3.json",
+            "rendering-macos-control12-4.json",
+            "rendering-macos-control12-5.json"
+          ]
+        },
+        "rate22050": {
+          "n": 5,
+          "requested_voices": 24,
+          "allocated_effect_voices": 24,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 22050.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 22050.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.143825,
+                16.316945,
+                16.047096,
+                16.316945
+              ],
+              "p95_ms": [
+                5,
+                21.432083,
+                22.900416,
+                19.89325,
+                22.900416
+              ],
+              "max_ms": [
+                5,
+                43.914292,
+                100.631833,
+                36.028459,
+                100.631833
+              ],
+              "over_33ms": [
+                5,
+                2,
+                7,
+                2,
+                7
+              ],
+              "count": [
+                5,
+                670,
+                827,
+                571,
+                827
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.793948,
+                17.245943,
+                16.644356,
+                17.245943
+              ],
+              "p95_ms": [
+                5,
+                22.21375,
+                27.320875,
+                20.539167,
+                27.320875
+              ],
+              "max_ms": [
+                5,
+                50.971917,
+                79.26475,
+                32.41825,
+                79.26475
+              ],
+              "over_33ms": [
+                5,
+                3,
+                9,
+                0,
+                9
+              ],
+              "count": [
+                5,
+                357,
+                360,
+                348,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                22.02055,
+                30.160737,
+                19.104274,
+                30.160737
+              ],
+              "p95_ms": [
+                5,
+                49.349375,
+                85.088584,
+                33.674625,
+                85.088584
+              ],
+              "max_ms": [
+                5,
+                103.687917,
+                164.144833,
+                78.184667,
+                164.144833
+              ],
+              "over_33ms": [
+                5,
+                40,
+                64,
+                22,
+                64
+              ],
+              "count": [
+                5,
+                330,
+                383,
+                242,
+                383
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                17.162375,
+                18.024579,
+                16.282997,
+                18.024579
+              ],
+              "p95_ms": [
+                5,
+                25.623625,
+                29.045583,
+                22.082042,
+                29.045583
+              ],
+              "max_ms": [
+                5,
+                51.946875,
+                67.16275,
+                31.645166,
+                67.16275
+              ],
+              "over_33ms": [
+                5,
+                3,
+                7,
+                0,
+                7
+              ],
+              "count": [
+                5,
+                263,
+                276,
+                255,
+                276
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-rate22050-1.json",
+            "rendering-macos-rate22050-2.json",
+            "rendering-macos-rate22050-3.json",
+            "rendering-macos-rate22050-4.json",
+            "rendering-macos-rate22050-5.json"
+          ]
+        },
+        "rate44100": {
+          "n": 5,
+          "requested_voices": 24,
+          "allocated_effect_voices": 24,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 44100.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 44100.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.095689,
+                16.292688,
+                15.929567,
+                16.292688
+              ],
+              "p95_ms": [
+                5,
+                22.104625,
+                22.866667,
+                21.388917,
+                22.866667
+              ],
+              "max_ms": [
+                5,
+                49.663375,
+                94.215458,
+                29.696458,
+                94.215458
+              ],
+              "over_33ms": [
+                5,
+                4,
+                8,
+                0,
+                8
+              ],
+              "count": [
+                5,
+                584,
+                656,
+                576,
+                656
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.711383,
+                16.866387,
+                16.626841,
+                16.866387
+              ],
+              "p95_ms": [
+                5,
+                22.126958,
+                23.364833,
+                20.297125,
+                23.364833
+              ],
+              "max_ms": [
+                5,
+                37.660833,
+                55.97025,
+                26.962,
+                55.97025
+              ],
+              "over_33ms": [
+                5,
+                1,
+                4,
+                0,
+                4
+              ],
+              "count": [
+                5,
+                359,
+                360,
+                355,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                26.883538,
+                29.919711,
+                20.457567,
+                29.919711
+              ],
+              "p95_ms": [
+                5,
+                69.663666,
+                87.082875,
+                47.245667,
+                87.082875
+              ],
+              "max_ms": [
+                5,
+                160.660709,
+                171.633083,
+                82.681375,
+                171.633083
+              ],
+              "over_33ms": [
+                5,
+                58,
+                59,
+                32,
+                59
+              ],
+              "count": [
+                5,
+                270,
+                354,
+                244,
+                354
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                17.073754,
+                18.037173,
+                16.436893,
+                18.037173
+              ],
+              "p95_ms": [
+                5,
+                26.015958,
+                27.038667,
+                22.335833,
+                27.038667
+              ],
+              "max_ms": [
+                5,
+                40.17375,
+                174.431083,
+                27.990833,
+                174.431083
+              ],
+              "over_33ms": [
+                5,
+                3,
+                8,
+                0,
+                8
+              ],
+              "count": [
+                5,
+                262,
+                275,
+                261,
+                275
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-rate44100-1.json",
+            "rendering-macos-rate44100-2.json",
+            "rendering-macos-rate44100-3.json",
+            "rendering-macos-rate44100-4.json",
+            "rendering-macos-rate44100-5.json"
+          ]
+        }
+      },
+      "failed_children": [
+        {
+          "variant": "control12",
+          "repeat": 1,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "rate22050",
+          "repeat": 1,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "rate44100",
+          "repeat": 1,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "rate22050",
+          "repeat": 2,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "control12",
+          "repeat": 3,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "rate22050",
+          "repeat": 3,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "rate22050",
+          "repeat": 4,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "rate44100",
+          "repeat": 4,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "control12",
+          "repeat": 5,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "rate22050",
+          "repeat": 5,
+          "probe": "rendering",
+          "exit_code": 1
+        }
+      ]
+    },
+    "5": {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38507500773",
+      "branch": "perf2/voices-mac-5",
+      "commit": "3d2191e73329a9e8f1b425c30624ec1800de83a8",
+      "conclusion": "failure",
+      "rounds": 5,
+      "source_play_hook": true,
+      "variants": {
+        "control12": {
+          "n": 5,
+          "requested_voices": 12,
+          "allocated_effect_voices": 12,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.154879,
+                16.607087,
+                15.902525,
+                16.607087
+              ],
+              "p95_ms": [
+                5,
+                21.089125,
+                22.168458,
+                20.216,
+                22.168458
+              ],
+              "max_ms": [
+                5,
+                41.13025,
+                132.574834,
+                31.884,
+                132.574834
+              ],
+              "over_33ms": [
+                5,
+                3,
+                7,
+                0,
+                7
+              ],
+              "count": [
+                5,
+                725,
+                830,
+                586,
+                830
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.668789,
+                16.98667,
+                16.651121,
+                16.98667
+              ],
+              "p95_ms": [
+                5,
+                21.531958,
+                22.217,
+                20.440459,
+                22.217
+              ],
+              "max_ms": [
+                5,
+                50.57825,
+                61.372333,
+                30.55825,
+                61.372333
+              ],
+              "over_33ms": [
+                5,
+                1,
+                5,
+                0,
+                5
+              ],
+              "count": [
+                5,
+                360,
+                360,
+                353,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                22.20166,
+                28.450003,
+                20.776959,
+                28.450003
+              ],
+              "p95_ms": [
+                5,
+                50.166333,
+                79.787166,
+                48.171333,
+                79.787166
+              ],
+              "max_ms": [
+                5,
+                114.384542,
+                159.319833,
+                91.622167,
+                159.319833
+              ],
+              "over_33ms": [
+                5,
+                47,
+                58,
+                39,
+                58
+              ],
+              "count": [
+                5,
+                329,
+                352,
+                257,
+                352
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.958696,
+                18.238823,
+                16.342199,
+                18.238823
+              ],
+              "p95_ms": [
+                5,
+                27.042583,
+                34.811625,
+                24.635959,
+                34.811625
+              ],
+              "max_ms": [
+                5,
+                44.852584,
+                129.127458,
+                29.097375,
+                129.127458
+              ],
+              "over_33ms": [
+                5,
+                6,
+                13,
+                0,
+                13
+              ],
+              "count": [
+                5,
+                266,
+                275,
+                251,
+                275
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-control12-1.json",
+            "rendering-macos-control12-2.json",
+            "rendering-macos-control12-3.json",
+            "rendering-macos-control12-4.json",
+            "rendering-macos-control12-5.json"
+          ]
+        },
+        "voices14": {
+          "n": 5,
+          "requested_voices": 14,
+          "allocated_effect_voices": 14,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                15.993889,
+                16.337586,
+                15.859821,
+                16.337586
+              ],
+              "p95_ms": [
+                5,
+                21.091417,
+                22.132167,
+                19.977958,
+                22.132167
+              ],
+              "max_ms": [
+                5,
+                38.7455,
+                59.299667,
+                35.35875,
+                59.299667
+              ],
+              "over_33ms": [
+                5,
+                4,
+                5,
+                1,
+                5
+              ],
+              "count": [
+                5,
+                706,
+                815,
+                590,
+                815
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.713474,
+                16.964015,
+                16.661764,
+                16.964015
+              ],
+              "p95_ms": [
+                5,
+                21.460125,
+                23.546709,
+                19.005083,
+                23.546709
+              ],
+              "max_ms": [
+                5,
+                35.652875,
+                50.567416,
+                29.679333,
+                50.567416
+              ],
+              "over_33ms": [
+                5,
+                1,
+                5,
+                0,
+                5
+              ],
+              "count": [
+                5,
+                358,
+                360,
+                354,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                19.889078,
+                30.407125,
+                19.522043,
+                30.407125
+              ],
+              "p95_ms": [
+                5,
+                48.418125,
+                89.125375,
+                34.853167,
+                89.125375
+              ],
+              "max_ms": [
+                5,
+                118.658709,
+                172.397583,
+                97.960167,
+                172.397583
+              ],
+              "over_33ms": [
+                5,
+                30,
+                62,
+                26,
+                62
+              ],
+              "count": [
+                5,
+                367,
+                374,
+                240,
+                374
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.759944,
+                17.195388,
+                16.364823,
+                17.195388
+              ],
+              "p95_ms": [
+                5,
+                24.163959,
+                27.001541,
+                20.441833,
+                27.001541
+              ],
+              "max_ms": [
+                5,
+                55.434208,
+                63.507167,
+                27.682417,
+                63.507167
+              ],
+              "over_33ms": [
+                5,
+                5,
+                8,
+                0,
+                8
+              ],
+              "count": [
+                5,
+                264,
+                271,
+                261,
+                271
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-voices14-1.json",
+            "rendering-macos-voices14-2.json",
+            "rendering-macos-voices14-3.json",
+            "rendering-macos-voices14-4.json",
+            "rendering-macos-voices14-5.json"
+          ]
+        },
+        "voices16": {
+          "n": 5,
+          "requested_voices": 16,
+          "allocated_effect_voices": 16,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.159476,
+                16.381308,
+                16.027053,
+                16.381308
+              ],
+              "p95_ms": [
+                5,
+                20.921833,
+                22.117708,
+                19.8135,
+                22.117708
+              ],
+              "max_ms": [
+                5,
+                62.502916,
+                82.880416,
+                31.225292,
+                82.880416
+              ],
+              "over_33ms": [
+                5,
+                2,
+                5,
+                0,
+                5
+              ],
+              "count": [
+                5,
+                659,
+                779,
+                575,
+                779
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.798801,
+                17.500853,
+                16.661269,
+                17.500853
+              ],
+              "p95_ms": [
+                5,
+                21.025791,
+                22.783958,
+                19.719834,
+                22.783958
+              ],
+              "max_ms": [
+                5,
+                50.255542,
+                203.548667,
+                24.02475,
+                203.548667
+              ],
+              "over_33ms": [
+                5,
+                2,
+                3,
+                0,
+                3
+              ],
+              "count": [
+                5,
+                357,
+                360,
+                342,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                22.597119,
+                28.514548,
+                19.165063,
+                28.514548
+              ],
+              "p95_ms": [
+                5,
+                53.624125,
+                79.859083,
+                34.00775,
+                79.859083
+              ],
+              "max_ms": [
+                5,
+                113.373417,
+                151.448334,
+                65.761292,
+                151.448334
+              ],
+              "over_33ms": [
+                5,
+                47,
+                64,
+                25,
+                64
+              ],
+              "count": [
+                5,
+                323,
+                382,
+                256,
+                382
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.818818,
+                17.252246,
+                16.446492,
+                17.252246
+              ],
+              "p95_ms": [
+                5,
+                25.230875,
+                26.493042,
+                22.728458,
+                26.493042
+              ],
+              "max_ms": [
+                5,
+                47.934875,
+                59.47475,
+                33.859875,
+                59.47475
+              ],
+              "over_33ms": [
+                5,
+                3,
+                8,
+                1,
+                8
+              ],
+              "count": [
+                5,
+                270,
+                272,
+                261,
+                272
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-voices16-1.json",
+            "rendering-macos-voices16-2.json",
+            "rendering-macos-voices16-3.json",
+            "rendering-macos-voices16-4.json",
+            "rendering-macos-voices16-5.json"
+          ]
+        }
+      },
+      "failed_children": [
+        {
+          "variant": "control12",
+          "repeat": 1,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "voices16",
+          "repeat": 1,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "voices14",
+          "repeat": 2,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "voices16",
+          "repeat": 2,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "voices16",
+          "repeat": 3,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "voices16",
+          "repeat": 4,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "control12",
+          "repeat": 5,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "voices16",
+          "repeat": 5,
+          "probe": "rendering",
+          "exit_code": 1
+        }
+      ]
+    },
+    "6": {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38507504837",
+      "branch": "perf2/voices-mac-6",
+      "commit": "d9c48ac7545a9d602220d9d3040e572b8b26eac9",
+      "conclusion": "success",
+      "rounds": 5,
+      "source_play_hook": true,
+      "variants": {
+        "control12": {
+          "n": 5,
+          "requested_voices": 12,
+          "allocated_effect_voices": 12,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.107413,
+                16.112041,
+                15.931238,
+                16.112041
+              ],
+              "p95_ms": [
+                5,
+                19.708083,
+                19.895875,
+                19.321666,
+                19.895875
+              ],
+              "max_ms": [
+                5,
+                25.754292,
+                41.205291,
+                22.536292,
+                41.205291
+              ],
+              "over_33ms": [
+                5,
+                0,
+                6,
+                0,
+                6
+              ],
+              "count": [
+                5,
+                649,
+                715,
+                577,
+                715
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.65542,
+                16.661284,
+                16.644064,
+                16.661284
+              ],
+              "p95_ms": [
+                5,
+                18.806709,
+                19.576208,
+                18.717417,
+                19.576208
+              ],
+              "max_ms": [
+                5,
+                21.32225,
+                22.551625,
+                20.926875,
+                22.551625
+              ],
+              "over_33ms": [
+                5,
+                0,
+                0,
+                0,
+                0
+              ],
+              "count": [
+                5,
+                360,
+                360,
+                360,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                22.044338,
+                27.252469,
+                18.606805,
+                27.252469
+              ],
+              "p95_ms": [
+                5,
+                49.594916,
+                76.86525,
+                34.230375,
+                76.86525
+              ],
+              "max_ms": [
+                5,
+                104.363792,
+                180.598708,
+                58.203792,
+                180.598708
+              ],
+              "over_33ms": [
+                5,
+                44,
+                64,
+                27,
+                64
+              ],
+              "count": [
+                5,
+                331,
+                393,
+                268,
+                393
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.21228,
+                16.618053,
+                16.072215,
+                16.618053
+              ],
+              "p95_ms": [
+                5,
+                19.05075,
+                19.449875,
+                18.490916,
+                19.449875
+              ],
+              "max_ms": [
+                5,
+                23.012458,
+                81.971417,
+                20.356375,
+                81.971417
+              ],
+              "over_33ms": [
+                5,
+                0,
+                3,
+                0,
+                3
+              ],
+              "count": [
+                5,
+                271,
+                273,
+                265,
+                273
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-control12-1.json",
+            "rendering-macos-control12-2.json",
+            "rendering-macos-control12-3.json",
+            "rendering-macos-control12-4.json",
+            "rendering-macos-control12-5.json"
+          ]
+        },
+        "voices14": {
+          "n": 5,
+          "requested_voices": 14,
+          "allocated_effect_voices": 14,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                15.937045,
+                16.021366,
+                15.828521,
+                16.021366
+              ],
+              "p95_ms": [
+                5,
+                20.420292,
+                21.586,
+                19.040708,
+                21.586
+              ],
+              "max_ms": [
+                5,
+                26.533541,
+                27.747167,
+                23.025916,
+                27.747167
+              ],
+              "over_33ms": [
+                5,
+                0,
+                0,
+                0,
+                0
+              ],
+              "count": [
+                5,
+                589,
+                748,
+                581,
+                748
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.648981,
+                16.652629,
+                16.626399,
+                16.652629
+              ],
+              "p95_ms": [
+                5,
+                20.3245,
+                21.404666,
+                18.726375,
+                21.404666
+              ],
+              "max_ms": [
+                5,
+                22.479667,
+                24.247916,
+                20.06775,
+                24.247916
+              ],
+              "over_33ms": [
+                5,
+                0,
+                0,
+                0,
+                0
+              ],
+              "count": [
+                5,
+                360,
+                360,
+                360,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                23.046905,
+                30.843739,
+                18.608938,
+                30.843739
+              ],
+              "p95_ms": [
+                5,
+                60.623958,
+                98.471208,
+                35.833416,
+                98.471208
+              ],
+              "max_ms": [
+                5,
+                120.906375,
+                185.50275,
+                69.604167,
+                185.50275
+              ],
+              "over_33ms": [
+                5,
+                44,
+                63,
+                23,
+                63
+              ],
+              "count": [
+                5,
+                316,
+                392,
+                237,
+                392
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.358338,
+                16.540362,
+                16.047462,
+                16.540362
+              ],
+              "p95_ms": [
+                5,
+                20.145667,
+                20.603625,
+                18.862583,
+                20.603625
+              ],
+              "max_ms": [
+                5,
+                53.291167,
+                66.931875,
+                21.308792,
+                66.931875
+              ],
+              "over_33ms": [
+                5,
+                2,
+                2,
+                0,
+                2
+              ],
+              "count": [
+                5,
+                268,
+                273,
+                266,
+                273
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-voices14-1.json",
+            "rendering-macos-voices14-2.json",
+            "rendering-macos-voices14-3.json",
+            "rendering-macos-voices14-4.json",
+            "rendering-macos-voices14-5.json"
+          ]
+        },
+        "voices16": {
+          "n": 5,
+          "requested_voices": 16,
+          "allocated_effect_voices": 16,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "context_defaults": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            },
+            "effective": {
+              "quality": 1919183983,
+              "channels": 1919118691,
+              "busses": 64,
+              "rate": 48000.0
+            }
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                15.922846,
+                15.995291,
+                15.793344,
+                15.995291
+              ],
+              "p95_ms": [
+                5,
+                19.055458,
+                20.197583,
+                18.807042,
+                20.197583
+              ],
+              "max_ms": [
+                5,
+                23.392583,
+                27.032334,
+                21.852084,
+                27.032334
+              ],
+              "over_33ms": [
+                5,
+                0,
+                0,
+                0,
+                0
+              ],
+              "count": [
+                5,
+                595,
+                970,
+                585,
+                970
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.655427,
+                16.671163,
+                16.647892,
+                16.671163
+              ],
+              "p95_ms": [
+                5,
+                18.864125,
+                20.260166,
+                18.713583,
+                20.260166
+              ],
+              "max_ms": [
+                5,
+                21.749833,
+                24.143917,
+                21.606625,
+                24.143917
+              ],
+              "over_33ms": [
+                5,
+                0,
+                0,
+                0,
+                0
+              ],
+              "count": [
+                5,
+                360,
+                360,
+                360,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                28.473441,
+                30.114552,
+                22.679114,
+                30.114552
+              ],
+              "p95_ms": [
+                5,
+                81.242333,
+                93.21925,
+                50.668083,
+                93.21925
+              ],
+              "max_ms": [
+                5,
+                143.521,
+                183.930125,
+                85.902583,
+                183.930125
+              ],
+              "over_33ms": [
+                5,
+                67,
+                74,
+                46,
+                74
+              ],
+              "count": [
+                5,
+                256,
+                322,
+                243,
+                322
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.24187,
+                16.465843,
+                15.905472,
+                16.465843
+              ],
+              "p95_ms": [
+                5,
+                19.163959,
+                19.502541,
+                18.671333,
+                19.502541
+              ],
+              "max_ms": [
+                5,
+                23.292417,
+                53.855333,
+                20.470417,
+                53.855333
+              ],
+              "over_33ms": [
+                5,
+                0,
+                3,
+                0,
+                3
+              ],
+              "count": [
+                5,
+                272,
+                272,
+                267,
+                272
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-voices16-1.json",
+            "rendering-macos-voices16-2.json",
+            "rendering-macos-voices16-3.json",
+            "rendering-macos-voices16-4.json",
+            "rendering-macos-voices16-5.json"
+          ]
+        }
+      },
+      "failed_children": []
+    },
+    "7": {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38509661186",
+      "branch": "perf2/voices-mac-7",
+      "commit": "d257466b12b79e7711c015e501b5280d6a6401d3",
+      "conclusion": "failure",
+      "rounds": 5,
+      "source_play_hook": false,
+      "variants": {
+        "control12": {
+          "n": 5,
+          "requested_voices": 12,
+          "allocated_effect_voices": 12,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "rendering_quality": "low",
+            "render_channel_mode": "multichannel",
+            "maximum_busses": 64,
+            "output_rate_hz": 48000.0
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.067774,
+                16.311072,
+                15.906106,
+                16.311072
+              ],
+              "p95_ms": [
+                5,
+                21.434791,
+                22.5505,
+                20.314041,
+                22.5505
+              ],
+              "max_ms": [
+                5,
+                36.677917,
+                69.126875,
+                29.766417,
+                69.126875
+              ],
+              "over_33ms": [
+                5,
+                2,
+                9,
+                0,
+                9
+              ],
+              "count": [
+                5,
+                589,
+                714,
+                576,
+                714
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.654622,
+                16.787883,
+                16.63028,
+                16.787883
+              ],
+              "p95_ms": [
+                5,
+                20.648542,
+                21.427375,
+                19.617125,
+                21.427375
+              ],
+              "max_ms": [
+                5,
+                33.50575,
+                55.474875,
+                27.548041,
+                55.474875
+              ],
+              "over_33ms": [
+                5,
+                1,
+                1,
+                0,
+                1
+              ],
+              "count": [
+                5,
+                360,
+                360,
+                357,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                19.42439,
+                30.257791,
+                18.670261,
+                30.257791
+              ],
+              "p95_ms": [
+                5,
+                34.382667,
+                90.395875,
+                33.493083,
+                90.395875
+              ],
+              "max_ms": [
+                5,
+                74.476917,
+                171.390541,
+                65.270666,
+                171.390541
+              ],
+              "over_33ms": [
+                5,
+                30,
+                56,
+                21,
+                56
+              ],
+              "count": [
+                5,
+                375,
+                390,
+                241,
+                390
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.826598,
+                16.897602,
+                16.694637,
+                16.897602
+              ],
+              "p95_ms": [
+                5,
+                22.495208,
+                24.936166,
+                20.882708,
+                24.936166
+              ],
+              "max_ms": [
+                5,
+                52.412833,
+                101.644875,
+                47.752167,
+                101.644875
+              ],
+              "over_33ms": [
+                5,
+                2,
+                4,
+                1,
+                4
+              ],
+              "count": [
+                5,
+                268,
+                270,
+                266,
+                270
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-control12-1.json",
+            "rendering-macos-control12-2.json",
+            "rendering-macos-control12-3.json",
+            "rendering-macos-control12-4.json",
+            "rendering-macos-control12-5.json"
+          ]
+        },
+        "default24": {
+          "n": 4,
+          "requested_voices": 24,
+          "allocated_effect_voices": 24,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "rendering_quality": "low",
+            "render_channel_mode": "multichannel",
+            "maximum_busses": 64,
+            "output_rate_hz": 48000.0
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                4,
+                16.197484,
+                16.344597,
+                15.894977,
+                16.344597
+              ],
+              "p95_ms": [
+                4,
+                21.15725,
+                21.301167,
+                19.286709,
+                21.301167
+              ],
+              "max_ms": [
+                4,
+                51.741625,
+                63.462958,
+                27.937667,
+                63.462958
+              ],
+              "over_33ms": [
+                4,
+                2.0,
+                3,
+                0,
+                3
+              ],
+              "count": [
+                4,
+                650.5,
+                825,
+                582,
+                825
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                4,
+                16.6875,
+                16.869616,
+                16.645774,
+                16.869616
+              ],
+              "p95_ms": [
+                4,
+                20.917208,
+                23.411792,
+                20.082875,
+                23.411792
+              ],
+              "max_ms": [
+                4,
+                34.020646,
+                53.205125,
+                23.854,
+                53.205125
+              ],
+              "over_33ms": [
+                4,
+                1.0,
+                3,
+                0,
+                3
+              ],
+              "count": [
+                4,
+                359.0,
+                360,
+                356,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                4,
+                18.983512,
+                29.384606,
+                18.614059,
+                29.384606
+              ],
+              "p95_ms": [
+                4,
+                34.493249,
+                82.424459,
+                33.409458,
+                82.424459
+              ],
+              "max_ms": [
+                4,
+                84.796417,
+                173.177666,
+                66.093375,
+                173.177666
+              ],
+              "over_33ms": [
+                4,
+                28.5,
+                66,
+                20,
+                66
+              ],
+              "count": [
+                4,
+                384.5,
+                392,
+                248,
+                392
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                4,
+                16.797572,
+                17.277232,
+                16.631054,
+                17.277232
+              ],
+              "p95_ms": [
+                4,
+                25.442084,
+                27.084958,
+                22.930416,
+                27.084958
+              ],
+              "max_ms": [
+                4,
+                68.754291,
+                89.916958,
+                43.11175,
+                89.916958
+              ],
+              "over_33ms": [
+                4,
+                2.5,
+                4,
+                1,
+                4
+              ],
+              "count": [
+                4,
+                267.5,
+                269,
+                262,
+                269
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-default24-1.json",
+            "rendering-macos-default24-3.json",
+            "rendering-macos-default24-4.json",
+            "rendering-macos-default24-5.json"
+          ]
+        },
+        "stereo24-actual12": {
+          "n": 2,
+          "requested_voices": 24,
+          "allocated_effect_voices": 12,
+          "pool_matches_requested": false,
+          "mixer": {
+            "extension": true,
+            "rendering_quality": "low",
+            "render_channel_mode": "stereo",
+            "maximum_busses": 64,
+            "output_rate_hz": 48000.0
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                2,
+                16.098169,
+                16.173092,
+                16.023246,
+                16.173092
+              ],
+              "p95_ms": [
+                2,
+                20.610834,
+                21.014042,
+                20.207625,
+                21.014042
+              ],
+              "max_ms": [
+                2,
+                68.888479,
+                97.682625,
+                40.094333,
+                97.682625
+              ],
+              "over_33ms": [
+                2,
+                1.5,
+                2,
+                1,
+                2
+              ],
+              "count": [
+                2,
+                589.5,
+                593,
+                586,
+                593
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                2,
+                16.822622,
+                16.986283,
+                16.658961,
+                16.986283
+              ],
+              "p95_ms": [
+                2,
+                21.99225,
+                23.859583,
+                20.124917,
+                23.859583
+              ],
+              "max_ms": [
+                2,
+                41.455875,
+                56.368541,
+                26.543208,
+                56.368541
+              ],
+              "over_33ms": [
+                2,
+                2.0,
+                4,
+                0,
+                4
+              ],
+              "count": [
+                2,
+                356.5,
+                360,
+                353,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                2,
+                21.240077,
+                23.420698,
+                19.059457,
+                23.420698
+              ],
+              "p95_ms": [
+                2,
+                42.187313,
+                50.155583,
+                34.219042,
+                50.155583
+              ],
+              "max_ms": [
+                2,
+                68.789833,
+                70.523958,
+                67.055708,
+                70.523958
+              ],
+              "over_33ms": [
+                2,
+                39.0,
+                55,
+                23,
+                55
+              ],
+              "count": [
+                2,
+                347.5,
+                384,
+                311,
+                384
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                2,
+                16.83584,
+                16.9055,
+                16.766179,
+                16.9055
+              ],
+              "p95_ms": [
+                2,
+                24.180604,
+                25.842917,
+                22.518292,
+                25.842917
+              ],
+              "max_ms": [
+                2,
+                50.702334,
+                65.649125,
+                35.755542,
+                65.649125
+              ],
+              "over_33ms": [
+                2,
+                2.0,
+                2,
+                2,
+                2
+              ],
+              "count": [
+                2,
+                266.5,
+                267,
+                266,
+                267
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-stereo24-1.json",
+            "rendering-macos-stereo24-3.json"
+          ]
+        }
+      },
+      "failed_children": [
+        {
+          "variant": "default24",
+          "repeat": 2,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "stereo24",
+          "repeat": 2,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "control12",
+          "repeat": 3,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "default24",
+          "repeat": 3,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "stereo24",
+          "repeat": 3,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "stereo24",
+          "repeat": 4,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "stereo24",
+          "repeat": 5,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "control12",
+          "repeat": null,
+          "probe": "output",
+          "exit_code": 1
+        },
+        {
+          "variant": "default24",
+          "repeat": null,
+          "probe": "output",
+          "exit_code": 1
+        },
+        {
+          "variant": "stereo24",
+          "repeat": null,
+          "probe": "output",
+          "exit_code": 1
+        }
+      ],
+      "missing_captures": {
+        "default24": 1,
+        "stereo24": 3
+      },
+      "missing_reason": "Focus/setup timeouts; not silently omitted from workflow verdict."
+    },
+    "8": {
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38509663441",
+      "branch": "perf2/voices-mac-8",
+      "commit": "82cb9d93699ac4c2f5475c4693073caba3244f82",
+      "conclusion": "failure",
+      "rounds": 5,
+      "source_play_hook": false,
+      "variants": {
+        "control12": {
+          "n": 5,
+          "requested_voices": 12,
+          "allocated_effect_voices": 12,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "rendering_quality": "low",
+            "render_channel_mode": "multichannel",
+            "maximum_busses": 64,
+            "output_rate_hz": 48000.0
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                15.97383,
+                16.536124,
+                15.801774,
+                16.536124
+              ],
+              "p95_ms": [
+                5,
+                20.733208,
+                25.83775,
+                19.496042,
+                25.83775
+              ],
+              "max_ms": [
+                5,
+                37.982,
+                83.271792,
+                27.798834,
+                83.271792
+              ],
+              "over_33ms": [
+                5,
+                1,
+                8,
+                0,
+                8
+              ],
+              "count": [
+                5,
+                597,
+                828,
+                584,
+                828
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.65964,
+                16.668501,
+                16.629271,
+                16.668501
+              ],
+              "p95_ms": [
+                5,
+                20.398458,
+                23.189833,
+                20.058959,
+                23.189833
+              ],
+              "max_ms": [
+                5,
+                27.651833,
+                36.68225,
+                24.25975,
+                36.68225
+              ],
+              "over_33ms": [
+                5,
+                0,
+                1,
+                0,
+                1
+              ],
+              "count": [
+                5,
+                360,
+                360,
+                360,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                20.189798,
+                29.602786,
+                19.169663,
+                29.602786
+              ],
+              "p95_ms": [
+                5,
+                37.217042,
+                84.394,
+                33.704834,
+                84.394
+              ],
+              "max_ms": [
+                5,
+                114.961,
+                169.403166,
+                68.504,
+                169.403166
+              ],
+              "over_33ms": [
+                5,
+                31,
+                69,
+                21,
+                69
+              ],
+              "count": [
+                5,
+                361,
+                381,
+                247,
+                381
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.821225,
+                18.319191,
+                16.421947,
+                18.319191
+              ],
+              "p95_ms": [
+                5,
+                22.218916,
+                32.369208,
+                20.934667,
+                32.369208
+              ],
+              "max_ms": [
+                5,
+                50.141458,
+                113.293625,
+                24.834084,
+                113.293625
+              ],
+              "over_33ms": [
+                5,
+                3,
+                12,
+                0,
+                12
+              ],
+              "count": [
+                5,
+                269,
+                274,
+                249,
+                274
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-control12-1.json",
+            "rendering-macos-control12-2.json",
+            "rendering-macos-control12-3.json",
+            "rendering-macos-control12-4.json",
+            "rendering-macos-control12-5.json"
+          ]
+        },
+        "default24": {
+          "n": 5,
+          "requested_voices": 24,
+          "allocated_effect_voices": 24,
+          "pool_matches_requested": true,
+          "mixer": {
+            "extension": true,
+            "rendering_quality": "low",
+            "render_channel_mode": "multichannel",
+            "maximum_busses": 64,
+            "output_rate_hz": 48000.0
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                16.037958,
+                16.193946,
+                15.709079,
+                16.193946
+              ],
+              "p95_ms": [
+                5,
+                21.557083,
+                22.220583,
+                20.381958,
+                22.220583
+              ],
+              "max_ms": [
+                5,
+                38.370667,
+                59.686167,
+                29.911541,
+                59.686167
+              ],
+              "over_33ms": [
+                5,
+                1,
+                2,
+                0,
+                2
+              ],
+              "count": [
+                5,
+                589,
+                898,
+                583,
+                898
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.65508,
+                16.665112,
+                16.636498,
+                16.665112
+              ],
+              "p95_ms": [
+                5,
+                21.56025,
+                22.525917,
+                20.283,
+                22.525917
+              ],
+              "max_ms": [
+                5,
+                28.039709,
+                29.192458,
+                26.609791,
+                29.192458
+              ],
+              "over_33ms": [
+                5,
+                0,
+                0,
+                0,
+                0
+              ],
+              "count": [
+                5,
+                360,
+                360,
+                360,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                28.973729,
+                29.649993,
+                25.054761,
+                29.649993
+              ],
+              "p95_ms": [
+                5,
+                84.266583,
+                97.614583,
+                65.840166,
+                97.614583
+              ],
+              "max_ms": [
+                5,
+                173.058875,
+                175.640125,
+                145.948375,
+                175.640125
+              ],
+              "over_33ms": [
+                5,
+                58,
+                62,
+                56,
+                62
+              ],
+              "count": [
+                5,
+                251,
+                290,
+                247,
+                290
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.824055,
+                17.311999,
+                16.586877,
+                17.311999
+              ],
+              "p95_ms": [
+                5,
+                23.518125,
+                27.152042,
+                21.541,
+                27.152042
+              ],
+              "max_ms": [
+                5,
+                46.489708,
+                100.442292,
+                34.288375,
+                100.442292
+              ],
+              "over_33ms": [
+                5,
+                2,
+                5,
+                1,
+                5
+              ],
+              "count": [
+                5,
+                268,
+                270,
+                264,
+                270
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-default24-1.json",
+            "rendering-macos-default24-2.json",
+            "rendering-macos-default24-3.json",
+            "rendering-macos-default24-4.json",
+            "rendering-macos-default24-5.json"
+          ]
+        },
+        "stereo24-actual12": {
+          "n": 5,
+          "requested_voices": 24,
+          "allocated_effect_voices": 12,
+          "pool_matches_requested": false,
+          "mixer": {
+            "extension": true,
+            "rendering_quality": "low",
+            "render_channel_mode": "stereo",
+            "maximum_busses": 64,
+            "output_rate_hz": 48000.0
+          },
+          "stages": {
+            "combat": {
+              "mean_ms": [
+                5,
+                15.893421,
+                16.132405,
+                15.874048,
+                16.132405
+              ],
+              "p95_ms": [
+                5,
+                21.18125,
+                21.916042,
+                19.700292,
+                21.916042
+              ],
+              "max_ms": [
+                5,
+                28.495042,
+                37.288334,
+                27.50625,
+                37.288334
+              ],
+              "over_33ms": [
+                5,
+                0,
+                1,
+                0,
+                1
+              ],
+              "count": [
+                5,
+                598,
+                751,
+                586,
+                751
+              ]
+            },
+            "pan": {
+              "mean_ms": [
+                5,
+                16.650442,
+                16.666337,
+                16.617319,
+                16.666337
+              ],
+              "p95_ms": [
+                5,
+                21.13425,
+                21.733333,
+                20.254,
+                21.733333
+              ],
+              "max_ms": [
+                5,
+                28.738917,
+                38.205958,
+                26.548792,
+                38.205958
+              ],
+              "over_33ms": [
+                5,
+                0,
+                1,
+                0,
+                1
+              ],
+              "count": [
+                5,
+                360,
+                360,
+                360,
+                360
+              ]
+            },
+            "zoom": {
+              "mean_ms": [
+                5,
+                23.547445,
+                32.905682,
+                18.941075,
+                32.905682
+              ],
+              "p95_ms": [
+                5,
+                49.592458,
+                98.120708,
+                34.812666,
+                98.120708
+              ],
+              "max_ms": [
+                5,
+                92.603666,
+                173.898583,
+                64.824167,
+                173.898583
+              ],
+              "over_33ms": [
+                5,
+                57,
+                68,
+                31,
+                68
+              ],
+              "count": [
+                5,
+                311,
+                385,
+                222,
+                385
+              ]
+            },
+            "zoom_sweep": {
+              "mean_ms": [
+                5,
+                16.631977,
+                17.078132,
+                16.572436,
+                17.078132
+              ],
+              "p95_ms": [
+                5,
+                25.359375,
+                27.338708,
+                23.373917,
+                27.338708
+              ],
+              "max_ms": [
+                5,
+                49.230958,
+                67.189792,
+                34.62275,
+                67.189792
+              ],
+              "over_33ms": [
+                5,
+                3,
+                4,
+                1,
+                4
+              ],
+              "count": [
+                5,
+                269,
+                270,
+                263,
+                270
+              ]
+            }
+          },
+          "raw_files": [
+            "rendering-macos-stereo24-1.json",
+            "rendering-macos-stereo24-2.json",
+            "rendering-macos-stereo24-3.json",
+            "rendering-macos-stereo24-4.json",
+            "rendering-macos-stereo24-5.json"
+          ]
+        }
+      },
+      "failed_children": [
+        {
+          "variant": "control12",
+          "repeat": 1,
+          "probe": "rendering",
+          "exit_code": 1
+        },
+        {
+          "variant": "control12",
+          "repeat": null,
+          "probe": "output",
+          "exit_code": 1
+        },
+        {
+          "variant": "default24",
+          "repeat": null,
+          "probe": "output",
+          "exit_code": 1
+        },
+        {
+          "variant": "stereo24",
+          "repeat": null,
+          "probe": "output",
+          "exit_code": 1
+        }
+      ]
+    }
+  },
+  "linux": {
+    "combat-12": {
+      "raw_files": [
+        "raw/combat-12-1.json",
+        "raw/combat-12-2.json",
+        "raw/combat-12-3.json",
+        "raw/combat-12-4.json",
+        "raw/combat-12-5.json"
+      ],
+      "steals": {
+        "n": 5,
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6,
+        "iqr": 0
+      },
+      "truncated_ms": {
+        "n": 5,
+        "median": 2254.549231,
+        "p95": 2255.91416,
+        "min": 2254.148231,
+        "max": 2255.91416,
+        "iqr": 0.697959
+      },
+      "frame_p95_ms": {
+        "n": 5,
+        "median": 16.74643,
+        "p95": 16.753376,
+        "min": 16.742651,
+        "max": 16.753376,
+        "iqr": 0.007249
+      },
+      "burst_p95_ms": {
+        "n": 5,
+        "median": 0.12318,
+        "p95": 0.129245,
+        "min": 0.118099,
+        "max": 0.129245,
+        "iqr": 0.01027
+      },
+      "play_cpu_median_ms": {
+        "n": 5,
+        "median": 0.09268,
+        "p95": 0.109941,
+        "min": 0.083795,
+        "max": 0.109941,
+        "iqr": 0.015025
+      },
+      "played_cues": {
+        "n": 5,
+        "median": 44,
+        "p95": 44,
+        "min": 44,
+        "max": 44,
+        "iqr": 0
+      }
+    },
+    "combat-16": {
+      "raw_files": [
+        "raw/combat-16-1.json",
+        "raw/combat-16-2.json",
+        "raw/combat-16-3.json",
+        "raw/combat-16-4.json",
+        "raw/combat-16-5.json"
+      ],
+      "steals": {
+        "n": 5,
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "iqr": 0
+      },
+      "truncated_ms": {
+        "n": 5,
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "iqr": 0
+      },
+      "frame_p95_ms": {
+        "n": 5,
+        "median": 16.748919,
+        "p95": 16.776624,
+        "min": 16.743058,
+        "max": 16.776624,
+        "iqr": 0.003054
+      },
+      "burst_p95_ms": {
+        "n": 5,
+        "median": 0.119771,
+        "p95": 0.12609,
+        "min": 0.113505,
+        "max": 0.12609,
+        "iqr": 0.005522
+      },
+      "play_cpu_median_ms": {
+        "n": 5,
+        "median": 0.074211,
+        "p95": 0.095255,
+        "min": 0.069645,
+        "max": 0.095255,
+        "iqr": 0.013833
+      },
+      "played_cues": {
+        "n": 5,
+        "median": 44,
+        "p95": 44,
+        "min": 44,
+        "max": 44,
+        "iqr": 0
+      }
+    },
+    "combat-24": {
+      "raw_files": [
+        "raw/combat-24-1.json",
+        "raw/combat-24-2.json",
+        "raw/combat-24-3.json",
+        "raw/combat-24-4.json",
+        "raw/combat-24-5.json"
+      ],
+      "steals": {
+        "n": 5,
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "iqr": 0
+      },
+      "truncated_ms": {
+        "n": 5,
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "iqr": 0
+      },
+      "frame_p95_ms": {
+        "n": 5,
+        "median": 16.742481,
+        "p95": 16.748165,
+        "min": 16.734523,
+        "max": 16.748165,
+        "iqr": 0.005306
+      },
+      "burst_p95_ms": {
+        "n": 5,
+        "median": 0.125812,
+        "p95": 0.131354,
+        "min": 0.112809,
+        "max": 0.131354,
+        "iqr": 0.008445
+      },
+      "play_cpu_median_ms": {
+        "n": 5,
+        "median": 0.08049,
+        "p95": 0.102035,
+        "min": 0.072099,
+        "max": 0.102035,
+        "iqr": 0.025818
+      },
+      "played_cues": {
+        "n": 5,
+        "median": 44,
+        "p95": 44,
+        "min": 44,
+        "max": 44,
+        "iqr": 0
+      }
+    },
+    "small-combat-12": {
+      "raw_files": [
+        "raw/small-combat-12-1.json",
+        "raw/small-combat-12-2.json",
+        "raw/small-combat-12-3.json",
+        "raw/small-combat-12-4.json",
+        "raw/small-combat-12-5.json"
+      ],
+      "steals": {
+        "n": 5,
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6,
+        "iqr": 0
+      },
+      "truncated_ms": {
+        "n": 5,
+        "median": 2255.403045,
+        "p95": 2255.864454,
+        "min": 2241.286191,
+        "max": 2255.864454,
+        "iqr": 1.10818
+      },
+      "frame_p95_ms": {
+        "n": 5,
+        "median": 16.750038,
+        "p95": 16.771306,
+        "min": 16.734428,
+        "max": 16.771306,
+        "iqr": 0.001932
+      },
+      "burst_p95_ms": {
+        "n": 5,
+        "median": 0.125647,
+        "p95": 0.131483,
+        "min": 0.108782,
+        "max": 0.131483,
+        "iqr": 0.012827
+      },
+      "play_cpu_median_ms": {
+        "n": 5,
+        "median": 0.077484,
+        "p95": 0.091288,
+        "min": 0.072282,
+        "max": 0.091288,
+        "iqr": 0.015638
+      },
+      "played_cues": {
+        "n": 5,
+        "median": 44,
+        "p95": 44,
+        "min": 44,
+        "max": 44,
+        "iqr": 0
+      }
+    },
+    "small-combat-14": {
+      "raw_files": [
+        "raw/small-combat-14-1.json",
+        "raw/small-combat-14-2.json",
+        "raw/small-combat-14-3.json",
+        "raw/small-combat-14-4.json",
+        "raw/small-combat-14-5.json"
+      ],
+      "steals": {
+        "n": 5,
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "iqr": 0
+      },
+      "truncated_ms": {
+        "n": 5,
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "iqr": 0
+      },
+      "frame_p95_ms": {
+        "n": 5,
+        "median": 16.747866,
+        "p95": 16.75159,
+        "min": 16.743301,
+        "max": 16.75159,
+        "iqr": 0.003093
+      },
+      "burst_p95_ms": {
+        "n": 5,
+        "median": 0.127548,
+        "p95": 0.155585,
+        "min": 0.108653,
+        "max": 0.155585,
+        "iqr": 0.027811
+      },
+      "play_cpu_median_ms": {
+        "n": 5,
+        "median": 0.078883,
+        "p95": 0.100985,
+        "min": 0.067937,
+        "max": 0.100985,
+        "iqr": 0.025689
+      },
+      "played_cues": {
+        "n": 5,
+        "median": 44,
+        "p95": 44,
+        "min": 44,
+        "max": 44,
+        "iqr": 0
+      }
+    }
+  },
+  "linux_rejected_production_candidate": {
+    "accepted": false,
+    "baseline": {
+      "raw_files": [
+        "raw/final-combat-baseline-1.json",
+        "raw/final-combat-baseline-2.json",
+        "raw/final-combat-baseline-3.json",
+        "raw/final-combat-baseline-4.json",
+        "raw/final-combat-baseline-5.json"
+      ],
+      "steals": {
+        "n": 5,
+        "median": 6,
+        "p95": 6,
+        "min": 6,
+        "max": 6,
+        "iqr": 0
+      },
+      "truncated_ms": {
+        "n": 5,
+        "median": 2255.67457,
+        "p95": 2257.576267,
+        "min": 2253.916683,
+        "max": 2257.576267,
+        "iqr": 0.964183
+      },
+      "play_cpu_ms": {
+        "n": 5,
+        "median": 0.082922,
+        "p95": 0.100884,
+        "min": 0.0648,
+        "max": 0.100884,
+        "iqr": 0.020953
+      },
+      "play_ms": {
+        "n": 5,
+        "median": 0.083722,
+        "p95": 0.100465,
+        "min": 0.065394,
+        "max": 0.100465,
+        "iqr": 0.020637
+      },
+      "burst_p95_ms": {
+        "n": 5,
+        "median": 0.11976,
+        "p95": 0.12671,
+        "min": 0.106722,
+        "max": 0.12671,
+        "iqr": 0.00484
+      },
+      "frame_p95_ms": {
+        "n": 5,
+        "median": 16.745239,
+        "p95": 16.792622,
+        "min": 16.737507,
+        "max": 16.792622,
+        "iqr": 0.003286
+      }
+    },
+    "candidate": {
+      "raw_files": [
+        "raw/final-combat-candidate-1.json",
+        "raw/final-combat-candidate-2.json",
+        "raw/final-combat-candidate-3.json",
+        "raw/final-combat-candidate-4.json",
+        "raw/final-combat-candidate-5.json"
+      ],
+      "steals": {
+        "n": 5,
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "iqr": 0
+      },
+      "truncated_ms": {
+        "n": 5,
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "iqr": 0
+      },
+      "play_cpu_ms": {
+        "n": 5,
+        "median": 0.074664,
+        "p95": 0.078812,
+        "min": 0.065135,
+        "max": 0.078812,
+        "iqr": 0.007058
+      },
+      "play_ms": {
+        "n": 5,
+        "median": 0.075182,
+        "p95": 0.079429,
+        "min": 0.0657,
+        "max": 0.079429,
+        "iqr": 0.00692
+      },
+      "burst_p95_ms": {
+        "n": 5,
+        "median": 0.11631,
+        "p95": 0.129143,
+        "min": 0.111507,
+        "max": 0.129143,
+        "iqr": 0.008791
+      },
+      "frame_p95_ms": {
+        "n": 5,
+        "median": 16.748731,
+        "p95": 16.767976,
+        "min": 16.714568,
+        "max": 16.767976,
+        "iqr": 0.021545
+      }
+    }
+  },
+  "retained12_smoke": {
+    "voice_limit": 12,
+    "steals": 6,
+    "estimated_truncated_ms": 2256.390881,
+    "raw": "raw/retained12-combat.json"
+  },
+  "retained_linux_rendering": {
+    "combat": {
+      "count": 591,
+      "mean_ms": 16.384025,
+      "p95_ms": 21.086212,
+      "p99_ms": 28.601909,
+      "max_ms": 55.495051,
+      "over_33ms": 4,
+      "over_50ms": 2
+    },
+    "pan": {
+      "count": 360,
+      "mean_ms": 16.67206,
+      "p95_ms": 20.268046,
+      "p99_ms": 23.40233,
+      "max_ms": 31.625042,
+      "over_33ms": 0,
+      "over_50ms": 0
+    },
+    "zoom": {
+      "count": 324,
+      "mean_ms": 22.528294,
+      "p95_ms": 52.059856,
+      "p99_ms": 75.866961,
+      "max_ms": 101.569529,
+      "over_33ms": 53,
+      "over_50ms": 19
+    },
+    "zoom_sweep": {
+      "count": 271,
+      "mean_ms": 16.944775,
+      "p95_ms": 23.121699,
+      "p99_ms": 27.404118,
+      "max_ms": 54.074426,
+      "over_33ms": 2,
+      "over_50ms": 1
+    }
+  },
+  "checks": [
+    {
+      "command": "heavy mise exec ruby@3.4.7 -- bundle exec rake test",
+      "result": "pass",
+      "tests": 329,
+      "assertions": 10160,
+      "raw": "raw/core-3.4.7-retained.log"
+    },
+    {
+      "command": "heavy mise exec ruby@4.0.7 -- bundle exec rake test",
+      "result": "pass",
+      "tests": 329,
+      "assertions": 10160,
+      "raw": "raw/core-4.0.7-retained.log"
+    },
+    {
+      "command": "heavy mise exec ruby@3.4.7 -- ./bin/check-native",
+      "result": "pass",
+      "journeys": 7,
+      "assertions": 242,
+      "raw": "raw/check-native-retained.log"
+    },
+    {
+      "command": "heavy mise exec ruby@3.4.7 -- bundle exec ruby -Itest test/audio_test.rb",
+      "result": "pass",
+      "tests": 19,
+      "assertions": 333,
+      "raw": "raw/audio-tests-retained.log"
+    },
+    {
+      "command": "heavy mise exec ruby@3.4.7 -- bundle exec ruby tools/check_audio.rb",
+      "result": "pass",
+      "cues": 76,
+      "raw": "raw/check-audio-retained.log"
+    },
+    {
+      "command": "heavy python3 tools/test_rendering.py",
+      "result": "pass",
+      "tests": 13,
+      "raw": "raw/rendering-tests-retained.log"
+    },
+    {
+      "command": "bench mise exec ruby@3.4.7 -- xvfb-run -a -s '-screen 0 3840x2400x24' python3 tools/check_rendering.py --audio --output SCRATCH/raw/rendering-retained-linux.json",
+      "result": "pass",
+      "effect_voices": 12,
+      "raw": "raw/rendering-retained-linux.json"
+    },
+    {
+      "command": "bench mise exec ruby@3.4.7 -- bundle exec ruby SCRATCH/probe-smoke.rb",
+      "result": "pass",
+      "cases": [
+        "production_without_prototype",
+        "pool_mismatch",
+        "allocated_pool_with_playing_cap"
+      ],
+      "raw": "raw/probe-smoke.log"
+    },
+    {
+      "command": "heavy python3 -I tools/perf_voices_summary.py SCRATCH/mac-{1..8} --output SCRATCH/mac-summary.json",
+      "result": "pass",
+      "note": "All eight artifact directories parsed; source-play statistics equal the earlier independent summary; mismatched pools labeled explicitly.",
+      "raw": "raw/summary-check.log"
+    },
+    {
+      "command": "Python ast.parse on changed Python tools; ruby -c tools/perf_voices_output.rb",
+      "result": "pass"
+    }
+  ],
+  "accepted_files": [
+    "lib/burrow/client/audio.rb",
+    "test/audio_test.rb",
+    "tools/check_rendering.py",
+    "tools/check_rendering.rb",
+    "tools/perf_voices_combat.rb",
+    "tools/perf_voices_matrix.py",
+    "tools/perf_voices_mixer.rb",
+    "tools/perf_voices_output.rb",
+    "tools/perf_voices_setup.rb",
+    "tools/perf_voices_summary.py",
+    "docs/validation/perf-0.5.4-voices.json"
+  ],
+  "limits": [
+    "No configuration passed the requested acceptance bar; this does not prove a qualifying configuration cannot exist.",
+    "Eight workflow runs were used. Stereo confirmations in runs 7 and 8 accidentally measured 12 effects; never treat them as 24-source evidence.",
+    "Run 7 lost one default24 and three stereo captures to focus/setup timeouts; all failures remain in the workflow verdict.",
+    "Only workflow 6 passed every child rendering gate. Retained JSON includes failed-gate captures; controls can also be slow. No gates were relaxed.",
+    "The whole-stage zoom interval includes intentionally skipped idle paints. Active-motion intervals are steadier, but they do not replace the requested acceptance metric.",
+    "alSourcePlay timings and published source identify a HAL-layout-query path; no sampled native stacks were collected and the exact zoom causal mechanism remains unproven.",
+    "Process CPU covers all threads in the Ruby GUI process, not the native renderer, host, terrain worker, or total system CPU.",
+    "The isolated looping probe directly plays its requested source count; playing_limit only caps the game selector, not that diagnostic probe.",
+    "Runs 7 and 8 stopped the PCM probe at an absent ALC_EXT_OUTPUT_CAPTURER advertisement. Published source exports capture entry points without advertising the name. Revised pointer-based probe is syntax-checked only, not Mac-executed.",
+    "No mixed Mac PCM, acoustic latency, audible quality, device switching, surround/headphone or owner-M3-Pro acceptance evidence exists for these tuning candidates.",
+    "Getter overhead measures repeated-call batch averages, not a full cold-start comparison.",
+    "Linux null-driver steal counts and estimated truncated durations do not measure Mac hardware output or audible cutoffs.",
+    "Fixtures and sound-design scheduling are unchanged. No production rendering, simulation, wire, asset, or version changes were accepted."
+  ],
+  "references": {
+    "apple_source": "https://github.com/apple-oss-distributions/OpenAL/tree/f6f9a3c01868d07937a46425fe0ce555e3341bb2/Source/OpenAL",
+    "sdk_header": "https://github.com/phracker/MacOSX-SDKs/blob/master/MacOSX11.3.sdk/System/Library/Frameworks/OpenAL.framework/Versions/A/Headers/MacOSX_OALExtensions.h"
+  },
+  "unmeasured_proposal": {
+    "patch": "candidates/stereo24-post-context-UNMEASURED.patch",
+    "change": "Configure/verify stereo after alcMakeContextCurrent and before source allocation, assert actual pool and stereo mode, rerun two Mac workflows and mixed-output validation before considering acceptance."
+  }
+}

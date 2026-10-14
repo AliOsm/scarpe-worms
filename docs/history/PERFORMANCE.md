@@ -262,8 +262,13 @@ versus start time, drops, cut-offs, OpenAL call time and the default output
 device's reported latency and transport. Twenty-four effect voices removed every
 cut-off in a heavy Linux fixture (6 → 0 per 7 s), but all four Apple silicon
 runner captures with 24 voices slowed zoom to 28–29 ms mean against 19–24 ms
-with 12, so 0.5.4 keeps 12. Apple's OpenAL costs, not the game's Ruby work,
-differ between those builds; a follow-up measures cheaper Apple mixing settings.
+with 12, so 0.5.4 keeps 12. A follow-up on eight more runner captures found
+idle sources free (0.418% vs 0.421% process CPU for 12 and 24) but playing
+voices costly (1.275% with 24 playing). Capping 24 sources at 12 playing, low
+spatial quality, stereo output, a 25-bus mixer, 22.05/44.1 kHz output and 14 or
+16 voices all failed the zoom guard. Mono `alSourcePlay` costs about 0.3–0.45 ms
+on Apple's OpenAL (0.02 ms in a stereo configuration), which is worth revisiting
+if sound bursts show up in owner logs.
 
 **Smaller wins.** Host collision samples and hazard scans stopped allocating
 (tick p50 −10%; with the export change, host CPU per simulated second fell from
