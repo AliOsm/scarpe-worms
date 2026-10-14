@@ -1,0 +1,167 @@
+{
+  "version": "0.5.6",
+  "source_revision": "3791ab85d39f8955a74d9958ec83bc64cdf725dd",
+  "ruby": "4.0.7",
+  "rust": "1.99.0",
+  "platform": "x86_64-linux",
+  "core": {
+    "runs": 328,
+    "assertions": 10166,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0
+  },
+  "rust_integration": {
+    "passed": 93,
+    "suites": 7
+  },
+  "framework_process_tests": {
+    "runs": 2,
+    "assertions": 6
+  },
+  "native_journeys": {
+    "passed": 7,
+    "note": "Camera assertion failed while compilation ran; focused rerun passed after builds completed."
+  },
+  "action": {
+    "ruby": "4.0.7",
+    "platform": "x86_64-linux",
+    "headless": false,
+    "world": [
+      4800,
+      1600
+    ],
+    "stalls": [],
+    "motion_detection_version": 2,
+    "motion_detection": "Changed rounded visible actor/projectile positions and camera origin, sampled after completed App updates",
+    "presented_shots": [
+      "o8",
+      "o9",
+      "o10",
+      "o11",
+      "o12",
+      "o13",
+      "o14"
+    ],
+    "terrain_revision": 5,
+    "scenario": "18 seconds of walking, jumping, cluster flight/explosions and bot turns with 36 grubs in a native window",
+    "app_update_intervals": {
+      "count": 1082,
+      "mean_ms": 16.66682056029105,
+      "p95_ms": 16.860600095242262,
+      "max_ms": 23.31341290846467
+    },
+    "ruby_scene_preparation": {
+      "count": 1082,
+      "mean_ms": 1.2179840654788914,
+      "p95_ms": 3.0721332877874374,
+      "max_ms": 9.23741701990366
+    }
+  },
+  "audio": {
+    "cues": 76,
+    "positioning_mute_resume_shutdown": true
+  },
+  "container": {
+    "image": "burrow-brigade:validation",
+    "image_id": "sha256:74c7e7f7675697bbbffe5a24a4ac967ec9517ad0cb76820a93179b62b42a04ac",
+    "architecture": "amd64",
+    "source_revision": null,
+    "tls": true,
+    "teams": 6,
+    "grubs": 36,
+    "container_restart_recovered": true,
+    "session_preserved": true,
+    "certificate_preserved": true,
+    "healthcheck": true
+  },
+  "release_helper_tests": 12,
+  "timing_analysis_tests": 13,
+  "ruby3_rejection": [
+    {
+      "command": [
+        "ruby",
+        "-Ilib",
+        "-rburrow",
+        "-e",
+        "exit 0"
+      ],
+      "exit_code": 1,
+      "message": "Burrow Brigade requires Ruby 4.0 or newer."
+    },
+    {
+      "command": [
+        "./setup.sh"
+      ],
+      "exit_code": 1,
+      "message": "Install Ruby 4.0 or newer."
+    }
+  ],
+  "portable_ruby_relocation": {
+    "ruby": "4.0.7",
+    "fiddle": "1.1.8",
+    "openssl": "3.5.9",
+    "unicode_path": true,
+    "original_install_hidden": true,
+    "final_recipe": true
+  },
+  "limits": [
+    "No physical desktop/audio, internet multiplayer, Developer ID signing or notarization acceptance is claimed."
+  ],
+  "portable_ruby_elf": {
+    "binaries": 92,
+    "no_embedded_search_paths": true,
+    "only_system_runtime_libraries": true,
+    "compilation_objects_removed": 8,
+    "runtime_rechecked_after_cleanup": true
+  },
+  "pre_release_ci": {
+    "source": {
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38555159070",
+      "status": "success"
+    },
+    "windows": {
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38555364340",
+      "status": "success",
+      "ruby": "4.0.7",
+      "rust": "1.99.0",
+      "installer_portable_upgrade_uninstall": true
+    },
+    "linux": {
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38555368219",
+      "status": "success",
+      "ruby": "4.0.7",
+      "glibc_floor": "2.35",
+      "environments": [
+        "Ubuntu 22.04",
+        "Ubuntu 24.04",
+        "Debian 12",
+        "Fedora 40"
+      ],
+      "audio_backends": [
+        "null",
+        "PulseAudio",
+        "ALSA"
+      ]
+    },
+    "macos": {
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38556661577",
+      "status": "required_checks_passed",
+      "source_revision": "e6b6518839eb16a71b5eaff03c0215150682c104",
+      "ruby": "4.0.7",
+      "architecture": "arm64",
+      "minimum_macos": "13.0",
+      "macho_binaries": 95,
+      "resource_hashes_verified": 3290,
+      "adhoc_signatures_verified": true,
+      "relocated_unicode_launch": true,
+      "play_and_resume": true,
+      "precise_timers": true
+    },
+    "source_after_cleanup": {
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38556587420",
+      "status": "success",
+      "source_revision": "e6b6518839eb16a71b5eaff03c0215150682c104"
+    }
+  }
+}

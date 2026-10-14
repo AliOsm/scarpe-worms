@@ -56,6 +56,7 @@ jobs:
             .cache/linux/downloads
             .cache/linux/ruby4
           key: linux-ruby4-ubuntu22-${{ hashFiles('rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch', 'packaging/linux/dependencies.json', 'packaging/ruby/dependencies.json', 'tools/build_ruby.py') }}
+          restore-keys: linux-ruby4-ubuntu22-
       - name: Build, collect notices and audit all ELF requirements
         run: python3 -I tools/package_linux.py
       - uses: actions/upload-artifact@v4

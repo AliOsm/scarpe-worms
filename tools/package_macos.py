@@ -2,7 +2,7 @@
 """Build a self-contained arm64 macOS app on Apple silicon.
 
 Requires Python 3.12+, tar, Git and the pinned Rust toolchain. Downloads are
-checksum-pinned in packaging/macos/dependencies.json. No Apple credentials are
+checksum-pinned in packaging/{macos,ruby}/dependencies.json. No Apple credentials are
 used: this produces an ad-hoc signed, unnotarized ZIP, not an App Store release.
 """
 from pathlib import Path

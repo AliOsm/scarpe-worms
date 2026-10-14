@@ -48,7 +48,7 @@ def package_environment(app, linux_ruby=None, windowed=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('app', type=Path)
-    parser.add_argument('--linux-ruby', type=Path, help='Ruby 4.0+ on Linux; this does NOT test Mac binaries')
+    parser.add_argument('--linux-ruby', type=Path, help='Ruby 4.0.7 on Linux; this does NOT test Mac binaries')
     parser.add_argument('--windowed', action='store_true', help='Open the actual native window on a Mac')
     parser.add_argument('--locale', choices=['unset', 'c', 'inherit'], default='unset',
                         help='Default: remove shell locale variables as on a Finder launch; c forces ASCII')

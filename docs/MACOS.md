@@ -76,7 +76,7 @@ Linux can exercise bundled Ruby code with explicit executable substitutions:
 
 ```sh
 python3 tools/check_package.py 'dist/Burrow Brigade.app' \
-  --linux-ruby /path/to/ruby-4.0/bin/ruby
+  --linux-ruby /path/to/ruby-4.0.7/bin/ruby
 ```
 
 This tests fresh/resumed matches, Unicode paths, input, resize, and diagnostics.

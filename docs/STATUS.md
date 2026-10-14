@@ -15,10 +15,26 @@ OpenSSL, libffi, libyaml and zlib. Fiddle is packaged as a gem. Windows uses the
 official RubyInstaller 4.0.7-1 archive. macOS builds run on Apple silicon.
 Protocol 4 and checkpoint format 1 are unchanged.
 
-Validation and publication are in progress. The pre-change Ruby 4 baseline
-passed 328 tests / 10,166 assertions. Final source, native, container and
-platform package results will replace this paragraph before the release tag.
-Historical evidence below retains the runtime versions actually measured.
+Local validation on Ruby 4.0.7 / Rust 1.99.0 passed: 328 core tests / 10,166
+assertions; 93 Rust integration tests; all seven native journeys (the camera
+journey passed on a quiet rerun after an initial assertion during compilation);
+windowed action and 76-cue audio checks; and six-team TLS container play with
+restart, session and certificate recovery. Ruby 3.4.7 is rejected before setup
+or application startup. Release-helper and timing-analysis tests also pass.
+
+The Ruby source runtime loaded Fiddle/OpenSSL/YAML/zlib after relocation to a
+Unicode path with its original install hidden. All required pre-release package
+checks passed: Windows install/play/resume/upgrade/uninstall and portable launch;
+Linux play/recovery on Ubuntu 22.04/24.04, Debian 12 and Fedora 40, including
+PulseAudio/ALSA paths; and Apple silicon signatures, relocated launch, gameplay,
+input, precise timers and saved-match recovery. The first Mac build exposed
+Fiddle object files retained by Ruby's gem installer; the final recipe removes
+those build intermediates. [Recorded checks and CI runs](validation/runtime-0.5.6.json).
+
+The candidate is ready for `v0.5.6` publication and production deployment.
+Physical desktop/audio acceptance, Developer ID signing and notarization remain
+outside the automated checks. Historical evidence below retains the runtime
+versions actually measured.
 
 ## 0.5.5 releases for macOS, Windows and Linux
 
