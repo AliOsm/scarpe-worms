@@ -1,8 +1,26 @@
 # Current status
 
-Updated **2026-10-14** · experimental client **0.5.7** · published release **0.5.6** · protocol **4**.
+Updated **2026-10-14** · client **0.5.7** · published release **0.5.6** · protocol **4**.
 
-## 0.5.7 movement experiment (branch only)
+## 0.5.7 combat responsiveness (release validation)
+
+The movement experiment is accepted for release with its comparison switch.
+Combat work now includes quiet-frame preparation of damage labels and faster
+lossless terrain PNGs. The Mac app bundles OpenAL Soft 1.24.3 through CoreAudio;
+24 effect voices preserve busy sound bursts. Source installations using the old
+Apple mixer retain 12 voices. Protocol 4, saves and authoritative outcomes stay
+compatible.
+
+Linux evidence so far: all six native reaction screenshots are byte-identical;
+84 terrain revisions have identical decoded pixels; the heavy-blast fixture's
+cold preparation CPU maximum drops from a median 18.12 to 11.54 ms across three
+alternating pairs. A real mixed-PCM probe confirms that the former 12-voice pool
+cuts off an existing tone while the new pool preserves it through its full tail.
+The controlled heavy audio workload drops from nine cut-offs to zero. Mac audio
+backend comparisons and all-platform package checks are in progress. Release
+publication follows those checks.
+
+## 0.5.7 movement experiment (earlier build)
 
 `experiment/client-prediction` adds **Settings → Responsive movement**, on by
 default. Walking, jumping and backflips receive local presentation before the

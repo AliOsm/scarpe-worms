@@ -17,8 +17,11 @@ python3 -I tools/verify_macos.py 'dist/Burrow Brigade.app'
 python3 tools/check_distributable.py
 ```
 
-Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.6) and its `.sha256` sidecar.
-The archive bundles Ruby 4.0.7, patched native Scarpe, gems, fonts, art, and audio.
+Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.7) and its `.sha256` sidecar.
+The archive bundles Ruby 4.0.7, patched native Scarpe, OpenAL Soft 1.24.3 with
+CoreAudio, a low-latency two-period mixer profile, gems, fonts, art, and audio.
+CMake is needed to build the mixer. The profile keeps two 256-frame periods so
+effects are not held in a 40 ms mix-ahead queue on the default 48 kHz output.
 Players do not need a separate Ruby, Rust, browser, or server installation.
 
 Build downloads are checksum-pinned in `packaging/macos/dependencies.json` and
@@ -92,13 +95,14 @@ On an Apple silicon Mac, run:
 codesign --verify --deep --strict --verbose=2 'dist/Burrow Brigade.app'
 python3 tools/check_package.py 'dist/Burrow Brigade.app'
 python3 tools/check_package.py 'dist/Burrow Brigade.app' --windowed --locale c
+python3 tools/check_macos_audio.py 'dist/Burrow Brigade.app'
 python3 tools/check_waits.py --app 'dist/Burrow Brigade.app' --output docs/validation/waits-macos.json
 python3 tools/check_rendering.py --app 'dist/Burrow Brigade.app' --audio
 ```
 
 Repeat rendering at `--size 1920x1200` on the actual display. The package workflow
 runs these checks serially on an Apple silicon runner. Native menu/bot-match,
-input, save/recovery and signature checks gate releases; deadline/rendering
+input, save/recovery, packaged audio and signature checks gate releases; deadline/rendering
 benchmarks are informational because shared-runner timing is noisy. Human audio,
 display and internet acceptance still follow [RELEASE.md](RELEASE.md).
 

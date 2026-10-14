@@ -25,6 +25,7 @@ on:
       - Gemfile*
       - setup.sh
       - tools/package_macos.py
+      - packaging/macos/alsoftrc
       - tools/build_ruby.py
       - packaging/ruby/**
       - tools/check_package.py
@@ -33,6 +34,7 @@ on:
       - tools/verify_macos.py
       - tools/check_waits.*
       - tools/check_rendering.*
+      - tools/check_macos_audio.py
 permissions:
   contents: read
 defaults:

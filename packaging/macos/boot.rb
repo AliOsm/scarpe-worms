@@ -14,6 +14,7 @@ ENV["SCARPE_DISPLAY_SERVICE"] = "native"
 ENV["SCARPE_NATIVE_CACHE"] = File.join(data_directory, "cache")
 if RUBY_PLATFORM.include?("darwin")
   ENV["BURROW_OPENAL_LIBRARY"] ||= File.join(resources, "runtime/lib/libopenal.1.dylib")
+  ENV["ALSOFT_CONF"] ||= File.join(resources, "runtime/lib/alsoftrc")
 end
 require File.join(resources, "app/lib/burrow")
 require File.join(resources, "app/lib/burrow/client/diagnostics")

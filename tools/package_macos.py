@@ -211,6 +211,7 @@ def main():
                   ignore=shutil.ignore_patterns('*.dSYM', '*.a'))
     (RES / 'runtime/lib').mkdir(parents=True)
     shutil.copy2(openal_library, RES / 'runtime/lib/libopenal.1.dylib')
+    shutil.copy2(CONFIG / 'alsoftrc', RES / 'runtime/lib/alsoftrc')
     (RES / 'licenses/openal-soft').mkdir(parents=True)
     for notice in ('COPYING', 'LICENSE', 'README.md'):
         if (openal_source / notice).is_file():
