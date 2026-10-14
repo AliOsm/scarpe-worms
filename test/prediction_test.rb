@@ -185,6 +185,16 @@ class PredictionTest < Minitest::Test
     assert_same state, p.present(state, terrain: match.terrain, now: 11)
   end
 
+  def test_latency_beyond_the_replay_horizon_never_flashes_a_predicted_frame
+    [400, 750, 3000].each do |rtt|
+      p, state, match = setup_prediction(rtt: rtt)
+      p.record("jump", values: {}, sequence: 1, now: 9.8)
+      assert_same state, p.present(state, terrain: match.terrain, now: 10)
+      assert_same state, p.present(state, terrain: match.terrain, now: 10.01)
+      assert_equal 0, p.replayed_steps
+    end
+  end
+
   def test_prediction_aborts_at_water_or_fall_damage_without_changing_health
     [false, true].each do |fall|
       match = course("fall_damage" => fall)

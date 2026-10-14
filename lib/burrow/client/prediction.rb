@@ -78,7 +78,8 @@ module Burrow
         # Prediction follows the local input clock, one upstream trip ahead of
         # server simulation. A received snapshot is about one RTT behind that
         # clock. This also works with protocol-4 hosts predating the experiment.
-        @base_at = @received - (rtt.to_f / 1000).clamp(0, HORIZON)
+        @lag = (rtt.to_f / 1000).clamp(0, HORIZON)
+        @base_at = @received - @lag
         ack = packet.fetch("ack", 0)
         @commands.delete_if do |command|
           next false if command[:seq] > ack
@@ -156,6 +157,7 @@ module Burrow
 
       def eligible?(view, terrain, now)
         return false unless @state && @engaged && !@barrier && terrain
+        return false if @lag >= HORIZON
         return false unless @state["team"] == @player && view["active"] == @state["active"] && view["turn"] == @state["turn"]
         return false unless %w[aiming retreat].include?(@state["phase"]) && !@state["tool"]
         return false unless terrain.revision == @state["terrain_revision"] && now - @base_at <= HORIZON

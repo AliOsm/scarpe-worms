@@ -439,7 +439,7 @@ module Burrow
         @target = [wx.round(2), wy.round(2)]
         if active_worm && my_turn? && !special_control
           # Aim from the grub the player can see, including predicted movement.
-          shown = scene.presented if scene.respond_to?(:presented)
+          shown = scene.presented if @prediction&.active? && scene.respond_to?(:presented)
           origin = shown && shown["worms"].find { |w| w["id"] == state["active"] }
           origin ||= active_worm
           @angle = Math.atan2(wy - origin["y"] + 13, wx - origin["x"]) * 180 / Math::PI

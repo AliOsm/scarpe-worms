@@ -172,6 +172,7 @@ end
 Burrow.define_singleton_method(:clock) { $prediction_time || Process.clock_gettime(Process::CLOCK_MONOTONIC) }
 scenarios = {
   loopback: {rtt: 0, cadence: 1}, remote_100: {rtt: 100, cadence: 3}, remote_200: {rtt: 200, cadence: 3},
+  remote_450_fallback: {rtt: 450, cadence: 3},
   jitter: {rtt: 100, cadence: 3, jitter: [0, 0.01, 0.035, 0.005, 0.055, 0]},
   outage: {rtt: 100, cadence: 3, outage: true}, ui_pause: {rtt: 100, cadence: 3, ui_pause: true}
 }
