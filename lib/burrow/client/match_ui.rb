@@ -15,6 +15,8 @@ module Burrow
         @charge_started = @charge_source = nil
         @mouse_charge = false
         @last_input = nil
+        @last_steer = nil
+        @prediction&.clear_inputs
       end
 
       def draw_match(presentation: nil)
@@ -413,14 +415,14 @@ module Burrow
           end
         when " " then begin_fire(:keyboard)
         end
-        update_controls(force: true) if %w[left right a d].include?(key) && remote_critter&.fetch("stage", nil) == "flying"
+        update_controls(force: %w[left right a d].include?(key) && remote_critter&.fetch("stage", nil) == "flying") if %w[left right a d up down w s].include?(key)
       end
 
       def key_up(key)
         key = normalize_key(key)
         @keys.delete(key)
         release_charge(source: :keyboard) if key == " " && @charge_started
-        update_controls(force: true) if %w[left right a d].include?(key) && remote_critter&.fetch("stage", nil) == "flying"
+        update_controls(force: %w[left right a d].include?(key) && remote_critter&.fetch("stage", nil) == "flying") if %w[left right a d up down w s].include?(key)
       end
 
       def pointer(x, y)
@@ -436,7 +438,11 @@ module Burrow
         wx, wy = scene.camera.world(wx, wy)
         @target = [wx.round(2), wy.round(2)]
         if active_worm && my_turn? && !special_control
-          @angle = Math.atan2(wy - active_worm["y"] + 13, wx - active_worm["x"]) * 180 / Math::PI
+          # Aim from the grub the player can see, including predicted movement.
+          shown = scene.presented if scene.respond_to?(:presented)
+          origin = shown && shown["worms"].find { |w| w["id"] == state["active"] }
+          origin ||= active_worm
+          @angle = Math.atan2(wy - origin["y"] + 13, wx - origin["x"]) * 180 / Math::PI
         end
       end
 
@@ -504,8 +510,9 @@ module Burrow
             release_charge if @power >= 1
           end
         end
-        return unless force || now - (@last_input_at || 0) > 0.08
-        @last_input_at = now
+        refresh = force || now - (@last_input_at || 0) > 0.08
+        @last_input_at = now if refresh
+        return if !refresh && respond_to?(:responsive_movement?) && !responsive_movement?
         arrows = !arrow_targeting?
         direction = (@keys.intersect?(arrows ? Set["d", "right"] : Set["d"]) ? 1 : 0) - (@keys.intersect?(arrows ? Set["a", "left"] : Set["a"]) ? 1 : 0)
         # Mobility tools accept both the arrow cluster and WASD. W is upward
@@ -515,24 +522,27 @@ module Burrow
           ((@keys.include?("down") || (mobility && @keys.include?("s"))) ? 1 : 0)
         # Critters take over the controls; a thrown fruit salad leaves the grub free to retreat.
         if (p = remote_critter) && p["kind"] != "cluster"
-          action("steer", direction: direction) if p["stage"] == "flying"
+          if p["stage"] == "flying" && (refresh || @last_steer != [direction, 0])
+            @last_steer = [direction, 0] if action("steer", direction: direction)
+          end
           return
         elsif state["tool"]
-          action("steer", lift: lift) if state["tool"]["kind"] == "torch"
+          if state["tool"]["kind"] == "torch" && (refresh || @last_steer != [0, lift])
+            @last_steer = [0, lift] if action("steer", lift: lift)
+          end
           return
         end
         return unless active_worm && active_worm["hp"] > 0
         if active_worm["fuel"].to_i <= 0 && !active_worm["rope"]
-          @angle = (@angle - lift * (active_worm["facing"] > 0 ? 2.0 : -2.0)).clamp(-180, 180)
+          @angle = (@angle - lift * (active_worm["facing"] > 0 ? 2.0 : -2.0)).clamp(-180, 180) if refresh
           lift = 0
         end
         if direction != 0 && direction * Math.cos(@angle * Math::PI / 180) < 0
           @angle = @angle >= 0 ? 180 - @angle : -180 - @angle
         end
         input = [direction, lift]
-        if %w[aiming retreat].include?(state["phase"]) && (input != @last_input || direction != 0 || lift != 0)
-          action("move", direction: direction, lift: lift)
-          @last_input = input
+        if %w[aiming retreat].include?(state["phase"]) && (input != @last_input || (refresh && (direction != 0 || lift != 0)))
+          @last_input = input if action("move", direction: direction, lift: lift)
         end
       end
 

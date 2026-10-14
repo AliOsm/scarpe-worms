@@ -7,6 +7,7 @@ require_relative "preferences"
 require_relative "audio"
 require_relative "diagnostics"
 require_relative "connection"
+require_relative "prediction"
 require_relative "scene"
 require_relative "screens"
 require_relative "dialogs"
@@ -22,13 +23,14 @@ module Burrow
       include Screens
       include Dialogs
       include MatchUI
-      attr_reader :state, :room, :page, :connection, :angle, :power, :target, :locked_target, :scene, :preferences, :selected_weapon
+      attr_reader :state, :room, :page, :connection, :angle, :power, :target, :locked_target, :scene, :preferences, :selected_weapon, :prediction
 
       def initialize(shoes, preferences: Preferences.new)
         @shoes, @preferences = shoes, preferences
         @activity = MacActivity.new("Burrow Brigade interactive match")
         @frame_log = Diagnostics::FrameLog.new
         @audio = Audio.new(preferences)
+        @prediction = Prediction.new
         @keys = Set.new
         @local_servers = {}
         @window_active = true
@@ -134,17 +136,28 @@ module Burrow
         @audio.update
         @audio.refresh if @frame % 120 == 0
       ensure
-        @frame_log.record(started, page: @page, focused: @window_active, state: @state, scene: @scene, activity: @activity) if started
+        @frame_log.record(started, page: @page, focused: @window_active, state: @state, scene: @scene, activity: @activity, prediction: @prediction) if started
       end
 
       def action(type, **values)
         sent = connection&.send_action(type, **values)
+        @prediction&.record(type, values: values, sequence: connection.sequence) if sent
         if sent && %w[fire jump activate detonate].include?(type)
           @audio.local_action(type, values: values, state: state, player: my_id,
             sequence: connection.sequence, match_id: room && room["match_id"])
         end
         notify("Reconnecting. Your place in the room is saved.") unless sent
         sent
+      end
+
+      def present_movement(view, terrain:, now:)
+        return view unless @prediction
+        @prediction.present(view, terrain: terrain, now: now,
+          enabled: responsive_movement? && @window_active && !overlay? && @connection_status == "online")
+      end
+
+      def responsive_movement?
+        ENV.key?("BURROW_PREDICTION") ? ENV["BURROW_PREDICTION"] == "1" : preferences["predict_movement"]
       end
 
       def connect_to(endpoint, name: preferences["name"], fingerprint: nil, pending: nil, session_key: nil, auto_start: false)
@@ -305,6 +318,7 @@ module Burrow
         old_status = @connection_status
         @connection_status, @status_message, @rtt = update.values_at(:status, :message, :rtt)
         if update[:welcome]
+          @prediction&.reset
           sessions = preferences["sessions"].dup
           sessions[@endpoint] = update[:welcome]["token"]
           sessions[@session_key] = update[:welcome]["token"] if @session_key
@@ -315,6 +329,7 @@ module Burrow
           @pending_action = nil if @pending_action && packet.fetch("ack", 0) >= @pending_action
           old_room = @room
           @room, @state = packet.values_at("room", "match")
+          @prediction&.accept(packet, player: my_id, rtt: @rtt)
           refresh_chat
           @rooms = packet["rooms"] if packet["rooms"]
           next_page = @state ? :match : @room ? :lobby : :browser

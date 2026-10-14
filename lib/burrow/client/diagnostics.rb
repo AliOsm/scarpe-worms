@@ -56,21 +56,22 @@ module Burrow
       # and slow rendering from missing host snapshots. No player data is logged.
       class FrameLog
         LIMIT = 10_000
-        COLUMNS = %w[at interval_ms update_ms scene_ms page phase focused host_tick playback_tick underruns terrain_revision mac_activity backlog_ms playback_resyncs].freeze
+        COLUMNS = %w[at interval_ms update_ms scene_ms page phase focused host_tick playback_tick underruns terrain_revision mac_activity backlog_ms playback_resyncs prediction_active prediction_steps prediction_corrections prediction_max_correction].freeze
 
         def initialize(directory: ENV["SCARPE_NATIVE_STATS"])
           @directory = directory unless directory.to_s.empty?
           @samples, @count = [], 0
         end
 
-        def record(started, page:, focused:, state:, scene:, activity:)
+        def record(started, page:, focused:, state:, scene:, activity:, prediction: nil)
           return unless @directory
           now = Burrow.clock
           timeline = scene&.timeline
           @samples[@count % LIMIT] = [Time.now.to_f, @previous && (started - @previous) * 1000,
             (now - started) * 1000, scene&.last_frame_ms, page.to_s, state && state["phase"], focused,
             state && state["tick"], timeline&.tick, timeline&.underruns, scene&.terrain_revision, activity.active?,
-            timeline&.backlog_ms, timeline&.resyncs]
+            timeline&.backlog_ms, timeline&.resyncs, prediction&.active?, prediction&.replayed_steps,
+            prediction&.corrections, prediction&.max_correction]
           @previous = started
           @count += 1
         end

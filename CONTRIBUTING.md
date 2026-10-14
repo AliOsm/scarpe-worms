@@ -65,6 +65,15 @@ It exercises real TCP/TLS host subprocesses, App input, Timeline playback and
 OpenAL submission, plus a 36-grub snapshot workload. Linux uses the null mixer;
 these timings do not measure acoustic output or display latency.
 
+For the movement experiment, run `bundle exec ruby tools/check_prediction.rb
+--output /tmp/burrow-prediction.json` for deterministic input/host/playback
+comparisons under latency, jitter and stalls. Run `./bin/check-native
+checks/prediction.sspec` for real TLS, delayed commands, native walking/jumping,
+the comparison switch and focus cancellation. Settings → Responsive movement
+changes both immediate transmission and prediction; `BURROW_PREDICTION=0` / `1`
+can force either mode for automated captures. The Mac package workflow runs the
+new native journey before building the app.
+
 The 0.5.4 round's harnesses live in `tools/perf_*`; each file's header gives its
 command. `perf_host_bench.rb` (per-tick cost and state hashes), `perf_audio_bench.rb`
 (voice pressure and delayed-cue lateness), `perf_painter_run.py` (match start),

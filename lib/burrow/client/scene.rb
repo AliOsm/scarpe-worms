@@ -190,6 +190,9 @@ module Burrow
         started = Burrow.clock
         @frame_count += 1
         @state = @timeline.sample(now: started)
+        if @controller.respond_to?(:present_movement)
+          @state = @controller.present_movement(@state, terrain: @preview_terrain, now: started)
+        end
         if @last_turn != @state["turn"]
           @last_turn = @state["turn"]
           @impact_focus = nil

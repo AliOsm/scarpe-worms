@@ -4,7 +4,7 @@ module Burrow
   module Client
     class Preferences
       DEFAULT = {"name" => "Pip", "volume" => 0.7, "music" => true, "muted" => false,
-        "motion" => true, "allow_lan" => false, "endpoint" => "tls://localhost:4388",
+        "motion" => true, "predict_movement" => true, "allow_lan" => false, "endpoint" => "tls://localhost:4388",
         "fingerprint" => "", "sessions" => {}, "config" => Config::DEFAULT}.freeze
       attr_reader :values
 

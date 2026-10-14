@@ -12,6 +12,22 @@ carry new frames plus an overlap, and full/reconnect snapshots carry all 18.
 Projectile tracks retain explicit birth/end samples.
 This preserves short flights across packet coalescing. Events and audio follow
 the same timeline; late packets catch up gradually instead of skipping motion.
+The 0.5.7 experimental client's **Responsive movement** setting adds a separate
+presentation for the local active grub's ordinary walking, jumps and backflips.
+Changed controls send immediately; unchanged held controls retain the 80 ms
+refresh. A bounded command history replays the shared host movement/collision
+physics against the latest authoritative actor and the terrain worker's immutable
+collision mask, up to 12 ticks / 400 ms. Snapshot sequence receipts discard
+processed commands; measured RTT aligns replay with the local input clock.
+Small position corrections settle over about 80 ms and cannot cross solid terrain.
+Only position, velocity and facing are overlaid on the displayed actor. Damage,
+ammo, terrain, projectiles and turns remain authoritative. Weapons interrupt
+prediction until their snapshot receipt; rope, jetpack, parachute, tools, knockback,
+stale snapshots and stale terrain use ordinary playback. Focus/menu changes and
+reconnects clear outstanding prediction. The setting defaults on in the experiment;
+turning it off restores both buffered motion and the original input gate.
+Protocol 4 and saved matches remain compatible with 0.5.6 hosts. `prediction.rb`
+does not run the world simulation or mutate the source snapshot/collision mask.
 Accepted local fire, jump and activation inputs submit their own sound immediately.
 Host events carry match/player/sequence receipts to suppress the matching reports
 when they reach playback. Receipts are bounded and saved with room metadata;

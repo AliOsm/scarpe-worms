@@ -5,6 +5,13 @@ module Burrow
     def gravity = 285 * config["gravity"] * (@low_gravity ? 0.45 : 1)
     def grounded?(w) = terrain.solid?(w[:x] - 6, w[:y] + 1) || terrain.solid?(w[:x] + 6, w[:y] + 1)
 
+    def jump_worm(w, backflip: false)
+      return false unless grounded?(w) && !w[:launched]
+      w[:vx] = w[:facing] * (backflip ? -68 : 100)
+      w[:vy] = backflip ? -220 : -178
+      true
+    end
+
     def update_worms
       interrupt_displaced_tool
       worms.each do |w|

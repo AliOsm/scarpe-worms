@@ -65,6 +65,8 @@ jobs:
           key: native-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'SCARPE_REVISION', 'patches/scarpe/*.patch') }}
       - run: ./setup.sh
       - run: bundle exec rake test
+      - name: Native delayed-input prediction and comparison switch
+        run: ./bin/check-native checks/prediction.sspec
       - uses: actions/cache@v4
         with:
           path: .cache/macos

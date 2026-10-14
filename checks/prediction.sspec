@@ -1,0 +1,148 @@
+---
+display: native
+timeout: 100
+----------- app code
+ENV["BURROW_DATA_DIR"] = File.join(Dir.pwd, "prediction-data")
+require File.join(ENV.fetch("BURROW_ROOT"), "lib/burrow/server/reactor")
+require File.join(ENV.fetch("BURROW_ROOT"), "lib/burrow/server/certificate")
+require "stringio"
+# A repeatable obstacle course; controls still travel through the real TLS host.
+module ControlsCourse
+  def initialize(**args)
+    super
+    ground = 900
+    data = "\0".b * terrain.cols * terrain.rows
+    data[(ground / 2) * terrain.cols..] = "\1" * ((terrain.rows - ground / 2) * terrain.cols)
+    @terrain = Burrow::Terrain.new(seed: config.seed_number, width: world_width, height: world_height, data: data)
+    @terrain.bridge(400, 690, width: 170)
+    worms.each_with_index { |w, i| w.merge!(x: 300.0 + i * 550, y: ground.to_f, vx: 0.0, vy: 0.0) }
+    @motion_frames.clear
+    record_motion
+  end
+end
+Burrow::Match.prepend(ControlsCourse)
+$controls_dir = File.join(Dir.pwd, "prediction-server")
+cert, key = Burrow::Server::Certificate.ensure_pair(File.join($controls_dir, "tls"))
+module DelayedPredictionCommands
+  attr_accessor :command_delay
+  def receive(peer, message)
+    if command_delay.to_f > 0 && !@delivering_prediction_command
+      (@prediction_commands ||= []) << [Burrow.clock + command_delay, peer, message]
+      raise "Delayed command queue grew" if @prediction_commands.size > 256
+    else
+      super
+    end
+  end
+  def expire(now)
+    @delivering_prediction_command = true
+    while @prediction_commands&.first && @prediction_commands.first[0] <= now
+      _, peer, message = @prediction_commands.shift
+      receive(peer, message) unless peer.closing
+    end
+    @delivering_prediction_command = false
+    super
+  end
+end
+Burrow::Server::Reactor.prepend(DelayedPredictionCommands)
+$controls_server = Burrow::Server::Reactor.new(port: 0, data_dir: $controls_dir, certificate: cert, key: key, logger: Logger.new(StringIO.new))
+$controls_thread = Thread.new { $controls_server.run }
+ENV["BURROW_CONNECT"] = "tls://127.0.0.1:#{$controls_server.port}"
+ENV["BURROW_FINGERPRINT"] = $controls_server.fingerprint
+at_exit do
+  $controls_friend&.close
+  $controls_server.stop
+  $controls_thread.join(5)
+end
+load File.join(ENV.fetch("BURROW_ROOT"), "game.rb")
+----------- test code
+client = Shoes.APPS.first.instance_variable_get(:@burrow)
+auto = Scarpe::Native::DisplayService.instance.automation
+wait_real = lambda do |seconds = 15, &condition|
+  deadline = Burrow.clock + seconds
+  until condition.call
+    raise "Prediction journey timed out: #{client.instance_variable_get(:@last_notice)}" if Burrow.clock > deadline
+    sleep 0.008
+    advance 0.01
+  end
+end
+pause = lambda do |seconds|
+  finish = Burrow.clock + seconds
+  wait_real.call { Burrow.clock >= finish }
+end
+shown = lambda { client.scene.presented["worms"].find { |w| w["id"] == client.state["active"] } }
+wait_real.call { client.connection.status == "online" }
+client.action("create", name: "Prediction course", bots: 1, config: {"worms" => 2, "mines" => 0,
+  "barrels" => 0, "crates" => false, "turn_seconds" => 90, "fall_damage" => false})
+wait_real.call { client.page == :lobby }
+click_on "Start the mischief"
+wait_real.call { client.page == :match && client.scene.preview_terrain && client.my_turn? }
+auto.window_focus(true)
+pause.call(0.5)
+assert client.responsive_movement?
+$controls_server.command_delay = 0.15
+# Ping takes the same delayed path as controls, allowing the client to measure it.
+wait_real.call { client.connection.rtt >= 140 }
+origin = client.active_worm.values_at("x", "y")
+auto.key_down("d")
+wait_real.call(1) { shown.call["x"] > origin[0] + 0.5 }
+assert_equal origin[0], client.active_worm["x"], "visible walking must precede the delayed host update"
+assert client.prediction.active?
+pause.call(0.35)
+auto.key_up("d")
+assert_equal [0, 0], client.instance_variable_get(:@last_input)
+pause.call(0.5)
+assert_in_delta client.active_worm["x"], shown.call["x"], 2.5
+origin = client.active_worm.values_at("x", "y")
+press_key "w"
+wait_real.call(1) { shown.call["y"] < origin[1] - 0.5 }
+assert_equal origin[1], client.active_worm["y"], "visible jumping must precede the delayed host update"
+snapshot "predicted-jump"
+pause.call(1.8)
+assert_in_delta client.active_worm["y"], shown.call["y"], 2.5
+# Actual settings controls persist the A/B switch, including in the small window.
+press_key "escape"
+click_on "Sound & settings"
+row = paras.find { |p| p.text == "Responsive movement" }
+assert row
+row_y = layout_of(row).y
+control = buttons.select { |b| ["On", "Off"].include?(b.text) }.min_by { |b| (layout_of(b).y - row_y).abs }
+click_on control
+refute client.responsive_movement?
+assert_equal false, Burrow::Client::Preferences.new["predict_movement"]
+click_on "Save settings"
+pause.call(0.3)
+origin = shown.call["x"]
+auto.key_down("a")
+pause.call(0.05)
+assert_in_delta origin, shown.call["x"], 0.1, "disabled experiment must wait for host playback"
+refute client.prediction.active?
+auto.key_up("a")
+pause.call(0.6)
+client.preferences["predict_movement"] = true
+auto.key_down("d")
+pause.call(0.05)
+auto.window_focus(false)
+assert_empty client.instance_variable_get(:@keys)
+assert_equal 0, client.prediction.pending_count
+pause.call(0.5)
+refute client.prediction.active?
+auto.window_focus(true)
+auto.key_up("d")
+pause.call(0.3)
+# Charging/focus loss still cannot fire a speculative shot.
+auto.key_down(" ")
+pause.call(0.05)
+auto.window_focus(false)
+auto.key_up(" ")
+pause.call(0.3)
+assert_equal "aiming", client.state["phase"]
+assert_empty client.state["projectiles"]
+auto.window_focus(true)
+resize_window 1080, 675
+pause.call(0.4)
+press_key "escape"
+click_on "Sound & settings"
+assert_operator layout_of(button("Save settings")).y + layout_of(button("Save settings")).h, :<=, 675
+snapshot "prediction-settings-small"
+click_on "Save settings"
+assert_operator client.prediction.replayed_steps, :<=, 12

@@ -1,6 +1,33 @@
 # Current status
 
-Updated **2026-10-14** · game **0.5.6** · protocol **4** · macOS, Windows and Linux previews.
+Updated **2026-10-14** · experimental client **0.5.7** · published release **0.5.6** · protocol **4**.
+
+## 0.5.7 movement experiment (branch only)
+
+`experiment/client-prediction` adds **Settings → Responsive movement**, on by
+default. Walking, jumping and backflips receive local presentation before the
+host responds. Changed movement/steering controls send immediately; unchanged
+controls keep their bounded refresh. Disabling the setting restores the original
+movement gate and server playback for comparison. Shared movement physics,
+sequence acknowledgement, collision checks and a 400 ms / 96-command bound keep
+the preview disposable; the server owns all gameplay outcomes. Weapons and
+mobility tools remain server-driven. Protocol 4 and existing saves are unchanged.
+
+Initial Linux checks: 342 Ruby tests / 13,870 assertions pass, including 3,600
+host/prediction movement comparisons. A native TLS journey with 150 ms delayed
+commands verifies visible walking/jumping before the host update, convergence,
+the actual settings switch, focus/charge cancellation and small-window layout.
+The deterministic transport experiment covers loopback, 100/200 ms RTT, ordered
+jitter, an 800 ms delivery stall and a 600 ms UI pause. With 100 ms RTT and 10 Hz
+snapshots, median walking onset is 267 → 8 ms and jumping 238 → 7 ms at a 60 Hz
+sampling cadence. These are model/presentation measurements, not display photons.
+The existing playback buffer and its underrun behavior are unchanged.
+
+Full native journeys, rendering comparison, old-host interoperability, and a
+new Apple silicon package/installed-app validation are in progress. No production
+release tag or server deployment is part of this experiment. Human Mac feel and
+correction behavior still need the owner's playtest. `game.json` now records
+prediction activity, replay work and correction sizes with its bounded frames.
 
 ## 0.5.6 Ruby 4 and Rust 1.99
 

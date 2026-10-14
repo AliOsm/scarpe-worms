@@ -70,9 +70,7 @@ module Burrow
         end
         if active[:rope]
           release_rope
-        elsif grounded?(active) && !active[:launched]
-          active[:vx] = active[:facing] * (values["backflip"] ? -68 : 100)
-          active[:vy] = values["backflip"] ? -220 : -178
+        elsif jump_worm(active, backflip: values["backflip"])
           emit("jump", x: active[:x], y: active[:y], worm: active[:id])
         end
       when "fire"

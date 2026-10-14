@@ -62,6 +62,33 @@ class WeaponControlsTest < Minitest::Test
     [Harness.new(match), match]
   end
 
+  def test_movement_press_reverse_and_release_send_immediately_without_refresh_flooding
+    c, = harness
+    Burrow.stub(:clock, 10.0) { c.update_controls }
+    c.actions.clear
+    Burrow.stub(:clock, 10.001) { c.key_down("d") }
+    assert_equal ["move", {direction: 1, lift: 0}], c.actions.last
+    10.times { Burrow.stub(:clock, 10.01) { c.update_controls } }
+    assert_equal 1, c.actions.length, "unchanged held input keeps its bounded refresh rate"
+    Burrow.stub(:clock, 10.011) { c.key_up("d") }
+    assert_equal ["move", {direction: 0, lift: 0}], c.actions.last
+    Burrow.stub(:clock, 10.012) { c.key_down("a") }
+    assert_equal ["move", {direction: -1, lift: 0}], c.actions.last
+    Burrow.stub(:clock, 10.1) { c.update_controls }
+    assert_equal 4, c.actions.length, "held input is refreshed before the host lease expires"
+  end
+
+  def test_disabled_experiment_retains_the_original_movement_gate
+    c, = harness
+    def c.responsive_movement? = false
+    Burrow.stub(:clock, 10.0) { c.update_controls }
+    c.actions.clear
+    Burrow.stub(:clock, 10.001) { c.key_down("d") }
+    assert_empty c.actions
+    Burrow.stub(:clock, 10.081) { c.update_controls }
+    assert_equal ["move", {direction: 1, lift: 0}], c.actions.last
+  end
+
   def test_each_weapon_declares_a_useful_control_hint_and_charge_contract
     Burrow::Catalog::WEAPONS.each_key do |id|
       refute_empty Burrow::Catalog.hint(id), id

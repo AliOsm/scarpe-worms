@@ -108,20 +108,21 @@ module Burrow
       end
 
       def show_settings
-        overlay("Make yourself comfortable", "Sound, motion, and your name are saved on this computer.", width: 960, height: 650) do |x, y|
+        overlay("Make yourself comfortable", "Sound, movement, and your name are saved on this computer.", width: 960, height: 740) do |x, y|
           field_label("Your name", x + 36, y + 133, 450, size: 19)
           name = input(preferences["name"], x + 540, y + 125, 384)
           settings_toggle("Master sound", "All game audio. Press M during battle to mute or unmute.", "muted", x, y + 197, inverted: true)
           settings_toggle("Music", "An original, gently mischievous soundtrack.", "music", x, y + 277)
           settings_toggle("Animated effects", "Turn off animated poses, scenery drift, and extra particles.", "motion", x, y + 357)
-          settings_toggle("Trusted LAN connections", "Allow unencrypted tcp:// connections on your local network.", "allow_lan", x, y + 437)
-          field_label("Volume", x + 36, y + 530, 220, size: 19)
-          select(%w[0% 25% 50% 75% 100%], "#{(preferences['volume'] * 100 / 25).round * 25}%", x + 280, y + 522, 180) do |control|
+          settings_toggle("Responsive movement", "Experimental: walking and jumps respond sooner. Turn off to compare.", "predict_movement", x, y + 437)
+          settings_toggle("Trusted LAN connections", "Allow unencrypted tcp:// connections on your local network.", "allow_lan", x, y + 517)
+          field_label("Volume", x + 36, y + 610, 220, size: 19)
+          select(%w[0% 25% 50% 75% 100%], "#{(preferences['volume'] * 100 / 25).round * 25}%", x + 280, y + 602, 180) do |control|
             preferences["volume"] = control.text.to_i / 100.0
             @audio.refresh
             @audio.play("pickup")
           end
-          button("Save settings", x + 670, y + 558, 254, height: 46, primary: true, size: 18) do
+          button("Save settings", x + 670, y + 648, 254, height: 46, primary: true, size: 18) do
             preferences["name"] = Protocol.name(name.text)
             hide_overlay
             draw_page if @page == :menu
@@ -129,7 +130,7 @@ module Burrow
           rescue RuleError, SystemCallError => error
             notify(error.message)
           end
-          label(@audio.available ? "Audio ready" : "Audio unavailable in this environment", x + 36, y + 596, 590, size: 12, color: Theme::MUTED)
+          label(@audio.available ? "Audio ready" : "Audio unavailable in this environment", x + 36, y + 696, 590, size: 12, color: Theme::MUTED)
         end
       end
 
@@ -140,6 +141,7 @@ module Burrow
         control = nil
         control = button(enabled ? "On" : "Off", x + 780, y + 4, 144, height: 36, tone: enabled ? :green : :navy) do
           preferences[key] = !preferences[key]
+          @prediction&.clear_inputs if key == "predict_movement"
           value = inverted ? !preferences[key] : preferences[key]
           control.text = value ? "On" : "Off"
           control.tone = value ? :green : :navy
