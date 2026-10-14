@@ -135,6 +135,22 @@ class WeaponControlsTest < Minitest::Test
     assert_equal second, m.projectiles.first.values_at(:target_x, :target_y)
   end
 
+  def test_minimap_drag_navigates_without_aiming_or_firing
+    c, = harness
+    navigations = []
+    c.scene.define_singleton_method(:minimap_hit?) { |x, y| x.between?(100, 200) && y.between?(100, 200) }
+    c.scene.define_singleton_method(:navigate) { |x, y| navigations << [x, y] }
+
+    c.pointer_click(1, 150, 220)
+    c.pointer(180, 250)
+
+    assert_equal [[150, 116], [180, 146]], navigations
+    assert_empty c.fired
+    assert_nil c.instance_variable_get(:@charge_started)
+    c.cancel_controls(stop: false)
+    assert_nil c.instance_variable_get(:@minimap_drag)
+  end
+
   def test_arrows_pick_a_strike_approach_without_walking
     c, m = harness("terrain" => "islands")
     c.select("airstrike")

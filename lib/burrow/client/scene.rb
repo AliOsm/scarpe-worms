@@ -135,10 +135,8 @@ module Burrow
           box(10, 6, 336, 72, color: Theme::INK, radius: 20)
           # Overlays on the battlefield repaint as the camera moves: solid fills only.
           box(13, 9, 330, 66, color: "#1f5bb5ee", radius: 17)
-          button("−", 22, 16, 34, height: 30, size: 17) { camera.zoom_by(-1) }
-          button("+", 64, 16, 34, height: 30, size: 17) { camera.zoom_by(1) }
-          button("Map · G", 108, 16, 108, height: 30, size: 14) { toggle_map }
-          button("Follow · F", 226, 16, 108, height: 30, size: 14) { camera.follow }
+          button("Map · G", 22, 16, 108, height: 30, size: 14) { toggle_map }
+          button("Follow · F", 140, 16, 108, height: 30, size: 14) { camera.follow }
           @camera_caption = label("", 24, 54, 316, size: 11, color: "#e3f1ff", font: Theme.display, weight: 600)
           map_scale = [286.0 / @width, 128.0 / @height].min
           @map_w, @map_h = @width * map_scale, @height * map_scale
@@ -147,7 +145,7 @@ module Burrow
           box(1112, 540, 308, 170, color: "#1f5bb5f2", radius: 19)
           box(@map_x - 4, @map_y - 4, @map_w + 8, @map_h + 8, color: Theme::DEEP, radius: 8, stroke: Theme::INK, stroke_width: 2)
           outlined("Map", 1126, 545, 120, size: 15, color: Theme::YELLOW, thickness: 1.5, offsets: Theme::OUTLINE.first(4))
-          label("Click to scout", 1270, 549, 136, size: 11, color: "#e3f1ff", align: "right", font: Theme.display, weight: 600)
+          label("Drag to move view", 1270, 549, 136, size: 11, color: "#e3f1ff", align: "right", font: Theme.display, weight: 600)
           @minimap_layer = @shoes.stack(left: 0, top: 0, width: px(1440), height: px(720)) {}
           @minimap = nil
           @map_marks = {}
@@ -381,7 +379,13 @@ module Burrow
           (x.between?(1112, 1420) && y.between?(540, 710))
       end
 
+      def minimap_hit?(x, y)
+        return false unless @map_x && @map_y && @map_w && @map_h
+        x.between?(@map_x, @map_x + @map_w) && y.between?(@map_y, @map_y + @map_h)
+      end
+
       def navigate(x, y)
+        return false unless @map_x && @map_y && @map_w && @map_h
         return false unless x.between?(@map_x, @map_x + @map_w) && y.between?(@map_y, @map_y + @map_h)
         camera.navigate((x - @map_x) / @map_w * @width, (y - @map_y) / @map_h * @height)
         true
@@ -871,7 +875,7 @@ module Burrow
         saved, @scale = @scale, @ui_scale
         percent = (camera.zoom * 100).round
         if @caption_zoom != percent || @caption_following != camera.following
-          set_text(@camera_caption, "#{percent}%  #{camera.following ? 'FOLLOW' : 'FREE'}  ·  Wheel zoom / drag pan")
+          set_text(@camera_caption, "#{percent}%  #{camera.following ? 'FOLLOW' : 'FREE'}  ·  Wheel / pinch zoom · drag pan")
           @caption_zoom, @caption_following = percent, camera.following
         end
         water_y = @state["water"].fdiv(@height).clamp(0, 1) * @map_h

@@ -1,6 +1,6 @@
 # Current status
 
-Updated **2026-10-14** · client **0.5.7** · published release **0.5.7** · protocol **4**.
+Updated **2026-10-14** · client **0.5.8** · published release **0.5.7** · protocol **4**.
 
 ## 0.5.7 combat responsiveness
 
@@ -43,6 +43,14 @@ TLS container recovery. All required Windows, Mac and Linux package checks
 pass. The Windows smoke verifies the renderer and its actual voice pool; the
 Mac audio checker loads the delivered library and scheduling configuration,
 then exercises all 76 cues, panning, mute and resume.
+
+## 0.5.8 camera navigation
+
+The battle camera now supports dragging the minimap to move its view rectangle,
+removes the on-screen zoom buttons, and accepts macOS two-finger pinch gestures
+through the existing pointer-anchored wheel zoom path. Keyboard zoom remains
+available. Ruby, native Linux, asset, audio and container validation passes; a
+physical macOS pinch playtest is still useful for input feel.
 
 [0.5.7 is published](https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.7).
 All 18 downloaded assets and their checksums are verified; the Mac archive

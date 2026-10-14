@@ -1,0 +1,16 @@
+--- a/native/src/window.rs
++++ b/native/src/window.rs
+@@ -602,6 +602,13 @@
+                 };
+                 self.rt.wheel(app, dy, None);
+             }
++            // Reuse Scarpe's wheel subscription for a native two-finger pinch.
++            // Winit reports positive magnification deltas for zooming in, while
++            // Runtime::wheel uses the opposite sign for the browser-style
++            // scroll delta that it sends to Shoes callbacks.
++            WindowEvent::PinchGesture { delta, .. } if delta.is_finite() && delta != 0.0 => {
++                self.rt.wheel(app, -delta as f32, None);
++            }
+             WindowEvent::ModifiersChanged(m) => {
+                 let state = m.state();
+                 if let Some(win) = self.windows.get_mut(&id) {

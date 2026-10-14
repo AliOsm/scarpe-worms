@@ -296,3 +296,8 @@ bundle exec ruby -Ivendor/scarpe/lib -Ivendor/scarpe/lacci/lib \
   crate. Early Ruby rejection uses `abort` before the logging subsystem loads.
   The game's root toolchain pins Rust 1.99.0. Scarpe's unused upstream packager
   is excluded from game distributions; the platform tools build Ruby 4 packages.
+
+- `0027-native-pinch-wheel.patch`: forward native macOS two-finger pinch
+  magnification through Scarpe's existing wheel subscription. Positive pinch
+  deltas become positive Shoes zoom deltas, while invalid magnification values
+  are ignored. Other pointer and wheel behavior is unchanged.

@@ -12,6 +12,7 @@ module Burrow
         end
         @keys.clear
         @camera_drag = nil
+        @minimap_drag = nil
         @charge_started = @charge_source = nil
         @mouse_charge = false
         @last_input = nil
@@ -21,6 +22,7 @@ module Burrow
 
       def draw_match(presentation: nil)
         @keys.clear
+        @camera_drag = @minimap_drag = nil
         @scene = Scene.new(@shoes, self, scale: @scale, presentation: presentation)
         @scene.accept(state)
         box(0, 0, 1440, 104, color: shade("#0d2a5c", "#061430"), radius: 0)
@@ -220,7 +222,7 @@ module Burrow
         @fire_button.state = my_turn? && !@pending_action && (control || (aiming && can_equip?(@selected_weapon))) ? nil : "disabled"
         @pass_button.state = aiming && state["shots_left"].zero? && !@pending_action ? nil : "disabled"
         hint = if !my_turn?
-          "Watching the action · G map · F follow · Q / R zoom · E browse arsenal"
+          "Watching the action · G map · F follow · Q / R or pinch zoom · E browse arsenal"
         elsif control
           control[1]
         elsif critter
@@ -433,6 +435,10 @@ module Burrow
           @camera_drag = [wx, wy]
           return
         end
+        if @minimap_drag
+          scene.navigate(wx, wy)
+          return
+        end
         return unless wx.between?(0, 1440) && wy.between?(0, 720)
         return if scene.navigation_hit?(wx, wy)
         wx, wy = scene.camera.world(wx, wy)
@@ -452,6 +458,11 @@ module Burrow
         return unless wx.between?(0, 1440) && wy.between?(0, 720)
         if button == 2
           @camera_drag = [wx, wy]
+          return
+        end
+        if button == 1 && scene.respond_to?(:minimap_hit?) && scene.minimap_hit?(wx, wy)
+          @minimap_drag = true
+          scene.navigate(wx, wy)
           return
         end
         if scene.navigation_hit?(wx, wy)

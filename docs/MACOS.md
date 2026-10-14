@@ -17,7 +17,7 @@ python3 -I tools/verify_macos.py 'dist/Burrow Brigade.app'
 python3 tools/check_distributable.py
 ```
 
-Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.7) and its `.sha256` sidecar.
+Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.8) and its `.sha256` sidecar.
 The archive bundles Ruby 4.0.7, patched native Scarpe, OpenAL Soft 1.24.3 with
 CoreAudio, a two-period mixer profile, gems, fonts, art, and audio.
 CMake is needed to build the mixer. The profile selects two 256-frame periods,

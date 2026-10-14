@@ -65,6 +65,7 @@ module Burrow
         @shoes.click { |button, x, y| pointer_click(button, x, y) }
         @shoes.release do |button, _x, _y|
           @camera_drag = nil if button == 2
+          @minimap_drag = nil if button == 1
           release_charge(source: :mouse) if button == 1 && @mouse_charge
         end
         @shoes.animate(60) { update }

@@ -64,6 +64,12 @@ advance 0.05
 assert_operator client.scene.camera.x, :>, 1500
 refute client.scene.camera.following
 assert_empty client.state["projectiles"]
+before_minimap_drag = client.scene.camera.x
+auto.mouse(:down, x, y)
+auto.mouse(:move, x - 120, y)
+auto.mouse(:up, x - 120, y)
+advance 0.05
+assert_operator client.scene.camera.x, :<, before_minimap_drag, "dragging the minimap should move the view area"
 scouted_backdrop = layout_of(backdrop)
 assert_operator scouted_backdrop.x, :<, initial_backdrop.x, "distant scenery should drift with camera exploration"
 assert_operator scouted_backdrop.x + scouted_backdrop.w, :>=, 1280, "parallax must never expose an empty edge"
