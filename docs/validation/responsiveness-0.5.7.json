@@ -2,7 +2,7 @@
   "schema": 1,
   "version": "0.5.7",
   "recorded_date": "2026-10-14",
-  "scope": "Combat responsiveness follow-up to the accepted movement experiment; publication is recorded separately after tagged builds pass.",
+  "scope": "Combat responsiveness follow-up to the accepted movement experiment, with tagged release, downloaded-asset and deployment verification.",
   "movement_evidence": "client-prediction-0.5.7.json",
   "linux": {
     "platform": "x86_64-linux",
@@ -318,5 +318,157 @@
     "Mac runner output was queried as built-in; no human listened to that output. Player testing remains necessary.",
     "Protocol 4, saved games and authoritative weapon outcomes are unchanged."
   ],
-  "reproduce_notes": "Run benchmarks serially without builds. Set BURROW_BENCH_SOURCE to the archived baseline for the other arm. Detailed setup and output options are in each tool header."
+  "reproduce_notes": "Run benchmarks serially without builds. Set BURROW_BENCH_SOURCE to the archived baseline for the other arm. Detailed setup and output options are in each tool header.",
+  "publication": {
+    "version": "0.5.7",
+    "tag": "v0.5.7",
+    "source_commit": "4b84514c1ab8aa7374c348eaf113783a99754b91",
+    "url": "https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.7",
+    "published_at": "2026-10-14T16:09:17Z",
+    "draft": false,
+    "assets": [
+      {
+        "name": "Burrow-Brigade-0.5.7-linux-x86_64.tar.gz",
+        "bytes": 56276398,
+        "sha256": "9416d511bcd45c3b4e925e6d2134809e4943f9a532620ab3f83c2b000c911a79"
+      },
+      {
+        "name": "Burrow-Brigade-0.5.7-linux-x86_64.tar.gz.sha256",
+        "bytes": 107,
+        "sha256": "8a3d87f315c8144fdadc27e1100800b3b8406f99ea6ebb2db91f35de7ade3a9f"
+      },
+      {
+        "name": "Burrow-Brigade-0.5.7-macos-arm64.zip",
+        "bytes": 51220528,
+        "sha256": "6ce5dfab88c83b77c62d7c7573b2ff410d277209df9e87abf8e04e4898cb6999"
+      },
+      {
+        "name": "Burrow-Brigade-0.5.7-macos-arm64.zip.sha256",
+        "bytes": 103,
+        "sha256": "4ab1a25e963d5381eb85fbd2de09d62c9291074703b9c177bfcd98408a2df99d"
+      },
+      {
+        "name": "Burrow-Brigade-0.5.7-windows-x64-setup.exe",
+        "bytes": 53498524,
+        "sha256": "9ab2cf7ddc1c6fb69dba5678a1782b353400bd2e5f218e77ae8af84d8b940067"
+      },
+      {
+        "name": "Burrow-Brigade-0.5.7-windows-x64-setup.exe.sha256",
+        "bytes": 109,
+        "sha256": "995b46666f4e27a9bb3c079ab889ed5b273a05881ef72cd7b3774a37a7ba1929"
+      },
+      {
+        "name": "Burrow-Brigade-0.5.7-windows-x64.zip",
+        "bytes": 61489552,
+        "sha256": "73217069f17ce2e3256f137fa02b747b39ddd5928dad7e436572be2f7583b5ff"
+      },
+      {
+        "name": "Burrow-Brigade-0.5.7-windows-x64.zip.sha256",
+        "bytes": 103,
+        "sha256": "097fbab12b0873a0e2877dd97263d1b4541476359d2cc84cb61b013c5490730f"
+      },
+      {
+        "name": "Burrow-Brigade-server-0.5.7-docker-linux-amd64.tar.gz",
+        "bytes": 80913092,
+        "sha256": "40ecc90d60258cb0510064a97cd57e0c82e82619a2aff3614d46470d191e2bf8"
+      },
+      {
+        "name": "Burrow-Brigade-server-0.5.7-docker-linux-amd64.tar.gz.sha256",
+        "bytes": 120,
+        "sha256": "560e47822f7e0ff17d179364887502de6359c66d34468a42788f015876b648da"
+      },
+      {
+        "name": "Burrow-Brigade-server-0.5.7-docker-linux-arm64.tar.gz",
+        "bytes": 81007598,
+        "sha256": "d44cb806c592fa49c35481a8061c4a91e92994c89834c2810f5de70edd0193dc"
+      },
+      {
+        "name": "Burrow-Brigade-server-0.5.7-docker-linux-arm64.tar.gz.sha256",
+        "bytes": 120,
+        "sha256": "9240d0e62749dbaba3e8f594a6def4be9b559a6608c35bacdf14bb28ec50ee5d"
+      },
+      {
+        "name": "SHA256SUMS",
+        "bytes": 820,
+        "sha256": "b1d0ec6907f103db83d775126e5ab91a2e48f26402c591fcec1868da04929663"
+      },
+      {
+        "name": "SHA256SUMS.sha256",
+        "bytes": 77,
+        "sha256": "5e1854de40ea340774a53d24e1ffa85d25fdeae486d9e2e18e7887bd0e3ed1d3"
+      },
+      {
+        "name": "compose.yaml",
+        "bytes": 719,
+        "sha256": "11fedc5dea44f8cccfea16b7177032255684b8e541766a37b6447241bca759db"
+      },
+      {
+        "name": "compose.yaml.sha256",
+        "bytes": 79,
+        "sha256": "6e05eed38900197c6d8f49879fb482732f1d8cd4d2eb2a4ecdda3f1914244a5c"
+      },
+      {
+        "name": "release.json",
+        "bytes": 1509,
+        "sha256": "a00542b4f59366dc67635d4019b9fad2a72810f287fd9e1f7b7f055f2ba26726"
+      },
+      {
+        "name": "release.json.sha256",
+        "bytes": 79,
+        "sha256": "e110ac25c7d796f3a7676eb2edcd13e50b89dbcaba71f369236a583e73286a75"
+      }
+    ],
+    "verified_asset_count": 18,
+    "all_payload_and_sidecar_hashes_verified": true,
+    "mac": {
+      "asset": "Burrow-Brigade-0.5.7-macos-arm64.zip",
+      "source_files_match_tag": 40,
+      "boot_and_audio_profile_match_tag": true,
+      "version": "0.5.7",
+      "minimum_macos": "13.0",
+      "archive_crc_verified": true,
+      "combat_active_motion_intervals": {
+        "count": 537,
+        "mean_ms": 17.79421261594932,
+        "p95_ms": 31.916832999999478,
+        "p99_ms": 76.24495900000028,
+        "max_ms": 144.0679590000009,
+        "over_33ms": 25,
+        "over_50ms": 13
+      },
+      "audio_renderer": "OpenAL Soft",
+      "effect_voices": 24,
+      "stolen_voices": 0,
+      "required_audio_cues": 76
+    },
+    "release": {
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38593730150",
+      "result": "passed",
+      "jobs": {
+        "prepare": "success",
+        "server (amd64, ubuntu-24.04)": "success",
+        "server (arm64, ubuntu-24.04-arm)": "success",
+        "windows / package": "success",
+        "macos / package": "success",
+        "linux / build": "success",
+        "linux / verify-containers (debian)": "success",
+        "linux / verify-containers (fedora)": "success",
+        "linux / verify-ubuntu (ubuntu-24.04)": "success",
+        "linux / verify-ubuntu (ubuntu-22.04)": "success",
+        "macos / verify": "success",
+        "release": "success"
+      }
+    },
+    "core_and_native": {
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38593729966",
+      "result": "passed"
+    },
+    "deployment": {
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38593730034",
+      "result": "passed",
+      "image": "ghcr.io/aliosm/burrow-brigade:0.5.7",
+      "healthy_at_utc": "2026-10-14T15:57:53Z",
+      "server_banner": "Burrow Brigade 0.5.7 \u00b7 protocol 4 \u00b7 YJIT"
+    }
+  }
 }

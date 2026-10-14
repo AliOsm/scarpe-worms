@@ -1,6 +1,6 @@
 # Current status
 
-Updated **2026-10-14** · client **0.5.7** · published release **0.5.6** · protocol **4**.
+Updated **2026-10-14** · client **0.5.7** · published release **0.5.7** · protocol **4**.
 
 ## 0.5.7 combat responsiveness
 
@@ -34,14 +34,23 @@ One ordinary Mac capture reached a 404.77 ms combat gap; its large wall/CPU
 differences, timer overshoots and native layout work implicate scheduling and
 event-loop delays, not expensive audio calls. These runner measurements do not
 establish the cause of every stall on the player's Mac or promise stall-free play.
+The tagged Mac capture averaged 17.79 ms in combat (p95 31.92 ms, maximum
+144.07 ms), with zero stolen audio voices. Human Mac playtesting remains useful.
 
 The existing core/native checks pass 346 Ruby tests / 13,899 assertions, eight
 native journeys, 93 Rust integration tests, audio, windowed action and six-team
 TLS container recovery. All required Windows, Mac and Linux package checks
 pass. The Windows smoke verifies the renderer and its actual voice pool; the
 Mac audio checker loads the delivered library and scheduling configuration,
-then exercises all 76 cues, panning, mute and resume. The release is ready for
-tagged builds and publication.
+then exercises all 76 cues, panning, mute and resume.
+
+[0.5.7 is published](https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.7).
+All 18 downloaded assets and their checksums are verified; the Mac archive
+contains the tag's exact 40 Ruby source files, boot code and audio profile.
+The [tagged release](https://github.com/AliOsm/scarpe-worms/actions/runs/38593730150)
+and [game/native checks](https://github.com/AliOsm/scarpe-worms/actions/runs/38593729966)
+pass. [Production deployment](https://github.com/AliOsm/scarpe-worms/actions/runs/38593730034)
+is healthy and reports **0.5.7 · protocol 4 · YJIT**.
 
 ## Earlier movement experiment evidence
 
