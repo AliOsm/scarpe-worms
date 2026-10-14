@@ -102,7 +102,7 @@ tumbling, drowning and bursts in the native window ([report](validation/reaction
 [screenshots](evidence/README.md)). Nobody has listened to the new sounds yet: their
 humour, intelligibility and mix, and anything on a Mac, remain unverified.
 
-## Server deployment (unreleased)
+## Server deployment (live)
 
 `.github/workflows/deploy-server.yml` deploys the host to one Linux server: a
 `v*` tag matching `Burrow::VERSION` runs the container check, publishes an
@@ -112,9 +112,16 @@ now enables YJIT, which cut the measured host tick from 1.10 to 0.80 ms (p95 4.8
 to 3.0 ms); Ruby 4.0.7 alone measured the same as 3.4.7. A local rehearsal with a
 stand-in registry redeployed during a six-team match in 7.1 s, keeping the room,
 session, certificate and in-flight shell, and a failed pull left the running host
-untouched ([report](validation/server-deploy-0.5.2.json)). Publishing to GHCR and
-the SSH step have not run: they need the owner's server and secrets, described in
-[Hosting](HOSTING.md#deploy-from-github-actions).
+untouched ([report](validation/server-deploy-0.5.2.json)).
+
+The first real deployment ran on 2026-10-14: tag `v0.5.4` published
+`ghcr.io/aliosm/burrow-brigade:0.5.4` and deployed it to the owner's Ubuntu
+server as root, with a dedicated deploy key and the server's pinned host keys in
+the `production` environment ([run](https://github.com/AliOsm/scarpe-worms/actions/runs/38517775519)).
+The container came up healthy (`Burrow Brigade 0.5.4 · protocol 4 · YJIT`). From
+another network, a client completed TLS 1.3 with the published certificate
+fingerprint, received `welcome` for a protocol-4 `hello` and listed rooms. A full
+game client match over the internet has not been played yet.
 
 ## 0.5.2 weapons sweep (unreleased)
 
@@ -483,8 +490,8 @@ next playtest can answer it.
 4. Launch the 0.5.0 archive on Macs and run the 30-minute soak; profile the isolated
    timing outlier if it reproduces, preserving the 0.2.4 precise-wait/playback fixes.
 5. Complete the [release requirements](RELEASE.md) before sales.
-6. Configure the deploy server and secrets, push `v0.5.4`, and connect from
-   another network to confirm the published host.
+6. Play a match through the deployed server from two networks (address,
+   port 4388 and certificate fingerprint are in the deploy run's summary).
 
 ## Repository handoff
 
@@ -494,8 +501,8 @@ added 0014–0017, cadence and clock work added 0018–0019, the zoom follow-up
 added 0020–0023, and the 0.5.4 round added 0024. Protocol 4 hosts and clients must upgrade together.
 Runtime assets live in the source tree, so running the game needs no image service or
 asset download. Generated bundles, raw captures and player data remain ignored.
-No publishing or deployment was performed; the server deploy workflow awaits
-the owner's first `v0.5.4` tag.
+The server image is published on GHCR and deployed from the `v0.5.4` tag; no Mac
+package has been signed, notarized or published.
 
 The [clean-checkout bootstrap report](validation/repository-bootstrap.json)
 belongs to the preceding 0.3.0 baseline, not a fresh 0.4.0 clone. Current checks
