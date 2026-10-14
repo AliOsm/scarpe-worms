@@ -12,6 +12,10 @@ module Burrow
       Y = 104
       # Diagonal outline copies keep names legible over any scenery at little paint cost.
       BADGE_OUTLINE = [[-1, -1], [1, -1], [-1, 1], [1, 1]].freeze
+      EFFECT_TEXT_OFFSETS = (BADGE_OUTLINE + [[0, 0]]).freeze
+      # Each retained caption owns a stack and five paragraphs. Bound the idle
+      # pool separately from the 100 live effects so long matches cannot grow it.
+      EFFECT_TEXT_POOL_LIMIT = 12
       # Each name builds five native paragraphs. Bound construction to two
       # names per frame so discovering a crowd leaves time for motion and input.
       LABELS_PER_FRAME = 2
@@ -37,7 +41,7 @@ module Burrow
       COMBAT = JSON.parse(File.read(File.join(Theme::ART, "manifest.json"), encoding: Encoding::UTF_8)).fetch("combat").freeze
       # Everything here repaints with the battlefield: no gradients (Widgets#shade).
       def flat_ui? = true
-      attr_reader :terrain_revision, :terrain_packet, :preview_terrain, :actors, :frame_count, :max_frame_ms, :last_frame_ms, :camera, :timeline, :positions
+      attr_reader :terrain_revision, :terrain_packet, :preview_terrain, :actors, :frame_count, :max_frame_ms, :last_frame_ms, :camera, :timeline, :positions, :last_render
 
       # Inspection tools can request the full collision grid. Normal rendering
       # forwards its compressed packet to the worker without decoding/hashing it
@@ -1131,15 +1135,30 @@ module Burrow
         left = x - width.fdiv(@scale * 2)
         top = kind == :caption ? y - height.fdiv(@scale * 2) : y - 20 - height.fdiv(@scale)
         fill, outline = color
-        @effect_layer.append do
-          node = @shoes.stack(left: px(left), top: px(top), width: width, height: height) do
-            (BADGE_OUTLINE + [[0, 0]]).each do |dx, dy|
-              @shoes.para(text, left: dx * edge, top: padding + dy * edge, width: width, size: size,
-                stroke: dx.zero? && dy.zero? ? fill : outline, font: Theme.display, weight: 700, align: "center", margin: 0)
+        if (node = @effect_text_pool&.pop)
+          # Reappend even under the same parent: new effects must still paint
+          # above older ones, exactly as a newly constructed caption would.
+          node.set_parent(@effect_layer)
+          place(node, px(left), px(top), width, height)
+          node.children.each_with_index do |layer, index|
+            dx, dy = EFFECT_TEXT_OFFSETS[index]
+            set_text(layer, text)
+            restyle(layer, left: dx * edge, top: padding + dy * edge, width: width, size: size,
+              stroke: dx.zero? && dy.zero? ? fill : outline)
+          end
+          node.show
+        else
+          node = nil
+          @effect_layer.append do
+            node = @shoes.stack(left: px(left), top: px(top), width: width, height: height) do
+              EFFECT_TEXT_OFFSETS.each do |dx, dy|
+                @shoes.para(text, left: dx * edge, top: padding + dy * edge, width: width, size: size,
+                  stroke: dx.zero? && dy.zero? ? fill : outline, font: Theme.display, weight: 700, align: "center", margin: 0)
+              end
             end
           end
-          retain_effect(node: node, born: Burrow.clock, life: life, kind: kind, x: x, y: y, width: width, height: height)
         end
+        retain_effect(node: node, born: Burrow.clock, life: life, kind: kind, x: x, y: y, width: width, height: height)
       end
 
       # Presentation-only reactions to the host's reports: who reels, who spins,
@@ -1227,8 +1246,21 @@ module Burrow
       end
 
       def retain_effect(**effect)
-        @effects.shift[:node].remove while @effects.length >= 100
+        release_effect(@effects.shift) while @effects.length >= 100
         @effects << effect
+      end
+
+      def release_effect(effect)
+        node = effect[:node]
+        # The outlined stack already owns its five paragraphs. Reuse that tree
+        # without a second set of child references in every live effect record.
+        text = effect[:kind] == :text || effect[:kind] == :caption
+        if text && node.respond_to?(:children) && (@effect_text_pool ||= []).length < EFFECT_TEXT_POOL_LIMIT
+          node.hide
+          @effect_text_pool << node
+        else
+          node.remove
+        end
       end
 
       def render_effects(now)
@@ -1237,7 +1269,7 @@ module Burrow
           # first paint must still use frame zero, never an invalid "--1.png".
           age = [now - effect[:born], 0].max
           if age >= effect[:life]
-            effect[:node].remove
+            release_effect(effect)
             true
           else
             case effect[:kind]

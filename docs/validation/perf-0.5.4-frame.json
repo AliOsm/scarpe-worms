@@ -1,0 +1,1250 @@
+{
+  "schema_version": 1,
+  "target_version": "0.5.4",
+  "agent": "frame",
+  "generated_at": "2026-10-14T00:25:14.586405+00:00",
+  "baseline": {
+    "commit": "8bf41edf524e518c15bc38889b4425e26d31fa15",
+    "version": "0.5.3",
+    "source": "<scratch>/baseline-0.5.3"
+  },
+  "machine": {
+    "os": "Ubuntu 26.04 LTS",
+    "kernel": "7.0.0-31-generic",
+    "cpu": "Intel Core i5-8500 @ 3.00 GHz",
+    "cores": 6,
+    "ram_gib": 15,
+    "architecture": "x86_64",
+    "ruby_primary": "3.4.7",
+    "ruby_compatibility": "4.0.7",
+    "jit": "not enabled",
+    "gc_tuning": "none"
+  },
+  "scenario": {
+    "fixture": "frame-reactions-v2",
+    "seed": "frame-reactions",
+    "grubs": 36,
+    "flames": 60,
+    "frames": 888,
+    "stages": {
+      "burst": 48,
+      "settle": 60,
+      "replay": 180,
+      "warm_burst": 300,
+      "warm_repeat": 300
+    },
+    "events": "Three blasts damage six grubs and kill three per volley; drowning, ghosts, graves, dizziness, sweat and tumble. Frozen presentation state; no simulation/network or sound submission."
+  },
+  "method": {
+    "lock": "<scratch>/bin/bench",
+    "heavy_checks": "<scratch>/bin/heavy",
+    "paired_order": "A B repeated five times, separate short lock per capture",
+    "decision": "primary median >=5% better and >=80% paired direction or nonoverlapping distributions; no guard regression beyond noise; exact correctness",
+    "primary_probe": "outer-frame-v1 (Scene/HUD only); detailed FrameProfile retained for attribution and native counts",
+    "statistics": "Within-run median and nearest-rank p95/max; cross-run n=5 median/p95/min/max/IQR. Individual deterministic event frames are compared across runs.",
+    "source_manifest": "<scratch>/frame/source-manifest.json",
+    "revision_audit": "Final detailed acceptance uses children-ab A2/B2..A6/B6. A1/B1 is an earlier combination, retained/excluded by source revision; B1 finished one second before overlay removal. Outer reaction acceptance A1/B1..A5/B5 uses the final frozen source throughout."
+  },
+  "experiments": [
+    {
+      "id": "E1",
+      "hypothesis": "Reuse all effect nodes to avoid native construction bursts.",
+      "change": "Hide/reuse images, particles, lines and outlined text without reappending their draw order.",
+      "files": [
+        "lib/burrow/client/scene.rb"
+      ],
+      "metric": "native screenshot identity (correctness gate)",
+      "baseline": {
+        "burst_sha256": "375e6e55ed68c70688a0fcbfe034ba0377360482981d4ccba34727ed6a6e7810"
+      },
+      "candidate": {
+        "burst_sha256": "6757f12e90df801950b943927bc100dbc38668784770c5ef3cc94c3c96c0b60b"
+      },
+      "verdict": "REJECT",
+      "reason": "Changed stacking: burst screenshot differs. Remaining three screenshots matched; speed cannot waive correctness.",
+      "patch": "<scratch>/frame/rejected/e1-effect-node-pooling.patch"
+    },
+    {
+      "id": "E2-scene",
+      "hypothesis": "Remove frame-local arrays in camera/object reconciliation.",
+      "change": "reverse_each and delete_if with ids.include?",
+      "files": [
+        "lib/burrow/client/scene.rb"
+      ],
+      "metric": "exploratory scene time and allocation counts",
+      "baseline": {
+        "raw": "<scratch>/frame/baseline/ab-frame-A1"
+      },
+      "candidate": {
+        "raw": "<scratch>/frame/candidate/ab-frame-B1"
+      },
+      "verdict": "REJECT",
+      "reason": "No qualifying repeated isolated timing result; membership became quadratic. The mixed exploratory capture is not acceptance evidence.",
+      "patch": "<scratch>/frame/rejected/e2-scene-allocation-prototype.patch"
+    },
+    {
+      "id": "E2-overlay",
+      "hypothesis": "Avoid allocating empty overlay arrays for unchanged grubs.",
+      "change": "Lazy output array and Hash#each_value.",
+      "files": [
+        "lib/burrow/client/sprites.rb"
+      ],
+      "metric": "static frame allocations; frame tails are guards",
+      "baseline": {
+        "n": 5,
+        "median": 178.0,
+        "p95": 178.0,
+        "min": 178.0,
+        "max": 178.0,
+        "iqr": 0.0
+      },
+      "candidate": {
+        "n": 5,
+        "median": 70.0,
+        "p95": 70.0,
+        "min": 70.0,
+        "max": 70.0,
+        "iqr": 0.0
+      },
+      "verdict": "REJECT",
+      "reason": "Allocation primary passes (108 objects/frame saved in all pairs), but pan tails move unfavorably and the combined candidate failed its cold-frame guard. Conservatively withheld; no causal attribution of the combined cold regression to this change alone.",
+      "guard": {
+        "profiled_pan_max_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 6.09614,
+            "p95": 9.558096,
+            "min": 5.546337,
+            "max": 9.558096,
+            "iqr": 3.777836
+          },
+          "candidate": {
+            "n": 5,
+            "median": 9.13324,
+            "p95": 9.469015,
+            "min": 8.438278,
+            "max": 9.469015,
+            "iqr": 0.448136
+          },
+          "pairs_better": 2,
+          "pairs": 5,
+          "median_improvement_percent": -49.820045
+        },
+        "outer_pan_max_cpu_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 4.219744,
+            "p95": 4.889168,
+            "min": 4.102584,
+            "max": 4.889168,
+            "iqr": 0.07548
+          },
+          "candidate": {
+            "n": 5,
+            "median": 4.458206,
+            "p95": 4.618598,
+            "min": 4.431776,
+            "max": 4.618598,
+            "iqr": 0.102336
+          },
+          "pairs_better": 1,
+          "pairs": 5,
+          "median_improvement_percent": -5.651101
+        }
+      },
+      "raw": [
+        "<scratch>/frame/overlay-ab/comparison.json",
+        "<scratch>/frame/outer-ab/comparison.json"
+      ],
+      "patch": "<scratch>/frame/rejected/e2-overlay-allocation.patch"
+    },
+    {
+      "id": "E3",
+      "hypothesis": "Restore correct draw order in broad effect pooling.",
+      "change": "Reparent reused nodes; prototype also pools rotation-sensitive images, lines, particles and rings.",
+      "files": [
+        "lib/burrow/client/scene.rb"
+      ],
+      "metric": "correctness and boundedness before timing acceptance",
+      "baseline": {
+        "raw": "<scratch>/frame/baseline/reactions-r347-1"
+      },
+      "candidate": {
+        "raw": "<scratch>/frame/candidate/reactions-r347-pool-reparent-1",
+        "one_revision_screenshots_identical": true
+      },
+      "verdict": "REJECT",
+      "reason": "Broad prototype never cleared bounded retention, rotation/reset and complete validation gates; narrowed to captions. Saved patch includes exploratory allocation edits and a later unmeasured ring revision.",
+      "patch": "<scratch>/frame/rejected/e3-broad-pooling-prototype.patch"
+    },
+    {
+      "id": "E4",
+      "hypothesis": "Pool only outlined text, together with E2-overlay.",
+      "change": "Retain 12 expired text stacks plus a duplicate layers array in each effect.",
+      "files": [
+        "lib/burrow/client/scene.rb",
+        "lib/burrow/client/sprites.rb"
+      ],
+      "metric": "warmed blast time with cold-frame guard",
+      "baseline": {
+        "n": 5,
+        "median": 18.869996,
+        "p95": 20.042736,
+        "min": 17.600487,
+        "max": 20.042736,
+        "iqr": 0.745863
+      },
+      "candidate": {
+        "n": 5,
+        "median": 8.874837,
+        "p95": 9.127276,
+        "min": 8.704856,
+        "max": 9.127276,
+        "iqr": 0.097256
+      },
+      "verdict": "REJECT",
+      "reason": "Warmed wins exceeded 50%, but profiled cold CPU maximum rose 19.731\u219220.971 ms in 5/5 pairs with nonoverlapping CPU ranges and extra GC. Replaced by E5 and checked with outer probes.",
+      "raw": "<scratch>/frame/final-ab/comparison.json",
+      "patch": "<scratch>/frame/rejected/e4-caption-pool-duplicate-layers.patch"
+    },
+    {
+      "id": "E5",
+      "hypothesis": "Reuse existing caption trees to remove repeated multi-kill construction spikes.",
+      "change": "Pool at most 12 idle outlined stacks; use public Slot#children, reappend on reuse, reset text/geometry/colors, preserve 100 live-effect cap.",
+      "files": [
+        "lib/burrow/client/scene.rb",
+        "test/frame_effect_pool_test.rb"
+      ],
+      "metric": "scheduled warmed multi-kill Scene#render wall/thread-CPU time, outer probe, five interleaved pairs",
+      "baseline": {
+        "n": 5,
+        "median": 18.328001,
+        "p95": 20.253967,
+        "min": 17.695897,
+        "max": 20.253967,
+        "iqr": 0.923003
+      },
+      "candidate": {
+        "n": 5,
+        "median": 8.460438,
+        "p95": 8.759327,
+        "min": 7.855967,
+        "max": 8.759327,
+        "iqr": 0.367155
+      },
+      "verdict": "ACCEPT",
+      "reason": "53.8% and 62.2% warmed wall reductions, both 5/5 paired wins and nonoverlapping ranges. Cold/steady outer-probe ranges overlap; small p95 shifts remain within run spread. Exact native fixtures pass; tests listed separately.",
+      "metrics": {
+        "burst": {
+          "wall_ms": {
+            "baseline": {
+              "n": 5,
+              "median": 19.546488,
+              "p95": 20.629601,
+              "min": 18.584829,
+              "max": 20.629601,
+              "iqr": 1.091641
+            },
+            "candidate": {
+              "n": 5,
+              "median": 19.385024,
+              "p95": 20.077418,
+              "min": 18.738637,
+              "max": 20.077418,
+              "iqr": 0.754914
+            },
+            "pairs_better": 3,
+            "pairs": 5,
+            "median_improvement_percent": 0.82605
+          },
+          "cpu_ms": {
+            "baseline": {
+              "n": 5,
+              "median": 19.531155,
+              "p95": 20.568209,
+              "min": 18.587308,
+              "max": 20.568209,
+              "iqr": 1.091891
+            },
+            "candidate": {
+              "n": 5,
+              "median": 19.300067,
+              "p95": 19.544327,
+              "min": 18.740947,
+              "max": 19.544327,
+              "iqr": 0.742935
+            },
+            "pairs_better": 3,
+            "pairs": 5,
+            "median_improvement_percent": 1.183176
+          },
+          "allocated_objects": {
+            "baseline": {
+              "n": 5,
+              "median": 26643,
+              "p95": 26643,
+              "min": 26643,
+              "max": 26643,
+              "iqr": 0
+            },
+            "candidate": {
+              "n": 5,
+              "median": 26622,
+              "p95": 26622,
+              "min": 26622,
+              "max": 26622,
+              "iqr": 0
+            },
+            "pairs_better": 5,
+            "pairs": 5,
+            "median_improvement_percent": 0.07882
+          },
+          "gc_ms": {
+            "baseline": {
+              "n": 5,
+              "median": 0,
+              "p95": 0,
+              "min": 0,
+              "max": 0,
+              "iqr": 0
+            },
+            "candidate": {
+              "n": 5,
+              "median": 0,
+              "p95": 0,
+              "min": 0,
+              "max": 0,
+              "iqr": 0
+            },
+            "pairs_better": 0,
+            "pairs": 5,
+            "median_improvement_percent": null
+          }
+        },
+        "warm_burst": {
+          "wall_ms": {
+            "baseline": {
+              "n": 5,
+              "median": 18.328001,
+              "p95": 20.253967,
+              "min": 17.695897,
+              "max": 20.253967,
+              "iqr": 0.923003
+            },
+            "candidate": {
+              "n": 5,
+              "median": 8.460438,
+              "p95": 8.759327,
+              "min": 7.855967,
+              "max": 8.759327,
+              "iqr": 0.367155
+            },
+            "pairs_better": 5,
+            "pairs": 5,
+            "median_improvement_percent": 53.83873
+          },
+          "cpu_ms": {
+            "baseline": {
+              "n": 5,
+              "median": 18.330196,
+              "p95": 19.618241,
+              "min": 17.697923,
+              "max": 19.618241,
+              "iqr": 0.853844
+            },
+            "candidate": {
+              "n": 5,
+              "median": 8.397649,
+              "p95": 8.760808,
+              "min": 7.857113,
+              "max": 8.760808,
+              "iqr": 0.219048
+            },
+            "pairs_better": 5,
+            "pairs": 5,
+            "median_improvement_percent": 54.186802
+          },
+          "allocated_objects": {
+            "baseline": {
+              "n": 5,
+              "median": 23823,
+              "p95": 23823,
+              "min": 23823,
+              "max": 23823,
+              "iqr": 0
+            },
+            "candidate": {
+              "n": 5,
+              "median": 10648,
+              "p95": 10648,
+              "min": 10648,
+              "max": 10648,
+              "iqr": 0
+            },
+            "pairs_better": 5,
+            "pairs": 5,
+            "median_improvement_percent": 55.303698
+          },
+          "gc_ms": {
+            "baseline": {
+              "n": 5,
+              "median": 1,
+              "p95": 1,
+              "min": 1,
+              "max": 1,
+              "iqr": 0
+            },
+            "candidate": {
+              "n": 5,
+              "median": 0,
+              "p95": 0,
+              "min": 0,
+              "max": 0,
+              "iqr": 0
+            },
+            "pairs_better": 5,
+            "pairs": 5,
+            "median_improvement_percent": 100.0
+          }
+        },
+        "warm_repeat": {
+          "wall_ms": {
+            "baseline": {
+              "n": 5,
+              "median": 19.675275,
+              "p95": 21.152399,
+              "min": 18.502036,
+              "max": 21.152399,
+              "iqr": 1.786013
+            },
+            "candidate": {
+              "n": 5,
+              "median": 7.428039,
+              "p95": 8.39138,
+              "min": 7.303474,
+              "max": 8.39138,
+              "iqr": 0.063225
+            },
+            "pairs_better": 5,
+            "pairs": 5,
+            "median_improvement_percent": 62.246833
+          },
+          "cpu_ms": {
+            "baseline": {
+              "n": 5,
+              "median": 19.626874,
+              "p95": 20.016182,
+              "min": 18.503844,
+              "max": 20.016182,
+              "iqr": 1.289989
+            },
+            "candidate": {
+              "n": 5,
+              "median": 7.424304,
+              "p95": 8.024768,
+              "min": 7.305022,
+              "max": 8.024768,
+              "iqr": 0.053046
+            },
+            "pairs_better": 5,
+            "pairs": 5,
+            "median_improvement_percent": 62.172764
+          },
+          "allocated_objects": {
+            "baseline": {
+              "n": 5,
+              "median": 23832,
+              "p95": 23832,
+              "min": 23832,
+              "max": 23832,
+              "iqr": 0
+            },
+            "candidate": {
+              "n": 5,
+              "median": 9307,
+              "p95": 9307,
+              "min": 9307,
+              "max": 9307,
+              "iqr": 0
+            },
+            "pairs_better": 5,
+            "pairs": 5,
+            "median_improvement_percent": 60.947466
+          },
+          "gc_ms": {
+            "baseline": {
+              "n": 5,
+              "median": 2,
+              "p95": 2,
+              "min": 2,
+              "max": 2,
+              "iqr": 0
+            },
+            "candidate": {
+              "n": 5,
+              "median": 0,
+              "p95": 0,
+              "min": 0,
+              "max": 0,
+              "iqr": 0
+            },
+            "pairs_better": 5,
+            "pairs": 5,
+            "median_improvement_percent": 100.0
+          }
+        }
+      },
+      "native_warm_blast": {
+        "creates": {
+          "baseline": {
+            "n": 5,
+            "median": 57,
+            "p95": 57,
+            "min": 57,
+            "max": 57,
+            "iqr": 0
+          },
+          "candidate": {
+            "n": 5,
+            "median": 15,
+            "p95": 15,
+            "min": 15,
+            "max": 15,
+            "iqr": 0
+          },
+          "pairs_better": 5,
+          "pairs": 5,
+          "median_improvement_percent": 73.684211
+        },
+        "props": {
+          "baseline": {
+            "n": 5,
+            "median": 78,
+            "p95": 78,
+            "min": 78,
+            "max": 78,
+            "iqr": 0
+          },
+          "candidate": {
+            "n": 5,
+            "median": 137,
+            "p95": 137,
+            "min": 137,
+            "max": 137,
+            "iqr": 0
+          },
+          "pairs_better": 0,
+          "pairs": 5,
+          "median_improvement_percent": -75.641026
+        },
+        "reparents": {
+          "baseline": {
+            "n": 5,
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0,
+            "iqr": 0
+          },
+          "candidate": {
+            "n": 5,
+            "median": 7,
+            "p95": 7,
+            "min": 7,
+            "max": 7,
+            "iqr": 0
+          },
+          "pairs_better": 0,
+          "pairs": 5,
+          "median_improvement_percent": null
+        }
+      },
+      "raw": [
+        "<scratch>/frame/children-ab/comparison.json",
+        "<scratch>/frame/outer-reaction-ab/comparison.json"
+      ]
+    }
+  ],
+  "guards": {
+    "outer": {
+      "burst": {
+        "baseline_wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 1.613748,
+            "p95": 1.961744,
+            "min": 1.53717,
+            "max": 1.961744,
+            "iqr": 0.074354
+          },
+          "p95": {
+            "n": 5,
+            "median": 5.162061,
+            "p95": 6.115423,
+            "min": 5.022126,
+            "max": 6.115423,
+            "iqr": 0.34739
+          },
+          "max": {
+            "n": 5,
+            "median": 19.546488,
+            "p95": 20.629601,
+            "min": 18.584829,
+            "max": 20.629601,
+            "iqr": 1.091641
+          }
+        },
+        "candidate_wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 1.679212,
+            "p95": 1.802042,
+            "min": 1.536658,
+            "max": 1.802042,
+            "iqr": 0.10179
+          },
+          "p95": {
+            "n": 5,
+            "median": 5.537616,
+            "p95": 7.306707,
+            "min": 5.139056,
+            "max": 7.306707,
+            "iqr": 0.475832
+          },
+          "max": {
+            "n": 5,
+            "median": 19.385024,
+            "p95": 20.077418,
+            "min": 18.738637,
+            "max": 20.077418,
+            "iqr": 0.754914
+          }
+        },
+        "stage_gc_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 7,
+            "p95": 8,
+            "min": 6,
+            "max": 8,
+            "iqr": 1
+          },
+          "candidate": {
+            "n": 5,
+            "median": 7,
+            "p95": 8,
+            "min": 6,
+            "max": 8,
+            "iqr": 1
+          }
+        }
+      },
+      "settle": {
+        "baseline_wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 1.042279,
+            "p95": 1.050186,
+            "min": 0.976534,
+            "max": 1.050186,
+            "iqr": 0.053787
+          },
+          "p95": {
+            "n": 5,
+            "median": 4.398765,
+            "p95": 4.88665,
+            "min": 3.882438,
+            "max": 4.88665,
+            "iqr": 0.647639
+          },
+          "max": {
+            "n": 5,
+            "median": 6.060719,
+            "p95": 7.106724,
+            "min": 5.883517,
+            "max": 7.106724,
+            "iqr": 0.11319
+          }
+        },
+        "candidate_wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 1.030558,
+            "p95": 1.123769,
+            "min": 0.973415,
+            "max": 1.123769,
+            "iqr": 0.061812
+          },
+          "p95": {
+            "n": 5,
+            "median": 3.908125,
+            "p95": 4.599434,
+            "min": 3.731911,
+            "max": 4.599434,
+            "iqr": 0.347709
+          },
+          "max": {
+            "n": 5,
+            "median": 4.75825,
+            "p95": 5.390259,
+            "min": 4.279296,
+            "max": 5.390259,
+            "iqr": 0.924589
+          }
+        },
+        "stage_gc_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 5,
+            "p95": 5,
+            "min": 4,
+            "max": 5,
+            "iqr": 0
+          },
+          "candidate": {
+            "n": 5,
+            "median": 4,
+            "p95": 5,
+            "min": 4,
+            "max": 5,
+            "iqr": 1
+          }
+        }
+      },
+      "replay": {
+        "baseline_wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 0.630912,
+            "p95": 0.669304,
+            "min": 0.605107,
+            "max": 0.669304,
+            "iqr": 0.027813
+          },
+          "p95": {
+            "n": 5,
+            "median": 3.523236,
+            "p95": 3.576503,
+            "min": 3.326883,
+            "max": 3.576503,
+            "iqr": 0.109786
+          },
+          "max": {
+            "n": 5,
+            "median": 4.562922,
+            "p95": 5.220233,
+            "min": 4.176092,
+            "max": 5.220233,
+            "iqr": 0.377971
+          }
+        },
+        "candidate_wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 0.605429,
+            "p95": 0.638157,
+            "min": 0.59472,
+            "max": 0.638157,
+            "iqr": 0.013662
+          },
+          "p95": {
+            "n": 5,
+            "median": 3.412435,
+            "p95": 3.54843,
+            "min": 3.331816,
+            "max": 3.54843,
+            "iqr": 0.04455
+          },
+          "max": {
+            "n": 5,
+            "median": 4.512579,
+            "p95": 4.856905,
+            "min": 4.394003,
+            "max": 4.856905,
+            "iqr": 0.265668
+          }
+        },
+        "stage_gc_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 8,
+            "p95": 9,
+            "min": 8,
+            "max": 9,
+            "iqr": 1
+          },
+          "candidate": {
+            "n": 5,
+            "median": 8,
+            "p95": 9,
+            "min": 7,
+            "max": 9,
+            "iqr": 0
+          }
+        }
+      },
+      "warm_burst": {
+        "baseline_wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 0.777362,
+            "p95": 0.786701,
+            "min": 0.72449,
+            "max": 0.786701,
+            "iqr": 0.015924
+          },
+          "p95": {
+            "n": 5,
+            "median": 3.708052,
+            "p95": 3.729327,
+            "min": 3.554883,
+            "max": 3.729327,
+            "iqr": 0.141098
+          },
+          "max": {
+            "n": 5,
+            "median": 18.328001,
+            "p95": 20.253967,
+            "min": 17.695897,
+            "max": 20.253967,
+            "iqr": 0.923003
+          }
+        },
+        "candidate_wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 0.752832,
+            "p95": 0.842477,
+            "min": 0.715908,
+            "max": 0.842477,
+            "iqr": 0.031161
+          },
+          "p95": {
+            "n": 5,
+            "median": 3.577236,
+            "p95": 3.891096,
+            "min": 3.484703,
+            "max": 3.891096,
+            "iqr": 0.18744
+          },
+          "max": {
+            "n": 5,
+            "median": 8.460438,
+            "p95": 8.759327,
+            "min": 7.855967,
+            "max": 8.759327,
+            "iqr": 0.367155
+          }
+        },
+        "stage_gc_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 22,
+            "p95": 23,
+            "min": 22,
+            "max": 23,
+            "iqr": 1
+          },
+          "candidate": {
+            "n": 5,
+            "median": 21,
+            "p95": 24,
+            "min": 21,
+            "max": 24,
+            "iqr": 1
+          }
+        }
+      },
+      "warm_repeat": {
+        "baseline_wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 0.783356,
+            "p95": 0.811183,
+            "min": 0.778554,
+            "max": 0.811183,
+            "iqr": 0.027457
+          },
+          "p95": {
+            "n": 5,
+            "median": 3.368269,
+            "p95": 3.46136,
+            "min": 3.273127,
+            "max": 3.46136,
+            "iqr": 0.155336
+          },
+          "max": {
+            "n": 5,
+            "median": 19.675275,
+            "p95": 21.152399,
+            "min": 18.502036,
+            "max": 21.152399,
+            "iqr": 1.786013
+          }
+        },
+        "candidate_wall_ms": {
+          "median": {
+            "n": 5,
+            "median": 0.75368,
+            "p95": 0.777606,
+            "min": 0.741886,
+            "max": 0.777606,
+            "iqr": 0.022722
+          },
+          "p95": {
+            "n": 5,
+            "median": 3.445269,
+            "p95": 3.52572,
+            "min": 3.417648,
+            "max": 3.52572,
+            "iqr": 0.087088
+          },
+          "max": {
+            "n": 5,
+            "median": 7.428039,
+            "p95": 8.39138,
+            "min": 7.303474,
+            "max": 8.39138,
+            "iqr": 0.063225
+          }
+        },
+        "stage_gc_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 34,
+            "p95": 35,
+            "min": 33,
+            "max": 35,
+            "iqr": 1
+          },
+          "candidate": {
+            "n": 5,
+            "median": 21,
+            "p95": 21,
+            "min": 21,
+            "max": 21,
+            "iqr": 0
+          }
+        }
+      }
+    },
+    "profile_overhead": "Detailed E5 probe moves cold CPU max 20.123\u219221.489 ms and adds one GC; settle median/p95 also rises. These do not persist with the outer probe: cold CPU 19.531\u219219.300 ms, zero cold-frame GC both arms, settle wall max 6.061\u21924.758 ms. No GC knobs changed.",
+    "small_shift": "Outer warm-repeat wall p95 median 3.368\u21923.445 ms (+0.077 ms, all pairs upward); baseline range 3.273\u20133.461 and candidate 3.418\u20133.526 overlap. Reported as a small guard shift within run spread, not a p95 win.",
+    "native_messages": {
+      "burst": {
+        "n": 5,
+        "baseline": 1765,
+        "candidate": 1765,
+        "spread": "constant in each arm"
+      },
+      "settle": {
+        "n": 5,
+        "baseline": 1665,
+        "candidate": 1632,
+        "spread": "constant in each arm"
+      },
+      "replay": {
+        "n": 5,
+        "baseline": 3000,
+        "candidate": 2995,
+        "spread": "constant in each arm"
+      },
+      "warm_burst": {
+        "n": 5,
+        "baseline": 6487,
+        "candidate": 6480,
+        "spread": "constant in each arm"
+      },
+      "warm_repeat": {
+        "n": 5,
+        "baseline": 6305,
+        "candidate": 6273,
+        "spread": "constant in each arm"
+      }
+    },
+    "retention": "Maximum 12 idle stacks + 60 owned paragraphs in addition to the existing <=100 live effects. New Scene gets a new pool."
+  },
+  "checks": {
+    "core_ruby_3_4_7": {
+      "status": "pass",
+      "tests": 317,
+      "assertions": 9881,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "seed": 20152,
+      "log": "<scratch>/frame/checks/core-3.4.7-recheck.log"
+    },
+    "core_ruby_4_0_7": {
+      "status": "pass",
+      "tests": 317,
+      "assertions": 9881,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "seed": 45033,
+      "log": "<scratch>/frame/checks/core-4.0.7.log"
+    },
+    "focused": {
+      "status": "pass",
+      "tests": 58,
+      "assertions": 2781,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "seed": 33689,
+      "log": "<scratch>/frame/checks/focused-r347-recheck.log"
+    },
+    "network_receipts_isolated": {
+      "status": "pass",
+      "tests": 1,
+      "assertions": 9,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "seed": 61132,
+      "log": "<scratch>/frame/checks/network-receipts-isolated.log",
+      "note": "The isolated test itself reports 1 run / 9 assertions / 0 failures or errors. The shell wrapper then failed while assigning zsh read-only variable status; no command exit-0 claim is made from that wrapper."
+    },
+    "native": {
+      "status": "pass",
+      "ruby": "3.4.7",
+      "cases": 7,
+      "assertions": 242,
+      "counts": {
+        "pass": 7,
+        "fail": 0,
+        "error": 0,
+        "skip": 0,
+        "expected_fail": 0,
+        "unexpected_pass": 0,
+        "not_applicable": 0,
+        "timeout": 0
+      },
+      "exit_status": 0,
+      "log": "<scratch>/frame/checks/native-r347-recheck.log",
+      "results": "<scratch>/frame/checks/native-r347-recheck-results.json",
+      "cases_complete": true,
+      "journeys": {
+        "checks/battle.sspec": {
+          "status": "pass",
+          "assertions": 25,
+          "run_at": "2026-10-14T00:21:58Z"
+        },
+        "checks/camera.sspec": {
+          "status": "pass",
+          "assertions": 32,
+          "run_at": "2026-10-14T00:21:58Z"
+        },
+        "checks/controls.sspec": {
+          "status": "pass",
+          "assertions": 60,
+          "run_at": "2026-10-14T00:21:58Z"
+        },
+        "checks/lifecycle.sspec": {
+          "status": "pass",
+          "assertions": 21,
+          "run_at": "2026-10-14T00:21:58Z"
+        },
+        "checks/menu.sspec": {
+          "status": "pass",
+          "assertions": 68,
+          "run_at": "2026-10-14T00:21:58Z"
+        },
+        "checks/online.sspec": {
+          "status": "pass",
+          "assertions": 19,
+          "run_at": "2026-10-14T00:21:58Z"
+        },
+        "checks/presentation.sspec": {
+          "status": "pass",
+          "assertions": 17,
+          "run_at": "2026-10-14T00:21:58Z"
+        }
+      }
+    },
+    "rendering_analysis": {
+      "status": "pass",
+      "log": "<scratch>/frame/checks/rendering-analysis.log",
+      "tests": 13
+    },
+    "rendering": {
+      "status": "pass_on_unchanged_recheck",
+      "baseline": "<scratch>/frame/rendering/baseline-recheck.json",
+      "candidate": "<scratch>/frame/rendering/children-recheck.json",
+      "prior_failure": "<scratch>/frame/rendering/children-unprofiled.json",
+      "failure_reason": "189.820 ms pan presentation gap; associated GUI interval 154.064 ms, update 4.466 ms wall / 1.555 ms CPU / 0 ms GC. Cause unresolved. Unchanged recheck passed; no budgets relaxed."
+    },
+    "soak": {
+      "status": "pass",
+      "report": "<scratch>/frame/soak/children-windowed.json",
+      "scenario": {
+        "seconds": 150.01,
+        "turns": 42,
+        "terrain_changes": 62,
+        "resizes": 4,
+        "camera_changes": 29,
+        "audio": true,
+        "audio_driver": "null",
+        "completed_matches": 0
+      },
+      "match_updates": {
+        "wall_ms": {
+          "n": 9089,
+          "median": 1.119396,
+          "p95": 3.765657,
+          "max": 142.785754
+        },
+        "cpu_ms": {
+          "n": 9089,
+          "median": 1.096929,
+          "p95": 3.471407,
+          "max": 130.539897
+        },
+        "allocated_objects": {
+          "n": 9089,
+          "median": 1041,
+          "p95": 2458,
+          "max": 159765
+        },
+        "gc_ms": {
+          "n": 9089,
+          "median": 0,
+          "p95": 1,
+          "max": 25
+        }
+      },
+      "gc_collection_ms": {
+        "n": 501,
+        "median": 3.646902,
+        "p95": 5.465889,
+        "max": 9.87206
+      },
+      "major_gc_ms": {
+        "n": 43,
+        "median": 2.274213,
+        "p95": 3.700173,
+        "max": 4.344905
+      },
+      "resource_peaks": {
+        "ruby_rss_kib": 88512,
+        "native_rss_kib": 170168,
+        "nodes": 380,
+        "effects": 30
+      },
+      "app_update_intervals": {
+        "count": 9129,
+        "mean_ms": 17.098844,
+        "p95_ms": 17.598404,
+        "max_ms": 619.872381
+      }
+    },
+    "screenshots": {
+      "status": "pass",
+      "standard": {
+        "count": 4,
+        "sha256": {
+          "static.png": "31c765a3de60345a6db2344f2c02c41b680f82e8d5f5803771ab6fd5564235e1",
+          "pan.png": "f8c9fd348aaafdf9099e53b42887a4e69aef11a1126516cb581973c2d2239f11",
+          "flames.png": "f8c9fd348aaafdf9099e53b42887a4e69aef11a1126516cb581973c2d2239f11",
+          "zoom.png": "1dd9108d26dee9ed4d15b0ff0621718f8dc42a4d1f90c88b9a458946d26bfaea"
+        }
+      },
+      "reactions": {
+        "fixture": "frame-reactions-v2",
+        "count": 6,
+        "all_paired_captures_identical": true,
+        "sha256": {
+          "replay.png": "c24326e3a5ae5c624425a4f6624845e0e30febf6f05c52021bd19eb731ed2d17",
+          "burst.png": "207593932f752e0e36591cc8c0483eb16d03176c74a3ccdbb9cd0fb12325515b",
+          "settle.png": "62efaaf94eb6433597e651740c4a78040d773f423cecaa94f2b152c5e19a826f",
+          "warm_burst.png": "30332e20da4b94ec8feefde6f214db1066b4934d742838b3b72155bba991ef8a",
+          "warm_repeat.png": "940a722a072a19071a3c1b2245de06973d919248ac30e37c350b81c45d82edf0",
+          "before.png": "11db830bd684131883039e5f86f3405350456d5123a31812a5ed3cf9f22fd494"
+        }
+      },
+      "extended": {
+        "fixture": "frame-reaction-pixels-v1",
+        "count": 27,
+        "sha256": {
+          "replay.png": "c24326e3a5ae5c624425a4f6624845e0e30febf6f05c52021bd19eb731ed2d17",
+          "frame-337.png": "98964b46c30e962b35c59bf1b3ed62916396f2681ce4c6384897ea9758d62664",
+          "frame-400.png": "16d9c0745b6ab020a504f562373d602bed1278db296cad1ccb0d3ab32525152e",
+          "frame-615.png": "f8ff97bcdc5e5faabc632573afbb9a9bb0783d35dd38191af74e29e8f737f03e",
+          "frame-352.png": "f67654c19b83f7334c05b68f9eca78fea912f8a8768e751062f97e6cefc2d193",
+          "frame-372.png": "ab0e0d683e3b05c2a5faea8ac62de399ce720b8cffd7c8add9c275e8db648a1b",
+          "burst.png": "69fb40dc40e6896a0821a6a3812e16bdb87787a9adf973d56c7d2d94cb73a660",
+          "frame-672.png": "486192ef5968633e46a10d3450bbed39f67744b3e8aa418c7c86df71cacd5542",
+          "frame-637.png": "5e71ac7fcc09f8ed71308766b89a67494db13e5f3f64643da977b2ec5bcd7a01",
+          "frame-052.png": "f82f105f4879b1d9ea56e7f5658f73384028dcf475436169f24d9f6e0bb17d58",
+          "settle.png": "c5a927345f1a3dd9770c11038dafa56ea2e8f2b0a198fa65c68ce484893d6473",
+          "frame-072.png": "f24b613c3d141f63b80dee666e967e5f8d6a2e181fc7a400c4d498544ccad3ad",
+          "frame-315.png": "efce2b969ad789b6e31405ab300054524434074ee0d811bf270c3980bacc9320",
+          "frame-616.png": "f5b6039a91f5aa0d150b05d5a44de8595b17aecb8050e36084c9f0046a0ef7b7",
+          "frame-084.png": "ea9bb3ab6f17215a72907d4b89d93ef2e3165065b530b1865a71e816a4d35dda",
+          "frame-652.png": "f206d6e438a6d0798a1f61b8637ceff9bfdd5a973c1b25c19cf28689ba639818",
+          "frame-700.png": "dbfb16e0d4195fad5e9a7634432b9df56baeecbcdb75b40257c5a2f409219f18",
+          "frame-037.png": "db2696c04ed5efb301598068a5ea542eee83c9064d220d74fe7863ca9be99b0c",
+          "frame-684.png": "5600ef1fbc8a76529dfc999d79932163c709fb0b260e6b6a1a756013c7e1f5f9",
+          "warm_burst.png": "461604b277f1e60e9ea29f1d74db3b8517c8d5fded4f39fdff4d59cb11465b33",
+          "frame-384.png": "f3c6c97081db55a205e3914a838cec3872ecaba80f2b9561f934646539bf6309",
+          "warm_repeat.png": "0b109e03c5b46769633623d39aafaedc8907f508ed586e7025fcecadd1cc9c22",
+          "before.png": "11db830bd684131883039e5f86f3405350456d5123a31812a5ed3cf9f22fd494",
+          "frame-016.png": "598cdc940ed450b5fccc4c06089a61b04fd755fbbdd2b1ae3d7cfb8ff4e738a4",
+          "frame-316.png": "51999f4e45cb309136d8ea11a5b3f4d1c6f6a6dc8643e3394655cba1d3c5eb3a",
+          "frame-015.png": "a7d7385274a273461be3492c734aa31529c542671f5ea26ff1ce8feccbb9de0a",
+          "frame-100.png": "74cfda28316dcc6fb60eafd52ee4826fc123a8da64d792e6284d1d444d5f0636"
+        }
+      }
+    }
+  },
+  "accepted_files": [
+    "lib/burrow/client/scene.rb",
+    "test/frame_effect_pool_test.rb",
+    "tools/frame_profile.rb",
+    "tools/perf_frame_reactions.rb",
+    "tools/perf_frame_reaction_pixels.rb",
+    "tools/perf_frame_outer.rb",
+    "tools/perf_frame_soak.rb",
+    "tools/perf_frame_summary.py",
+    "docs/validation/perf-0.5.4-frame.json"
+  ],
+  "mac_runs": [],
+  "limits": [
+    "Linux headless/Xvfb; null OpenAL output, no acoustic latency or physical scanout measurement. No packaged Mac runner runs.",
+    "Reaction fixtures bypass simulation, timeline interpolation, terrain arrivals and sound submission. Native screenshots include real renderer output.",
+    "GC.stat time is integer process-wide time; GC::Profiler collection CPU time is not a proven contiguous wall pause. Profiling changes GC placement.",
+    "150-second soaks are diagnostics, not five-pair performance evidence; no rematch completed. Rebuild spikes and scripted menu/resize intervals remain.",
+    "Cold first blast remains about 19 ms. The pool helps after text nodes have expired; no prewarming or timing changes."
+  ],
+  "open_proposals": [
+    "Measure packaged and physical M3 Pro cold/repeated multi-kill sound and presentation latency.",
+    "Profile window/arsenal/match rebuilding: real soak still sees ~143 ms preparation and ~620 ms scripted interval spikes.",
+    "Revisit overlay allocation savings only with dedicated frame-tail evidence; investigate bounded caption prewarming separately with startup guards.",
+    "Have the network owner stabilize the receipt checkpoint test: it compares a saved tick to the still-running server tick. No off-scope test or production fix was applied here."
+  ],
+  "status": "complete",
+  "prior_check_failures": [
+    {
+      "log": "<scratch>/frame/checks/focused-r347.log",
+      "reason": "Terrain worker exceeded existing 12-second deadline during shared heavy contention; 58 tests, 0 failures, 1 error."
+    },
+    {
+      "log": "<scratch>/frame/checks/core-3.4.7.log",
+      "reason": "Initial run: 317 tests, 1 failure, 1 error. Same terrain timeout and NetworkTest live match tick 9 versus saved tick 8. No production fix or deadline relaxation applied."
+    },
+    {
+      "log": "<scratch>/frame/checks/core-3.4.7-seed61132-recheck.log",
+      "reason": "Unchanged full-suite seed 61132 retry passed the terrain test but repeated the live tick race (expected running tick 8, restored checkpoint tick 7): 317 tests / 9881 assertions / 1 failure / 0 errors. The same receipt test subsequently passed in isolation. All attempts are retained."
+    },
+    {
+      "log": "<scratch>/frame/checks/native-r347.log",
+      "results": "<scratch>/frame/checks/native-r347-results.json",
+      "reason": "Six of seven native journeys passed. Lifecycle timed out entering the hosted lobby before its first assertion and before creating a match Scene. Full unchanged suite rerun; no timeout changed."
+    },
+    {
+      "log": "<scratch>/frame/checks/core-3.4.7-recheck-invocation-error.log",
+      "reason": "Retry invocation supplied TESTOPTS=\"--seed 61132\"; the Rake loader treated 61132 as a filename and ran no tests. Corrected to --seed=61132; this is a harness invocation failure, not a test result."
+    }
+  ]
+}
