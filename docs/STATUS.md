@@ -31,7 +31,17 @@ input, precise timers and saved-match recovery. The first Mac build exposed
 Fiddle object files retained by Ruby's gem installer; the final recipe removes
 those build intermediates. [Recorded checks and CI runs](validation/runtime-0.5.6.json).
 
-The candidate is ready for `v0.5.6` publication and production deployment.
+[0.5.6 is published](https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.6)
+with all 18 assets verified. The tagged release and source checks passed.
+[Production deployment](https://github.com/AliOsm/scarpe-worms/actions/runs/38558068643)
+completed at 11:40 UTC: `ghcr.io/aliosm/burrow-brigade:0.5.6` is healthy on
+port 4388 and reports version 0.5.6 / protocol 4 with YJIT. Both exported server
+architectures passed TLS play and restart recovery.
+
+The optional tagged Mac rendering benchmark recorded a 64.98 ms pan frame
+against its 60 ms threshold; combat/pan means were 16.11/16.85 ms, spaced zoom
+28.41 ms and continuous zoom 16.33 ms. This informational shared-runner result
+is retained in the report; required Mac gameplay and timer checks passed.
 Physical desktop/audio acceptance, Developer ID signing and notarization remain
 outside the automated checks. Historical evidence below retains the runtime
 versions actually measured.

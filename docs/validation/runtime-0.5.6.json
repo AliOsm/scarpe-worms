@@ -106,7 +106,8 @@
     "final_recipe": true
   },
   "limits": [
-    "No physical desktop/audio, internet multiplayer, Developer ID signing or notarization acceptance is claimed."
+    "No physical desktop/audio, internet multiplayer, Developer ID signing or notarization acceptance is claimed.",
+    "The tagged Mac informational rendering benchmark exceeded its pan-frame threshold (64.98 ms versus 60 ms)."
   ],
   "portable_ruby_elf": {
     "binaries": 92,
@@ -146,7 +147,7 @@
     },
     "macos": {
       "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38556661577",
-      "status": "required_checks_passed",
+      "status": "success",
       "source_revision": "e6b6518839eb16a71b5eaff03c0215150682c104",
       "ruby": "4.0.7",
       "architecture": "arm64",
@@ -163,5 +164,75 @@
       "status": "success",
       "source_revision": "e6b6518839eb16a71b5eaff03c0215150682c104"
     }
+  },
+  "deployment": {
+    "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38558068643",
+    "status": "success",
+    "image": "ghcr.io/aliosm/burrow-brigade:0.5.6",
+    "healthy_at_utc": "2026-10-14T11:40:32Z",
+    "server_banner": "Burrow Brigade 0.5.6 \u00b7 protocol 4 \u00b7 YJIT",
+    "port": 4388
+  },
+  "tag": {
+    "name": "v0.5.6",
+    "source_revision": "60f1831330d149880945cc997842cf62dcf00b72",
+    "release_run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38558068735"
+  },
+  "release": {
+    "url": "https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.6",
+    "published_at_utc": "2026-10-14T11:51:02Z",
+    "tag": "v0.5.6",
+    "source_revision": "60f1831330d149880945cc997842cf62dcf00b72",
+    "assets_verified": 18,
+    "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38558068735",
+    "status": "success",
+    "payloads": {
+      "Burrow-Brigade-0.5.6-linux-x86_64.tar.gz": {
+        "bytes": 56274932,
+        "platform": "linux",
+        "sha256": "43556b3042222881a996367f812bc817ca9da5d359d7a46d6c34254517e24fac"
+      },
+      "Burrow-Brigade-0.5.6-macos-arm64.zip": {
+        "bytes": 50601300,
+        "platform": "macos",
+        "sha256": "d7efa79d78fe57e21431d1cdcaf16958b66dc0e5760d6a1e7595adc2feab9248"
+      },
+      "Burrow-Brigade-0.5.6-windows-x64-setup.exe": {
+        "bytes": 53491706,
+        "platform": "windows",
+        "sha256": "6d39959ad10bd025633ac3663a35c567199cbc11d826a5ba2863d54f9e920c8a"
+      },
+      "Burrow-Brigade-0.5.6-windows-x64.zip": {
+        "bytes": 61474788,
+        "platform": "windows",
+        "sha256": "31b1c936b15e7f85bff243cf213ab515ae790b36e36beadd25ab52afa08d8943"
+      },
+      "Burrow-Brigade-server-0.5.6-docker-linux-amd64.tar.gz": {
+        "bytes": 80904514,
+        "platform": "server-amd64",
+        "sha256": "152368c5a9f1a4ec3c3800a6e77563d91034d16e7d98778c0a2936bfa2dc8ff5"
+      },
+      "Burrow-Brigade-server-0.5.6-docker-linux-arm64.tar.gz": {
+        "bytes": 80998033,
+        "platform": "server-arm64",
+        "sha256": "ab1b43741b77c674bc908d49a300911d1c9ce359ff611330ad4ad0ad2cab5841"
+      }
+    }
+  },
+  "tag_checks": {
+    "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38558068596",
+    "status": "success"
+  },
+  "macos_informational_benchmarks": {
+    "waits": "success",
+    "rendering": "failure",
+    "assertion": "pan: a frame stalled",
+    "pan_max_ms": 64.979375,
+    "threshold_ms": 60,
+    "combat_mean_ms": 16.110509,
+    "pan_mean_ms": 16.854593,
+    "zoom_mean_ms": 28.413785,
+    "zoom_sweep_mean_ms": 16.334843,
+    "note": "Informational shared-runner capture; required Mac signature, gameplay, input, diagnostics and save/recovery checks passed. This is not physical display/audio acceptance."
   }
 }
