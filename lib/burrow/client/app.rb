@@ -76,13 +76,16 @@ module Burrow
       end
 
       def play_event(event)
+        # Scene samples its Timeline at last_render. Observe that presentation
+        # deadline here without moving sound ahead of the visible event.
+        due_at = @scene&.last_render || Burrow.clock
         screen_x = if @scene && event["x"] && event["y"]
           @scene.camera.screen(event["x"], event["y"]).first
         else
           WIDTH / 2
         end
         # The scene's sampled state matches the event's tick: who was hit, by whom.
-        @audio.event(event, screen_x: screen_x, state: @scene&.presented || state)
+        @audio.event(event, screen_x: screen_x, state: @scene&.presented || state, due_at: due_at)
       end
       def motion? = preferences["motion"]
       def overlay? = !!@overlay
@@ -95,6 +98,7 @@ module Burrow
       def update
         return if @closed
         started = Burrow.clock
+        @audio.frame(started)
         update_activity
         @frame += 1
         if @shoes.width != @dimensions[0] || @shoes.height != @dimensions[1]
@@ -127,7 +131,7 @@ module Burrow
           @toast.hide
           @toast_until = nil
         end
-        @audio.update(started)
+        @audio.update
         @audio.refresh if @frame % 120 == 0
       ensure
         @frame_log.record(started, page: @page, focused: @window_active, state: @state, scene: @scene, activity: @activity) if started

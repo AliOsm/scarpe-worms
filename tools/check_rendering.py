@@ -148,8 +148,12 @@ def main():
         native = json.loads((Path(directory)/'rust.json').read_text())
         ruby = json.loads((Path(directory)/'ruby.json').read_text())
         gameplay = json.loads((Path(directory)/'game.json').read_text())
+        audio_path = Path(directory)/'audio.json'
+        audio_timing = json.loads(audio_path.read_text()) if audio_path.exists() else None
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.with_suffix('.raw.json').write_text(json.dumps(dict(journey=report, native=native, ruby=ruby, gameplay=gameplay))+'\n')
+        args.output.with_suffix('.raw.json').write_text(json.dumps(dict(journey=report, native=native, ruby=ruby, gameplay=gameplay, audio=audio_timing))+'\n')
+        if audio_timing:
+            args.output.with_suffix('.audio.json').write_text(json.dumps(audio_timing)+'\n')
         report['frame_profile'] = frame_profile_summary(report.get('frame_profile'))
         report['surface'] = {k: native['counters'].get(k) for k in ('surface_width', 'surface_height', 'surface_scale_milli',
                                                                  'render_width', 'render_height', 'render_scale_milli')}

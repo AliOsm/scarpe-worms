@@ -166,6 +166,11 @@ Scarpe::Native.after_first_heartbeat do
     end
     raise "Weapons were not presented" unless shots.size >= 2 && client.scene.terrain_revision > 0
     raise "Native callback failed" if service.instance_variable_get(:@handler_errors)&.any?
+    audio_stress = nil
+    if client.instance_variable_get(:@audio).available
+      require_relative "perf_audio_scenario"
+      audio_stress = PerfAudioScenario.run(client.instance_variable_get(:@audio)) { |seconds| auto.advance(seconds) }
+    end
     if ENV["BURROW_BENCH_SHOT"]
       client.scene.camera.follow
       auto.advance(0.3)
@@ -180,6 +185,7 @@ Scarpe::Native.after_first_heartbeat do
       profiled_slow_phases: slow_phases,
       frame_profile: defined?(FrameProfile) && FrameProfile.report,
       audio: client.instance_variable_get(:@audio).available, projectile_ids: shots.to_a,
+      audio_stress: audio_stress,
       terrain_revision: client.scene.terrain_revision}
     File.write(ENV.fetch("BURROW_BENCH_REPORT"), JSON.pretty_generate(report) + "\n")
   rescue Exception => error

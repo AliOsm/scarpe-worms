@@ -163,7 +163,7 @@ class AudioTest < Minitest::Test
     audio = Burrow::Client::Audio.allocate
     al = FakeAL.new
     {preferences: {"volume" => 1, "muted" => false}, available: true, al: al,
-      sources: (1..13).to_a, cursor: 0, source_status: Struct.new(:read_int).new,
+      sources: (1..Burrow::Client::Audio::MAX_VOICES + 1).to_a, cursor: 0, source_status: Struct.new(:read_int).new,
       buffers: Burrow::Client::Audio::CUES.to_h { |cue| [cue, cue] },
       voice_priority: {}, voice_started: {}, gains: {}, last: {}}.each do |key, value|
       audio.instance_variable_set("@#{key}", value)
@@ -179,13 +179,13 @@ class AudioTest < Minitest::Test
       audio.play("launch", immediate: true)
     end
     assert_equal 2, al.calls.count { |call| call.first == :play }
-    (1..12).each { |source| al.playing[source] = true }
+    (1..Burrow::Client::Audio::MAX_VOICES).each { |source| al.playing[source] = true }
     al.calls.clear
     audio.play("explosion")
     source = al.calls.first[1]
     assert_equal [[:stop, source], [:buffer, source, "explosion"], [:play, source]], al.calls
     refute_equal 2, source, "a local report should survive a burst of impact sounds"
-    refute_equal 13, source, "effects must never steal the music source"
+    refute_equal Burrow::Client::Audio::MAX_VOICES + 1, source, "effects must never steal the music source"
     al.playing[8] = false
     al.calls.clear
     audio.play("jump", immediate: true)
@@ -200,6 +200,136 @@ class AudioTest < Minitest::Test
     end
     assert_equal 2, al.calls.count { |call| call.first == :buffer && call.last == "shot" }
     assert_equal 1, al.calls.count { |call| call.first == :buffer && call.last == "explosion" }
+  end
+
+  def test_reaction_bursts_use_every_effect_voice_but_never_the_music_source
+    audio, al = fake_mixer
+    Burrow.stub(:clock, 100) do
+      18.times { audio.play("explosion", throttle: false) }
+    end
+    sources = al.calls.select { |call| call.first == :play }.map(&:last)
+    assert_equal Burrow::Client::Audio::MAX_VOICES, sources.uniq.length
+    assert_operator sources.max, :<=, Burrow::Client::Audio::MAX_VOICES
+  end
+
+  def test_only_an_immediate_report_can_steal_when_every_voice_is_protected
+    audio, al = fake_mixer
+    Burrow::Client::Audio::MAX_VOICES.times do |i|
+      Burrow.stub(:clock, 100 + i) { audio.play("launch", immediate: true) }
+    end
+    al.calls.clear
+    assert_nil audio.play("explosion")
+    assert_empty al.calls
+    audio.play("jump", immediate: true)
+    assert_equal [:stop, 1], al.calls.first, "the oldest protected report yields to newer local input"
+  end
+
+  def logged_mixer(directory)
+    audio, al = fake_mixer
+    log = Burrow::Client::Diagnostics::AudioLog.new(directory: directory)
+    audio.instance_variable_set(:@timing, log)
+    audio.instance_variable_set(:@seconds, Burrow::Client::Audio::CUES.to_h { |cue| [cue, 1.0] })
+    audio.instance_variable_set(:@voice_ends, {})
+    audio.instance_variable_set(:@voice_cues, {})
+    [audio, al, log]
+  end
+
+  def test_timing_log_reports_origins_deadlines_and_drop_reasons_without_receipts
+    Dir.mktmpdir do |directory|
+      audio, _, log = logged_mixer(directory)
+      Burrow.stub(:clock, 100) do
+        audio.frame(99.98)
+        audio.frame(100)
+        audio.local_action("fire", values: {weapon: "rocket"}, state: {"team" => "PRIVATE PLAYER"},
+          player: "PRIVATE PLAYER", sequence: 1, match_id: "PRIVATE MATCH")
+        audio.event({"kind" => "fire", "weapon" => "rocket", "input" => {
+          "player" => "PRIVATE PLAYER", "seq" => 1, "match" => "PRIVATE MATCH"}}, due_at: 99.99)
+        audio.event({"kind" => "explosion"}, due_at: 99.985)
+        audio.event({"kind" => "explosion"})
+        audio.send(:later, "pop", 0.1)
+        audio.send(:later, "thud", 0.2)
+        4.times { audio.voice_line("medic", 0, chatter: false) }
+        audio.voice_line("hurry-up", 0)
+      end
+      Burrow.stub(:clock, 100.125) { audio.update }
+      Burrow.stub(:clock, 101) { audio.update }
+      log.write
+      raw = File.read(File.join(directory, "audio.json"))
+      report = JSON.parse(raw)
+      rows = report["cues"].map { |row| report["columns"].zip(row).to_h }
+      assert_equal "predicted", rows.first["origin"]
+      assert_in_delta 20, rows.first["frame_interval_ms"], 0.0001
+      explosion = rows.find { |row| row["cue"] == "explosion" && row["reason"] == "played" }
+      assert_equal "event", explosion["origin"]
+      assert_in_delta 15, explosion["lateness_ms"], 0.0001
+      assert_operator explosion["openal_ms"], :>=, 0
+      pop = rows.find { |row| row["cue"] == "pop" }
+      assert_equal "delayed", pop["origin"]
+      assert_in_delta 25, pop["lateness_ms"], 0.0001
+      %w[predicted_duplicate throttle squeak_cap chatter stale].each { |reason| assert_equal 1, report["totals"][reason], reason }
+      assert rows.all? { |row| row["voices_busy_estimate"].is_a?(Integer) && row["openal_ms"].is_a?(Numeric) }
+      refute_includes raw, "PRIVATE"
+    end
+  end
+
+  def test_timing_log_wraps_in_order_and_records_steals_and_overflow
+    Dir.mktmpdir do |directory|
+      audio, _, log = logged_mixer(directory)
+      Burrow.stub(:clock, 100) do
+        (Burrow::Client::Audio::MAX_VOICES + 1).times { audio.play("jump", throttle: false) }
+        (Burrow::Client::Audio::QUEUE_LIMIT + 1).times { audio.send(:later, "pop", 2) }
+      end
+      log.write
+      report = JSON.parse(File.read(File.join(directory, "audio.json")))
+      assert_equal 1, report["totals"]["steal"]
+      assert_equal 1, report["totals"]["queue_overflow"]
+      columns = report["columns"]
+      stolen = report["cues"].find { |row| row[columns.index("reason")] == "steal" }
+      assert_equal "jump", stolen[columns.index("stolen_cue")]
+      (Burrow::Client::Diagnostics::AudioLog::LIMIT + 3).times do |i|
+        log.record("click", origin: "ui", due: 0, at: i, reason: "played")
+      end
+      log.write
+      report = JSON.parse(File.read(File.join(directory, "audio.json")))
+      assert_equal Burrow::Client::Diagnostics::AudioLog::LIMIT, report["cues"].length
+      assert_equal 3000, report["cues"].first[columns.index("lateness_ms")]
+      assert report["cues"].all? { |row| row.length == columns.length }
+    end
+  end
+
+  class UpdateHarness < Burrow::Client::App
+    def initialize(audio, &work)
+      @audio, @work, @frame, @page = audio, work, 0, :probe
+      @shoes = Struct.new(:width, :height).new(1, 1)
+      @dimensions = [1, 1]
+      @frame_log = Burrow::Client::Diagnostics::FrameLog.new(directory: nil)
+    end
+    def update_activity = @work.call
+  end
+
+  def test_a_cue_due_during_frame_work_is_submitted_before_that_update_returns
+    audio, al = fake_mixer
+    now = 100
+    Burrow.stub(:clock, -> { now }) do
+      audio.send(:later, "pop", 0.006)
+      app = UpdateHarness.new(audio) { now += 0.010 }
+      app.update
+    end
+    assert_equal 1, al.calls.count { |call| call.first == :play }
+    assert_empty audio.instance_variable_get(:@queue)
+  end
+
+  def test_stale_delayed_cues_are_still_dropped_and_future_cues_are_retained
+    audio, al = fake_mixer
+    Burrow.stub(:clock, 100) do
+      audio.send(:later, "pop", 0.1)
+      audio.send(:later, "thud", 0.9)
+    end
+    Burrow.stub(:clock, 100.7) { audio.update }
+    assert_empty al.calls
+    assert_equal ["thud"], audio.instance_variable_get(:@queue).map { |entry| entry[1] }
+    Burrow.stub(:clock, 100.92) { audio.update }
+    assert_equal 1, al.calls.count { |call| call.first == :play }
   end
 
   private

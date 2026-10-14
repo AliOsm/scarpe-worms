@@ -1,0 +1,1296 @@
+{
+  "coordinator_note": "Superseded in part: 0.5.4 ships 12 effect voices, not 24. Every GitHub Apple silicon capture with 24 voices slowed the zoom stage (28-29 ms mean vs 19-24 ms with 12); see perf-0.5.4-mac.json. The delayed-queue clock, single-pass selector and audio.json log are shipped as measured here.",
+  "schema": 1,
+  "target_release": "0.5.4",
+  "measured_game_version": "0.5.3",
+  "area": "audio",
+  "baseline_commit": "8bf41edf524e518c15bc38889b4425e26d31fa15",
+  "candidate_runtime_commit": "47a8b86",
+  "measured_utc": "2026-10-14T00:18:39.223331+00:00",
+  "machine": {
+    "os": "Ubuntu 26.04 LTS",
+    "kernel": "7.0.0-31-generic",
+    "cpu": "Intel Core i5-8500",
+    "logical_cpus": 6,
+    "primary_ruby": "3.4.7",
+    "secondary_correctness_ruby": "4.0.7",
+    "openal": "OpenAL Soft 1.25.1 (libopenal1 1:1.25.1-2)"
+  },
+  "method": {
+    "timing_lock": "<scratch>/bin/bench",
+    "nonmeasurement_lock": "<scratch>/bin/heavy",
+    "pairing": "Five interleaved independent A/B captures per reported timing comparison.",
+    "quantiles": "Median, nearest-rank p95 and min/max/IQR across five independent capture values. Within-capture p95 is explicitly named.",
+    "decision_rule": "Median improves >=5% and >=80% paired direction, or distributions do not overlap; correctness passes and no guard regression beyond noise.",
+    "shipping_source": "Frozen scratch candidate-shipping; SHA-256 manifest retained; audio log enabled in final combined captures.",
+    "scenarios": {
+      "combat": "Two 3.5 s reaction sequences: 36-grub state, chain blasts, three deaths, three wounded and three drownings; production Audio code.",
+      "deadline": "Production App#update with 9 ms controlled work and 50 deadlines spread across phases in 300 updates; not measured render cost.",
+      "wave": "1.5 s 440 Hz diagnostic tone, twelve other tones after 200 ms; actual OpenAL Soft mixed PCM.",
+      "selector": "20,000 unpaced saturated plays, 24 voices in both arms; no diagnostic instrumentation or log.",
+      "logger": "Five on/off captures of 20,000 plays and 200,000 frame hooks. Timing-log code unchanged; successful-play path measured."
+    }
+  },
+  "experiments": [
+    {
+      "id": "voices_24",
+      "hypothesis": "Twelve sources truncate overlapping 0.5.3 reaction sounds.",
+      "change": "Bound effect sources at 24, with a separate music source and unchanged local priority.",
+      "files": [
+        "lib/burrow/client/audio.rb"
+      ],
+      "metric": "shipping_steals",
+      "baseline": {
+        "n": 5,
+        "median": 6,
+        "p95": 6,
+        "min": 5,
+        "max": 6,
+        "iqr": 0
+      },
+      "candidate": {
+        "n": 5,
+        "median": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "iqr": 0
+      },
+      "verdict": "accept",
+      "reason": "Five complete-patch pairs against frozen 0.5.3; independently verified in mixed wave output.",
+      "median_improvement_percent": 100.0,
+      "paired_direction": 1.0,
+      "nonoverlapping_improvement": true,
+      "primary_rule_pass": true,
+      "supporting_metrics": {
+        "shipping_cut_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 2254.7473162412643,
+            "p95": 2256.20697485283,
+            "min": 2250.5893907509744,
+            "max": 2256.20697485283,
+            "iqr": 1.4444608241319656
+          },
+          "candidate": {
+            "n": 5,
+            "median": 0,
+            "p95": 0,
+            "min": 0,
+            "max": 0,
+            "iqr": 0
+          },
+          "median_improvement_percent": 100.0,
+          "paired_direction": 1.0,
+          "nonoverlapping_improvement": true,
+          "primary_rule_pass": true
+        },
+        "wave_tail_ratio": {
+          "baseline": {
+            "n": 5,
+            "median": 4.260428792381075e-05,
+            "p95": 8.473814482802151e-05,
+            "min": 1.3233243492120782e-05,
+            "max": 8.473814482802151e-05,
+            "iqr": 4.213385690421076e-05
+          },
+          "candidate": {
+            "n": 5,
+            "median": 1.000001558806985,
+            "p95": 1.000013895209779,
+            "min": 1.000001558806985,
+            "max": 1.000013895209779,
+            "iqr": 0.0
+          },
+          "median_improvement_percent": 2347085.242469697,
+          "paired_direction": 1.0,
+          "nonoverlapping_improvement": true,
+          "primary_rule_pass": true
+        }
+      },
+      "guards": {
+        "shipping_play_cpu_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 0.06946499999993527,
+            "p95": 0.08346800000003096,
+            "min": 0.06590800000005892,
+            "max": 0.08346800000003096,
+            "iqr": 0.005032000000015913
+          },
+          "candidate": {
+            "n": 5,
+            "median": 0.06865599999994476,
+            "p95": 0.08348499999999426,
+            "min": 0.06440799999996027,
+            "max": 0.08348499999999426,
+            "iqr": 0.01067700000001448
+          },
+          "median_improvement_percent": 1.164615273866358,
+          "paired_direction": 0.6,
+          "nonoverlapping_improvement": false,
+          "primary_rule_pass": false
+        },
+        "shipping_play_wall_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 0.06974488496780396,
+            "p95": 0.08400669321417809,
+            "min": 0.0662636011838913,
+            "max": 0.08400669321417809,
+            "iqr": 0.005620531737804413
+          },
+          "candidate": {
+            "n": 5,
+            "median": 0.06905477494001389,
+            "p95": 0.08404767140746117,
+            "min": 0.06500491872429848,
+            "max": 0.08404767140746117,
+            "iqr": 0.01078704372048378
+          },
+          "median_improvement_percent": 0.9894776199124026,
+          "paired_direction": 0.6,
+          "nonoverlapping_improvement": false,
+          "primary_rule_pass": false
+        },
+        "shipping_burst_p95_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 0.12044887989759445,
+            "p95": 0.12238789349794388,
+            "min": 0.11792313307523727,
+            "max": 0.12238789349794388,
+            "iqr": 0.001998618245124817
+          },
+          "candidate": {
+            "n": 5,
+            "median": 0.12471899390220642,
+            "p95": 0.1348201185464859,
+            "min": 0.11444091796875,
+            "max": 0.1348201185464859,
+            "iqr": 0.012518372386693954
+          },
+          "median_improvement_percent": -3.545167051982897,
+          "paired_direction": 0.4,
+          "nonoverlapping_improvement": false,
+          "primary_rule_pass": false
+        },
+        "shipping_frame_p95_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 16.749748028814793,
+            "p95": 16.79408783093095,
+            "min": 16.73789881169796,
+            "max": 16.79408783093095,
+            "iqr": 0.011512544006109238
+          },
+          "candidate": {
+            "n": 5,
+            "median": 16.749189235270023,
+            "p95": 16.76168479025364,
+            "min": 16.741825733333826,
+            "max": 16.76168479025364,
+            "iqr": 0.008198898285627365
+          },
+          "median_improvement_percent": 0.0033361310498999023,
+          "paired_direction": 0.6,
+          "nonoverlapping_improvement": false,
+          "primary_rule_pass": false
+        },
+        "wave_visibility_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 33.13237428665161,
+            "p95": 44.5149471051991,
+            "min": 7.58233480155468,
+            "max": 44.5149471051991,
+            "iqr": 15.905799344182014
+          },
+          "candidate": {
+            "n": 5,
+            "median": 34.24178622663021,
+            "p95": 40.26200296357274,
+            "min": 32.99783216789365,
+            "max": 40.26200296357274,
+            "iqr": 5.352532025426626
+          },
+          "median_improvement_percent": -3.348422694915529,
+          "paired_direction": 0.4,
+          "nonoverlapping_improvement": false,
+          "primary_rule_pass": false
+        }
+      }
+    },
+    {
+      "id": "fresh_flush_clock",
+      "hypothesis": "A cue due during frame work waits an extra update when flushed against the frame-start clock.",
+      "change": "Sample the clock at the existing end-of-update flush; preserve cue delays and 500 ms stale cutoff.",
+      "files": [
+        "lib/burrow/client/app.rb"
+      ],
+      "metric": "shipping_deadline_median_ms",
+      "baseline": {
+        "n": 5,
+        "median": 17.485863994807005,
+        "p95": 17.70588895305991,
+        "min": 17.409452237188816,
+        "max": 17.70588895305991,
+        "iqr": 0.12380257248878479
+      },
+      "candidate": {
+        "n": 5,
+        "median": 8.681636303663254,
+        "p95": 8.84445896372199,
+        "min": 8.66613071411848,
+        "max": 8.84445896372199,
+        "iqr": 0.05457596853375435
+      },
+      "verdict": "accept",
+      "reason": "Five controlled production-App update pairs; no event-playback or timer changes.",
+      "median_improvement_percent": 50.350544266834355,
+      "paired_direction": 1.0,
+      "nonoverlapping_improvement": true,
+      "primary_rule_pass": true,
+      "supporting_metrics": {
+        "shipping_deadline_p95_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 25.355441961437464,
+            "p95": 25.3988322801888,
+            "min": 25.258288718760014,
+            "max": 25.3988322801888,
+            "iqr": 0.03205984830856323
+          },
+          "candidate": {
+            "n": 5,
+            "median": 16.34414680302143,
+            "p95": 16.375747974961996,
+            "min": 15.636955853551626,
+            "max": 16.375747974961996,
+            "iqr": 0.15266938135027885
+          },
+          "median_improvement_percent": 35.539885962631274,
+          "paired_direction": 1.0,
+          "nonoverlapping_improvement": true,
+          "primary_rule_pass": true
+        }
+      }
+    },
+    {
+      "id": "single_pass_selector",
+      "hypothesis": "Array construction and repeated fallback passes add CPU/allocations during bursts.",
+      "change": "Single-pass selection bounded by actual allocated effect sources, excluding the music source.",
+      "files": [
+        "lib/burrow/client/audio.rb"
+      ],
+      "metric": "final_selection_cpu_ms",
+      "baseline": {
+        "n": 5,
+        "median": 600.6146460000001,
+        "p95": 609.6254650000001,
+        "min": 590.223981,
+        "max": 609.6254650000001,
+        "iqr": 5.817857999999887
+      },
+      "candidate": {
+        "n": 5,
+        "median": 463.22245300000003,
+        "p95": 465.372769,
+        "min": 456.765957,
+        "max": 465.372769,
+        "iqr": 6.117795999999942
+      },
+      "verdict": "accept",
+      "reason": "Five 20,000-play pairs; both arms have 24 voices. Comparator is frozen 0.5.3 with only its pool raised to 24.",
+      "median_improvement_percent": 22.875265182927297,
+      "paired_direction": 1.0,
+      "nonoverlapping_improvement": true,
+      "primary_rule_pass": true,
+      "supporting_metrics": {
+        "final_selection_allocations": {
+          "baseline": {
+            "n": 5,
+            "median": 160016,
+            "p95": 160016,
+            "min": 160016,
+            "max": 160016,
+            "iqr": 0
+          },
+          "candidate": {
+            "n": 5,
+            "median": 16,
+            "p95": 16,
+            "min": 16,
+            "max": 16,
+            "iqr": 0
+          },
+          "median_improvement_percent": 99.9900009999,
+          "paired_direction": 1.0,
+          "nonoverlapping_improvement": true,
+          "primary_rule_pass": true
+        },
+        "final_selection_wall_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 601.2929049320519,
+            "p95": 610.0325118750334,
+            "min": 590.3403889387846,
+            "max": 610.0325118750334,
+            "iqr": 7.358981296420097
+          },
+          "candidate": {
+            "n": 5,
+            "median": 463.2449019700289,
+            "p95": 466.6508249938488,
+            "min": 456.760595086962,
+            "max": 466.6508249938488,
+            "iqr": 7.687842007726431
+          },
+          "median_improvement_percent": 22.958528502448054,
+          "paired_direction": 1.0,
+          "nonoverlapping_improvement": true,
+          "primary_rule_pass": true
+        },
+        "final_selection_process_cpu_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 610.02,
+            "p95": 619.204,
+            "min": 599.3589999999999,
+            "max": 619.204,
+            "iqr": 5.694000000000074
+          },
+          "candidate": {
+            "n": 5,
+            "median": 470.49100000000004,
+            "p95": 473.0750000000001,
+            "min": 464.00899999999984,
+            "max": 473.0750000000001,
+            "iqr": 6.530999999999835
+          },
+          "median_improvement_percent": 22.872856627651544,
+          "paired_direction": 1.0,
+          "nonoverlapping_improvement": true,
+          "primary_rule_pass": true
+        }
+      }
+    },
+    {
+      "id": "logger_hash_pair_count",
+      "hypothesis": "Counting occupied voices through Hash#count is inexpensive.",
+      "change": "Hash-pair enumeration in the first timing log; replaced with each_value.",
+      "files": [
+        "lib/burrow/client/audio.rb"
+      ],
+      "metric": "additional_allocations_per_logged_play",
+      "baseline": 28,
+      "candidate": 2,
+      "verdict": "reject_initial_implementation",
+      "reason": "Avoidable per-cue pair allocations; rejected/logger-hash-count.patch retained."
+    },
+    {
+      "id": "fixed_capacity_selector",
+      "hypothesis": "Configured capacity always equals the allocated effect pool.",
+      "change": "Index by MAX_VOICES rather than actual source-array length.",
+      "files": [
+        "lib/burrow/client/audio.rb"
+      ],
+      "metric": "smaller_pool_pitch_reset_fixture",
+      "baseline": "Reuse effect source 1",
+      "candidate": "Incorrectly uses reserved music source 13",
+      "verdict": "reject",
+      "reason": "Existing core fixture fails. Corrected to sources.length - 1; rejected/selector-fixed-capacity.patch retained."
+    }
+  ],
+  "shipping_audio_log": {
+    "status": "required instrumentation; overhead reported, not an optimization claim",
+    "file": "audio.json beside game.json, written at Audio#close",
+    "limit": 4096,
+    "retention": "Most recent cue attempts plus bounded category totals; existing session cleanup retains three sessions.",
+    "privacy": "Cue/category/timing only; numeric device properties and transport class; no players, receipts, event payloads, device names/IDs or free-form errors.",
+    "fields": [
+      "wall time",
+      "cue",
+      "origin",
+      "lateness",
+      "preceding frame interval",
+      "busy-voice estimate",
+      "steal/drop reason",
+      "OpenAL block ms",
+      "submission ms",
+      "stolen cue"
+    ],
+    "overhead": {
+      "final_log_play_us": {
+        "baseline": {
+          "n": 5,
+          "median": 23.33371073473245,
+          "p95": 23.64623281173408,
+          "min": 23.008514405228198,
+          "max": 23.64623281173408,
+          "iqr": 0.30651295091956854
+        },
+        "candidate": {
+          "n": 5,
+          "median": 28.11442834790796,
+          "p95": 29.705198807641864,
+          "min": 27.024006191641092,
+          "max": 29.705198807641864,
+          "iqr": 0.7375085493549705
+        },
+        "median_improvement_percent": -20.488458383343925,
+        "paired_direction": 0.0,
+        "nonoverlapping_improvement": false,
+        "primary_rule_pass": false,
+        "median_added": 4.780717613175511
+      },
+      "final_log_cpu_us": {
+        "baseline": {
+          "n": 5,
+          "median": 23.217281200000002,
+          "p95": 23.49661845,
+          "min": 23.0078836,
+          "max": 23.49661845,
+          "iqr": 0.2829394499999971
+        },
+        "candidate": {
+          "n": 5,
+          "median": 27.6886006,
+          "p95": 29.432847549999995,
+          "min": 26.985301550000003,
+          "max": 29.432847549999995,
+          "iqr": 0.40778909999999513
+        },
+        "median_improvement_percent": -19.258583128157134,
+        "paired_direction": 0.0,
+        "nonoverlapping_improvement": false,
+        "primary_rule_pass": false,
+        "median_added": 4.471319399999999
+      },
+      "final_log_allocations": {
+        "baseline": {
+          "n": 5,
+          "median": 16,
+          "p95": 16,
+          "min": 16,
+          "max": 16,
+          "iqr": 0
+        },
+        "candidate": {
+          "n": 5,
+          "median": 40016,
+          "p95": 40016,
+          "min": 40016,
+          "max": 40016,
+          "iqr": 0
+        },
+        "median_improvement_percent": -250000.0,
+        "paired_direction": 0.0,
+        "nonoverlapping_improvement": false,
+        "primary_rule_pass": false
+      },
+      "log_frame_us": {
+        "baseline": {
+          "n": 5,
+          "median": 0.17335437471047044,
+          "p95": 0.18500643083825707,
+          "min": 0.1678537903353572,
+          "max": 0.18500643083825707,
+          "iqr": 0.009508044458925724
+        },
+        "candidate": {
+          "n": 5,
+          "median": 0.5158500699326396,
+          "p95": 0.6132937246002257,
+          "min": 0.5091892997734249,
+          "max": 0.6132937246002257,
+          "iqr": 0.013503693044185638
+        },
+        "median_improvement_percent": -197.5696868303392,
+        "paired_direction": 0.0,
+        "nonoverlapping_improvement": false,
+        "primary_rule_pass": false,
+        "median_added": 0.34249569522216916
+      },
+      "log_frame_allocations": {
+        "baseline": {
+          "n": 5,
+          "median": 22,
+          "p95": 22,
+          "min": 22,
+          "max": 22,
+          "iqr": 0
+        },
+        "candidate": {
+          "n": 5,
+          "median": 200027,
+          "p95": 200027,
+          "min": 200027,
+          "max": 200027,
+          "iqr": 0
+        },
+        "median_improvement_percent": -909113.6363636364,
+        "paired_direction": 0.0,
+        "nonoverlapping_improvement": false,
+        "primary_rule_pass": false
+      },
+      "final_log_close_ms": {
+        "baseline": {
+          "n": 5,
+          "median": 4.837969783693552,
+          "p95": 5.702125374227762,
+          "min": 2.861600834876299,
+          "max": 5.702125374227762,
+          "iqr": 1.4094822108745575
+        },
+        "candidate": {
+          "n": 5,
+          "median": 38.52960700169206,
+          "p95": 40.73610296472907,
+          "min": 34.8487957380712,
+          "max": 40.73610296472907,
+          "iqr": 1.571915578097105
+        },
+        "median_improvement_percent": -696.4003233661497,
+        "paired_direction": 0.0,
+        "nonoverlapping_improvement": false,
+        "primary_rule_pass": false,
+        "median_added": 33.691637217998505
+      }
+    },
+    "full_ring_bytes": {
+      "n": 5,
+      "median": 494882,
+      "min": 494684,
+      "max": 495036
+    },
+    "notes": [
+      "OpenAL block includes Ruby dispatch but excludes logging.",
+      "Busy estimate uses submitted duration/pitch, not additional mixer polls.",
+      "Queue/drop counts retain authored suppression rules."
+    ]
+  },
+  "checks": [
+    {
+      "id": "core-3.4.7",
+      "command": "heavy mise exec ruby@3.4.7 -- bundle exec rake test",
+      "exit_code": 1,
+      "result": "fail_preexisting_baseline",
+      "raw": "core-3.4.7.log",
+      "reason": "The same receipt-restore tick assertion fails in frozen 0.5.3; no audio files or code paths are involved.",
+      "summary": [
+        "Finished in 327.799570s, 0.9732 runs/s, 30.0672 assertions/s.",
+        "319 runs, 9856 assertions, 1 failures, 0 errors, 0 skips"
+      ]
+    },
+    {
+      "id": "core-3.4.7-rerun",
+      "command": "heavy mise exec ruby@3.4.7 -- bundle exec rake test; repeated after the same baseline failure",
+      "exit_code": 1,
+      "result": "fail_preexisting_baseline",
+      "raw": "core-3.4.7-rerun.log",
+      "reason": "The same receipt-restore tick assertion fails in frozen 0.5.3; no audio files or code paths are involved.",
+      "summary": [
+        "Finished in 121.074330s, 2.6347 runs/s, 81.4045 assertions/s.",
+        "319 runs, 9856 assertions, 1 failures, 0 errors, 0 skips"
+      ]
+    },
+    {
+      "id": "core-4.0.7",
+      "command": "heavy mise exec ruby@4.0.7 -- bundle exec rake test",
+      "exit_code": 0,
+      "result": "pass",
+      "raw": "core-4.0.7.log",
+      "summary": [
+        "Finished in 118.022333s, 2.7029 runs/s, 83.5096 assertions/s.",
+        "319 runs, 9856 assertions, 0 failures, 0 errors, 0 skips"
+      ]
+    },
+    {
+      "id": "audio-targeted",
+      "command": "heavy mise exec ruby@3.4.7 -- bundle exec ruby -Itest test/audio_test.rb",
+      "exit_code": 0,
+      "result": "pass",
+      "raw": "audio-targeted.log",
+      "summary": [
+        "Finished in 0.041673s, 407.9348 runs/s, 7894.7377 assertions/s.",
+        "17 runs, 329 assertions, 0 failures, 0 errors, 0 skips"
+      ]
+    },
+    {
+      "id": "network-targeted",
+      "command": "heavy mise exec ruby@3.4.7 -- bundle exec ruby -Itest test/network_test.rb",
+      "exit_code": 1,
+      "result": "fail_preexisting_baseline",
+      "raw": "network-targeted.log",
+      "reason": "The same receipt-restore tick assertion fails in frozen 0.5.3; no audio files or code paths are involved.",
+      "summary": [
+        "Finished in 10.313009s, 1.3575 runs/s, 16.6780 assertions/s.",
+        "14 runs, 172 assertions, 1 failures, 0 errors, 0 skips"
+      ]
+    },
+    {
+      "id": "network-baseline",
+      "command": "heavy baseline source + Ruby 3.4.7 network_test.rb",
+      "exit_code": 1,
+      "result": "fail_preexisting_baseline",
+      "raw": "network-baseline.log",
+      "reason": "The same receipt-restore tick assertion fails in frozen 0.5.3; no audio files or code paths are involved.",
+      "baseline_reproduction": true,
+      "summary": [
+        "Finished in 10.794593s, 1.2969 runs/s, 15.9339 assertions/s.",
+        "14 runs, 172 assertions, 1 failures, 0 errors, 0 skips"
+      ]
+    },
+    {
+      "id": "native",
+      "command": "heavy mise exec ruby@3.4.7 -- ./bin/check-native",
+      "exit_code": 0,
+      "result": "pass",
+      "raw": "native.log",
+      "summary": []
+    },
+    {
+      "id": "openal",
+      "command": "heavy mise exec ruby@3.4.7 -- bundle exec ruby tools/check_audio.rb",
+      "exit_code": 0,
+      "result": "pass",
+      "raw": "openal.log",
+      "summary": [
+        "OpenAL initialized, decoded and mixed 76 cues; camera-relative positioning, mute, resume, and shutdown passed."
+      ]
+    },
+    {
+      "id": "rendering-analysis-corrected",
+      "command": "heavy python3 tools/test_rendering.py",
+      "exit_code": 0,
+      "result": "pass",
+      "raw": "rendering-analysis-corrected.log",
+      "summary": [
+        "Ran 13 tests in 0.001s",
+        "OK"
+      ]
+    },
+    {
+      "id": "latency-final",
+      "command": "bench mise exec ruby@3.4.7 -- bundle exec ruby tools/check_latency.rb --rounds 4",
+      "exit_code": 0,
+      "result": "pass",
+      "raw": "latency-final.log",
+      "summary": []
+    },
+    {
+      "id": "native-rendering",
+      "command": "bench check_rendering.py --scale 2 --size 1920x1200 --audio",
+      "exit_code": 1,
+      "result": "fail",
+      "raw": "native-rendering.log",
+      "summary": []
+    },
+    {
+      "id": "native-rendering-baseline-rerun",
+      "command": "bench check_rendering.py --scale 2 --size 1920x1200 --audio; frozen baseline",
+      "exit_code": 0,
+      "result": "pass",
+      "raw": "native-rendering-baseline-rerun.log",
+      "summary": []
+    },
+    {
+      "id": "native-rendering-candidate-rerun",
+      "command": "bench check_rendering.py --scale 2 --size 1920x1200 --audio; candidate",
+      "exit_code": 0,
+      "result": "pass",
+      "raw": "native-rendering-candidate-rerun.log",
+      "summary": []
+    },
+    {
+      "id": "deterministic_native_pixels",
+      "result": "pass",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "scenario": "36 grubs, 60 flames, static/pan/zoom",
+      "images": [
+        {
+          "image": "flames.png",
+          "baseline_sha256": "f8c9fd348aaafdf9099e53b42887a4e69aef11a1126516cb581973c2d2239f11",
+          "candidate_sha256": "f8c9fd348aaafdf9099e53b42887a4e69aef11a1126516cb581973c2d2239f11",
+          "identical": true
+        },
+        {
+          "image": "pan.png",
+          "baseline_sha256": "f8c9fd348aaafdf9099e53b42887a4e69aef11a1126516cb581973c2d2239f11",
+          "candidate_sha256": "f8c9fd348aaafdf9099e53b42887a4e69aef11a1126516cb581973c2d2239f11",
+          "identical": true
+        },
+        {
+          "image": "static.png",
+          "baseline_sha256": "31c765a3de60345a6db2344f2c02c41b680f82e8d5f5803771ab6fd5564235e1",
+          "candidate_sha256": "31c765a3de60345a6db2344f2c02c41b680f82e8d5f5803771ab6fd5564235e1",
+          "identical": true
+        },
+        {
+          "image": "zoom.png",
+          "baseline_sha256": "1dd9108d26dee9ed4d15b0ff0621718f8dc42a4d1f90c88b9a458946d26bfaea",
+          "candidate_sha256": "1dd9108d26dee9ed4d15b0ff0621718f8dc42a4d1f90c88b9a458946d26bfaea",
+          "identical": true
+        }
+      ]
+    },
+    {
+      "id": "rendering_analysis_invocation",
+      "result": "invalid_command",
+      "command": "heavy python3 -I tools/test_rendering.py",
+      "reason": "-I omits the script directory needed by its rendering_timing import; corrected invocation is recorded separately."
+    }
+  ],
+  "first_rendering_failure": {
+    "failing_gap_ms": 61.34194899999912,
+    "native_frame": {
+      "at": 9.004284524,
+      "parse": 0.11006,
+      "apply": 0.285518,
+      "layout": 41.997156000000004,
+      "paint": 5.903576,
+      "present": 3.3285709999999997,
+      "req": 0.0,
+      "unix": 1791930723.5787385
+    },
+    "native_thread_cpu_ms": {
+      "parse": 0.114321,
+      "apply": 0.190077,
+      "layout": 4.234144,
+      "paint": 5.747915,
+      "present": 3.262783,
+      "req": 0.0
+    },
+    "audio_cues_in_gap": 0,
+    "raw": "native-rendering.raw.json",
+    "active_game_audio": {
+      "predicted": {
+        "lateness_ms": {
+          "n": 2,
+          "median": 0.05508866161108017,
+          "p95": 0.06714975461363792,
+          "max": 0.06714975461363792,
+          "min": 0.043027568608522415
+        },
+        "openal_ms": {
+          "n": 2,
+          "median": 0.047795241698622704,
+          "p95": 0.05815178155899048,
+          "max": 0.05815178155899048,
+          "min": 0.03743870183825493
+        }
+      },
+      "event": {
+        "lateness_ms": {
+          "n": 35,
+          "median": 3.524532075971365,
+          "p95": 8.347575087100267,
+          "max": 8.40274104848504,
+          "min": 0.3046211786568165
+        },
+        "openal_ms": {
+          "n": 35,
+          "median": 0.02765422686934471,
+          "p95": 0.04807114601135254,
+          "max": 0.0513358972966671,
+          "min": 0.015357974916696548
+        }
+      },
+      "delayed": {
+        "lateness_ms": {
+          "n": 14,
+          "median": 12.329533696174622,
+          "p95": 22.50859560444951,
+          "max": 22.50859560444951,
+          "min": 0.10012369602918625
+        },
+        "openal_ms": {
+          "n": 14,
+          "median": 0.026929425075650215,
+          "p95": 0.039394013583660126,
+          "max": 0.039394013583660126,
+          "min": 0.00802474096417427
+        }
+      }
+    }
+  },
+  "mac_baseline_cadence": {
+    "combat": {
+      "count": 660,
+      "mean_ms": 16.168522192674715,
+      "p95_ms": 20.35991600000031,
+      "p99_ms": 22.534625000000474,
+      "max_ms": 23.630666000000744,
+      "over_33ms": 0,
+      "over_50ms": 0
+    },
+    "pan": {
+      "count": 357,
+      "mean_ms": 16.79613048459384,
+      "p95_ms": 19.90895899999856,
+      "p99_ms": 27.842875000001044,
+      "max_ms": 45.74991600000189,
+      "over_33ms": 2,
+      "over_50ms": 0
+    },
+    "zoom": {
+      "count": 175,
+      "mean_ms": 15.159296709641623,
+      "p95_ms": 20.320083000001432,
+      "p99_ms": 27.46408299999814,
+      "max_ms": 30.362332999999353,
+      "over_33ms": 0,
+      "over_50ms": 0
+    },
+    "zoom_sweep": {
+      "count": 263,
+      "mean_ms": 16.308208045438278,
+      "p95_ms": 19.2793340000037,
+      "p99_ms": 24.01295800000014,
+      "max_ms": 30.456332999996505,
+      "over_33ms": 0,
+      "over_50ms": 0
+    }
+  },
+  "mac_runs": [
+    {
+      "attempt": 1,
+      "run_id": 38477622391,
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38477622391",
+      "commit": "657e6da",
+      "status": "completed",
+      "conclusion": "failure",
+      "mac_executed": false,
+      "finding": "Linux core suite caught the smaller-pool selector regression before any Mac job; fixed in 7b84c9d."
+    },
+    {
+      "attempt": 2,
+      "run_id": 38478649623,
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38478649623",
+      "commit": "5dbefb9",
+      "status": "completed",
+      "conclusion": "failure",
+      "mac_executed": false,
+      "finding": "Linux core suite caught the smaller-pool selector regression before any Mac job; fixed in 7b84c9d."
+    },
+    {
+      "attempt": 3,
+      "run_id": 38479251771,
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38479251771",
+      "commit": "7b84c9d",
+      "status": "completed",
+      "conclusion": "success",
+      "mac_executed": true,
+      "cadence": {
+        "combat": {
+          "count": 578,
+          "mean_ms": 16.173904966631355,
+          "p95_ms": 22.565249999999537,
+          "p99_ms": 34.175124999999085,
+          "max_ms": 41.88679199999967,
+          "over_33ms": 6,
+          "over_50ms": 0
+        },
+        "pan": {
+          "count": 358,
+          "mean_ms": 16.75989222625698,
+          "p95_ms": 20.58550000000281,
+          "p99_ms": 23.613209000000523,
+          "max_ms": 49.98099999999894,
+          "over_33ms": 2,
+          "over_50ms": 0
+        },
+        "zoom": {
+          "count": 121,
+          "mean_ms": 15.346146578233796,
+          "p95_ms": 22.123374999999612,
+          "p99_ms": 23.98595900000089,
+          "max_ms": 25.254249999996148,
+          "over_33ms": 0,
+          "over_50ms": 0
+        },
+        "zoom_sweep": {
+          "count": 267,
+          "mean_ms": 16.909297284644207,
+          "p95_ms": 23.706707999998855,
+          "p99_ms": 33.041332999999895,
+          "max_ms": 39.75912500000334,
+          "over_33ms": 2,
+          "over_50ms": 0
+        }
+      },
+      "audio": {
+        "total_cues": 109,
+        "totals": {
+          "played": 84,
+          "throttle": 17,
+          "predicted_duplicate": 2,
+          "chatter": 5,
+          "squeak_cap": 1
+        },
+        "device": {
+          "backend": "Apple OpenAL.framework",
+          "status": "ready",
+          "effect_voices": 24,
+          "vendor": "Apple Computer Inc.",
+          "renderer": "Software",
+          "version": "1.1",
+          "sample_rates_hz": [
+            22050
+          ],
+          "source_latency_extension": false,
+          "device_clock_extension": false,
+          "frequency_hz": 0,
+          "refresh_hz": 0,
+          "mono_sources": 0,
+          "stereo_sources": 0,
+          "output_at_open": {
+            "status": "queried",
+            "transport": "built_in",
+            "sample_rate_hz": 48000.0,
+            "buffer_frames": 512,
+            "device_latency_frames": 0,
+            "safety_offset_frames": 100,
+            "stream_latency_frames": 0,
+            "reported_path_ms": 12.75
+          },
+          "output_at_close": {
+            "status": "queried",
+            "transport": "built_in",
+            "sample_rate_hz": 48000.0,
+            "buffer_frames": 512,
+            "device_latency_frames": 0,
+            "safety_offset_frames": 100,
+            "stream_latency_frames": 0,
+            "reported_path_ms": 12.75
+          }
+        },
+        "synthetic_stress": {
+          "from": 1791931786.813368,
+          "to": 1791931790.394336,
+          "events": 14,
+          "description": "Synthetic multi-kill/drowning cues on the real context, separate from visual/host stages"
+        }
+      },
+      "ordinary_game_audio": {
+        "predicted": {
+          "lateness_ms": {
+            "n": 2,
+            "median": 0.5200000000087357,
+            "p95": 0.526000000007798,
+            "min": 0.5140000000096734,
+            "max": 0.526000000007798
+          },
+          "openal_ms": {
+            "n": 2,
+            "median": 0.5149999999929378,
+            "p95": 0.5209999999920001,
+            "min": 0.5089999999938755,
+            "max": 0.5209999999920001
+          }
+        },
+        "event": {
+          "lateness_ms": {
+            "n": 35,
+            "median": 3.832000000016933,
+            "p95": 14.03299999998353,
+            "min": 0.7269999999834909,
+            "max": 14.985999999993282
+          },
+          "openal_ms": {
+            "n": 35,
+            "median": 0.5250000000103228,
+            "p95": 2.2889999999904376,
+            "min": 0.2640000000155851,
+            "max": 2.5250000000198725
+          }
+        },
+        "delayed": {
+          "lateness_ms": {
+            "n": 13,
+            "median": 14.355999999992264,
+            "p95": 19.380000000012387,
+            "min": 2.8279999999938354,
+            "max": 19.380000000012387
+          },
+          "openal_ms": {
+            "n": 13,
+            "median": 0.7679999999936626,
+            "p95": 1.0029999999972006,
+            "min": 0.4390000000000782,
+            "max": 1.0029999999972006
+          }
+        },
+        "ui": {
+          "lateness_ms": {
+            "n": 4,
+            "median": 0.6635000000017044,
+            "p95": 1.024000000001024,
+            "min": 0.4459999999824049,
+            "max": 1.024000000001024
+          },
+          "openal_ms": {
+            "n": 4,
+            "median": 0.6590000000130658,
+            "p95": 1.0130000000003747,
+            "min": 0.44199999999250394,
+            "max": 1.0130000000003747
+          }
+        }
+      }
+    },
+    {
+      "attempt": 4,
+      "run_id": 38480987501,
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38480987501",
+      "commit": "47a8b86",
+      "status": "completed",
+      "conclusion": "success",
+      "mac_executed": true,
+      "cadence": {
+        "combat": {
+          "count": 583,
+          "mean_ms": 16.100639792210615,
+          "p95_ms": 21.566958999999386,
+          "p99_ms": 27.167540999998963,
+          "max_ms": 52.22108299999917,
+          "over_33ms": 2,
+          "over_50ms": 1
+        },
+        "pan": {
+          "count": 360,
+          "mean_ms": 16.653632175,
+          "p95_ms": 21.056666000003332,
+          "p99_ms": 24.474125000001123,
+          "max_ms": 32.00841600000004,
+          "over_33ms": 0,
+          "over_50ms": 0
+        },
+        "zoom": {
+          "count": 121,
+          "mean_ms": 15.62660027320308,
+          "p95_ms": 25.759333000003437,
+          "p99_ms": 32.72058299999969,
+          "max_ms": 36.3943330000005,
+          "over_33ms": 1,
+          "over_50ms": 0
+        },
+        "zoom_sweep": {
+          "count": 272,
+          "mean_ms": 16.265749540441178,
+          "p95_ms": 22.571499999997968,
+          "p99_ms": 29.944249999999784,
+          "max_ms": 31.598541999997565,
+          "over_33ms": 0,
+          "over_50ms": 0
+        }
+      },
+      "audio": {
+        "total_cues": 111,
+        "totals": {
+          "played": 89,
+          "throttle": 16,
+          "predicted_duplicate": 2,
+          "chatter": 4
+        },
+        "device": {
+          "backend": "Apple OpenAL.framework",
+          "status": "ready",
+          "effect_voices": 24,
+          "vendor": "Apple Computer Inc.",
+          "renderer": "Software",
+          "version": "1.1",
+          "sample_rates_hz": [
+            22050
+          ],
+          "source_latency_extension": false,
+          "device_clock_extension": false,
+          "frequency_hz": null,
+          "refresh_hz": null,
+          "mono_sources": null,
+          "stereo_sources": null,
+          "output_at_open": {
+            "status": "queried",
+            "transport": "built_in",
+            "sample_rate_hz": 48000.0,
+            "buffer_frames": 512,
+            "device_latency_frames": 0,
+            "safety_offset_frames": 100,
+            "stream_latency_frames": 0,
+            "reported_path_ms": 12.75
+          },
+          "output_at_close": {
+            "status": "queried",
+            "transport": "built_in",
+            "sample_rate_hz": 48000.0,
+            "buffer_frames": 512,
+            "device_latency_frames": 0,
+            "safety_offset_frames": 100,
+            "stream_latency_frames": 0,
+            "reported_path_ms": 12.75
+          }
+        },
+        "synthetic_stress": {
+          "from": 1791932740.40707,
+          "to": 1791932743.988608,
+          "events": 14,
+          "openal_error": 0,
+          "openal_calls": {
+            "alGetSourcei": {
+              "n": 33,
+              "median_ms": 0.008999999977277184,
+              "p95_ms": 0.01900000000887303,
+              "max_ms": 0.03699999999184911,
+              "total_ms": 0.2919999999164702
+            },
+            "alSourceStop": {
+              "n": 30,
+              "median_ms": 0.0019999999949504854,
+              "p95_ms": 0.005999999984851456,
+              "max_ms": 0.006000000013273166,
+              "total_ms": 0.059000000049991286
+            },
+            "alSourcei": {
+              "n": 30,
+              "median_ms": 0.007999999979801942,
+              "p95_ms": 0.031999999976051186,
+              "max_ms": 0.03499999999689862,
+              "total_ms": 0.2689999998892745
+            },
+            "alSourcef": {
+              "n": 110,
+              "median_ms": 0.0009999999974752427,
+              "p95_ms": 0.0030000000208474376,
+              "max_ms": 0.01499999999055035,
+              "total_ms": 0.12400000005641232
+            },
+            "alSource3f": {
+              "n": 30,
+              "median_ms": 0.0009999999974752427,
+              "p95_ms": 0.002000000023372195,
+              "max_ms": 0.002999999992425728,
+              "total_ms": 0.03299999997352643
+            },
+            "alSourcePlay": {
+              "n": 30,
+              "median_ms": 0.4460000000108266,
+              "p95_ms": 0.9110000000021046,
+              "max_ms": 1.2030000000038399,
+              "total_ms": 13.54899999998338
+            }
+          },
+          "description": "Synthetic multi-kill/drowning cues on the real context, separate from visual/host stages"
+        }
+      },
+      "ordinary_game_audio": {
+        "predicted": {
+          "lateness_ms": {
+            "n": 2,
+            "median": 0.6070000000022446,
+            "p95": 0.6709999999827687,
+            "min": 0.5430000000217206,
+            "max": 0.6709999999827687
+          },
+          "openal_ms": {
+            "n": 2,
+            "median": 0.6015000000019199,
+            "p95": 0.6659999999953925,
+            "min": 0.5370000000084474,
+            "max": 0.6659999999953925
+          }
+        },
+        "event": {
+          "lateness_ms": {
+            "n": 35,
+            "median": 3.4330000000011296,
+            "p95": 7.051999999987402,
+            "min": 0.579999999985148,
+            "max": 7.686000000006743
+          },
+          "openal_ms": {
+            "n": 35,
+            "median": 0.5089999999938755,
+            "p95": 1.0489999999947486,
+            "min": 0.27000000000043656,
+            "max": 1.9139999999993051
+          }
+        },
+        "delayed": {
+          "lateness_ms": {
+            "n": 13,
+            "median": 14.322000000021262,
+            "p95": 18.85000000001469,
+            "min": 0.964000000010401,
+            "max": 18.85000000001469
+          },
+          "openal_ms": {
+            "n": 13,
+            "median": 0.5570000000147957,
+            "p95": 0.8299999999792362,
+            "min": 0.37800000001197986,
+            "max": 0.8299999999792362
+          }
+        },
+        "ui": {
+          "lateness_ms": {
+            "n": 4,
+            "median": 0.5160000000046239,
+            "p95": 0.6590000000130658,
+            "min": 0.45799999998052954,
+            "max": 0.6590000000130658
+          },
+          "openal_ms": {
+            "n": 4,
+            "median": 0.5124999999992497,
+            "p95": 0.6560000000206401,
+            "min": 0.4529999999931533,
+            "max": 0.6560000000206401
+          }
+        }
+      }
+    }
+  ],
+  "proposals": [
+    {
+      "id": "physical_mac_device_comparison",
+      "status": "open",
+      "proposal": "Collect owner session audio/game/native logs on wired output and usual device, with repeated physical loopback/acoustic measurement."
+    },
+    {
+      "id": "openal_soft_coreaudio",
+      "status": "not implemented",
+      "proposal": "Compare Apple backend to OpenAL Soft on the same physical Mac/device before bundling; honor dynamic LGPL replaceability/notices/source obligations."
+    },
+    {
+      "id": "per_play_backend_state",
+      "status": "defer",
+      "proposal": "Mac4 alSourcePlay accounts for 94.6% of timed native calls (13.549/14.326 ms total); setup/poll medians are 0.001-0.009 ms. Retain required stop/bind/pitch/pan semantics. A physical backend A/B is more relevant than trimming setters."
+    }
+  ],
+  "limits": [
+    "Linux null measures submissions; wave file visibility includes mixer quantum, stdio buffering and observation sleeps, not acoustic latency.",
+    "No measured backend-buffer latency improvement. All WAVs remain 22050 Hz; resampling alone is not evidence of lag.",
+    "Mac runner is an Apple silicon VM at 1x, not the owner M3 Pro or headphones; no human audible or scanout claim.",
+    "CoreAudio reported path is a default-output estimate and does not cover unknown radio/codec/acoustic delay or guarantee the OpenAL device follows a switched default.",
+    "Mac baseline lacks per-cue instrumentation; candidate-only call costs are not Mac before/after audio gains.",
+    "Audio and Scene events already occur in the same presented Timeline update. No protocol, simulation, save, playback, artwork, sound-design or Scarpe patch changes."
+  ],
+  "raw_directory": "<scratch>/audio",
+  "report": "PERF_REPORT.md (uncommitted)",
+  "changed_files": [
+    "lib/burrow/client/audio.rb",
+    "lib/burrow/client/app.rb",
+    "lib/burrow/client/diagnostics.rb",
+    "test/audio_test.rb",
+    "tools/check_rendering.py",
+    "tools/check_rendering.rb",
+    "tools/perf_audio_bench.rb",
+    "tools/perf_audio_cost.rb",
+    "tools/perf_audio_wave.rb",
+    "tools/perf_audio_scenario.rb",
+    "tools/perf_audio_summary.py",
+    "docs/validation/perf-0.5.4-audio.json"
+  ]
+}

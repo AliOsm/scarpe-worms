@@ -6,6 +6,52 @@ require "time"
 module Burrow
   module Client
     module Diagnostics
+      # Only cue names and timing/category data. No event payloads, players,
+      # device names, paths, or free-form backend errors enter this report.
+      class AudioLog
+        LIMIT = 4096
+        COLUMNS = %w[at cue origin lateness_ms frame_interval_ms voices_busy_estimate reason openal_ms submit_ms stolen_cue frame_at].freeze
+        attr_accessor :device
+
+        def initialize(directory: ENV["SCARPE_NATIVE_STATS"])
+          @directory = directory unless directory.to_s.empty?
+          @samples, @count, @totals = [], 0, Hash.new(0)
+          @device = {}
+        end
+
+        def enabled? = !!@directory
+
+        def frame(now)
+          @interval_ms = (now - @frame) * 1000 if @frame
+          @frame = now
+          @frame_wall = Time.now.to_f
+        end
+
+        def record(cue, origin:, due:, at:, reason:, busy: nil, openal_ms: nil, submit_ms: nil, stolen: nil)
+          return unless @directory
+          @samples[@count % LIMIT] = [Time.now.to_f, cue, origin, (at - due) * 1000,
+            @interval_ms, busy, reason, openal_ms, submit_ms, stolen, @frame_wall]
+          @count += 1
+          @totals[reason] += 1
+        end
+
+        def write
+          return unless @directory
+          first = @count % LIMIT
+          samples = @count < LIMIT ? @samples : @samples.drop(first) + @samples.take(first)
+          Burrow.atomic_json(File.join(@directory, "audio.json"), schema: 1, version: Burrow::VERSION,
+            ruby: RUBY_VERSION, platform: RUBY_PLATFORM, columns: COLUMNS, cues: samples,
+            total_cues: @count, totals: @totals, sample_limit: LIMIT, sample_policy: "most_recent",
+            device: @device, timing: {
+              lateness: "monotonic submission/drop minus due; events due at the Scene sample, delayed cues at their scheduled deadline",
+              openal_ms: "source selection plus stop/bind/pitch/gain/position/play block; includes Ruby dispatch, excludes logging",
+              voices_busy_estimate: "submitted duration divided by pitch; may differ from the mixer by an output quantum",
+              output: "submission only; device properties are reported estimates, not measured acoustic latency"})
+        rescue SystemCallError, IOError => error
+          warn "Audio timing log unavailable: #{error.class}"
+        end
+      end
+
       # A bounded timeline to distinguish loading/menus from an active match,
       # and slow rendering from missing host snapshots. No player data is logged.
       class FrameLog

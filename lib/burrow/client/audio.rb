@@ -1,9 +1,14 @@
 # frozen_string_literal: true
 
+require_relative "diagnostics"
+
 module Burrow
   module Client
     # One native OpenAL context mixes all voices in process. No per-effect subprocesses.
     class Audio
+      # Twenty-four voices removed cut-offs in busy blasts, but on a GitHub Apple
+      # silicon runner they slowed zoom rendering in every capture (Apple's
+      # OpenAL mixer), so effects keep twelve until cheaper mixing is measured.
       MAX_VOICES = 12
       ROOT = File.join(Burrow::ROOT, "assets/audio")
       CUES = %w[ann-fight ann-flawless-victory ann-its-a-tie ann-multi-kill ann-sudden-death
@@ -30,7 +35,7 @@ module Burrow
       # Matches Scene::DYING: the grub swells for this long, then pops into its grave.
       DYING = 0.6
       QUEUE_LIMIT = 24
-      attr_reader :available, :error
+      attr_reader :available, :error, :timing
 
       # RIFF allows ancillary chunks between fmt and data. Read the chunk table
       # instead of assuming one particular WAV encoder's fixed 44-byte header.
@@ -63,8 +68,13 @@ module Burrow
 
       def initialize(preferences)
         @preferences = preferences
+        log = Diagnostics::AudioLog.new
+        @timing = log if log.enabled?
+        @timing.device = {backend: RUBY_PLATFORM.include?("darwin") ? "Apple OpenAL.framework" : "system OpenAL",
+          status: "disabled", effect_voices: MAX_VOICES} if @timing
         @available, @buffers, @sources, @last, @gains = false, {}, [], {}, {}
         @predicted, @voice_priority, @voice_started = {}, {}, {}
+        @voice_ends, @voice_cues = {}, {} if @timing
         return if ENV["BURROW_MUTE"] == "1" || ENV["SCARPE_NATIVE_HEADLESS"] == "1"
         require "ffi"
         @al = Module.new do
@@ -90,11 +100,23 @@ module Burrow
           attach_function :alSourceStop, [:uint], :void
           attach_function :alDeleteSources, [:int, :pointer], :void
           attach_function :alGetSourcei, [:uint, :int, :pointer], :void
+          attach_function :alGetString, [:int], :string
+          attach_function :alcGetIntegerv, [:pointer, :int, :int, :pointer], :void
+          attach_function :alcGetError, [:pointer], :int
+          attach_function :alIsExtensionPresent, [:string], :bool
+          attach_function :alcIsExtensionPresent, [:pointer, :string], :bool
+          attach_function :alcGetProcAddress, [:pointer, :string], :pointer
         end
         @device = @al.alcOpenDevice(nil)
-        return if @device.null?
+        if @device.null?
+          @timing.device[:status] = "device_unavailable" if @timing
+          return
+        end
         @context = @al.alcCreateContext(@device, nil)
-        return close if @context.null?
+        if @context.null?
+          @timing.device[:status] = "context_unavailable" if @timing
+          return close
+        end
         @al.alcMakeContextCurrent(@context)
         ptr = FFI::MemoryPointer.new(:uint, MAX_VOICES + 1)
         @al.alGenSources(MAX_VOICES + 1, ptr)
@@ -110,6 +132,10 @@ module Burrow
         @cursor = 0
         @source_status = FFI::MemoryPointer.new(:int)
         @available = true
+        if @timing
+          @timing.device.merge!(device_report)
+          @timing.device[:output_at_open] = core_audio_output if RUBY_PLATFORM.include?("darwin")
+        end
         refresh
       rescue LoadError, StandardError => exception
         @error = exception.message
@@ -122,7 +148,9 @@ module Burrow
         return unless available
         @gains.each { |source, gain| @al.alSourcef(source, 0x100a, gain * @preferences["volume"]) }
         if @preferences["muted"]
+          @queue&.each { |at, cue, _| audio_drop(cue, "muted", "delayed", at) } if @timing
           @queue&.clear
+          @voice_ends&.clear
           @sources.each { |source| @al.alSourceStop(source) }
         elsif @preferences["music"]
           unless @music_started
@@ -138,13 +166,31 @@ module Burrow
         end
       end
 
-      def play(name, x: WIDTH / 2, volume: 1, immediate: false, throttle: true, pitch: 1.0)
-        return if muted? || !CUES.include?(name)
+      def frame(now)
+        @timing&.frame(now)
+      end
+
+      def play(name, x: WIDTH / 2, volume: 1, immediate: false, throttle: true, pitch: 1.0, origin: nil, due_at: nil)
         now = Burrow.clock
-        return if throttle && !immediate && now - @last.fetch(name, 0) < 0.065
+        origin ||= @cue_origin || (immediate ? "predicted" : "ui")
+        due_at ||= @cue_due || now
+        return unless CUES.include?(name)
+        return audio_drop(name, muted? && available ? "muted" : "unavailable", origin, due_at, now) if muted?
+        if throttle && !immediate && now - @last.fetch(name, 0) < 0.065
+          return audio_drop(name, "throttle", origin, due_at, now)
+        end
         @last[name] = now
+        al_started = Burrow.clock if @timing
+        @stolen_cue = nil
         source = voice(immediate)
-        return unless source
+        unless source
+          if @timing
+            dropped = Burrow.clock
+            @timing.record(name, origin: origin, due: due_at, at: dropped, busy: @sources.length - 1,
+              reason: "no_voice", openal_ms: (dropped - al_started) * 1000, submit_ms: (dropped - now) * 1000)
+          end
+          return
+        end
         @voice_priority[source], @voice_started[source] = immediate, now
         @al.alSourceStop(source)
         @al.alSourcei(source, 0x1009, @buffers.fetch(name))
@@ -154,13 +200,26 @@ module Burrow
         pan = ((x.to_f / WIDTH - 0.5) * 1.8).clamp(-0.9, 0.9)
         @al.alSource3f(source, 0x1004, pan, 0.0, -1.0)
         @al.alSourcePlay(source)
+        if @timing
+          submitted = Burrow.clock
+          busy = 0
+          @voice_ends.each_value { |at| busy += 1 if at > submitted }
+          @voice_ends[source] = submitted + @seconds.fetch(name) / pitch.clamp(0.25, 2.0)
+          @voice_cues[source] = name
+          @timing.record(name, origin: origin, due: due_at, at: submitted, busy: busy,
+            reason: @stolen_cue ? "steal" : "played", stolen: @stolen_cue,
+            openal_ms: (submitted - al_started) * 1000, submit_ms: (submitted - now) * 1000)
+        end
         true
       rescue StandardError => exception
         @error = exception.message
+        audio_drop(name, "error", origin, due_at, now) if now && CUES.include?(name)
         nil
       end
 
-      def event(event, screen_x: WIDTH / 2, state: nil)
+      def event(event, screen_x: WIDTH / 2, state: nil, due_at: Burrow.clock)
+        previous_origin, previous_due = @cue_origin, @cue_due
+        @cue_origin, @cue_due = "event", due_at
         cue = event_cue(event)
         receipt = event["input"]
         # A single command can emit two reports (fire + build, for example).
@@ -171,15 +230,30 @@ module Burrow
           # arrive less than 65 ms apart during catch-up; do not discard them.
           report = %w[fire beam jump activate].include?(event["kind"])
           play(cue, x: screen_x, throttle: !report, pitch: event_pitch(event))
+        elsif predicted
+          audio_drop(cue, "predicted_duplicate", @cue_origin, due_at, Burrow.clock)
         end
         react(event, screen_x, state)
+      ensure
+        @cue_origin, @cue_due = previous_origin, previous_due
       end
 
       # Delayed cues: a grave's thud after the pop, a voice line after a shot.
       def update(now = Burrow.clock)
         return if !@queue || @queue.empty?
         due, @queue = @queue.partition { |entry| entry[0] <= now }
-        due.each { |at, name, options| speak(name, **options) if now - at < 0.5 }
+        previous_origin, previous_due = @cue_origin, @cue_due
+        @cue_origin = "delayed"
+        due.each do |at, name, options|
+          @cue_due = at
+          if now - at < 0.5
+            speak(name, **options)
+          else
+            audio_drop(name, "stale", "delayed", at, now)
+          end
+        end
+      ensure
+        @cue_origin, @cue_due = previous_origin, previous_due if defined?(previous_origin)
       end
 
       # A short line in a team colour's voice (the HUD's "hurry up").
@@ -297,6 +371,13 @@ module Burrow
       end
 
       def close
+        if @timing
+          @timing.device[:status] = "ready" if available
+          @timing.device[:status] = "initialization_failed" if @error && !available
+          @timing.device[:output_at_close] = core_audio_output if available && RUBY_PLATFORM.include?("darwin")
+          @timing.write
+          @timing = nil
+        end
         if @al && @context && !@context.null?
           @al.alcMakeContextCurrent(@context)
           @sources.each do |source|
@@ -318,6 +399,91 @@ module Burrow
       end
 
       private
+
+      def audio_drop(name, reason, origin = @cue_origin || "ui", due = @cue_due, now = Burrow.clock)
+        return unless @timing && CUES.include?(name)
+        busy = 0
+        @voice_ends&.each_value { |at| busy += 1 if at > now }
+        @timing.record(name, origin: origin, due: due || now, at: now, reason: reason, busy: busy,
+          openal_ms: reason == "error" ? nil : 0.0)
+        nil
+      end
+
+      # Query capabilities once, outside gameplay. Never request the device
+      # specifier: it can contain a person's name (e.g. paired headphones).
+      def device_report
+        result = {status: "ready", vendor: @al.alGetString(0xb001), renderer: @al.alGetString(0xb003),
+          version: @al.alGetString(0xb002), sample_rates_hz: (@sample_rates || {}).keys.sort,
+          source_latency_extension: @al.alIsExtensionPresent("AL_SOFT_source_latency"),
+          device_clock_extension: @al.alcIsExtensionPresent(@device, "ALC_SOFT_device_clock")}
+        pointer = FFI::MemoryPointer.new(:int)
+        {frequency_hz: 0x1007, refresh_hz: 0x1008, mono_sources: 0x1010, stereo_sources: 0x1011}.each do |key, param|
+          @al.alcGetError(@device)
+          pointer.write_int(0)
+          @al.alcGetIntegerv(@device, param, 1, pointer)
+          # Apple returns zero for these default-context hints without an
+          # error. That means unreported, not a zero-Hz device or no sources.
+          value = pointer.read_int
+          result[key] = value > 0 ? value : nil if @al.alcGetError(@device).zero?
+        end
+        if result[:device_clock_extension]
+          address = @al.alcGetProcAddress(@device, "alcGetInteger64vSOFT")
+          unless address.null?
+            get = FFI::Function.new(:void, [:pointer, :int, :int, :pointer], address)
+            value = FFI::MemoryPointer.new(:int64)
+            get.call(@device, 0x1601, 1, value) # ALC_DEVICE_LATENCY_SOFT, nanoseconds.
+            result[:reported_device_latency_ms] = value.read_int64 / 1_000_000.0 if @al.alcGetError(@device).zero?
+          end
+        end
+        result
+      rescue StandardError
+        {status: "ready", capabilities: "unavailable"}
+      end
+
+      # Default-output properties, not an acoustic measurement or a guarantee
+      # that a backend still follows that default after a device switch. Read
+      # only numbers/enums; neither device IDs nor names are retained in JSON.
+      def core_audio_output
+        core = Module.new do
+          extend FFI::Library
+          ffi_lib "/System/Library/Frameworks/CoreAudio.framework/CoreAudio"
+          attach_function :AudioObjectGetPropertyData, [:uint, :pointer, :uint, :pointer, :pointer, :pointer], :int
+          attach_function :AudioObjectGetPropertyDataSize, [:uint, :pointer, :uint, :pointer, :pointer], :int
+        end
+        property = lambda do |object, selector, scope, type = :uint|
+          address = FFI::MemoryPointer.new(:uint, 3).write_array_of_uint([selector.unpack1("N"), scope.unpack1("N"), 0])
+          size = FFI::MemoryPointer.new(:uint).write_uint(FFI.type_size(type))
+          value = FFI::MemoryPointer.new(type)
+          status = core.AudioObjectGetPropertyData(object, address, 0, nil, size, value)
+          next unless status.zero? && size.read_uint == FFI.type_size(type)
+          type == :double ? value.read_double : value.read_uint
+        end
+        device = property.call(1, "dOut", "glob")
+        return {status: "no_default_output"} unless device && device > 0
+        transport = property.call(device, "tran", "glob")
+        transports = {"bltn" => "built_in", "blue" => "bluetooth", "blea" => "bluetooth_le", "usb " => "usb",
+          "hdmi" => "hdmi", "dprt" => "displayport", "airp" => "airplay", "virt" => "virtual", "grup" => "aggregate"}
+        rate = property.call(device, "nsrt", "glob", :double)
+        result = {status: "queried", transport: transports.fetch([transport || 0].pack("N"), "other"),
+          sample_rate_hz: rate, buffer_frames: property.call(device, "fsiz", "glob"),
+          device_latency_frames: property.call(device, "ltnc", "outp"), safety_offset_frames: property.call(device, "saft", "outp")}
+        address = FFI::MemoryPointer.new(:uint, 3).write_array_of_uint(["stm#".unpack1("N"), "outp".unpack1("N"), 0])
+        size = FFI::MemoryPointer.new(:uint)
+        status = core.AudioObjectGetPropertyDataSize(device, address, 0, nil, size)
+        if status.zero? && size.read_uint.between?(4, 256) && size.read_uint % 4 == 0
+          streams = FFI::MemoryPointer.new(:char, size.read_uint)
+          status = core.AudioObjectGetPropertyData(device, address, 0, nil, size, streams)
+          if status.zero?
+            latencies = streams.read_array_of_uint(size.read_uint / 4).map { |id| property.call(id, "ltnc", "glob") }
+            result[:stream_latency_frames] = latencies.max if latencies.all?
+          end
+        end
+        frames = result.values_at(:buffer_frames, :device_latency_frames, :safety_offset_frames, :stream_latency_frames)
+        result[:reported_path_ms] = frames.sum * 1000.0 / rate if frames.all? && rate && rate.finite? && rate > 0
+        result
+      rescue LoadError, StandardError
+        {status: "unavailable"}
+      end
 
       def melee_cue(event)
         hits = Array(event["hits"])
@@ -457,7 +623,10 @@ module Burrow
       def later(name, delay, **options)
         return speak(name, **options) if delay <= 0
         (@queue ||= []) << [Burrow.clock + delay, name, options]
-        @queue.shift while @queue.length > QUEUE_LIMIT
+        while @queue.length > QUEUE_LIMIT
+          at, cue, = @queue.shift
+          audio_drop(cue, "queue_overflow", "delayed", at)
+        end
       end
 
       # Voices never talk over a line already in progress unless they react to
@@ -465,9 +634,9 @@ module Burrow
       def speak(name, x: WIDTH / 2, volume: 1, pitch: 1.0, voice: false, chatter: false)
         return play(name, x: x, volume: volume, pitch: pitch) unless voice
         now = Burrow.clock
-        return if chatter && now < (@voice_until || 0)
+        return audio_drop(name, "chatter") if chatter && now < (@voice_until || 0)
         (@squeaks ||= []).select! { |at| now - at < 0.12 }
-        return if @squeaks.length >= 3
+        return audio_drop(name, "squeak_cap") if @squeaks.length >= 3
         @squeaks << now
         return unless play(name, x: x, volume: volume, pitch: pitch, throttle: false)
         length = (@seconds && @seconds[name]) || 0.8
@@ -491,15 +660,27 @@ module Burrow
       end
 
       def voice(immediate)
-        # Prefer finished voices. When all twelve are busy, protect a fresh
+        # Prefer finished voices. When all effect voices are busy, protect a fresh
         # local report from a same-frame burst of authoritative impact effects.
-        indices = MAX_VOICES.times.map { |i| (@cursor + i) % MAX_VOICES }
-        index = indices.find do |i|
-          @al.alGetSourcei(@sources[i], 0x1010, @source_status)
-          @source_status.read_int != 0x1012
+        index = fallback = oldest = nil
+        # The final allocated source belongs to music, including smaller pools.
+        count = @sources.length - 1
+        count.times do |offset|
+          i = (@cursor + offset) % count
+          source = @sources[i]
+          @al.alGetSourcei(source, 0x1010, @source_status)
+          if @source_status.read_int != 0x1012
+            index = i
+            break
+          end
+          started = @voice_started.fetch(source, 0)
+          oldest = i if immediate && (!oldest || started < @voice_started.fetch(@sources[oldest], 0))
+          fallback = i if !@voice_priority[source] && (!fallback || started < @voice_started.fetch(@sources[fallback], 0))
         end
-        index ||= indices.reject { |i| @voice_priority[@sources[i]] }.min_by { |i| @voice_started.fetch(@sources[i], 0) }
-        index ||= indices.min_by { |i| @voice_started.fetch(@sources[i], 0) } if immediate
+        unless index
+          index = fallback || oldest
+          @stolen_cue = @voice_cues[@sources[index]] if index && @timing
+        end
         return unless index
         @cursor = index + 1
         @sources[index]
@@ -510,6 +691,7 @@ module Burrow
         @buffers[name] ||= begin
           wav = File.binread(File.join(ROOT, "#{name}.wav"))
           data = self.class.decode_wave(wav)
+          (@sample_rates ||= {})[data[:rate]] = true if @timing
           pcm = data.fetch(:pcm)
           (@seconds ||= {})[name] = pcm.bytesize.fdiv(data[:channels] * 2 * data[:rate])
           memory = FFI::MemoryPointer.new(:char, pcm.bytesize)
