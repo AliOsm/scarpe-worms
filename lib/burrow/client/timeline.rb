@@ -110,7 +110,7 @@ module Burrow
         @events.each { |event| @pending.delete(event["id"]) }
         @state.merge("worms" => @state["worms"].map do |w|
           row = worms[w["id"]]
-          row ? w.merge(%w[x y vx vy hp facing].zip(row.drop(1)).to_h) : w
+          row ? w.merge("x" => row[1], "y" => row[2], "vx" => row[3], "vy" => row[4], "hp" => row[5], "facing" => row[6]) : w
         end, "projectiles" => shots, "hazards" => @state["hazards"].map do |h|
           row = hazards[h["id"]]
           row ? h.merge("x" => row[1], "y" => row[2]) : h

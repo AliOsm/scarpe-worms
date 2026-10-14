@@ -373,7 +373,8 @@ class NetworkTest < Minitest::Test
     restored_event = JSON.parse(JSON.generate(restored.match_snapshot))['events'].find { |e| e['kind'] == 'fire' }
     assert_equal expected, restored_event["input"], "host recovery must not replay a predicted cue"
     legacy = Burrow::Server::Room.restore(checkpoint.except("input_events"))
-    assert_equal match.tick, legacy.match.tick, "old saves still load without receipt metadata"
+    # The live host can advance while either copy is restored.
+    assert_equal checkpoint.fetch("match").fetch("state").fetch("tick"), legacy.match.tick, "old saves still load without receipt metadata"
   end
 
   def test_incremental_snapshots_overlap_and_sync_restores_full_history

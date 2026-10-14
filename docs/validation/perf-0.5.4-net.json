@@ -1,0 +1,1843 @@
+{
+  "schema_version": 1,
+  "area": "net",
+  "target_version": "0.5.4",
+  "baseline_commit": "8bf41edf524e518c15bc38889b4425e26d31fa15",
+  "validation_status": "passed",
+  "machine": {
+    "os": "Ubuntu 26.04 LTS",
+    "kernel": "7.0.0-31-generic",
+    "cpu": "Intel Core i5-8500, six physical cores",
+    "ruby": "3.4.7",
+    "json": "2.9.1",
+    "yjit": false
+  },
+  "scenario": "Frozen-tree interleaved pairs, 36 grubs, 4800x1600 terrain, real TCP/TLS and ordered userspace jitter proxy",
+  "statistics": "Five captures per arm. Median uses sorted[n//2] (upper middle for even n); p95 and quartiles use sorted[floor(n*q)], clamped to n-1. Raw captures retain individual observations.",
+  "baseline_real_sessions": {
+    "tcp": {
+      "latency": {
+        "jump_to_event_ms": {
+          "count": 4,
+          "mean": 100.617736,
+          "p50": 100.389302,
+          "p95": 101.446131,
+          "max": 101.446131
+        },
+        "jump_to_audio_ms": {
+          "count": 4,
+          "mean": 0.07208,
+          "p50": 0.072818,
+          "p95": 0.081437,
+          "max": 0.081437
+        },
+        "fire_to_event_ms": {
+          "count": 4,
+          "mean": 62.859525,
+          "p50": 66.946683,
+          "p95": 83.770194,
+          "max": 83.770194
+        },
+        "fire_to_audio_ms": {
+          "count": 4,
+          "mean": 0.146864,
+          "p50": 0.195132,
+          "p95": 0.250426,
+          "max": 0.250426
+        },
+        "fire_to_projectile_ms": {
+          "count": 4,
+          "mean": 62.859525,
+          "p50": 66.946683,
+          "p95": 83.770194,
+          "max": 83.770194
+        },
+        "activate_to_event_ms": {
+          "count": 4,
+          "mean": 71.870246,
+          "p50": 84.407816,
+          "p95": 100.605633,
+          "max": 100.605633
+        },
+        "activate_to_audio_ms": {
+          "count": 4,
+          "mean": 0.120787,
+          "p50": 0.171438,
+          "p95": 0.17969,
+          "max": 0.17969
+        }
+      },
+      "payload_bytes": {
+        "count": 143,
+        "mean": 21048.286713,
+        "p50": 21206,
+        "p95": 21206,
+        "max": 22645
+      },
+      "parse_cpu_ms": {
+        "count": 143,
+        "mean": 0.635572,
+        "p50": 0.364363,
+        "p95": 1.277631,
+        "max": 4.310999
+      },
+      "parse_cpu_ms_per_second": 18.176219,
+      "receive_cpu_ms": {
+        "count": 143,
+        "mean": 0.075472,
+        "p50": 0.04962,
+        "p95": 0.156361,
+        "max": 0.194077
+      },
+      "snapshot_rate_hz": 28.598228
+    },
+    "tls": {
+      "latency": {
+        "jump_to_event_ms": {
+          "count": 4,
+          "mean": 108.629416,
+          "p50": 116.898598,
+          "p95": 116.937285,
+          "max": 116.937285
+        },
+        "jump_to_audio_ms": {
+          "count": 4,
+          "mean": 0.094735,
+          "p50": 0.078462,
+          "p95": 0.173942,
+          "max": 0.173942
+        },
+        "fire_to_event_ms": {
+          "count": 4,
+          "mean": 67.115969,
+          "p50": 67.202839,
+          "p95": 83.904718,
+          "max": 83.904718
+        },
+        "fire_to_audio_ms": {
+          "count": 4,
+          "mean": 0.146327,
+          "p50": 0.186794,
+          "p95": 0.199595,
+          "max": 0.199595
+        },
+        "fire_to_projectile_ms": {
+          "count": 4,
+          "mean": 67.115969,
+          "p50": 67.202839,
+          "p95": 83.904718,
+          "max": 83.904718
+        },
+        "activate_to_event_ms": {
+          "count": 4,
+          "mean": 54.51973,
+          "p50": 50.417766,
+          "p95": 67.048192,
+          "max": 67.048192
+        },
+        "activate_to_audio_ms": {
+          "count": 4,
+          "mean": 0.100739,
+          "p50": 0.113322,
+          "p95": 0.115761,
+          "max": 0.115761
+        }
+      },
+      "payload_bytes": {
+        "count": 146,
+        "mean": 21026.164384,
+        "p50": 21206,
+        "p95": 21206,
+        "max": 22645
+      },
+      "parse_cpu_ms": {
+        "count": 146,
+        "mean": 0.615012,
+        "p50": 0.386605,
+        "p95": 1.322992,
+        "max": 4.387056
+      },
+      "parse_cpu_ms_per_second": 17.957061,
+      "receive_cpu_ms": {
+        "count": 146,
+        "mean": 0.07287,
+        "p50": 0.04993,
+        "p95": 0.158601,
+        "max": 0.256237
+      },
+      "snapshot_rate_hz": 29.197919
+    }
+  },
+  "gui_observer_lateness_ms": {
+    "control": {
+      "n": 20000,
+      "median": 0.090406,
+      "p95": 0.145772,
+      "min": 0.0091,
+      "max": 4.906714,
+      "iqr": 0.037353,
+      "mean": 0.095838
+    },
+    "decode": {
+      "n": 20000,
+      "median": 0.072797,
+      "p95": 0.149537,
+      "min": 0.009475,
+      "max": 13.579941,
+      "iqr": 0.035041,
+      "mean": 0.106682
+    },
+    "decode_overlap_run_medians_ms": {
+      "n": 5,
+      "median": 0.361006,
+      "p95": 0.434648,
+      "min": 0.186489,
+      "max": 0.434648,
+      "iqr": 0.13366,
+      "mean": 0.317585
+    }
+  },
+  "experiments": [
+    {
+      "id": "minimap-cache",
+      "hypothesis": "Full minimap work dominates small terrain revisions",
+      "change": "Cache sampled overview regions; final arm also uses the actual fast RGBA preset for the minimap",
+      "files": [
+        "lib/burrow/client/terrain_painter.rb"
+      ],
+      "metric": "run median request-to-tiles-ready ms",
+      "baseline": {
+        "n": 5,
+        "median": 368.822863,
+        "p95": 383.024462,
+        "min": 364.659605,
+        "max": 383.024462,
+        "iqr": 0.305237,
+        "mean": 370.879119
+      },
+      "candidate": {
+        "n": 5,
+        "median": 259.977459,
+        "p95": 266.953121,
+        "min": 254.277866,
+        "max": 266.953121,
+        "iqr": 9.129989,
+        "mean": 261.154385
+      },
+      "improvement_percent": 29.511566,
+      "improved_pairs": 5,
+      "pairs": 5,
+      "verdict": "ACCEPT",
+      "reason": "Improvement exceeds 5% in at least four of five pairs; guards and correctness pass",
+      "pooled_revision_ms": [
+        {
+          "n": 40,
+          "median": 364.659605,
+          "p95": 510.40705,
+          "min": 313.91826,
+          "max": 519.685988,
+          "iqr": 112.649772,
+          "mean": 389.465988
+        },
+        {
+          "n": 40,
+          "median": 254.277866,
+          "p95": 400.812426,
+          "min": 201.043256,
+          "max": 409.377539,
+          "iqr": 117.073138,
+          "mean": 277.225085
+        }
+      ],
+      "painter_cpu_ms": [
+        {
+          "n": 5,
+          "median": 336.648522,
+          "p95": 337.861892,
+          "min": 336.137729,
+          "max": 337.861892,
+          "iqr": 0.725649,
+          "mean": 336.893113
+        },
+        {
+          "n": 5,
+          "median": 229.053831,
+          "p95": 235.353971,
+          "min": 227.929011,
+          "max": 235.353971,
+          "iqr": 0.678069,
+          "mean": 230.224054
+        }
+      ],
+      "guards": {
+        "tile_pngs_byte_identical": true,
+        "terrain_checksums_identical": true,
+        "minimap_pngs_byte_identical": true
+      }
+    },
+    {
+      "id": "terrain-combined",
+      "hypothesis": "Full minimap work dominates small terrain revisions",
+      "change": "Cache sampled overview regions; final arm also uses the actual fast RGBA preset for the minimap",
+      "files": [
+        "lib/burrow/client/terrain_painter.rb"
+      ],
+      "metric": "run median request-to-tiles-ready ms",
+      "baseline": {
+        "n": 5,
+        "median": 369.761211,
+        "p95": 374.692899,
+        "min": 363.175312,
+        "max": 374.692899,
+        "iqr": 3.566287,
+        "mean": 369.351483
+      },
+      "candidate": {
+        "n": 5,
+        "median": 174.698405,
+        "p95": 184.895126,
+        "min": 169.433117,
+        "max": 184.895126,
+        "iqr": 7.971644,
+        "mean": 175.506233
+      },
+      "improvement_percent": 52.753723,
+      "improved_pairs": 5,
+      "pairs": 5,
+      "verdict": "ACCEPT",
+      "reason": "Improvement exceeds 5% in at least four of five pairs; guards and correctness pass",
+      "pooled_revision_ms": [
+        {
+          "n": 40,
+          "median": 363.175312,
+          "p95": 517.910751,
+          "min": 312.191748,
+          "max": 523.926094,
+          "iqr": 121.56413,
+          "mean": 384.366277
+        },
+        {
+          "n": 40,
+          "median": 170.266436,
+          "p95": 303.043909,
+          "min": 114.15853,
+          "max": 304.441517,
+          "iqr": 119.942641,
+          "mean": 186.908053
+        }
+      ],
+      "painter_cpu_ms": [
+        {
+          "n": 5,
+          "median": 338.818184,
+          "p95": 341.838163,
+          "min": 336.534032,
+          "max": 341.838163,
+          "iqr": 2.124327,
+          "mean": 338.600154
+        },
+        {
+          "n": 5,
+          "median": 142.898457,
+          "p95": 143.697123,
+          "min": 141.895185,
+          "max": 143.697123,
+          "iqr": 0.382999,
+          "mean": 142.908769
+        }
+      ],
+      "guards": {
+        "tile_pngs_byte_identical": true,
+        "terrain_checksums_identical": true,
+        "all_decoded_pixels_identical": true,
+        "gui_collision_validation_cpu_ms": [
+          {
+            "n": 45,
+            "median": 1.348228,
+            "p95": 1.37436,
+            "min": 1.334261,
+            "max": 1.384232,
+            "iqr": 0.021254,
+            "mean": 1.352064
+          },
+          {
+            "n": 45,
+            "median": 1.35025,
+            "p95": 1.386399,
+            "min": 1.329436,
+            "max": 1.404905,
+            "iqr": 0.020656,
+            "mean": 1.352843
+          }
+        ],
+        "worker_final_rss_kb": [
+          {
+            "n": 5,
+            "median": 99596,
+            "p95": 100484,
+            "min": 98760,
+            "max": 100484,
+            "iqr": 1112,
+            "mean": 99718.4
+          },
+          {
+            "n": 5,
+            "median": 81476,
+            "p95": 82316,
+            "min": 78428,
+            "max": 82316,
+            "iqr": 1268,
+            "mean": 80926.4
+          }
+        ]
+      }
+    },
+    {
+      "id": "timeline-field-merge",
+      "hypothesis": "Per-grub temporary containers cost GUI CPU and allocations",
+      "change": "Merge the six interpolated fields directly",
+      "files": [
+        "lib/burrow/client/timeline.rb"
+      ],
+      "metric": "run median sample thread CPU ms",
+      "baseline": {
+        "n": 5,
+        "median": 0.153531,
+        "p95": 0.15534,
+        "min": 0.150439,
+        "max": 0.15534,
+        "iqr": 0.002586,
+        "mean": 0.153116
+      },
+      "candidate": {
+        "n": 5,
+        "median": 0.126472,
+        "p95": 0.127228,
+        "min": 0.123007,
+        "max": 0.127228,
+        "iqr": 0.002129,
+        "mean": 0.125606
+      },
+      "improvement_percent": 17.624454,
+      "improved_pairs": 5,
+      "pairs": 5,
+      "verdict": "ACCEPT",
+      "reason": "Same complete presentation digest and playback counters; five-pair CPU and allocation win",
+      "allocations": [
+        {
+          "n": 5,
+          "median": 628,
+          "p95": 628,
+          "min": 628,
+          "max": 628,
+          "iqr": 0,
+          "mean": 628.0
+        },
+        {
+          "n": 5,
+          "median": 232,
+          "p95": 232,
+          "min": 232,
+          "max": 232,
+          "iqr": 0,
+          "mean": 232.0
+        }
+      ],
+      "presentation_sha256": [
+        "ac90514894c4e669a68167479fd9ab07b9e9afe63c322848e70ebef4e36431d7"
+      ],
+      "guards": [
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        }
+      ]
+    },
+    {
+      "id": "json-frozen_envelopes",
+      "hypothesis": "Parser options might reduce GUI-process decode cost",
+      "change": "frozen_envelopes",
+      "files": [
+        "lib/burrow/protocol.rb",
+        "lib/burrow/client/connection.rb"
+      ],
+      "metric": "run median incremental decode CPU ms",
+      "baseline": {
+        "n": 5,
+        "median": 0.255376,
+        "p95": 0.25872,
+        "min": 0.253962,
+        "max": 0.25872,
+        "iqr": 0.002264,
+        "mean": 0.255946
+      },
+      "candidate": {
+        "n": 5,
+        "median": 0.285734,
+        "p95": 0.289986,
+        "min": 0.283358,
+        "max": 0.289986,
+        "iqr": 0.002507,
+        "mean": 0.285962
+      },
+      "improvement_percent": -11.88757,
+      "improved_pairs": 0,
+      "pairs": 5,
+      "verdict": "REJECT",
+      "reason": "Decode CPU regresses despite fewer allocations",
+      "allocations": [
+        {
+          "n": 5,
+          "median": 409,
+          "p95": 409,
+          "min": 409,
+          "max": 409,
+          "iqr": 0,
+          "mean": 409.0
+        },
+        {
+          "n": 5,
+          "median": 167,
+          "p95": 167,
+          "min": 167,
+          "max": 167,
+          "iqr": 0,
+          "mean": 167.0
+        }
+      ]
+    },
+    {
+      "id": "json-explicit_no_additions",
+      "hypothesis": "Parser options might reduce GUI-process decode cost",
+      "change": "explicit_no_additions",
+      "files": [
+        "lib/burrow/protocol.rb",
+        "lib/burrow/client/connection.rb"
+      ],
+      "metric": "run median incremental decode CPU ms",
+      "baseline": {
+        "n": 5,
+        "median": 0.255376,
+        "p95": 0.25872,
+        "min": 0.253962,
+        "max": 0.25872,
+        "iqr": 0.002264,
+        "mean": 0.255946
+      },
+      "candidate": {
+        "n": 5,
+        "median": 0.254982,
+        "p95": 0.260765,
+        "min": 0.253957,
+        "max": 0.260765,
+        "iqr": 0.001174,
+        "mean": 0.256117
+      },
+      "improvement_percent": 0.154282,
+      "improved_pairs": 2,
+      "pairs": 5,
+      "verdict": "REJECT",
+      "reason": "Improvement is below run-to-run noise and does not simplify code",
+      "allocations": [
+        {
+          "n": 5,
+          "median": 409,
+          "p95": 409,
+          "min": 409,
+          "max": 409,
+          "iqr": 0,
+          "mean": 409.0
+        },
+        {
+          "n": 5,
+          "median": 409,
+          "p95": 409,
+          "min": 409,
+          "max": 409,
+          "iqr": 0,
+          "mean": 409.0
+        }
+      ]
+    },
+    {
+      "id": "minimap-png-preset",
+      "hypothesis": "The ignored fast_rgba hash option leaves slow PNG filtering enabled",
+      "change": "Use the actual :fast_rgba preset for the overview only",
+      "files": [
+        "lib/burrow/client/terrain_painter.rb"
+      ],
+      "metric": "overview encode CPU ms",
+      "baseline": {
+        "n": 5,
+        "median": 98.968247,
+        "p95": 101.267325,
+        "min": 98.844813,
+        "max": 101.267325,
+        "iqr": 0.548862,
+        "mean": 99.490201
+      },
+      "candidate": {
+        "n": 5,
+        "median": 13.754062,
+        "p95": 13.889072,
+        "min": 13.5048,
+        "max": 13.889072,
+        "iqr": 0.272898,
+        "mean": 13.691968
+      },
+      "improvement_percent": 86.102551,
+      "improved_pairs": 5,
+      "pairs": 5,
+      "verdict": "ACCEPT",
+      "reason": "Faster encoding, smaller minimap PNGs and identical decoded RGBA pixels",
+      "overview_bytes": [
+        {
+          "n": 5,
+          "median": 65022,
+          "p95": 65022,
+          "min": 65022,
+          "max": 65022,
+          "iqr": 0,
+          "mean": 65022.0
+        },
+        {
+          "n": 5,
+          "median": 62828,
+          "p95": 62828,
+          "min": 62828,
+          "max": 62828,
+          "iqr": 0,
+          "mean": 62828.0
+        }
+      ]
+    },
+    {
+      "id": "tile-png-preset",
+      "hypothesis": "PNG encoding alternatives might help full-sized terrain tiles",
+      "change": "Prototype only: preset",
+      "files": [
+        "lib/burrow/client/terrain_painter.rb"
+      ],
+      "metric": "aggregate tile PNG encode CPU ms",
+      "baseline": {
+        "n": 5,
+        "median": 1814.499893,
+        "p95": 1834.19506,
+        "min": 1799.954485,
+        "max": 1834.19506,
+        "iqr": 19.481029,
+        "mean": 1815.563121
+      },
+      "candidate": {
+        "n": 5,
+        "median": 299.47611,
+        "p95": 304.660985,
+        "min": 296.789417,
+        "max": 304.660985,
+        "iqr": 3.418069,
+        "mean": 299.938597
+      },
+      "improvement_percent": 83.495391,
+      "improved_pairs": 5,
+      "pairs": 5,
+      "verdict": "REJECT",
+      "reason": "Tile PNG bytes rise 12.93%",
+      "tile_png_bytes": [
+        {
+          "n": 5,
+          "median": 1725394,
+          "p95": 1725394,
+          "min": 1725394,
+          "max": 1725394,
+          "iqr": 0,
+          "mean": 1725394.0
+        },
+        {
+          "n": 5,
+          "median": 1948572,
+          "p95": 1948572,
+          "min": 1948572,
+          "max": 1948572,
+          "iqr": 0,
+          "mean": 1948572.0
+        }
+      ]
+    },
+    {
+      "id": "tile-png-rgba_no_filter",
+      "hypothesis": "PNG encoding alternatives might help full-sized terrain tiles",
+      "change": "Prototype only: rgba_no_filter",
+      "files": [
+        "lib/burrow/client/terrain_painter.rb"
+      ],
+      "metric": "aggregate tile PNG encode CPU ms",
+      "baseline": {
+        "n": 5,
+        "median": 1814.499893,
+        "p95": 1834.19506,
+        "min": 1799.954485,
+        "max": 1834.19506,
+        "iqr": 19.481029,
+        "mean": 1815.563121
+      },
+      "candidate": {
+        "n": 5,
+        "median": 459.169259,
+        "p95": 463.850681,
+        "min": 456.533484,
+        "max": 463.850681,
+        "iqr": 3.807121,
+        "mean": 459.452537
+      },
+      "improvement_percent": 74.694446,
+      "improved_pairs": 5,
+      "pairs": 5,
+      "verdict": "REJECT",
+      "reason": "Tile PNG bytes rise 10.12%",
+      "tile_png_bytes": [
+        {
+          "n": 5,
+          "median": 1725394,
+          "p95": 1725394,
+          "min": 1725394,
+          "max": 1725394,
+          "iqr": 0,
+          "mean": 1725394.0
+        },
+        {
+          "n": 5,
+          "median": 1900051,
+          "p95": 1900051,
+          "min": 1900051,
+          "max": 1900051,
+          "iqr": 0,
+          "mean": 1900051.0
+        }
+      ]
+    },
+    {
+      "id": "tile-png-rgba_default_compression",
+      "hypothesis": "PNG encoding alternatives might help full-sized terrain tiles",
+      "change": "Prototype only: rgba_default_compression",
+      "files": [
+        "lib/burrow/client/terrain_painter.rb"
+      ],
+      "metric": "aggregate tile PNG encode CPU ms",
+      "baseline": {
+        "n": 5,
+        "median": 1814.499893,
+        "p95": 1834.19506,
+        "min": 1799.954485,
+        "max": 1834.19506,
+        "iqr": 19.481029,
+        "mean": 1815.563121
+      },
+      "candidate": {
+        "n": 5,
+        "median": 1797.683478,
+        "p95": 1817.314826,
+        "min": 1792.952117,
+        "max": 1817.314826,
+        "iqr": 13.171351,
+        "mean": 1802.668094
+      },
+      "improvement_percent": 0.92678,
+      "improved_pairs": 5,
+      "pairs": 5,
+      "verdict": "REJECT",
+      "reason": "Aggregate tile CPU does not improve by 5% or simplify code",
+      "tile_png_bytes": [
+        {
+          "n": 5,
+          "median": 1725394,
+          "p95": 1725394,
+          "min": 1725394,
+          "max": 1725394,
+          "iqr": 0,
+          "mean": 1725394.0
+        },
+        {
+          "n": 5,
+          "median": 1725394,
+          "p95": 1725394,
+          "min": 1725394,
+          "max": 1725394,
+          "iqr": 0,
+          "mean": 1725394.0
+        }
+      ]
+    },
+    {
+      "id": "lower-playback-buffer",
+      "hypothesis": "A smaller local cushion may reduce event latency",
+      "change": "Prototype only: 1.0 tick floor and zero extra local margin",
+      "files": [
+        "lib/burrow/client/timeline.rb"
+      ],
+      "metric": "sparse-local-stall underruns (deterministic replay)",
+      "baseline": 0,
+      "candidate": 1,
+      "verdict": "REJECT",
+      "reason": "Adds an underrun",
+      "replay_guards": [
+        {
+          "local": {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          "sparse_local_stall": {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          "remote": {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          "burst": {
+            "underruns": 105,
+            "resyncs": 0
+          },
+          "ui_stalls": {
+            "underruns": 0,
+            "resyncs": 0
+          }
+        },
+        {
+          "local": {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          "sparse_local_stall": {
+            "underruns": 1,
+            "resyncs": 0
+          },
+          "remote": {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          "burst": {
+            "underruns": 105,
+            "resyncs": 0
+          },
+          "ui_stalls": {
+            "underruns": 0,
+            "resyncs": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "loopback-cadence",
+      "hypothesis": "A wall-time cadence gate can miss a local physics tick",
+      "change": "Prototype only: broadcast on every local simulation tick",
+      "files": [
+        "lib/burrow/server/reactor.rb#snapshot_interval"
+      ],
+      "metric": "run median jump-to-event ms",
+      "baseline": {
+        "n": 5,
+        "median": 66.888461,
+        "p95": 66.925212,
+        "min": 50.23186,
+        "max": 66.925212,
+        "iqr": 0.012961,
+        "mean": 63.564464
+      },
+      "candidate": {
+        "n": 5,
+        "median": 66.885628,
+        "p95": 67.085672,
+        "min": 50.442599,
+        "max": 67.085672,
+        "iqr": 16.143425,
+        "mean": 60.411203
+      },
+      "improvement_percent": 0.004236,
+      "improved_pairs": 3,
+      "pairs": 5,
+      "verdict": "REJECT",
+      "reason": "Jump-to-event improvement does not hold in at least four of five paired captures",
+      "other_inputs": {
+        "fire_event_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 50.252717,
+            "p95": 50.385591,
+            "min": 50.240528,
+            "max": 50.385591,
+            "iqr": 0.050616,
+            "mean": 50.284066
+          },
+          "candidate": {
+            "n": 5,
+            "median": 50.244195,
+            "p95": 50.275469,
+            "min": 50.203866,
+            "max": 50.275469,
+            "iqr": 0.04265,
+            "mean": 50.242026
+          },
+          "improvement_percent": 0.016958,
+          "improved_pairs": 4,
+          "pairs": 5
+        },
+        "activate_event_ms": {
+          "baseline": {
+            "n": 5,
+            "median": 50.250322,
+            "p95": 50.25989,
+            "min": 50.216973,
+            "max": 50.25989,
+            "iqr": 0.001813,
+            "mean": 50.245819
+          },
+          "candidate": {
+            "n": 5,
+            "median": 50.247473,
+            "p95": 50.488851,
+            "min": 50.229448,
+            "max": 50.488851,
+            "iqr": 0.032688,
+            "mean": 50.297023
+          },
+          "improvement_percent": 0.005669,
+          "improved_pairs": 2,
+          "pairs": 5
+        }
+      },
+      "host_cpu_ms_per_second": [
+        {
+          "n": 4,
+          "median": 61.981081,
+          "p95": 67.984517,
+          "min": 59.989714,
+          "max": 67.984517,
+          "iqr": 7.991638,
+          "mean": 62.487048
+        },
+        {
+          "n": 4,
+          "median": 65.985503,
+          "p95": 71.984674,
+          "min": 61.986775,
+          "max": 71.984674,
+          "iqr": 9.99124,
+          "mean": 65.487597
+        }
+      ]
+    },
+    {
+      "id": "compressed-envelope",
+      "hypothesis": "Compression might reduce snapshot bandwidth",
+      "change": "Prototype only: base64/zlib level-1 JSON envelope requiring negotiated support for a new wire message",
+      "files": [],
+      "metric": "incremental wire bytes",
+      "baseline": {
+        "n": 5,
+        "median": 19440,
+        "p95": 19440,
+        "min": 19440,
+        "max": 19440,
+        "iqr": 0,
+        "mean": 19440.0
+      },
+      "candidate": {
+        "n": 5,
+        "median": 3477,
+        "p95": 3477,
+        "min": 3477,
+        "max": 3477,
+        "iqr": 0,
+        "mean": 3477.0
+      },
+      "improvement_percent": 82.114198,
+      "improved_pairs": 5,
+      "pairs": 5,
+      "verdict": "PROPOSAL",
+      "reason": "Not protocol-4 compatible; no production wire changes",
+      "decode_cpu_ms": [
+        {
+          "n": 5,
+          "median": 0.262082,
+          "p95": 0.26666,
+          "min": 0.260286,
+          "max": 0.26666,
+          "iqr": 0.000791,
+          "mean": 0.262596
+        },
+        {
+          "n": 5,
+          "median": 0.436943,
+          "p95": 0.441308,
+          "min": 0.435375,
+          "max": 0.441308,
+          "iqr": 0.002051,
+          "mean": 0.437425
+        }
+      ]
+    }
+  ],
+  "real_explosion_pipeline": {
+    "blast_to_ready_ms": {
+      "baseline": {
+        "n": 5,
+        "median": 379.353503,
+        "p95": 385.015053,
+        "min": 369.229457,
+        "max": 385.015053,
+        "iqr": 1.795167,
+        "mean": 378.572563
+      },
+      "candidate": {
+        "n": 5,
+        "median": 191.176995,
+        "p95": 216.109952,
+        "min": 170.625041,
+        "max": 216.109952,
+        "iqr": 17.889753,
+        "mean": 189.092677
+      },
+      "improvement_percent": 49.604526,
+      "improved_pairs": 5,
+      "pairs": 5
+    },
+    "request_to_ready_ms": {
+      "baseline": {
+        "n": 5,
+        "median": 300.220854,
+        "p95": 300.300134,
+        "min": 300.150057,
+        "max": 300.300134,
+        "iqr": 0.072871,
+        "mean": 300.217833
+      },
+      "candidate": {
+        "n": 5,
+        "median": 103.095289,
+        "p95": 116.951012,
+        "min": 100.136171,
+        "max": 116.951012,
+        "iqr": 15.888073,
+        "mean": 107.594276
+      },
+      "improvement_percent": 65.660184,
+      "improved_pairs": 5,
+      "pairs": 5
+    }
+  },
+  "interop": {
+    "interop-new-client-old-host-loopback-tcp": {
+      "source": "<workspace>",
+      "host_source": "<scratch>/baseline-0.5.3",
+      "transport": "tcp",
+      "remote": false,
+      "interop": {
+        "reconnect_identity": true,
+        "resumed_sequence": 14,
+        "full_terrain_checksum": "5979207a244d8eb93e6f4007a6b94f2daf786f143c08a2f2b6b8842cc6072aeb",
+        "full_history": 18,
+        "sync_sequence": 15,
+        "input_events_presented": 6
+      },
+      "guards": [
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        }
+      ],
+      "latency": {
+        "jump_event_ms": {
+          "n": 2,
+          "median": 83.778758,
+          "p95": 83.778758,
+          "min": 50.155924,
+          "max": 83.778758,
+          "iqr": 33.622834,
+          "mean": 66.967341
+        },
+        "fire_event_ms": {
+          "n": 2,
+          "median": 66.959426,
+          "p95": 66.959426,
+          "min": 50.211694,
+          "max": 66.959426,
+          "iqr": 16.747732,
+          "mean": 58.58556
+        },
+        "fire_projectile_ms": {
+          "n": 2,
+          "median": 66.9572,
+          "p95": 66.9572,
+          "min": 50.210209,
+          "max": 66.9572,
+          "iqr": 16.746991,
+          "mean": 58.583705
+        },
+        "activate_event_ms": {
+          "n": 2,
+          "median": 50.224083,
+          "p95": 50.224083,
+          "min": 50.199349,
+          "max": 50.224083,
+          "iqr": 0.024734,
+          "mean": 50.211716
+        }
+      },
+      "passed": true
+    },
+    "interop-new-client-old-host-loopback-tls": {
+      "source": "<workspace>",
+      "host_source": "<scratch>/baseline-0.5.3",
+      "transport": "tls",
+      "remote": false,
+      "interop": {
+        "reconnect_identity": true,
+        "resumed_sequence": 14,
+        "full_terrain_checksum": "5979207a244d8eb93e6f4007a6b94f2daf786f143c08a2f2b6b8842cc6072aeb",
+        "full_history": 18,
+        "sync_sequence": 15,
+        "input_events_presented": 6
+      },
+      "guards": [
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        }
+      ],
+      "latency": {
+        "jump_event_ms": {
+          "n": 2,
+          "median": 67.073707,
+          "p95": 67.073707,
+          "min": 66.851426,
+          "max": 67.073707,
+          "iqr": 0.222281,
+          "mean": 66.962566
+        },
+        "fire_event_ms": {
+          "n": 2,
+          "median": 50.614507,
+          "p95": 50.614507,
+          "min": 50.21043,
+          "max": 50.614507,
+          "iqr": 0.404077,
+          "mean": 50.412469
+        },
+        "fire_projectile_ms": {
+          "n": 2,
+          "median": 50.611845,
+          "p95": 50.611845,
+          "min": 50.20855,
+          "max": 50.611845,
+          "iqr": 0.403295,
+          "mean": 50.410198
+        },
+        "activate_event_ms": {
+          "n": 2,
+          "median": 50.224416,
+          "p95": 50.224416,
+          "min": 50.196438,
+          "max": 50.224416,
+          "iqr": 0.027978,
+          "mean": 50.210427
+        }
+      },
+      "passed": true
+    },
+    "interop-new-client-old-host-remote-tcp": {
+      "source": "<workspace>",
+      "host_source": "<scratch>/baseline-0.5.3",
+      "transport": "tcp",
+      "remote": true,
+      "interop": {
+        "reconnect_identity": true,
+        "resumed_sequence": 14,
+        "full_terrain_checksum": "5979207a244d8eb93e6f4007a6b94f2daf786f143c08a2f2b6b8842cc6072aeb",
+        "full_history": 18,
+        "sync_sequence": 15,
+        "input_events_presented": 6
+      },
+      "guards": [
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        }
+      ],
+      "latency": {
+        "jump_event_ms": {
+          "n": 2,
+          "median": 183.711925,
+          "p95": 183.711925,
+          "min": 183.547266,
+          "max": 183.711925,
+          "iqr": 0.164659,
+          "mean": 183.629595
+        },
+        "fire_event_ms": {
+          "n": 2,
+          "median": 183.67212,
+          "p95": 183.67212,
+          "min": 183.671607,
+          "max": 183.67212,
+          "iqr": 0.000513,
+          "mean": 183.671864
+        },
+        "fire_projectile_ms": {
+          "n": 2,
+          "median": 183.669881,
+          "p95": 183.669881,
+          "min": 183.667667,
+          "max": 183.669881,
+          "iqr": 0.002214,
+          "mean": 183.668774
+        },
+        "activate_event_ms": {
+          "n": 2,
+          "median": 183.552412,
+          "p95": 183.552412,
+          "min": 183.528578,
+          "max": 183.552412,
+          "iqr": 0.023834,
+          "mean": 183.540495
+        }
+      },
+      "passed": true
+    },
+    "interop-new-client-old-host-remote-tls": {
+      "source": "<workspace>",
+      "host_source": "<scratch>/baseline-0.5.3",
+      "transport": "tls",
+      "remote": true,
+      "interop": {
+        "reconnect_identity": true,
+        "resumed_sequence": 14,
+        "full_terrain_checksum": "5979207a244d8eb93e6f4007a6b94f2daf786f143c08a2f2b6b8842cc6072aeb",
+        "full_history": 18,
+        "sync_sequence": 15,
+        "input_events_presented": 6
+      },
+      "guards": [
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        }
+      ],
+      "latency": {
+        "jump_event_ms": {
+          "n": 2,
+          "median": 200.188597,
+          "p95": 200.188597,
+          "min": 183.714111,
+          "max": 200.188597,
+          "iqr": 16.474486,
+          "mean": 191.951354
+        },
+        "fire_event_ms": {
+          "n": 2,
+          "median": 183.697188,
+          "p95": 183.697188,
+          "min": 183.645882,
+          "max": 183.697188,
+          "iqr": 0.051307,
+          "mean": 183.671535
+        },
+        "fire_projectile_ms": {
+          "n": 2,
+          "median": 183.693839,
+          "p95": 183.693839,
+          "min": 183.643489,
+          "max": 183.693839,
+          "iqr": 0.05035,
+          "mean": 183.668664
+        },
+        "activate_event_ms": {
+          "n": 2,
+          "median": 183.552284,
+          "p95": 183.552284,
+          "min": 183.548992,
+          "max": 183.552284,
+          "iqr": 0.003292,
+          "mean": 183.550638
+        }
+      },
+      "passed": true
+    },
+    "interop-old-client-new-host-loopback-tcp": {
+      "source": "<scratch>/baseline-0.5.3",
+      "host_source": "<workspace>",
+      "transport": "tcp",
+      "remote": false,
+      "interop": {
+        "reconnect_identity": true,
+        "resumed_sequence": 14,
+        "full_terrain_checksum": "5979207a244d8eb93e6f4007a6b94f2daf786f143c08a2f2b6b8842cc6072aeb",
+        "full_history": 18,
+        "sync_sequence": 15,
+        "input_events_presented": 6
+      },
+      "guards": [
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        }
+      ],
+      "latency": {
+        "jump_event_ms": {
+          "n": 2,
+          "median": 83.524772,
+          "p95": 83.524772,
+          "min": 67.151787,
+          "max": 83.524772,
+          "iqr": 16.372985,
+          "mean": 75.33828
+        },
+        "fire_event_ms": {
+          "n": 2,
+          "median": 83.544217,
+          "p95": 83.544217,
+          "min": 50.277321,
+          "max": 83.544217,
+          "iqr": 33.266896,
+          "mean": 66.910769
+        },
+        "fire_projectile_ms": {
+          "n": 2,
+          "median": 83.541981,
+          "p95": 83.541981,
+          "min": 50.275635,
+          "max": 83.541981,
+          "iqr": 33.266346,
+          "mean": 66.908808
+        },
+        "activate_event_ms": {
+          "n": 2,
+          "median": 67.014217,
+          "p95": 67.014217,
+          "min": 50.193999,
+          "max": 67.014217,
+          "iqr": 16.820218,
+          "mean": 58.604108
+        }
+      },
+      "passed": true
+    },
+    "interop-old-client-new-host-loopback-tls": {
+      "source": "<scratch>/baseline-0.5.3",
+      "host_source": "<workspace>",
+      "transport": "tls",
+      "remote": false,
+      "interop": {
+        "reconnect_identity": true,
+        "resumed_sequence": 14,
+        "full_terrain_checksum": "5979207a244d8eb93e6f4007a6b94f2daf786f143c08a2f2b6b8842cc6072aeb",
+        "full_history": 18,
+        "sync_sequence": 15,
+        "input_events_presented": 6
+      },
+      "guards": [
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        }
+      ],
+      "latency": {
+        "jump_event_ms": {
+          "n": 2,
+          "median": 67.721918,
+          "p95": 67.721918,
+          "min": 66.892663,
+          "max": 67.721918,
+          "iqr": 0.829255,
+          "mean": 67.30729
+        },
+        "fire_event_ms": {
+          "n": 2,
+          "median": 50.530515,
+          "p95": 50.530515,
+          "min": 50.229394,
+          "max": 50.530515,
+          "iqr": 0.301121,
+          "mean": 50.379955
+        },
+        "fire_projectile_ms": {
+          "n": 2,
+          "median": 50.52403,
+          "p95": 50.52403,
+          "min": 50.228005,
+          "max": 50.52403,
+          "iqr": 0.296025,
+          "mean": 50.376018
+        },
+        "activate_event_ms": {
+          "n": 2,
+          "median": 50.319049,
+          "p95": 50.319049,
+          "min": 50.269584,
+          "max": 50.319049,
+          "iqr": 0.049465,
+          "mean": 50.294317
+        }
+      },
+      "passed": true
+    },
+    "interop-old-client-new-host-remote-tcp": {
+      "source": "<scratch>/baseline-0.5.3",
+      "host_source": "<workspace>",
+      "transport": "tcp",
+      "remote": true,
+      "interop": {
+        "reconnect_identity": true,
+        "resumed_sequence": 14,
+        "full_terrain_checksum": "5979207a244d8eb93e6f4007a6b94f2daf786f143c08a2f2b6b8842cc6072aeb",
+        "full_history": 18,
+        "sync_sequence": 15,
+        "input_events_presented": 6
+      },
+      "guards": [
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        }
+      ],
+      "latency": {
+        "jump_event_ms": {
+          "n": 2,
+          "median": 200.155599,
+          "p95": 200.155599,
+          "min": 183.537612,
+          "max": 200.155599,
+          "iqr": 16.617986,
+          "mean": 191.846605
+        },
+        "fire_event_ms": {
+          "n": 2,
+          "median": 200.247943,
+          "p95": 200.247943,
+          "min": 183.832868,
+          "max": 200.247943,
+          "iqr": 16.415075,
+          "mean": 192.040406
+        },
+        "fire_projectile_ms": {
+          "n": 2,
+          "median": 200.245705,
+          "p95": 200.245705,
+          "min": 183.82735,
+          "max": 200.245705,
+          "iqr": 16.418355,
+          "mean": 192.036528
+        },
+        "activate_event_ms": {
+          "n": 2,
+          "median": 183.865235,
+          "p95": 183.865235,
+          "min": 183.570503,
+          "max": 183.865235,
+          "iqr": 0.294732,
+          "mean": 183.717869
+        }
+      },
+      "passed": true
+    },
+    "interop-old-client-new-host-remote-tls": {
+      "source": "<scratch>/baseline-0.5.3",
+      "host_source": "<workspace>",
+      "transport": "tls",
+      "remote": true,
+      "interop": {
+        "reconnect_identity": true,
+        "resumed_sequence": 14,
+        "full_terrain_checksum": "5979207a244d8eb93e6f4007a6b94f2daf786f143c08a2f2b6b8842cc6072aeb",
+        "full_history": 18,
+        "sync_sequence": 15,
+        "input_events_presented": 6
+      },
+      "guards": [
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        },
+        {
+          "underruns": 0,
+          "resyncs": 0
+        }
+      ],
+      "latency": {
+        "jump_event_ms": {
+          "n": 2,
+          "median": 201.979005,
+          "p95": 201.979005,
+          "min": 200.188364,
+          "max": 201.979005,
+          "iqr": 1.790641,
+          "mean": 201.083685
+        },
+        "fire_event_ms": {
+          "n": 2,
+          "median": 183.578234,
+          "p95": 183.578234,
+          "min": 183.553555,
+          "max": 183.578234,
+          "iqr": 0.024679,
+          "mean": 183.565895
+        },
+        "fire_projectile_ms": {
+          "n": 2,
+          "median": 183.575824,
+          "p95": 183.575824,
+          "min": 183.551759,
+          "max": 183.575824,
+          "iqr": 0.024065,
+          "mean": 183.563792
+        },
+        "activate_event_ms": {
+          "n": 2,
+          "median": 183.552214,
+          "p95": 183.552214,
+          "min": 183.550702,
+          "max": 183.552214,
+          "iqr": 0.001512,
+          "mean": 183.551458
+        }
+      },
+      "passed": true
+    }
+  },
+  "final_playback_guards": {
+    "local": {
+      "baseline": {
+        "underruns": 0,
+        "resyncs": 0
+      },
+      "candidate": {
+        "underruns": 0,
+        "resyncs": 0
+      },
+      "virtual_timing_trace_identical": true
+    },
+    "sparse_local_stall": {
+      "baseline": {
+        "underruns": 0,
+        "resyncs": 0
+      },
+      "candidate": {
+        "underruns": 0,
+        "resyncs": 0
+      },
+      "virtual_timing_trace_identical": true
+    },
+    "remote": {
+      "baseline": {
+        "underruns": 0,
+        "resyncs": 0
+      },
+      "candidate": {
+        "underruns": 0,
+        "resyncs": 0
+      },
+      "virtual_timing_trace_identical": true
+    },
+    "burst": {
+      "baseline": {
+        "underruns": 105,
+        "resyncs": 0
+      },
+      "candidate": {
+        "underruns": 105,
+        "resyncs": 0
+      },
+      "virtual_timing_trace_identical": true
+    },
+    "ui_stalls": {
+      "baseline": {
+        "underruns": 0,
+        "resyncs": 0
+      },
+      "candidate": {
+        "underruns": 0,
+        "resyncs": 0
+      },
+      "virtual_timing_trace_identical": true
+    }
+  },
+  "checks": {
+    "ruby_3_4_7": 0,
+    "ruby_4_0_7": 0,
+    "native": 0,
+    "focused_checks": 0,
+    "initial_failure": {
+      "test": "NetworkTest#test_input_receipts_identify_only_events_from_that_authoritative_command",
+      "reason": "The test compared a restored checkpoint tick to the later live host tick",
+      "fix": "Compare against checkpoint['match']['state']['tick']; no production host or persistence change",
+      "initial_focused": {
+        "runs": 44,
+        "assertions": 2649,
+        "failures": 1
+      },
+      "initial_core_3_4_7": {
+        "runs": 314,
+        "assertions": 9857,
+        "failures": 1
+      },
+      "intermediate_test_edit": "A wrong tick field path in the first assertion edit was corrected before final reruns; logs retained as *-test-edit.log",
+      "fixed_regression": {
+        "exit": 0
+      },
+      "baseline_reproduction": {
+        "exit": 1
+      }
+    },
+    "native_initial_results": {
+      "display": "native",
+      "updated_at": "2026-10-14T00:14:44Z",
+      "counts": {
+        "pass": 6,
+        "fail": 0,
+        "error": 1,
+        "skip": 0,
+        "expected_fail": 0,
+        "unexpected_pass": 0,
+        "not_applicable": 0,
+        "timeout": 0
+      },
+      "results": {
+        "checks/battle.sspec": {
+          "status": "pass",
+          "secs": 19.8,
+          "assertions": 25,
+          "scope": "native",
+          "run_at": "2026-10-14T00:14:44Z"
+        },
+        "checks/camera.sspec": {
+          "status": "pass",
+          "secs": 11.22,
+          "assertions": 32,
+          "scope": "native",
+          "run_at": "2026-10-14T00:14:44Z"
+        },
+        "checks/controls.sspec": {
+          "status": "pass",
+          "secs": 69.37,
+          "assertions": 60,
+          "scope": "native",
+          "run_at": "2026-10-14T00:14:44Z"
+        },
+        "checks/lifecycle.sspec": {
+          "status": "error",
+          "message": "RuntimeError: Lifecycle condition timed out at <workspace>/.cache/native-checks/tmp/scarpe-spec-20261014-3870338-bifel8/checks_lifecycle.sspec-4c9f43d0/work/test.rb:21:in 'block in SpecChecks#define_test' (checks/lifecycle.sspec:21)",
+          "secs": 16.06,
+          "assertions": 0,
+          "scope": "native",
+          "run_at": "2026-10-14T00:14:44Z"
+        },
+        "checks/menu.sspec": {
+          "status": "pass",
+          "secs": 5.42,
+          "assertions": 68,
+          "scope": "native",
+          "run_at": "2026-10-14T00:14:44Z"
+        },
+        "checks/online.sspec": {
+          "status": "pass",
+          "secs": 24.26,
+          "assertions": 19,
+          "scope": "native",
+          "run_at": "2026-10-14T00:14:44Z"
+        },
+        "checks/presentation.sspec": {
+          "status": "pass",
+          "secs": 49.4,
+          "assertions": 17,
+          "scope": "native",
+          "run_at": "2026-10-14T00:14:44Z"
+        }
+      }
+    },
+    "native_final_results": {
+      "display": "native",
+      "updated_at": "2026-10-14T00:19:59Z",
+      "counts": {
+        "pass": 7,
+        "fail": 0,
+        "error": 0,
+        "skip": 0,
+        "expected_fail": 0,
+        "unexpected_pass": 0,
+        "not_applicable": 0,
+        "timeout": 0
+      },
+      "results": {
+        "checks/battle.sspec": {
+          "status": "pass",
+          "secs": 20.82,
+          "assertions": 25,
+          "scope": "native",
+          "run_at": "2026-10-14T00:19:59Z"
+        },
+        "checks/camera.sspec": {
+          "status": "pass",
+          "secs": 11.25,
+          "assertions": 32,
+          "scope": "native",
+          "run_at": "2026-10-14T00:19:59Z"
+        },
+        "checks/controls.sspec": {
+          "status": "pass",
+          "secs": 94.77,
+          "assertions": 60,
+          "scope": "native",
+          "run_at": "2026-10-14T00:19:59Z"
+        },
+        "checks/lifecycle.sspec": {
+          "status": "pass",
+          "secs": 12.89,
+          "assertions": 21,
+          "scope": "native",
+          "run_at": "2026-10-14T00:19:59Z"
+        },
+        "checks/menu.sspec": {
+          "status": "pass",
+          "secs": 8.58,
+          "assertions": 68,
+          "scope": "native",
+          "run_at": "2026-10-14T00:19:59Z"
+        },
+        "checks/online.sspec": {
+          "status": "pass",
+          "secs": 31.47,
+          "assertions": 19,
+          "scope": "native",
+          "run_at": "2026-10-14T00:19:59Z"
+        },
+        "checks/presentation.sspec": {
+          "status": "pass",
+          "secs": 62.25,
+          "assertions": 17,
+          "scope": "native",
+          "run_at": "2026-10-14T00:19:59Z"
+        }
+      }
+    },
+    "status": "passed",
+    "summaries": {
+      "core-3.4.7": [
+        "Finished in 133.333929s, 2.3550 runs/s, 73.9272 assertions/s.",
+        "314 runs, 9857 assertions, 0 failures, 0 errors, 0 skips"
+      ],
+      "core-4.0.7": [
+        "Finished in 140.883374s, 2.2288 runs/s, 69.9657 assertions/s.",
+        "314 runs, 9857 assertions, 0 failures, 0 errors, 0 skips"
+      ],
+      "native": [
+        "7 cases, 242 assertions, 7 passed, 0 failures, 0 errors, 0 timeouts"
+      ],
+      "focused-checks": [
+        "Finished in 22.871352s, 1.9238 runs/s, 115.8217 assertions/s.",
+        "44 runs, 2649 assertions, 0 failures, 0 errors, 0 skips"
+      ]
+    }
+  },
+  "raw_captures": "<scratch>/net/raw",
+  "limits": [
+    "Linux source runs, no packaged Mac/audio/physical display claim",
+    "Timeline sample and tiles-ready endpoints precede native scanout",
+    "Observer lateness includes scheduling and GC, not a direct GVL ownership probe",
+    "Proxy models ordered delay and jitter, not packet loss"
+  ]
+}
