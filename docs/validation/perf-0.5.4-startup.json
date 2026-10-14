@@ -1,0 +1,1835 @@
+{
+  "schema_version": 1,
+  "target_version": "0.5.4",
+  "measured_source_version": "0.5.3",
+  "area": "startup",
+  "generated_utc": "2026-10-14T00:27:41.087419+00:00",
+  "complete": true,
+  "baseline_commit": "8bf41edf524e518c15bc38889b4425e26d31fa15",
+  "branch": "perf2/startup",
+  "machine": {
+    "os": "Ubuntu 26.04 LTS",
+    "kernel": "Linux 7.0.0-31-generic",
+    "arch": "x86_64",
+    "cpu": "Intel Core i5-8500 @ 3.00 GHz",
+    "cores": 6,
+    "ram_gib": 15,
+    "ruby_primary": "3.4.7",
+    "ruby_checks": ["3.4.7", "4.0.7"]
+  },
+  "method": {"pairs_per_comparison": 5, "timing_lock": "<scratch>/bin/bench", "check_lock": "<scratch>/bin/heavy", "statistics": "Across-run distributions; frame/tick p95 and max computed within each run before comparison. Positive improvement_percent means less work/time/RSS.", "acceptance": ">=5% median improvement and >=80% paired direction, or non-overlapping distributions; no guard regression beyond noise; correctness passes. Smaller real wins require simpler code.", "rss_unit": "KiB", "time_unit": "ms", "gc_measurement": "GC.total_time per-update/tick deltas include all GUI threads; not individual STW pauses.", "cache": "Warm/uncontrolled; separate DONTNEED asset-page advice does not establish a cold OS/runtime cache."},
+  "scenarios": {"launch": "Real native Quick Battle, seed 517a27ed; menu/battle paint barriers; 2 s early updates. Separate resume, audio/windowed, advisory cold-assets pairs.", "gc_gui": "Unprofiled 18 s windowed/audio combat with movement and banana shot.", "host": "Three seeded 6-team/36-grub bot matches, 1800 ticks each, JSON snapshot/tick and checkpoint/60 ticks; excludes socket I/O/fsync.", "frame": "Existing deterministic 36-grub/60-flame FrameProfile fixture and unprofiled windowed/audio rendering journey.", "terrain": "48 maps/run: four sizes x four biomes x three shapes; correctness repeats ten seeds (480 maps).", "memory": "600 active seconds each for baseline and rejected deferred-import prototype, completed matches/rematches, cooperative <=125 s exclusive leases; no cadence conclusions."},
+  "accepted_changes": [],
+  "experiments": [
+    {
+      "id": "remove-unused-reactor",
+      "hypothesis": "Avoid loading unused host Reactor code in the GUI.",
+      "change": "Remove one redundant require; retain eager networking and certificate imports.",
+      "files": ["lib/burrow/client/app.rb"],
+      "metric": "reactor.require_cpu_ms",
+      "baseline": {"n": 5, "median": 125.463679, "p95": 126.39934239999998, "min": 124.25353100000002, "max": 126.55445399999998, "iqr": 0.39761399999999014},
+      "candidate": {"n": 5, "median": 117.83196499999998, "p95": 121.1420748, "min": 114.06321199999996, "max": 121.84884000000001, "iqr": 1.9839540000000113},
+      "verdict": "REJECT",
+      "reason": "Fresh require CPU improves 6.08% (5/5), resume require CPU 6.11% (4/5), and removing a redundant import simplifies boot. However resume frame CPU p95 rises 13.86% (4/5 worse), maximum rises 45.02% (5/5 worse), and observed GC work rises; fresh median frame CPU also rises 5.75% (4/5 worse). No guard regression is permitted, so the one-line prototype is not retained.",
+      "rejected_patch": "<scratch>/startup/rejected/remove-unused-reactor.patch",
+      "measurements": {
+        "reactor": {
+          "full_comparison": "<scratch>/startup/reactor-comparison.json",
+          "baseline_files": ["reactor-baseline-1.json", "reactor-baseline-2.json", "reactor-baseline-3.json", "reactor-baseline-4.json", "reactor-baseline-5.json"],
+          "candidate_files": ["reactor-candidate-1.json", "reactor-candidate-2.json", "reactor-candidate-3.json", "reactor-candidate-4.json", "reactor-candidate-5.json"],
+          "metrics": {
+            "menu_ms": {
+              "baseline": {"n": 5, "median": 543.708544690162, "p95": 555.5737799033523, "min": 533.7222968228161, "max": 558.0093651078641, "iqr": 11.987889185547829},
+              "candidate": {"n": 5, "median": 533.6591228842735, "p95": 548.7420795485377, "min": 520.8579073660076, "max": 551.4371781609952, "iqr": 8.848234545439482},
+              "improvement_percent": 1.8483104420614183,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "interactive_ms": {
+              "baseline": {"n": 5, "median": 476.13762179389596, "p95": 492.8292724303901, "min": 471.8849486671388, "max": 494.8307992890477, "iqr": 12.901873793452978},
+              "candidate": {"n": 5, "median": 472.55102219060063, "p95": 483.8941618800163, "min": 456.86802500858903, "max": 485.5366968549788, "iqr": 6.9566452875733376},
+              "improvement_percent": 0.7532695252650767,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "battle_ms": {
+              "baseline": {"n": 5, "median": 4551.2151550501585, "p95": 4657.5464320369065, "min": 4529.492383822799, "max": 4673.561851028353, "iqr": 45.206259936094284},
+              "candidate": {"n": 5, "median": 4527.514669112861, "p95": 4771.144590806216, "min": 4511.6584450006485, "max": 4786.4948362112045, "iqr": 191.58374145627022},
+              "improvement_percent": 0.5207507254628152,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "menu_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 58764, "p95": 58800.0, "min": 58592, "max": 58804, "iqr": 64.0},
+              "candidate": {"n": 5, "median": 58360, "p95": 58488.0, "min": 58104, "max": 58508, "iqr": 64.0},
+              "improvement_percent": 0.687495745694644,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "battle_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 68400, "p95": 68558.4, "min": 68268, "max": 68584, "iqr": 88.0},
+              "candidate": {"n": 5, "median": 67932, "p95": 67980.8, "min": 67760, "max": 67988, "iqr": 172.0},
+              "improvement_percent": 0.6842105263157872,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "frame_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 1.4833193000000078, "p95": 1.6626345500000066, "min": 0.8632370499999752, "max": 1.6656431500000066, "iqr": 0.4524910000000055},
+              "candidate": {"n": 5, "median": 1.41665990000005, "p95": 1.8192849399999858, "min": 1.372220600000151, "max": 1.8401453500000031, "iqr": 0.34450769999978603},
+              "improvement_percent": 4.493934650480003,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 2.31760999999997, "p95": 4.857551200000021, "min": 1.7397580000000357, "max": 5.416957, "iqr": 0.4063300000001213},
+              "candidate": {"n": 5, "median": 2.605049000000026, "p95": 2.870841600000107, "min": 2.171828999999903, "max": 2.8927220000001252, "iqr": 0.5715990000001447},
+              "improvement_percent": -12.40238866763863,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 1.0841087499999988, "p95": 2.2498662399999985, "min": 0.6847095, "max": 2.494398649999998, "iqr": 0.2785070000000003},
+              "candidate": {"n": 5, "median": 1.31872365, "p95": 1.4201636699999998, "min": 0.9845600999999997, "max": 1.4449556499999998, "iqr": 0.29693295},
+              "improvement_percent": -21.641269844930356,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 4.057278, "p95": 7.534272399999999, "min": 2.844227, "max": 8.06562, "iqr": 2.0315030000000003},
+              "candidate": {"n": 5, "median": 3.699024, "p95": 7.0878049999999995, "min": 3.419793, "max": 7.4065, "iqr": 2.3270379999999995},
+              "improvement_percent": 8.829910102290262,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "require_cpu_ms": {
+              "baseline": {"n": 5, "median": 125.463679, "p95": 126.39934239999998, "min": 124.25353100000002, "max": 126.55445399999998, "iqr": 0.39761399999999014},
+              "candidate": {"n": 5, "median": 117.83196499999998, "p95": 121.1420748, "min": 114.06321199999996, "max": 121.84884000000001, "iqr": 1.9839540000000113},
+              "improvement_percent": 6.082807439434335,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            }
+          }
+        },
+        "reactor-resume": {
+          "full_comparison": "<scratch>/startup/reactor-resume-comparison.json",
+          "baseline_files": [
+            "reactor-baseline-1-resume.json",
+            "reactor-baseline-2-resume.json",
+            "reactor-baseline-3-resume.json",
+            "reactor-baseline-4-resume.json",
+            "reactor-baseline-5-resume.json"
+          ],
+          "candidate_files": [
+            "reactor-candidate-1-resume.json",
+            "reactor-candidate-2-resume.json",
+            "reactor-candidate-3-resume.json",
+            "reactor-candidate-4-resume.json",
+            "reactor-candidate-5-resume.json"
+          ],
+          "metrics": {
+            "menu_ms": {
+              "baseline": {"n": 5, "median": 535.0026986561716, "p95": 622.1594938077033, "min": 520.3979820944369, "max": 642.5648927688599, "iqr": 17.255169805139303},
+              "candidate": {"n": 5, "median": 520.641908980906, "p95": 535.2480709552765, "min": 510.59448486194015, "max": 536.7240821942687, "iqr": 12.821518816053867},
+              "improvement_percent": 2.6842462124653244,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "interactive_ms": {
+              "baseline": {"n": 5, "median": 476.7347006127238, "p95": 561.7977406829596, "min": 460.82771103829145, "max": 581.8816549144685, "iqr": 17.04531069844961},
+              "candidate": {"n": 5, "median": 458.21312814950943, "p95": 476.7742846161127, "min": 449.7232479043305, "max": 478.15826581791043, "iqr": 14.403121545910835},
+              "improvement_percent": 3.8850900593998094,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "battle_ms": {
+              "baseline": {"n": 5, "median": 4068.023202009499, "p95": 4091.8053577654064, "min": 4015.217171050608, "max": 4097.256973385811, "iqr": 20.541639998555183},
+              "candidate": {"n": 5, "median": 4028.790532145649, "p95": 4080.7452097535133, "min": 3994.3978348746896, "max": 4085.0095660425723, "iqr": 47.27573646232486},
+              "improvement_percent": 0.9644160791528855,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "menu_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 58744, "p95": 58868.8, "min": 58492, "max": 58872, "iqr": 280.0},
+              "candidate": {"n": 5, "median": 58268, "p95": 58385.6, "min": 58252, "max": 58404, "iqr": 56.0},
+              "improvement_percent": 0.8102955195424255,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "battle_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 64272, "p95": 64395.2, "min": 64040, "max": 64424, "iqr": 172.0},
+              "candidate": {"n": 5, "median": 63988, "p95": 64077.6, "min": 63896, "max": 64100, "iqr": 32.0},
+              "improvement_percent": 0.44187204381379575,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 1.5336584000000042, "p95": 1.731438230000006, "min": 0.7244445000000542, "max": 1.739327400000012, "iqr": 0.2094327500000619},
+              "candidate": {"n": 5, "median": 1.7462409499999265, "p95": 1.9321446400000024, "min": 1.4353316500000322, "max": 1.9751907500000159, "iqr": 0.18533364999993052},
+              "improvement_percent": -13.861140785974357,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 2.2230930000000093, "p95": 2.3983247999999735, "min": 1.1480839999999937, "max": 2.4280439999999626, "iqr": 0.1624519999999796},
+              "candidate": {"n": 5, "median": 3.223822000000043, "p95": 5.77191640000001, "min": 2.204108000000038, "max": 6.01241600000002, "iqr": 2.2558449999999786},
+              "improvement_percent": -45.015165807279736,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 0.471623, "p95": 1.4131426999999999, "min": 0.3792195999999999, "max": 1.4499248, "iqr": 0.8614082000000001},
+              "candidate": {"n": 5, "median": 1.4392015, "p95": 2.738402879999999, "min": 1.0663923999999998, "max": 2.8089535999999993, "iqr": 1.0923618999999987},
+              "improvement_percent": -205.1593115687742,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 2.014911, "p95": 5.4619544, "min": 1.370176, "max": 5.634383, "iqr": 3.221305},
+              "candidate": {"n": 5, "median": 5.674904000000001, "p95": 7.841843399999999, "min": 3.421554, "max": 8.038293, "iqr": 1.6388760000000007},
+              "improvement_percent": -181.64539277417217,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "require_cpu_ms": {
+              "baseline": {"n": 5, "median": 123.007896, "p95": 134.32072639999998, "min": 119.08108200000001, "max": 135.611547, "iqr": 6.874720999999965},
+              "candidate": {"n": 5, "median": 115.49242899999996, "p95": 122.02147900000003, "min": 113.86887600000001, "max": 123.34572100000003, "iqr": 1.2725330000000241},
+              "improvement_percent": 6.109743556625046,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "defer-network-imports",
+      "hypothesis": "Avoid menu-only loading of sockets, TLS and host Reactor.",
+      "change": "Autoload Connection/Certificate, require URI and Protocol explicitly, remove eager Reactor require.",
+      "files": ["lib/burrow/client/app.rb"],
+      "metric": "boot.menu_ms",
+      "baseline": {"n": 5, "median": 484.87006686627865, "p95": 492.3419838771224, "min": 480.60439713299274, "max": 493.01062105223536, "iqr": 5.399769172072411},
+      "candidate": {"n": 5, "median": 451.96321699768305, "p95": 458.453319221735, "min": 437.2411617077887, "max": 459.5323880203068, "iqr": 6.229296326637268},
+      "verdict": "REJECT",
+      "reason": "Fresh warm menu improves 6.79% (5/5), resumed menu 7.33%, cold-assets menu 8.26%, and menu RSS falls about 25%. However early GC work rises 6.04→13.69 ms warm and 4.37→13.07 ms cold, with disjoint total-GC distributions; cold CPU p95 rises 17.48% (4/5 worse), early CPU maxima rise about 92–94%. Shifting work past launch fails the frame/GC guard even though cadence intervals stay similar.",
+      "rejected_patch": "<scratch>/startup/rejected/defer-network-imports.patch",
+      "measurements": {
+        "boot": {
+          "full_comparison": "<scratch>/startup/boot-comparison.json",
+          "baseline_files": ["boot-baseline-3.json", "boot-baseline-4.json", "boot-baseline-5.json", "boot-baseline-7.json", "boot-baseline-8.json"],
+          "candidate_files": ["boot-lazy-3.json", "boot-lazy-4.json", "boot-lazy-5.json", "boot-lazy-7.json", "boot-lazy-8.json"],
+          "metrics": {
+            "menu_ms": {
+              "baseline": {"n": 5, "median": 484.87006686627865, "p95": 492.3419838771224, "min": 480.60439713299274, "max": 493.01062105223536, "iqr": 5.399769172072411},
+              "candidate": {"n": 5, "median": 451.96321699768305, "p95": 458.453319221735, "min": 437.2411617077887, "max": 459.5323880203068, "iqr": 6.229296326637268},
+              "improvement_percent": 6.786735688031431,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "interactive_ms": {
+              "baseline": {"n": 5, "median": 429.9287358298898, "p95": 437.59491350501776, "min": 427.1390112116933, "max": 438.50374687463045, "iqr": 5.655610002577305},
+              "candidate": {"n": 5, "median": 392.9080618545413, "p95": 403.4593009389937, "min": 382.1753808297217, "max": 404.5309713110328, "iqr": 6.334562785923481},
+              "improvement_percent": 8.610886151605479,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "battle_ms": {
+              "baseline": {"n": 5, "median": 4556.410421151668, "p95": 4594.181831367314, "min": 4505.620722193271, "max": 4600.553557742387, "iqr": 31.34735766798258},
+              "candidate": {"n": 5, "median": 4566.372814122587, "p95": 4651.076711714268, "min": 4539.101772010326, "max": 4663.3817930705845, "iqr": 49.046993255615234},
+              "improvement_percent": -0.21864564536751008,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "menu_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 42560, "p95": 42603.2, "min": 42444, "max": 42608, "iqr": 40.0},
+              "candidate": {"n": 5, "median": 31884, "p95": 32012.0, "min": 31784, "max": 32024, "iqr": 164.0},
+              "improvement_percent": 25.084586466165415,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "battle_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 49332, "p95": 49393.6, "min": 48988, "max": 49400, "iqr": 324.0},
+              "candidate": {"n": 5, "median": 49008, "p95": 49100.8, "min": 48908, "max": 49116, "iqr": 44.0},
+              "improvement_percent": 0.6567745074191222,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 1.6789348500000743, "p95": 1.7607197300000539, "min": 1.3260270499999616, "max": 1.7744269500000558, "iqr": 0.18098600000001097},
+              "candidate": {"n": 5, "median": 1.6258122500000065, "p95": 2.050761999999994, "min": 1.1870209999999641, "max": 2.089636549999989, "iqr": 0.3056863500000504},
+              "improvement_percent": 3.1640655979036536,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 2.3444679999999885, "p95": 4.5556588000000175, "min": 1.929269999999983, "max": 4.984093000000023, "iqr": 0.7674690000000206},
+              "candidate": {"n": 5, "median": 4.490046999999997, "p95": 5.590975200000026, "min": 2.4572030000000744, "max": 5.806509999999987, "iqr": 0.7639460000001819},
+              "improvement_percent": -91.51666817376135,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 1.2684044, "p95": 2.588151409999999, "min": 0.9393445999999999, "max": 2.802245599999999, "iqr": 0.6141960000000002},
+              "candidate": {"n": 5, "median": 1.5400744, "p95": 1.6991685499999996, "min": 1.0348233999999994, "max": 1.7246525999999995, "iqr": 0.27097234999999964},
+              "improvement_percent": -21.41824799724754,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 6.044493, "p95": 7.7871482, "min": 3.275512, "max": 8.00797, "iqr": 3.063637},
+              "candidate": {"n": 5, "median": 13.693477, "p95": 17.7740566, "min": 8.901675, "max": 18.098324, "iqr": 3.184819000000001},
+              "improvement_percent": -126.54467463193355,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        },
+        "boot-resume": {
+          "full_comparison": "<scratch>/startup/boot-resume-comparison.json",
+          "baseline_files": [
+            "boot-baseline-3-resume.json",
+            "boot-baseline-4-resume.json",
+            "boot-baseline-5-resume.json",
+            "boot-baseline-7-resume.json",
+            "boot-baseline-8-resume.json"
+          ],
+          "candidate_files": ["boot-lazy-3-resume.json", "boot-lazy-4-resume.json", "boot-lazy-5-resume.json", "boot-lazy-7-resume.json", "boot-lazy-8-resume.json"],
+          "metrics": {
+            "menu_ms": {
+              "baseline": {"n": 5, "median": 489.79645781219006, "p95": 491.83061569929123, "min": 483.15673181787133, "max": 492.2750545665622, "iqr": 3.864542581140995},
+              "candidate": {"n": 5, "median": 453.9153007790446, "p95": 463.5289435274899, "min": 446.51786563917994, "max": 465.23419860750437, "iqr": 6.327374372631311},
+              "improvement_percent": 7.325728159288536,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "interactive_ms": {
+              "baseline": {"n": 5, "median": 431.36529298499227, "p95": 437.08252646028996, "min": 429.2462388984859, "max": 437.5153905712068, "iqr": 4.806829150766134},
+              "candidate": {"n": 5, "median": 396.64929965510964, "p95": 408.92990063875914, "min": 386.97817269712687, "max": 410.99062375724316, "iqr": 9.836893528699875},
+              "improvement_percent": 8.047933826491327,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "battle_ms": {
+              "baseline": {"n": 5, "median": 4035.527991130948, "p95": 4066.0806730389595, "min": 4020.4245671629906, "max": 4069.400770124048, "iqr": 21.64099458605051},
+              "candidate": {"n": 5, "median": 4066.985463257879, "p95": 4138.6481375433505, "min": 4036.058034747839, "max": 4155.61860287562, "iqr": 26.427769102156162},
+              "improvement_percent": -0.7795131689351864,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "menu_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 41776, "p95": 41800.8, "min": 41700, "max": 41804, "iqr": 28.0},
+              "candidate": {"n": 5, "median": 31892, "p95": 32061.6, "min": 31796, "max": 32084, "iqr": 96.0},
+              "improvement_percent": 23.659517426273457,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "battle_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 46296, "p95": 46296.0, "min": 46144, "max": 46296, "iqr": 132.0},
+              "candidate": {"n": 5, "median": 46116, "p95": 46283.2, "min": 45992, "max": 46312, "iqr": 56.0},
+              "improvement_percent": 0.38880248833592645,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 1.6474675000000127, "p95": 1.762208440000022, "min": 0.8198644499999237, "max": 1.76987210000003, "iqr": 0.5705416999999817},
+              "candidate": {"n": 5, "median": 1.719014950000064, "p95": 1.9555427600000126, "min": 1.4102428500000097, "max": 2.0116010500000194, "iqr": 0.19713184999997613},
+              "improvement_percent": -4.342874745635394,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 2.42476700000005, "p95": 2.8350630000000487, "min": 1.8148669999999978, "max": 2.8711060000000677, "iqr": 0.44017699999998605},
+              "candidate": {"n": 5, "median": 2.788294999999996, "p95": 4.784753799999986, "min": 1.9044790000000145, "max": 4.803310999999977, "iqr": 2.2791250000000485},
+              "improvement_percent": -14.99228585674166,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 1.15706225, "p95": 1.45160408, "min": 0.9524967999999998, "max": 1.47590625, "iqr": 0.2025914000000002},
+              "candidate": {"n": 5, "median": 1.6573814999999998, "p95": 3.0451653999999997, "min": 1.15636695, "max": 3.166563, "iqr": 1.3286953999999989},
+              "improvement_percent": -43.240478202447605,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 2.949087, "p95": 4.641843399999999, "min": 2.303244, "max": 5.0607999999999995, "iqr": 0.3058639999999997},
+              "candidate": {"n": 5, "median": 7.043155, "p95": 11.173111599999999, "min": 3.404778, "max": 12.156151, "iqr": 2.6995899999999997},
+              "improvement_percent": -138.82493124143167,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        },
+        "cold": {
+          "full_comparison": "<scratch>/startup/cold-comparison.json",
+          "baseline_files": ["cold-baseline-2.json", "cold-baseline-3.json", "cold-baseline-4.json", "cold-baseline-5.json", "cold-baseline-6.json"],
+          "candidate_files": ["cold-candidate-2.json", "cold-candidate-3.json", "cold-candidate-4.json", "cold-candidate-5.json", "cold-candidate-6.json"],
+          "metrics": {
+            "menu_ms": {
+              "baseline": {"n": 5, "median": 491.9936992228031, "p95": 508.8687135837972, "min": 478.24868420138955, "max": 510.28571277856827, "iqr": 12.495704926550388},
+              "candidate": {"n": 5, "median": 451.36102894321084, "p95": 456.03253953158855, "min": 446.30942726507783, "max": 456.16431534290314, "iqr": 6.329835392534733},
+              "improvement_percent": 8.258778586754111,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "interactive_ms": {
+              "baseline": {"n": 5, "median": 436.73347821459174, "p95": 448.80446661263704, "min": 423.6561292782426, "max": 448.88845179229975, "iqr": 12.378948740661144},
+              "candidate": {"n": 5, "median": 396.5398599393666, "p95": 400.0717391259968, "min": 391.15825621411204, "max": 400.3631891682744, "iqr": 5.3061628714203835},
+              "improvement_percent": 9.203237278612242,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "battle_ms": {
+              "baseline": {"n": 5, "median": 4585.172290913761, "p95": 4638.234944455326, "min": 4514.045143965632, "max": 4645.1922920532525, "iqr": 40.19600199535489},
+              "candidate": {"n": 5, "median": 4618.494443129748, "p95": 4623.50911796093, "min": 4552.614232059568, "max": 4624.58829768002, "iqr": 64.54450730234385},
+              "improvement_percent": -0.7267371889606133,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "menu_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 42600, "p95": 42772.0, "min": 41712, "max": 42772, "iqr": 240.0},
+              "candidate": {"n": 5, "median": 31924, "p95": 31982.4, "min": 31788, "max": 31988, "iqr": 68.0},
+              "improvement_percent": 25.061032863849764,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "battle_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 49152, "p95": 49434.4, "min": 49032, "max": 49444, "iqr": 336.0},
+              "candidate": {"n": 5, "median": 48944, "p95": 49006.4, "min": 48908, "max": 49012, "iqr": 76.0},
+              "improvement_percent": 0.42317708333333703,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "frame_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 1.6498308999999933, "p95": 1.7103928000000197, "min": 0.6971994499999801, "max": 1.7134102500000103, "iqr": 0.07377925000008934},
+              "candidate": {"n": 5, "median": 1.9381479499999716, "p95": 2.450303449999946, "min": 1.648154450000005, "max": 2.5610661999999333, "iqr": 0.34770410000016994},
+              "improvement_percent": -17.475551585315774,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 2.329776999999922, "p95": 5.0088669999999835, "min": 1.5066860000000348, "max": 5.331576999999976, "iqr": 1.5737359999999923},
+              "candidate": {"n": 5, "median": 4.520827000000005, "p95": 5.439274799999971, "min": 2.3553500000000893, "max": 5.512014999999981, "iqr": 0.7756009999998481},
+              "improvement_percent": -94.0454816061862,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 1.1521925, "p95": 2.526087179999998, "min": 0.3749146, "max": 2.613796899999998, "iqr": 1.4876572999999989},
+              "candidate": {"n": 5, "median": 1.829108900000001, "p95": 2.6537714, "min": 1.1454267, "max": 2.762554, "iqr": 1.0508655999999998},
+              "improvement_percent": -58.75028695291811,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 4.3734589999999995, "p95": 7.6593886, "min": 1.6175760000000001, "max": 7.924226, "iqr": 2.9686069999999996},
+              "candidate": {"n": 5, "median": 13.073814, "p95": 21.303583399999997, "min": 10.222994, "max": 22.606353, "iqr": 3.2339839999999995},
+              "improvement_percent": -198.9353278491922,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        },
+        "audio-boot": {
+          "full_comparison": "<scratch>/startup/audio-boot-comparison.json",
+          "baseline_files": [
+            "audio-boot-baseline-1.json",
+            "audio-boot-baseline-2.json",
+            "audio-boot-baseline-3.json",
+            "audio-boot-baseline-4.json",
+            "audio-boot-baseline-5.json"
+          ],
+          "candidate_files": [
+            "audio-boot-candidate-1.json",
+            "audio-boot-candidate-2.json",
+            "audio-boot-candidate-3.json",
+            "audio-boot-candidate-4.json",
+            "audio-boot-candidate-5.json"
+          ],
+          "metrics": {
+            "menu_ms": {
+              "baseline": {"n": 5, "median": 557.8911448828876, "p95": 585.7912745326757, "min": 532.7640371397138, "max": 591.1002969369292, "iqr": 27.654098346829414},
+              "candidate": {"n": 5, "median": 507.8269699588418, "p95": 555.7240915484726, "min": 489.3297697417438, "max": 566.2737381644547, "iqr": 15.56228706613183},
+              "improvement_percent": 8.973824980598188,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": true
+            },
+            "interactive_ms": {
+              "baseline": {"n": 5, "median": 497.6201611571014, "p95": 526.2699956074357, "min": 474.9271357432008, "max": 531.5110320225358, "iqr": 28.097198344767094},
+              "candidate": {"n": 5, "median": 448.6055732704699, "p95": 496.0829925723374, "min": 430.9018268249929, "max": 506.67976401746273, "iqr": 14.10519564524293},
+              "improvement_percent": 9.849799447968365,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": true
+            },
+            "battle_ms": {
+              "baseline": {"n": 5, "median": 4604.518742766231, "p95": 4656.5165463835, "min": 4512.711015995592, "max": 4663.059256970882, "iqr": 46.00099893286824},
+              "candidate": {"n": 5, "median": 4616.405934095383, "p95": 4667.856298107654, "min": 4515.0077301077545, "max": 4670.280166901648, "iqr": 78.139360062778},
+              "improvement_percent": -0.2581635995689391,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "menu_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 58952, "p95": 59048.8, "min": 58820, "max": 59068, "iqr": 72.0},
+              "candidate": {"n": 5, "median": 48560, "p95": 48741.6, "min": 48308, "max": 48744, "iqr": 328.0},
+              "improvement_percent": 17.62790066494775,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "battle_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 68552, "p95": 68565.6, "min": 68332, "max": 68568, "iqr": 176.0},
+              "candidate": {"n": 5, "median": 65768, "p95": 65993.6, "min": 65504, "max": 66028, "iqr": 272.0},
+              "improvement_percent": 4.061150659353485,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "frame_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 1.7680672000001671, "p95": 1.8480032499999848, "min": 0.6874819499998907, "max": 1.8560955999999733, "iqr": 0.15473660000010558},
+              "candidate": {"n": 5, "median": 1.4712077000000419, "p95": 1.8623910199999814, "min": 0.7054200000000677, "max": 1.8998574999999793, "iqr": 0.35400399999995225},
+              "improvement_percent": 16.790057527230708,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": true
+            },
+            "frame_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 5.051571000000088, "p95": 5.466885599999971, "min": 1.9452499999998984, "max": 5.550976999999957, "iqr": 2.9911719999999864},
+              "candidate": {"n": 5, "median": 2.6418799999998743, "p95": 3.9350618000000948, "min": 2.1274430000000066, "max": 4.243777000000115, "iqr": 0.49589999999999357},
+              "improvement_percent": 47.70181395055463,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 2.057058999999997, "p95": 2.4691374, "min": 1.3311728, "max": 2.4944145, "iqr": 0.961938},
+              "candidate": {"n": 5, "median": 1.2157438999999999, "p95": 1.9938786, "min": 1.14928225, "max": 2.1146775, "iqr": 0.328373},
+              "improvement_percent": 40.89892900495311,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 6.793425, "p95": 8.535068800000001, "min": 4.385797, "max": 8.651241, "iqr": 1.5743559999999999},
+              "candidate": {"n": 5, "median": 5.032177, "p95": 7.713336599999999, "min": 3.768407, "max": 8.130555, "iqr": 1.6502869999999996},
+              "improvement_percent": 25.925773818066734,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "yjit-global-32",
+      "hypothesis": "YJIT reduces GUI frame and host tick CPU without startup/spike/RSS regressions.",
+      "change": "--yjit --yjit-mem-size=32 --yjit-exec-mem-size=16",
+      "files": [],
+      "metric": "yjit-host.tick_cpu_mean",
+      "baseline": {"n": 5, "median": 2.9937607557407317, "p95": 3.0047309881481445, "min": 2.9781526222222134, "max": 3.0061648740740687, "iqr": 0.005824212777778559},
+      "candidate": {"n": 5, "median": 2.4713547957407282, "p95": 2.506182747629627, "min": 2.4642165007407364, "max": 2.5109822322222177, "iqr": 0.015817982777782458},
+      "verdict": "REJECT",
+      "reason": "Five startup pairs fail launch, early frame p95/max, GUI RSS and GC guards despite faster match preparation. Five host pairs improve mean CPU 17.45% and p95 31.01%, but RSS rises 8.47% and maximum tick CPU rises 12.67%, both worse in all pairs. These guard failures reject global and host-only enablement for this workload; no Mac runtime rebuild is justified. Unprofiled live combat median CPU improves 25.27%, but maximum update CPU rises 12.78→28.30 ms (5/5 worse; maximum distributions disjoint), independently confirming the spike guard failure.",
+      "rejected_patch": "<scratch>/startup/rejected/yjit-global-32.patch",
+      "measurements": {
+        "yjit-app": {
+          "full_comparison": "<scratch>/startup/yjit-app-comparison.json",
+          "baseline_files": ["yjit-app-baseline-1.json", "yjit-app-baseline-2.json", "yjit-app-baseline-3.json", "yjit-app-baseline-4.json", "yjit-app-baseline-5.json"],
+          "candidate_files": ["yjit-app-yjit32-1.json", "yjit-app-yjit32-2.json", "yjit-app-yjit32-3.json", "yjit-app-yjit32-4.json", "yjit-app-yjit32-5.json"],
+          "metrics": {
+            "menu_ms": {
+              "baseline": {"n": 5, "median": 503.9218030869961, "p95": 558.7765028700233, "min": 487.95183561742306, "max": 566.7940238490701, "iqr": 26.2947347946465},
+              "candidate": {"n": 5, "median": 733.1712460145354, "p95": 764.7262735292315, "min": 721.0272941738367, "max": 766.9849148951471, "iqr": 33.43081194907427},
+              "improvement_percent": -45.493058947473685,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "interactive_ms": {
+              "baseline": {"n": 5, "median": 444.8808510787785, "p95": 504.26414106041193, "min": 433.364471886307, "max": 512.1016590856016, "iqr": 28.498576022684574},
+              "candidate": {"n": 5, "median": 680.4491681978106, "p95": 708.0469871871173, "min": 666.2799632176757, "max": 709.2217062599957, "iqr": 35.25362862274051},
+              "improvement_percent": -52.95087809417049,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "battle_ms": {
+              "baseline": {"n": 5, "median": 4520.322788972408, "p95": 4785.575270559639, "min": 4518.256734125316, "max": 4849.494847934693, "iqr": 11.228756979107857},
+              "candidate": {"n": 5, "median": 3176.136523950845, "p95": 3200.5144154652953, "min": 3160.520031116903, "max": 3201.6613697633147, "iqr": 31.450148206204176},
+              "improvement_percent": 29.736510593906786,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "menu_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 42592, "p95": 42681.6, "min": 41740, "max": 42688, "iqr": 816.0},
+              "candidate": {"n": 5, "median": 46512, "p95": 46596.8, "min": 46460, "max": 46608, "iqr": 48.0},
+              "improvement_percent": -9.203606311044332,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "battle_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 49164, "p95": 49267.2, "min": 49016, "max": 49292, "iqr": 24.0},
+              "candidate": {"n": 5, "median": 60776, "p95": 61096.8, "min": 60640, "max": 61152, "iqr": 228.0},
+              "improvement_percent": -23.618908144170536,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 1.52597094999996, "p95": 1.643375110000038, "min": 0.7307712500000058, "max": 1.6555704500000432, "iqr": 0.08729515000003318},
+              "candidate": {"n": 5, "median": 3.134368950000095, "p95": 5.2772725100000235, "min": 2.3223319999998715, "max": 5.692975650000035, "iqr": 1.1884553499999826},
+              "improvement_percent": -105.4016133138168,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 4.007335999999917, "p95": 5.04880040000002, "min": 1.6987510000000539, "max": 5.07003100000003, "iqr": 2.99973099999995},
+              "candidate": {"n": 5, "median": 22.556339999999953, "p95": 26.542728999999987, "min": 20.330635999999956, "max": 27.09719899999996, "iqr": 2.0952780000000892},
+              "improvement_percent": -462.8761850765801,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 1.4812321999999998, "p95": 2.3858299599999975, "min": 1.17236085, "max": 2.462808699999997, "iqr": 0.8381985999999999},
+              "candidate": {"n": 5, "median": 2.19662845, "p95": 3.746427799999999, "min": 1.389546899999998, "max": 4.054696999999999, "iqr": 0.47144454999999974},
+              "improvement_percent": -48.29737363257431,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 6.333033, "p95": 6.6374938, "min": 3.9909120000000002, "max": 6.687335, "iqr": 2.3778930000000003},
+              "candidate": {"n": 5, "median": 5.677193, "p95": 8.9164028, "min": 3.7463640000000002, "max": 9.198917, "iqr": 2.295426},
+              "improvement_percent": 10.35585950681136,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        },
+        "yjit-host": {
+          "full_comparison": "<scratch>/startup/yjit-host-comparison.json",
+          "baseline_files": ["yjit-host-baseline-1.json", "yjit-host-baseline-2.json", "yjit-host-baseline-3.json", "yjit-host-baseline-4.json", "yjit-host-baseline-5.json"],
+          "candidate_files": ["yjit-host-yjit32-1.json", "yjit-host-yjit32-2.json", "yjit-host-yjit32-3.json", "yjit-host-yjit32-4.json", "yjit-host-yjit32-5.json"],
+          "metrics": {
+            "tick_cpu_mean": {
+              "baseline": {"n": 5, "median": 2.9937607557407317, "p95": 3.0047309881481445, "min": 2.9781526222222134, "max": 3.0061648740740687, "iqr": 0.005824212777778559},
+              "candidate": {"n": 5, "median": 2.4713547957407282, "p95": 2.506182747629627, "min": 2.4642165007407364, "max": 2.5109822322222177, "iqr": 0.015817982777782458},
+              "improvement_percent": 17.449823236484608,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "tick_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 9.09259960000015, "p95": 9.168480309999275, "min": 9.063572650000019, "max": 9.172567849999417, "iqr": 0.08660034999904376},
+              "candidate": {"n": 5, "median": 6.273410800000124, "p95": 6.297632620000371, "min": 6.254026299999717, "max": 6.301822700000511, "iqr": 0.022582649999749904},
+              "improvement_percent": 31.005311176354667,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "tick_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 66.31295599999999, "p95": 71.20345039999964, "min": 65.51183599999976, "max": 72.22503399999968, "iqr": 1.337114000000014},
+              "candidate": {"n": 5, "median": 74.71753700000005, "p95": 76.98677680000002, "min": 74.38683200000007, "max": 77.43494100000004, "iqr": 0.6483669999999222},
+              "improvement_percent": -12.674116050564944,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 0.7101738499999996, "p95": 0.71954448, "min": 0.6868091, "max": 0.7206042500000001, "iqr": 0.008158800000000022},
+              "candidate": {"n": 5, "median": 0.7250908999999995, "p95": 0.7498527999999999, "min": 0.7003742, "max": 0.7545734, "iqr": 0.017385799999999674},
+              "improvement_percent": -2.1004786363226335,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_max": {
+              "baseline": {"n": 5, "median": 4.592192, "p95": 4.753735, "min": 4.139235, "max": 4.774771, "iqr": 0.46859699999999993},
+              "candidate": {"n": 5, "median": 6.687915, "p95": 6.7553388, "min": 6.234159, "max": 6.770859, "iqr": 0.16512300000000035},
+              "improvement_percent": -45.63665892018454,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 824.903029, "p95": 834.8950308, "min": 798.145954, "max": 836.90865, "iqr": 10.02610500000003},
+              "candidate": {"n": 5, "median": 841.471917, "p95": 876.5023426, "min": 821.032905, "max": 882.006835, "iqr": 21.55815199999995},
+              "improvement_percent": -2.008586151039582,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "rss_kib": {
+              "baseline": {"n": 5, "median": 44684, "p95": 46599.2, "min": 40416, "max": 46860, "iqr": 2072.0},
+              "candidate": {"n": 5, "median": 48468, "p95": 50233.6, "min": 47660, "max": 50664, "iqr": 76.0},
+              "improvement_percent": -8.468355563512663,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        },
+        "yjit-frame": {
+          "full_comparison": "<scratch>/startup/yjit-frame-comparison.json",
+          "baseline_files": [
+            "yjit-frame-baseline-1/profile.json",
+            "yjit-frame-baseline-2/profile.json",
+            "yjit-frame-baseline-3/profile.json",
+            "yjit-frame-baseline-4/profile.json",
+            "yjit-frame-baseline-5/profile.json"
+          ],
+          "candidate_files": [
+            "yjit-frame-yjit32-1/profile.json",
+            "yjit-frame-yjit32-2/profile.json",
+            "yjit-frame-yjit32-3/profile.json",
+            "yjit-frame-yjit32-4/profile.json",
+            "yjit-frame-yjit32-5/profile.json"
+          ],
+          "metrics": {
+            "static_cpu_ms_median": {
+              "baseline": {"n": 5, "median": 0.5558119999999889, "p95": 0.5670557999998715, "min": 0.5548309999999779, "max": 0.5678034999998527, "iqr": 0.008341000000022802},
+              "candidate": {"n": 5, "median": 0.37907800000003267, "p95": 0.38085909999998613, "min": 0.36785699999997146, "max": 0.3811314999999649, "iqr": 0.008542500000041642},
+              "improvement_percent": 31.797442300626788,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "static_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 0.6620997000001405, "p95": 0.6838745699999095, "min": 0.639239800000091, "max": 0.685641199999898, "iqr": 0.02987154999989361},
+              "candidate": {"n": 5, "median": 0.47019854999982297, "p95": 0.49532723000003553, "min": 0.46310374999991577, "max": 0.4969482000000691, "iqr": 0.01867914999987841},
+              "improvement_percent": 28.983724052476813,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "static_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 1.8174479999999438, "p95": 2.1507091999999783, "min": 1.7477310000000301, "max": 2.2330249999999996, "iqr": 0.045521999999964535},
+              "candidate": {"n": 5, "median": 4.213417999999969, "p95": 4.396332400000125, "min": 4.083164999999944, "max": 4.433682000000161, "iqr": 0.1329560000000729},
+              "improvement_percent": -131.83155721649803,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "flames_cpu_ms_median": {
+              "baseline": {"n": 5, "median": 0.6445385000000137, "p95": 0.6541013999999512, "min": 0.6298215000000162, "max": 0.6563079999999388, "iqr": 0.014516000000019957},
+              "candidate": {"n": 5, "median": 0.4182919999999868, "p95": 0.48693059999993515, "min": 0.41044999999995113, "max": 0.5000494999999328, "iqr": 0.01729500000002826},
+              "improvement_percent": 35.10209242737587,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "pan_cpu_ms_median": {
+              "baseline": {"n": 5, "median": 0.6861950000001116, "p95": 0.7054680000000868, "min": 0.6836675000000403, "max": 0.7083835000001315, "iqr": 0.007780000000012777},
+              "candidate": {"n": 5, "median": 0.4710624999999524, "p95": 0.4990284999999872, "min": 0.44667399999998025, "max": 0.4995819999999984, "iqr": 0.03062750000015768},
+              "improvement_percent": 31.351510867920073,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "zoom_cpu_ms_median": {
+              "baseline": {"n": 5, "median": 0.6040679999999021, "p95": 0.6124442999998259, "min": 0.6018745000000436, "max": 0.612504499999833, "iqr": 0.008154499999690756},
+              "candidate": {"n": 5, "median": 0.40650300000022455, "p95": 0.41306830000005235, "min": 0.4018354999999474, "max": 0.4143880000000433, "iqr": 0.003947000000170675},
+              "improvement_percent": 32.705754981179204,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            }
+          }
+        },
+        "yjit-rendering": {
+          "full_comparison": "<scratch>/startup/yjit-rendering-comparison.json",
+          "baseline_files": [
+            "yjit-rendering-baseline-1.json",
+            "yjit-rendering-baseline-2.json",
+            "yjit-rendering-baseline-3.json",
+            "yjit-rendering-baseline-4.json",
+            "yjit-rendering-baseline-5.json"
+          ],
+          "candidate_files": [
+            "yjit-rendering-yjit32-1.json",
+            "yjit-rendering-yjit32-2.json",
+            "yjit-rendering-yjit32-3.json",
+            "yjit-rendering-yjit32-4.json",
+            "yjit-rendering-yjit32-5.json"
+          ],
+          "metrics": {
+            "combat_cpu_ms_median": {
+              "baseline": {"n": 5, "median": 1.2908689999999723, "p95": 1.351900300000053, "min": 1.2390949999998568, "max": 1.355967000000069, "iqr": 0.0740954999999266},
+              "candidate": {"n": 5, "median": 0.9646935000000578, "p95": 1.0612389000002498, "min": 0.9191339999998771, "max": 1.064659000000301, "iqr": 0.09061399999987785},
+              "improvement_percent": 25.26790092564942,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "combat_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 3.543165100000246, "p95": 3.8758575000000497, "min": 3.264332000000092, "max": 3.9473445500000417, "iqr": 0.06486080000019889},
+              "candidate": {"n": 5, "median": 3.7166718500000195, "p95": 3.8624913800000757, "min": 3.1047006000002115, "max": 3.89414755000011, "iqr": 0.3302695999996135},
+              "improvement_percent": -4.896942284731853,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "combat_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 12.782108999999764, "p95": 21.086225200000097, "min": 9.405297999999895, "max": 22.50164500000018, "iqr": 5.012258999999686},
+              "candidate": {"n": 5, "median": 28.3003660000003, "p95": 28.876390200000035, "min": 25.770483000000066, "max": 29.009097999999955, "iqr": 0.42851800000054396},
+              "improvement_percent": -121.40607625862697,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "pan_cpu_ms_median": {
+              "baseline": {"n": 5, "median": 1.0189870000001378, "p95": 1.0443999000001813, "min": 0.9828389999997356, "max": 1.0469520000002674, "iqr": 0.01920649999953561},
+              "candidate": {"n": 5, "median": 0.7223630000003922, "p95": 0.7770320000004105, "min": 0.7110109999999281, "max": 0.7800090000005255, "iqr": 0.05218200000012274},
+              "improvement_percent": 29.10969423552071,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "pan_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 2.9438823999993415, "p95": 3.205947200000203, "min": 2.8371370000002116, "max": 3.2711540000001094, "iqr": 0.07186800000003046},
+              "candidate": {"n": 5, "median": 2.492054000000188, "p95": 2.735739199999454, "min": 2.200119000000278, "max": 2.7937159999993355, "iqr": 0.2876569999998857},
+              "improvement_percent": 15.348045152865309,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "pan_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 7.1170629999999235, "p95": 14.97403059999982, "min": 5.4664299999998, "max": 16.804967999999754, "iqr": 1.8784170000003542},
+              "candidate": {"n": 5, "median": 12.018465000000145, "p95": 13.362187800000047, "min": 6.374687000000101, "max": 13.671627999999991, "iqr": 1.707377000000232},
+              "improvement_percent": -68.86832391395544,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "zoom_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 7.794788850000137, "p95": 8.352294380000224, "min": 7.572167000000185, "max": 8.48066150000028, "iqr": 0.2240498499993704},
+              "candidate": {"n": 5, "median": 6.369524149999782, "p95": 6.504283000000227, "min": 5.99355329999973, "max": 6.518886000000189, "iqr": 0.15939930000063907},
+              "improvement_percent": 18.2848403905172,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "zoom_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 21.89176100000001, "p95": 36.43010920000016, "min": 16.92246300000022, "max": 39.30722700000011, "iqr": 4.586917000000135},
+              "candidate": {"n": 5, "median": 30.240173000000148, "p95": 32.425112799999845, "min": 27.509910000000026, "max": 32.681068999999674, "iqr": 3.6003270000009024},
+              "improvement_percent": -38.134949490815906,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "zoom_sweep_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 8.970632200000138, "p95": 9.020315039999856, "min": 8.819477949999799, "max": 9.026514499999916, "iqr": 0.16386944999892705},
+              "candidate": {"n": 5, "median": 6.906560499999823, "p95": 7.657366650000242, "min": 6.737674749999643, "max": 7.742763800000318, "iqr": 0.4160811500003776},
+              "improvement_percent": 23.00921110108921,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "zoom_sweep_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 19.235967000000187, "p95": 23.971069199999917, "min": 15.799860000000443, "max": 24.118593999999938, "iqr": 4.756117999999532},
+              "candidate": {"n": 5, "median": 21.643478999999743, "p95": 24.448982600000058, "min": 15.206052999999997, "max": 24.69201200000004, "iqr": 7.464593999999991},
+              "improvement_percent": -12.515679612049313,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "yjit-limits",
+      "hypothesis": "Smaller YJIT limits reduce host RSS without CPU/spike regressions.",
+      "change": "Default --yjit versus 32 MiB total / 16 MiB executable cap",
+      "files": [],
+      "metric": "yjit-limits.rss_kib",
+      "baseline": {"n": 5, "median": 47820, "p95": 50772.0, "min": 47456, "max": 50960, "iqr": 2272.0},
+      "candidate": {"n": 5, "median": 50672, "p95": 51008.0, "min": 48348, "max": 51040, "iqr": 1932.0},
+      "verdict": "REJECT",
+      "reason": "Five paired host captures: CPU mean improves only 0.126%, 3/5 direction, overlapping distributions; RSS is not reduced. Code region about 1.52 MB plus about 3.52 MB YJIT allocation never approaches either cap; code GC count is zero.",
+      "rejected_patch": "<scratch>/startup/rejected/yjit-limits.patch",
+      "measurements": {
+        "yjit-limits": {
+          "full_comparison": "<scratch>/startup/yjit-limits-comparison.json",
+          "baseline_files": ["limits-default-1.json", "limits-default-2.json", "limits-default-3.json", "limits-default-4.json", "limits-default-5.json"],
+          "candidate_files": ["limits-cap32-1.json", "limits-cap32-2.json", "limits-cap32-3.json", "limits-cap32-4.json", "limits-cap32-5.json"],
+          "metrics": {
+            "tick_cpu_mean": {
+              "baseline": {"n": 5, "median": 2.4820541348148133, "p95": 2.489868103592603, "min": 2.461322623703704, "max": 2.490413995925939, "iqr": 0.013713469629643704},
+              "candidate": {"n": 5, "median": 2.4789217449999947, "p95": 2.5199688800740754, "min": 2.4570040431481464, "max": 2.5271868185185187, "iqr": 0.020345312222232348},
+              "improvement_percent": 0.12620151071169872,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "tick_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 6.250932350000228, "p95": 6.340403170000129, "min": 6.199264350000104, "max": 6.357995250000181, "iqr": 0.05077164999984163},
+              "candidate": {"n": 5, "median": 6.271002200000366, "p95": 6.564622099999949, "min": 6.232986900000052, "max": 6.634025299999882, "iqr": 0.020127350000805677},
+              "improvement_percent": -0.3210697041080124,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "tick_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 75.68486299999999, "p95": 76.26663619999981, "min": 74.95575999999993, "max": 76.30117999999975, "iqr": 0.9253860000000174},
+              "candidate": {"n": 5, "median": 75.23219800000003, "p95": 76.13092859999999, "min": 74.12907999999996, "max": 76.30233399999997, "iqr": 1.2070730000000083},
+              "improvement_percent": 0.5980918535850033,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 0.7188335, "p95": 0.7533285799999997, "min": 0.7099064499999993, "max": 0.7570532999999996, "iqr": 0.025915099999999858},
+              "candidate": {"n": 5, "median": 0.7030143999999998, "p95": 0.7456902299999999, "min": 0.691152, "max": 0.7557666, "iqr": 0.0044397499999998535},
+              "improvement_percent": 2.2006626012839092,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_max": {
+              "baseline": {"n": 5, "median": 6.92718, "p95": 7.2096564, "min": 6.777616, "max": 7.252747, "iqr": 0.25504000000000016},
+              "candidate": {"n": 5, "median": 6.97571, "p95": 7.670017, "min": 6.652051, "max": 7.747361, "iqr": 0.42240900000000003},
+              "improvement_percent": -0.700573682219896,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 821.032534, "p95": 898.7439686, "min": 805.92934, "max": 905.488336, "iqr": 59.149811},
+              "candidate": {"n": 5, "median": 822.498126, "p95": 883.0995706, "min": 806.32813, "max": 894.750068, "iqr": 24.232257000000004},
+              "improvement_percent": -0.17850595918040835,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "rss_kib": {
+              "baseline": {"n": 5, "median": 47820, "p95": 50772.0, "min": 47456, "max": 50960, "iqr": 2272.0},
+              "candidate": {"n": 5, "median": 50672, "p95": 51008.0, "min": 48348, "max": 51040, "iqr": 1932.0},
+              "improvement_percent": -5.964031785863666,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "terrain-hoist-materials",
+      "hypothesis": "Hoisting material conversion reduces map generation CPU.",
+      "change": "Move material.chr / only.pack out of repeated spans.",
+      "files": ["lib/burrow/terrain_generator.rb"],
+      "metric": "terrain.cpu_ms",
+      "baseline": {"n": 5, "median": 53.251609208333335, "p95": 54.17095586666666, "min": 53.17645712500002, "max": 54.30274912499999, "iqr": 0.46161731250000315},
+      "candidate": {"n": 5, "median": 51.183768687500006, "p95": 51.40148044166665, "min": 50.79025731249999, "max": 51.45385947916665, "iqr": 0.11500839583330702},
+      "verdict": "REJECT",
+      "reason": "CPU mean/map improves 3.88% with non-overlapping CPU distributions and allocations fall 19.7%, but final RSS rises 33.1% with non-overlapping distributions. The memory guard fails. Reverted generator byte-for-byte to baseline.",
+      "rejected_patch": "<scratch>/startup/rejected/terrain-hoist-materials.patch",
+      "measurements": {
+        "terrain": {
+          "full_comparison": "<scratch>/startup/terrain-comparison.json",
+          "baseline_files": ["terrain-baseline-1.json", "terrain-baseline-2.json", "terrain-baseline-3.json", "terrain-baseline-4.json", "terrain-baseline-5.json"],
+          "candidate_files": ["terrain-scanline-1.json", "terrain-scanline-2.json", "terrain-scanline-3.json", "terrain-scanline-4.json", "terrain-scanline-5.json"],
+          "metrics": {
+            "cpu_ms": {
+              "baseline": {"n": 5, "median": 53.251609208333335, "p95": 54.17095586666666, "min": 53.17645712500002, "max": 54.30274912499999, "iqr": 0.46161731250000315},
+              "candidate": {"n": 5, "median": 51.183768687500006, "p95": 51.40148044166665, "min": 50.79025731249999, "max": 51.45385947916665, "iqr": 0.11500839583330702},
+              "improvement_percent": 3.8831512353803777,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "wall_ms": {
+              "baseline": {"n": 5, "median": 53.417628194438294, "p95": 55.627196187075846, "min": 53.22362474786738, "max": 56.00158291053958, "iqr": 0.899359777880214},
+              "candidate": {"n": 5, "median": 51.43439791087682, "p95": 53.01756619786223, "min": 50.95347421593033, "max": 53.38293025852181, "iqr": 0.44262739053616684},
+              "improvement_percent": 3.712688770723005,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "allocations": {
+              "baseline": {"n": 5, "median": 75833.375, "p95": 75833.375, "min": 75833.375, "max": 75833.375, "iqr": 0.0},
+              "candidate": {"n": 5, "median": 60897.145833333336, "p95": 60897.145833333336, "min": 60897.145833333336, "max": 60897.145833333336, "iqr": 0.0},
+              "improvement_percent": 19.69611555158486,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "gc_ms": {
+              "baseline": {"n": 5, "median": 3.8303861041666667, "p95": 4.09278455, "min": 3.8008687291666665, "max": 4.114978041666666, "iqr": 0.18273825000000032},
+              "candidate": {"n": 5, "median": 3.322802, "p95": 3.4147159708333334, "min": 3.2672021458333336, "max": 3.422062125, "iqr": 0.0753805833333332},
+              "improvement_percent": 13.251512781296915,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "rss_kib": {
+              "baseline": {"n": 5, "median": 37936, "p95": 38017.6, "min": 37344, "max": 38036, "iqr": 16.0},
+              "candidate": {"n": 5, "median": 50504, "p95": 52432.0, "min": 48448, "max": 52592, "iqr": 1308.0},
+              "improvement_percent": -33.129481231547864,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "terrain-tr-inplace",
+      "hypothesis": "In-place span translation reduces map generation CPU.",
+      "change": "Replace segment.tr + equality check with conditional segment.tr!.",
+      "files": ["lib/burrow/terrain_generator.rb"],
+      "metric": "inplace.cpu_ms",
+      "baseline": {"n": 5, "median": 53.61325652083332, "p95": 53.69818980416664, "min": 53.065788416666685, "max": 53.705174333333304, "iqr": 0.580925833333346},
+      "candidate": {"n": 5, "median": 53.09470439583332, "p95": 53.29168866666666, "min": 52.77927929166668, "max": 53.30348104166666, "iqr": 0.38830177083335116},
+      "verdict": "REJECT",
+      "reason": "Five paired map batches: CPU mean improves only 0.97% with overlapping distributions, despite deterministic 4.23% fewer allocations. No primary timing win beyond noise, so the simplification exception is not used.",
+      "rejected_patch": "<scratch>/startup/rejected/terrain-tr-inplace.patch",
+      "measurements": {
+        "inplace": {
+          "full_comparison": "<scratch>/startup/inplace-comparison.json",
+          "baseline_files": ["inplace-baseline-1.json", "inplace-baseline-2.json", "inplace-baseline-3.json", "inplace-baseline-4.json", "inplace-baseline-5.json"],
+          "candidate_files": ["inplace-inplace-1.json", "inplace-inplace-2.json", "inplace-inplace-3.json", "inplace-inplace-4.json", "inplace-inplace-5.json"],
+          "metrics": {
+            "cpu_ms": {
+              "baseline": {"n": 5, "median": 53.61325652083332, "p95": 53.69818980416664, "min": 53.065788416666685, "max": 53.705174333333304, "iqr": 0.580925833333346},
+              "candidate": {"n": 5, "median": 53.09470439583332, "p95": 53.29168866666666, "min": 52.77927929166668, "max": 53.30348104166666, "iqr": 0.38830177083335116},
+              "improvement_percent": 0.9672087812806152,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "wall_ms": {
+              "baseline": {"n": 5, "median": 54.02890098048374, "p95": 54.107801779173315, "min": 53.226837306283414, "max": 54.11837934904421, "iqr": 0.6514212097196577},
+              "candidate": {"n": 5, "median": 53.413228306453675, "p95": 53.645427796679236, "min": 52.935378606586404, "max": 53.69669458013959, "iqr": 0.26724958055032033},
+              "improvement_percent": 1.1395247041068979,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "allocations": {
+              "baseline": {"n": 5, "median": 75833.375, "p95": 75833.375, "min": 75833.375, "max": 75833.375, "iqr": 0.0},
+              "candidate": {"n": 5, "median": 72623.77083333333, "p95": 72623.77083333333, "min": 72623.77083333333, "max": 72623.77083333333, "iqr": 0.0},
+              "improvement_percent": 4.232442729427078,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "gc_ms": {
+              "baseline": {"n": 5, "median": 3.8845805833333333, "p95": 3.9596980541666666, "min": 3.794578083333333, "max": 3.9753329375, "iqr": 0.09464431250000027},
+              "candidate": {"n": 5, "median": 3.769513208333333, "p95": 3.8957919875, "min": 3.7398055416666667, "max": 3.9100045416666664, "iqr": 0.07779039583333347},
+              "improvement_percent": 2.9621569827562033,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "rss_kib": {
+              "baseline": {"n": 5, "median": 38148, "p95": 45413.6, "min": 38072, "max": 47220, "iqr": 100.0},
+              "candidate": {"n": 5, "median": 37696, "p95": 49400.799999999996, "min": 37216, "max": 52220, "iqr": 548.0},
+              "improvement_percent": 1.184858970326097,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "gc-heap-app",
+      "hypothesis": "Reduce observed GC work/spikes without CPU or memory regression.",
+      "change": "RUBY_GC_HEAP_FREE_SLOTS=200000 RUBY_GC_HEAP_GROWTH_FACTOR=1.5",
+      "files": [],
+      "metric": "gc-heap-app.gc_nonzero_ms_p95",
+      "baseline": {"n": 5, "median": 1.3946718000000002, "p95": 1.7841367199999991, "min": 1.35271715, "max": 1.8621861999999996, "iqr": 0.11241199999999818},
+      "candidate": {"n": 5, "median": 1.5464637999999995, "p95": 2.445005519999996, "min": 1.3028450999999999, "max": 2.6518872499999953, "iqr": 0.19954190000000205},
+      "verdict": "REJECT",
+      "reason": "Five paired unprofiled combat captures: nonzero per-frame GC p95 rises 10.88%, total GC work rises 29.37%, frame CPU p95 rises 4.34%, and GUI RSS increases in all five pairs. No primary improvement.",
+      "rejected_patch": "<scratch>/startup/rejected/gc-heap.patch",
+      "measurements": {
+        "gc-heap-app": {
+          "full_comparison": "<scratch>/startup/gc-heap-app-comparison.json",
+          "baseline_files": [
+            "gc-heap-app-baseline-1.json",
+            "gc-heap-app-baseline-2.json",
+            "gc-heap-app-baseline-3.json",
+            "gc-heap-app-baseline-4.json",
+            "gc-heap-app-baseline-5.json"
+          ],
+          "candidate_files": ["gc-heap-app-heap-1.json", "gc-heap-app-heap-2.json", "gc-heap-app-heap-3.json", "gc-heap-app-heap-4.json", "gc-heap-app-heap-5.json"],
+          "metrics": {
+            "frame_cpu_ms_median": {
+              "baseline": {"n": 5, "median": 0.8118000000001402, "p95": 0.8999984000001682, "min": 0.7838570000000544, "max": 0.907113000000237, "iqr": 0.06508799999971338},
+              "candidate": {"n": 5, "median": 0.8181244999999615, "p95": 0.908859200000034, "min": 0.7916300000000431, "max": 0.9100994999999834, "iqr": 0.10739500000034319},
+              "improvement_percent": -0.7790711997807565,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 2.193939799999977, "p95": 2.5163958900000307, "min": 1.9064078000000408, "max": 2.5846758000000576, "iqr": 0.1975182499998902},
+              "candidate": {"n": 5, "median": 2.2892510499998657, "p95": 2.66449035999992, "min": 1.9934339999999826, "max": 2.7552172999999014, "iqr": 0.1703764500000733},
+              "improvement_percent": -4.344296502569933,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 8.136753000000052, "p95": 9.058005400000102, "min": 6.525617000000317, "max": 9.233559000000113, "iqr": 0.9073470000000583},
+              "candidate": {"n": 5, "median": 7.4669490000001115, "p95": 12.048472399999977, "min": 6.6994089999998785, "max": 12.734954999999992, "iqr": 2.342045000000237},
+              "improvement_percent": 8.23183400061347,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 1.3946718000000002, "p95": 1.7841367199999991, "min": 1.35271715, "max": 1.8621861999999996, "iqr": 0.11241199999999818},
+              "candidate": {"n": 5, "median": 1.5464637999999995, "p95": 2.445005519999996, "min": 1.3028450999999999, "max": 2.6518872499999953, "iqr": 0.19954190000000205},
+              "improvement_percent": -10.883707550407152,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_max": {
+              "baseline": {"n": 5, "median": 3.363942, "p95": 3.9150206, "min": 3.162699, "max": 4.034696, "iqr": 0.19944300000000004},
+              "candidate": {"n": 5, "median": 3.968772, "p95": 5.4980908, "min": 2.853975, "max": 5.790916, "iqr": 1.0290300000000001},
+              "improvement_percent": -17.97979870045321,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 94.062323, "p95": 111.668286, "min": 85.263325, "max": 114.182628, "iqr": 12.639740000000003},
+              "candidate": {"n": 5, "median": 121.691463, "p95": 196.91708599999998, "min": 106.157776, "max": 214.630196, "iqr": 5.954337999999993},
+              "improvement_percent": -29.373227365435127,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "battle_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 70384, "p95": 70478.4, "min": 69076, "max": 70480, "iqr": 1108.0},
+              "candidate": {"n": 5, "median": 72296, "p95": 73578.4, "min": 71268, "max": 73588, "iqr": 1368.0},
+              "improvement_percent": -2.716526483291659,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "gc-heap-host",
+      "hypothesis": "Reduce observed GC work/spikes without CPU or memory regression.",
+      "change": "RUBY_GC_HEAP_FREE_SLOTS=200000 RUBY_GC_HEAP_GROWTH_FACTOR=1.5",
+      "files": [],
+      "metric": "gc-heap-host.gc_nonzero_ms_p95",
+      "baseline": {"n": 5, "median": 0.7150357999999998, "p95": 0.73162848, "min": 0.6949743999999999, "max": 0.7345045, "iqr": 0.015850000000000142},
+      "candidate": {"n": 5, "median": 2.2212825, "p95": 2.2821878, "min": 1.8702225999999997, "max": 2.2885295, "iqr": 0.34576665000000273},
+      "verdict": "REJECT",
+      "reason": "Five paired host captures: GC work p95 rises 0.715→2.221 ms (all five worse); total GC work rises 130.75%; mean tick CPU rises 6.61%. The final RSS decrease is noisy and does not compensate for the timing guards.",
+      "rejected_patch": "<scratch>/startup/rejected/gc-heap.patch",
+      "measurements": {
+        "gc-heap-host": {
+          "full_comparison": "<scratch>/startup/gc-heap-host-comparison.json",
+          "baseline_files": [
+            "gc-heap-host-baseline-1.json",
+            "gc-heap-host-baseline-2.json",
+            "gc-heap-host-baseline-3.json",
+            "gc-heap-host-baseline-4.json",
+            "gc-heap-host-baseline-5.json"
+          ],
+          "candidate_files": ["gc-heap-host-heap-1.json", "gc-heap-host-heap-2.json", "gc-heap-host-heap-3.json", "gc-heap-host-heap-4.json", "gc-heap-host-heap-5.json"],
+          "metrics": {
+            "tick_cpu_mean": {
+              "baseline": {"n": 5, "median": 3.000271547407409, "p95": 3.0152076096296248, "min": 2.9858918420370206, "max": 3.01559847629629, "iqr": 0.013503805370369548},
+              "candidate": {"n": 5, "median": 3.198562402777775, "p95": 3.211523762370371, "min": 3.1883802388888856, "max": 3.211780044814815, "iqr": 0.017093076481483838},
+              "improvement_percent": -6.609096951298055,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "tick_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 9.19373199999959, "p95": 9.26355201999972, "min": 9.11643920000068, "max": 9.275436299999392, "iqr": 0.05082255000120561},
+              "candidate": {"n": 5, "median": 9.319111849999874, "p95": 9.413689860001588, "min": 9.241644650000858, "max": 9.43183095000191, "iqr": 0.043444200000836375},
+              "improvement_percent": -1.3637535877736084,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "tick_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 66.078525, "p95": 66.40816220000048, "min": 65.57836500000036, "max": 66.42770300000045, "iqr": 0.5635960000009987},
+              "candidate": {"n": 5, "median": 66.7012869999999, "p95": 67.2077269999999, "min": 66.30837199999995, "max": 67.27271699999982, "iqr": 0.5561470000001663},
+              "improvement_percent": -0.9424574776750738,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 0.7150357999999998, "p95": 0.73162848, "min": 0.6949743999999999, "max": 0.7345045, "iqr": 0.015850000000000142},
+              "candidate": {"n": 5, "median": 2.2212825, "p95": 2.2821878, "min": 1.8702225999999997, "max": 2.2885295, "iqr": 0.34576665000000273},
+              "improvement_percent": -210.65332672853594,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_max": {
+              "baseline": {"n": 5, "median": 4.618493, "p95": 5.1675856, "min": 4.085164, "max": 5.220363, "iqr": 0.7903990000000007},
+              "candidate": {"n": 5, "median": 6.032408, "p95": 6.4598444, "min": 5.455732, "max": 6.528969, "iqr": 0.5491790000000005},
+              "improvement_percent": -30.61420684192875,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 817.396689, "p95": 875.1270314, "min": 808.405309, "max": 887.943077, "iqr": 12.586480999999935},
+              "candidate": {"n": 5, "median": 1886.152028, "p95": 1917.5946238, "min": 1762.946101, "max": 1921.228565, "iqr": 86.67309499999988},
+              "improvement_percent": -130.75112162584253,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "rss_kib": {
+              "baseline": {"n": 5, "median": 42996, "p95": 46689.6, "min": 40340, "max": 47092, "iqr": 4136.0},
+              "candidate": {"n": 5, "median": 41464, "p95": 41743.2, "min": 40132, "max": 41752, "iqr": 252.0},
+              "improvement_percent": 3.5631221508977573,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "gc-malloc-app",
+      "hypothesis": "Reduce observed GC work/spikes without CPU or memory regression.",
+      "change": "RUBY_GC_MALLOC_LIMIT=67108864 RUBY_GC_OLDMALLOC_LIMIT=134217728",
+      "files": [],
+      "metric": "gc-malloc-app.gc_nonzero_ms_p95",
+      "baseline": {"n": 5, "median": 1.6199003499999987, "p95": 2.0311423799999986, "min": 1.2670085999999987, "max": 2.053857999999999, "iqr": 0.6130953999999968},
+      "candidate": {"n": 5, "median": 1.5643124500000016, "p95": 1.7706815999999999, "min": 1.293999, "max": 1.8112795, "iqr": 0.08092074999999999},
+      "verdict": "REJECT",
+      "reason": "Five paired GUI combat captures: primary nonzero GC-work p95 improves only 3.43%, 3/5 paired direction, overlapping distributions. Maximum frame CPU improves 9.28% (4/5), but frame p95 and total GC changes are inconsistent. No repeatable primary GC benefit sufficient to add configuration.",
+      "rejected_patch": "<scratch>/startup/rejected/gc-malloc.patch",
+      "measurements": {
+        "gc-malloc-app": {
+          "full_comparison": "<scratch>/startup/gc-malloc-app-comparison.json",
+          "baseline_files": [
+            "gc-malloc-app-baseline-1.json",
+            "gc-malloc-app-baseline-2.json",
+            "gc-malloc-app-baseline-3.json",
+            "gc-malloc-app-baseline-4.json",
+            "gc-malloc-app-baseline-5.json"
+          ],
+          "candidate_files": [
+            "gc-malloc-app-malloc-1.json",
+            "gc-malloc-app-malloc-2.json",
+            "gc-malloc-app-malloc-3.json",
+            "gc-malloc-app-malloc-4.json",
+            "gc-malloc-app-malloc-5.json"
+          ],
+          "metrics": {
+            "frame_cpu_ms_median": {
+              "baseline": {"n": 5, "median": 0.8052915000000826, "p95": 0.8542710000000397, "min": 0.7811380000000145, "max": 0.8606345000000681, "iqr": 0.043119999999952086},
+              "candidate": {"n": 5, "median": 0.7922614999998912, "p95": 0.8108860000000107, "min": 0.7780090000000239, "max": 0.8138810000000163, "iqr": 0.01566699999999699},
+              "improvement_percent": 1.6180476262558585,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 2.1726459499999886, "p95": 2.4676440599999383, "min": 1.9713056499998558, "max": 2.495281999999932, "iqr": 0.3188183000000455},
+              "candidate": {"n": 5, "median": 2.0569398000001007, "p95": 2.2368179599999563, "min": 1.949172399999844, "max": 2.252138799999947, "iqr": 0.15424780000001537},
+              "improvement_percent": 5.325586987603225,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 7.935696999999742, "p95": 10.929846799999954, "min": 6.958369000000131, "max": 11.590194999999914, "iqr": 0.4197550000002437},
+              "candidate": {"n": 5, "median": 7.199618000000019, "p95": 7.833326199999746, "min": 6.389647999999859, "max": 7.847033999999642, "iqr": 1.073571000000051},
+              "improvement_percent": 9.275543156445455,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": true
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 1.6199003499999987, "p95": 2.0311423799999986, "min": 1.2670085999999987, "max": 2.053857999999999, "iqr": 0.6130953999999968},
+              "candidate": {"n": 5, "median": 1.5643124500000016, "p95": 1.7706815999999999, "min": 1.293999, "max": 1.8112795, "iqr": 0.08092074999999999},
+              "improvement_percent": 3.4315629353371735,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_max": {
+              "baseline": {"n": 5, "median": 3.426585, "p95": 4.633747799999999, "min": 3.200452, "max": 4.924567, "iqr": 0.18047499999999994},
+              "candidate": {"n": 5, "median": 3.53691, "p95": 4.0213019999999995, "min": 3.222004, "max": 4.03853, "iqr": 0.6447919999999998},
+              "improvement_percent": -3.2196779008838217,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 97.435891, "p95": 110.8858398, "min": 85.930245, "max": 113.529864, "iqr": 2.9919299999999964},
+              "candidate": {"n": 5, "median": 92.159463, "p95": 103.8961122, "min": 87.156393, "max": 103.996121, "iqr": 14.474272},
+              "improvement_percent": 5.415281726114662,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "battle_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 70212, "p95": 70369.6, "min": 68764, "max": 70376, "iqr": 1232.0},
+              "candidate": {"n": 5, "median": 68804, "p95": 69050.4, "min": 68740, "max": 69056, "iqr": 228.0},
+              "improvement_percent": 2.005355209935622,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "gc-malloc-host",
+      "hypothesis": "Reduce observed GC work/spikes without CPU or memory regression.",
+      "change": "RUBY_GC_MALLOC_LIMIT=67108864 RUBY_GC_OLDMALLOC_LIMIT=134217728",
+      "files": [],
+      "metric": "gc-malloc-host.gc_nonzero_ms_p95",
+      "baseline": {"n": 5, "median": 0.7216283999999997, "p95": 0.7301932399999999, "min": 0.6788158, "max": 0.7307697999999998, "iqr": 0.024124900000000227},
+      "candidate": {"n": 5, "median": 0.7269789, "p95": 0.7333695799999989, "min": 0.6913377499999996, "max": 0.7345765999999986, "iqr": 0.016837249999999804},
+      "verdict": "REJECT",
+      "reason": "Five paired host captures show no primary GC benefit: nonzero GC-work p95 is 0.722→0.727 ms (only 1/5 improves), mean CPU changes 0.07%, and the 3.87% RSS decrease overlaps and holds only 3/5. Configuration is not justified.",
+      "rejected_patch": "<scratch>/startup/rejected/gc-malloc.patch",
+      "measurements": {
+        "gc-malloc-host": {
+          "full_comparison": "<scratch>/startup/gc-malloc-host-comparison.json",
+          "baseline_files": [
+            "gc-malloc-host-baseline-1.json",
+            "gc-malloc-host-baseline-2.json",
+            "gc-malloc-host-baseline-3.json",
+            "gc-malloc-host-baseline-4.json",
+            "gc-malloc-host-baseline-5.json"
+          ],
+          "candidate_files": [
+            "gc-malloc-host-malloc-1.json",
+            "gc-malloc-host-malloc-2.json",
+            "gc-malloc-host-malloc-3.json",
+            "gc-malloc-host-malloc-4.json",
+            "gc-malloc-host-malloc-5.json"
+          ],
+          "metrics": {
+            "tick_cpu_mean": {
+              "baseline": {"n": 5, "median": 3.004599235925925, "p95": 3.0161874395185233, "min": 2.9920895722222194, "max": 3.017195866851857, "iqr": 0.00890592851851757},
+              "candidate": {"n": 5, "median": 3.002495035925937, "p95": 3.0970176100000124, "min": 2.994760121666656, "max": 3.1155240103703807, "iqr": 0.022000907777804724},
+              "improvement_percent": 0.0700326344634572,
+              "fraction_pairs_improved": 0.4,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "tick_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 9.17549840000005, "p95": 9.21509773999979, "min": 9.023827949999053, "max": 9.221025199999868, "iqr": 0.1288019999996326},
+              "candidate": {"n": 5, "median": 9.294380799999985, "p95": 9.931941760001004, "min": 9.13836284999892, "max": 10.08401550000125, "iqr": 0.16094299999930328},
+              "improvement_percent": -1.2956505992081535,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "tick_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 65.70388299999941, "p95": 68.61784720000017, "min": 65.50947199999956, "max": 69.30471200000011, "iqr": 0.1737110000004094},
+              "candidate": {"n": 5, "median": 66.5033699999995, "p95": 68.11682919999988, "min": 65.54692899999992, "max": 68.4920779999998, "iqr": 0.7706920000005653},
+              "improvement_percent": -1.2168032747776891,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 0.7216283999999997, "p95": 0.7301932399999999, "min": 0.6788158, "max": 0.7307697999999998, "iqr": 0.024124900000000227},
+              "candidate": {"n": 5, "median": 0.7269789, "p95": 0.7333695799999989, "min": 0.6913377499999996, "max": 0.7345765999999986, "iqr": 0.016837249999999804},
+              "improvement_percent": -0.741448091566288,
+              "fraction_pairs_improved": 0.2,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_max": {
+              "baseline": {"n": 5, "median": 4.339475, "p95": 4.9033728000000005, "min": 3.68203, "max": 4.92304, "iqr": 0.9872829999999997},
+              "candidate": {"n": 5, "median": 4.144412, "p95": 4.652589, "min": 3.971377, "max": 4.68633, "iqr": 0.5274519999999998},
+              "improvement_percent": 4.495082930538841,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 825.955313, "p95": 874.8534392, "min": 814.540198, "max": 885.934172, "iqr": 15.624402000000032},
+              "candidate": {"n": 5, "median": 811.144176, "p95": 829.4371438, "min": 801.5626, "max": 831.460205, "iqr": 12.33405700000003},
+              "improvement_percent": 1.793212873248995,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "rss_kib": {
+              "baseline": {"n": 5, "median": 42596, "p95": 46355.2, "min": 40504, "max": 46772, "iqr": 4096.0},
+              "candidate": {"n": 5, "median": 40948, "p95": 46550.4, "min": 40728, "max": 46816, "iqr": 4628.0},
+              "improvement_percent": 3.868907878674055,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "gc-no-major-app",
+      "hypothesis": "Reduce observed GC work/spikes without CPU or memory regression.",
+      "change": "GC.config(rgengc_allow_full_mark: false)",
+      "files": [],
+      "metric": "gc-no-major-app.gc_nonzero_ms_p95",
+      "baseline": {"n": 5, "median": 1.6017108999999994, "p95": 2.4475899999999986, "min": 1.2944646999999996, "max": 2.5698723999999986, "iqr": 0.4577611000000017},
+      "candidate": {"n": 5, "median": 1.3436117999999992, "p95": 1.6454097799999996, "min": 1.1260924999999984, "max": 1.691936, "iqr": 0.3061473999999984},
+      "verdict": "REJECT",
+      "reason": "GC-work p95 improves 16.11% with 4/5 direction and total observed GC falls 59.04%, but loaded GUI RSS rises 34.29% (70288→94392 KiB), worse in every pair with disjoint distributions. The memory guard fails.",
+      "rejected_patch": "<scratch>/startup/rejected/gc-no-major.patch",
+      "measurements": {
+        "gc-no-major-app": {
+          "full_comparison": "<scratch>/startup/gc-no-major-app-comparison.json",
+          "baseline_files": [
+            "gc-no-major-app-baseline-1.json",
+            "gc-no-major-app-baseline-2.json",
+            "gc-no-major-app-baseline-3.json",
+            "gc-no-major-app-baseline-4.json",
+            "gc-no-major-app-baseline-5.json"
+          ],
+          "candidate_files": [
+            "gc-no-major-app-no-major-1.json",
+            "gc-no-major-app-no-major-2.json",
+            "gc-no-major-app-no-major-3.json",
+            "gc-no-major-app-no-major-4.json",
+            "gc-no-major-app-no-major-5.json"
+          ],
+          "metrics": {
+            "frame_cpu_ms_median": {
+              "baseline": {"n": 5, "median": 0.903195999999995, "p95": 0.9068361000000413, "min": 0.8115089999995995, "max": 0.9073205000000861, "iqr": 0.08172549999974077},
+              "candidate": {"n": 5, "median": 0.8370829999999607, "p95": 0.8709312999999996, "min": 0.7654089999999947, "max": 0.8754755000000003, "iqr": 0.022460499999987782},
+              "improvement_percent": 7.319895127971632,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": true
+            },
+            "frame_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 2.2459553499999507, "p95": 2.4741685199999615, "min": 1.945043400000035, "max": 2.4806911499999806, "iqr": 0.23687649999984783},
+              "candidate": {"n": 5, "median": 1.945284199999839, "p95": 2.256818799999948, "min": 1.8220117499999362, "max": 2.258429199999944, "iqr": 0.32320664999988513},
+              "improvement_percent": 13.387227399695123,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "frame_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 8.18870099999991, "p95": 19.409322199999977, "min": 6.675514999999965, "max": 20.99660599999997, "iqr": 5.880680000000416},
+              "candidate": {"n": 5, "median": 7.806233000000162, "p95": 8.071420600000012, "min": 7.00358000000012, "max": 8.085077000000052, "iqr": 0.9173000000000098},
+              "improvement_percent": 4.67067975738461,
+              "fraction_pairs_improved": 0.6,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 1.6017108999999994, "p95": 2.4475899999999986, "min": 1.2944646999999996, "max": 2.5698723999999986, "iqr": 0.4577611000000017},
+              "candidate": {"n": 5, "median": 1.3436117999999992, "p95": 1.6454097799999996, "min": 1.1260924999999984, "max": 1.691936, "iqr": 0.3061473999999984},
+              "improvement_percent": 16.113962888059273,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": true
+            },
+            "gc_nonzero_ms_max": {
+              "baseline": {"n": 5, "median": 3.73876, "p95": 7.797740399999999, "min": 3.121797, "max": 8.763214, "iqr": 0.33729699999999996},
+              "candidate": {"n": 5, "median": 2.377827, "p95": 4.0436926, "min": 1.619144, "max": 4.366748, "iqr": 1.051248},
+              "improvement_percent": 36.40065155292129,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": true
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 109.45027, "p95": 125.67979039999999, "min": 91.246017, "max": 129.036442, "iqr": 13.233647000000005},
+              "candidate": {"n": 5, "median": 44.834007, "p95": 47.785152, "min": 37.4525, "max": 48.152561, "iqr": 4.231828},
+              "improvement_percent": 59.03709785275084,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "battle_gui_rss_kib": {
+              "baseline": {"n": 5, "median": 70288, "p95": 70475.2, "min": 68844, "max": 70516, "iqr": 80.0},
+              "candidate": {"n": 5, "median": 94392, "p95": 96566.4, "min": 91368, "max": 96572, "iqr": 3912.0},
+              "improvement_percent": -34.29319371727748,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "gc-no-major-host",
+      "hypothesis": "Reduce observed GC work/spikes without CPU or memory regression.",
+      "change": "GC.config(rgengc_allow_full_mark: false)",
+      "files": [],
+      "metric": "gc-no-major-host.gc_nonzero_ms_p95",
+      "baseline": {"n": 5, "median": 0.7236078, "p95": 0.7355649799999999, "min": 0.6832159, "max": 0.7384339, "iqr": 0.009263299999999974},
+      "candidate": {"n": 5, "median": 0.4926304999999998, "p95": 0.5011637399999995, "min": 0.4833541999999999, "max": 0.5018109999999996, "iqr": 0.013182449999999624},
+      "verdict": "REJECT",
+      "reason": "GC-work p95 improves 31.92% (5/5), but final host-workload RSS rises 228.63% (43564→143164 KiB), worse in all pairs with disjoint distributions. Mean CPU improves only 0.14% and tick p95 is slightly worse in all pairs. The memory guard fails.",
+      "rejected_patch": "<scratch>/startup/rejected/gc-no-major.patch",
+      "measurements": {
+        "gc-no-major-host": {
+          "full_comparison": "<scratch>/startup/gc-no-major-host-comparison.json",
+          "baseline_files": [
+            "gc-no-major-host-baseline-1.json",
+            "gc-no-major-host-baseline-2.json",
+            "gc-no-major-host-baseline-3.json",
+            "gc-no-major-host-baseline-4.json",
+            "gc-no-major-host-baseline-5.json"
+          ],
+          "candidate_files": [
+            "gc-no-major-host-no-major-1.json",
+            "gc-no-major-host-no-major-2.json",
+            "gc-no-major-host-no-major-3.json",
+            "gc-no-major-host-no-major-4.json",
+            "gc-no-major-host-no-major-5.json"
+          ],
+          "metrics": {
+            "tick_cpu_mean": {
+              "baseline": {"n": 5, "median": 2.9923944003703644, "p95": 3.0065853161111202, "min": 2.9743986687037065, "max": 3.008235791296308, "iqr": 0.009216053333334528},
+              "candidate": {"n": 5, "median": 2.988084299444437, "p95": 3.011010246481486, "min": 2.9691325568518403, "max": 3.0152079864814874, "iqr": 0.01936102944444862},
+              "improvement_percent": 0.14403518885726108,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "tick_cpu_ms_p95": {
+              "baseline": {"n": 5, "median": 9.106959099999617, "p95": 9.169032929999865, "min": 9.03983285000115, "max": 9.169132399999835, "iqr": 0.11553815000046264},
+              "candidate": {"n": 5, "median": 9.246458000000016, "p95": 9.473569750000145, "min": 9.161766300000545, "max": 9.516393449999928, "iqr": 0.08459555000125185},
+              "improvement_percent": -1.5317835346422504,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "tick_cpu_ms_max": {
+              "baseline": {"n": 5, "median": 66.03609400000022, "p95": 66.7002695999999, "min": 65.57669000000033, "max": 66.83524399999996, "iqr": 0.15480499999929975},
+              "candidate": {"n": 5, "median": 65.19053099999982, "p95": 66.93878760000035, "min": 65.15682199999961, "max": 67.26071200000038, "iqr": 0.4807000000006667},
+              "improvement_percent": 1.2804558064872684,
+              "fraction_pairs_improved": 0.8,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_nonzero_ms_p95": {
+              "baseline": {"n": 5, "median": 0.7236078, "p95": 0.7355649799999999, "min": 0.6832159, "max": 0.7384339, "iqr": 0.009263299999999974},
+              "candidate": {"n": 5, "median": 0.4926304999999998, "p95": 0.5011637399999995, "min": 0.4833541999999999, "max": 0.5018109999999996, "iqr": 0.013182449999999624},
+              "improvement_percent": 31.920233585099577,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "gc_nonzero_ms_max": {
+              "baseline": {"n": 5, "median": 4.562559, "p95": 5.101717, "min": 4.141502, "max": 5.104471, "iqr": 0.5829500000000003},
+              "candidate": {"n": 5, "median": 7.184623, "p95": 7.678018799999999, "min": 7.04725, "max": 7.760723, "iqr": 0.2419520000000004},
+              "improvement_percent": -57.469152727668835,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            },
+            "gc_total_ms": {
+              "baseline": {"n": 5, "median": 813.317977, "p95": 825.3396384, "min": 804.48737, "max": 827.247468, "iqr": 9.077740999999946},
+              "candidate": {"n": 5, "median": 589.006735, "p95": 598.8960292, "min": 578.641355, "max": 599.739177, "iqr": 7.965581000000043},
+              "improvement_percent": 27.57977179201093,
+              "fraction_pairs_improved": 1.0,
+              "nonoverlap": true,
+              "clears_primary_threshold": true
+            },
+            "rss_kib": {
+              "baseline": {"n": 5, "median": 43564, "p95": 46229.6, "min": 40780, "max": 46572, "iqr": 4028.0},
+              "candidate": {"n": 5, "median": 143164, "p95": 143688.8, "min": 136136, "max": 143752, "iqr": 952.0},
+              "improvement_percent": -228.62914332935452,
+              "fraction_pairs_improved": 0.0,
+              "nonoverlap": false,
+              "clears_primary_threshold": false
+            }
+          }
+        }
+      }
+    }
+  ],
+  "checks": {
+    "static": {
+      "python_syntax": {
+        "status": "pass",
+        "files": ["tools/perf_startup_compare.py", "tools/perf_startup_memory.py", "tools/perf_startup_run.py"]
+      },
+      "ruby_syntax": {
+        "status": "pass",
+        "versions": ["3.4.7", "4.0.7"],
+        "files": [
+          "tools/perf_startup_app.rb",
+          "tools/perf_startup_core.rb",
+          "tools/perf_startup_memory.rb",
+          "tools/perf_startup_requires.rb",
+          "tools/perf_startup_runtime.rb",
+          "tools/perf_startup_support.rb",
+          "tools/perf_startup_worker.rb"
+        ]
+      },
+      "git_diff_check": {"status": "pass"},
+      "original_tracked_files": {"status": "pass", "count": 1752, "byte_identical_to_baseline": true},
+      "staged_diff_check": {"status": "pass"}
+    },
+    "comparison-audit": {"status": "pass", "comparisons": 19, "pairs_each": 5, "matches_saved_comparisons": true},
+    "rejected-patch-checks": {
+      "defer-network-imports.patch": {"status": "pass", "stderr": ""},
+      "gc-heap.patch": {"status": "pass", "stderr": ""},
+      "gc-malloc.patch": {"status": "pass", "stderr": ""},
+      "gc-no-major.patch": {"status": "pass", "stderr": ""},
+      "remove-unused-reactor.patch": {"status": "pass", "stderr": ""},
+      "terrain-hoist-materials.patch": {"status": "pass", "stderr": ""},
+      "terrain-tr-inplace.patch": {"status": "pass", "stderr": ""},
+      "yjit-global-32.patch": {"status": "pass", "stderr": ""},
+      "yjit-limits.patch": {"status": "pass", "stderr": ""}
+    },
+    "terrain": {"status": "pass", "maps": 480, "checksum_list_sha256": "4ba19507450f5819087e353727eba8567601cb26852814cc49c44d468260c4d5"},
+    "state": {
+      "status": "pass",
+      "matches": 3,
+      "ticks": 5400,
+      "final_hashes": [
+        "070ed6ab7c465e706ebed46f51e04597d1cbf4b848ef78c6098bf5b0b7108028",
+        "2699974738d84d26b6ee6dff916f442797cd4738f4542f1e484265d5d8e6c4fd",
+        "acb4849a4215d2d5db8551583b00cb6369db4fd804b3de3a698a4f1b0e28b92e"
+      ]
+    },
+    "core-3.4.7": {
+      "log": "<scratch>/startup/raw/core-3.4.7.log",
+      "tail": [
+        "........................................................................................................<workspace>/test/frame_work_test.rb:218: warning: DEPRECATED: Use assert_nil if expecting nil. This will fail in Minitest 6.",
+        ".................................................................................................................................................................................................................",
+        "",
+        "Finished in 100.288190s, 3.1210 runs/s, 97.9378 assertions/s.",
+        "",
+        "313 runs, 9822 assertions, 0 failures, 0 errors, 0 skips"
+      ],
+      "exit_code": 0,
+      "runs": 313,
+      "assertions": 9822,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "status": "pass"
+    },
+    "core-4.0.7": {
+      "log": "<scratch>/startup/raw/core-4.0.7.log",
+      "tail": [
+        ".............................................................................................................................................................................................................................<workspace>/test/frame_work_test.rb:218: warning: DEPRECATED: Use assert_nil if expecting nil. This will fail in Minitest 6.",
+        "............................................................................................",
+        "",
+        "Finished in 132.262481s, 2.3665 runs/s, 74.2614 assertions/s.",
+        "",
+        "313 runs, 9822 assertions, 0 failures, 0 errors, 0 skips"
+      ],
+      "exit_code": 0,
+      "runs": 313,
+      "assertions": 9822,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "status": "pass"
+    },
+    "native": {
+      "log": "<scratch>/startup/raw/native.log",
+      "tail": [
+        "",
+        "directory      pass    fail   error    skip   xfail   xpass     n/a timeout",
+        "checks            7       .       .       .       .       .       .       .",
+        "total (7)         7       .       .       .       .       .       .       .",
+        "",
+        "Results: .cache/native-checks/native.json"
+      ],
+      "exit_code": 0
+    },
+    "boot-contract": {
+      "log": "<scratch>/startup/raw/boot-contract.log",
+      "tail": ["PASS: fresh menu protocol/name validation, invite parsing, invalid invite and network/certificate availability"],
+      "status": "pass"
+    },
+    "native_summary": {
+      "status": "pass",
+      "journeys": 7,
+      "assertions": 242,
+      "updated_at": "2026-10-14T00:24:56Z",
+      "counts": {"pass": 7, "fail": 0, "error": 0, "skip": 0, "expected_fail": 0, "unexpected_pass": 0, "not_applicable": 0, "timeout": 0},
+      "exit_code": 0
+    },
+    "memory-baseline": {
+      "tested_source": "baseline 0.5.3",
+      "status": "pass",
+      "active_seconds": 600.0130107980222,
+      "paused_seconds": 740.5445682569407,
+      "matches": 5,
+      "completed_matches": 4,
+      "retained": [
+        {"match": 2, "scenes": 1, "terrain_workers": 1, "live_slots": 101785},
+        {"match": 3, "scenes": 1, "terrain_workers": 1, "live_slots": 101714},
+        {"match": 4, "scenes": 1, "terrain_workers": 1, "live_slots": 101499},
+        {"match": 5, "scenes": 1, "terrain_workers": 1, "live_slots": 101971}
+      ],
+      "rss_kib": {
+        "gui_rss_kib": {"first": 51196, "last": 64372, "max": 72360},
+        "native_rss_kib": {"first": 72024, "last": 129848, "max": 132300},
+        "host_rss_kib": {"first": 42020, "last": 58740, "max": 60616},
+        "terrain_rss_kib": {"first": 89408, "last": 90588, "max": 121804}
+      },
+      "bounds_max": {"nodes": 401, "effects": 47, "timeline_frames": 31, "timeline_shots": 5, "terrain_files": 110, "threads": 5}
+    },
+    "memory-candidate": {
+      "tested_source": "defer-network-imports prototype (rejected)",
+      "status": "pass",
+      "active_seconds": 600.0263272835873,
+      "paused_seconds": 941.8775206594728,
+      "matches": 5,
+      "completed_matches": 4,
+      "retained": [
+        {"match": 2, "scenes": 1, "terrain_workers": 1, "live_slots": 100728},
+        {"match": 3, "scenes": 1, "terrain_workers": 1, "live_slots": 100909},
+        {"match": 4, "scenes": 1, "terrain_workers": 1, "live_slots": 100429},
+        {"match": 5, "scenes": 1, "terrain_workers": 1, "live_slots": 100914}
+      ],
+      "rss_kib": {
+        "gui_rss_kib": {"first": 52544, "last": 71616, "max": 71616},
+        "native_rss_kib": {"first": 71536, "last": 125108, "max": 125192},
+        "host_rss_kib": {"first": 42020, "last": 54268, "max": 54268},
+        "terrain_rss_kib": {"first": 90328, "last": 94488, "max": 121704}
+      },
+      "bounds_max": {"nodes": 387, "effects": 45, "timeline_frames": 31, "timeline_shots": 5, "terrain_files": 111, "threads": 5}
+    },
+    "save_compatibility": {"status": "pass", "same_match_id": "f44fe848b4d63756f422e47c"},
+    "screenshots": {
+      "static.png": {"identical": true, "sha256": "31c765a3de60345a6db2344f2c02c41b680f82e8d5f5803771ab6fd5564235e1"},
+      "pan.png": {"identical": true, "sha256": "f8c9fd348aaafdf9099e53b42887a4e69aef11a1126516cb581973c2d2239f11"},
+      "flames.png": {"identical": true, "sha256": "f8c9fd348aaafdf9099e53b42887a4e69aef11a1126516cb581973c2d2239f11"},
+      "zoom.png": {"identical": true, "sha256": "1dd9108d26dee9ed4d15b0ff0621718f8dc42a4d1f90c88b9a458946d26bfaea"}
+    }
+  },
+  "initial_check_failures": {
+    "production_changed": false,
+    "loadavg_observed": "20.51 15.04 8.86 on six cores",
+    "core_3_4_7": {
+      "exit": 1,
+      "runs": 313,
+      "assertions": 9529,
+      "failures": 2,
+      "errors": 1,
+      "issues": [
+        "terrain raster wait exceeded 12s",
+        "loopback snapshot cadence:22 ticks expected <20",
+        "live match.tick advanced 12 vs restored checkpoint10 during save comparison"
+      ],
+      "log": "<scratch>/startup/raw/core-3.4.7-loaded-first.log"
+    },
+    "core_4_0_7": {
+      "exit": 1,
+      "runs": 313,
+      "assertions": 9822,
+      "failures": 1,
+      "errors": 0,
+      "issues": ["live match.tick advanced11 vs restored checkpoint9 during save comparison"],
+      "log": "<scratch>/startup/raw/core-4.0.7-loaded-first.log"
+    },
+    "native": {
+      "exit": 1,
+      "pass": 4,
+      "fail": 2,
+      "error": 1,
+      "issues": ["camera intermediate-scale timing", "lifecycle timeout", "online elapsed288.8ms exceeded120ms"],
+      "log": "<scratch>/startup/raw/native-loaded-first.log"
+    },
+    "followup": "Rerun unchanged suites sequentially under heavy after shared load drops. Do not change budgets or tests."
+  },
+  "production_identical_to_baseline": true,
+  "packaged_mac_ruby": {
+    "archive": "traveling-ruby-20251122-3.4.7-macos-arm64-full.tar.gz",
+    "sha256": "cc49a89cd40b85d0bc2af967e13a7fadf02110282528889ce512e0ad7c9a8049",
+    "yjit_compiled": false,
+    "rbconfig": {"YJIT_SUPPORT": "no", "YJIT_OBJ": "", "YJIT_LIBS": "", "RUSTC": "no"},
+    "evidence": "<scratch>/startup/runtime/rbconfig.rb",
+    "inspection_only": true,
+    "package_changed": false,
+    "runner_runs": [],
+    "archive_verification": {"archive": "traveling-ruby-20251122-3.4.7-macos-arm64-full.tar.gz", "sha256": "cc49a89cd40b85d0bc2af967e13a7fadf02110282528889ce512e0ad7c9a8049", "verified": true, "archive_bytes": 58812886, "archive_removed_after_verification": true, "retained_evidence": "rbconfig.rb"}
+  },
+  "limits": [
+    "Linux/Xvfb/null audio does not measure Mac display scanout, audible sound, Retina/ProMotion or delivered Darwin execution.",
+    "Source Bundler startup cost is absent from packaged launcher.",
+    "Memory is muted, diagnostics-disabled and interrupted between leases; no infinite RSS bound is proven.",
+    "Host CPU fixture includes simulation/serialization, not server network I/O or persistence fsync.",
+    "Cold-assets advice is not a cold-system measurement."
+  ],
+  "startup_attribution": {"instrumented_not_acceptance": true, "source_app": "<scratch>/startup/raw/attribution-app-audio.json", "worker_trace": "<scratch>/startup/raw/attribution-worker.json", "require_game_wall_ms": 120.3582, "openssl_require_wall_ms": 32.2999, "uri_require_wall_ms": 19.6072, "fonts_wall_ms": 4.0928, "audio_initialize_wall_ms": 35.4542, "audio_initialize_cpu_ms": 32.1322, "host_spawn_wall_ms": 294.7083, "scene_build_wall_ms": 0.6029, "first_state_to_terrain_ready_ms": 3570.0083, "worker_pipe_spawn_wall_ms": 0.3132, "worker_spawn_to_instrumented_entry_ms": 221.0515, "worker_painter_load_wall_ms": 43.0723, "worker_restore_wall_ms": 18.3593, "worker_paint_wall_ms": 3249.9621, "worker_paint_cpu_ms": 3243.5181, "worker_paint_allocations": 144752, "worker_paint_gc_ms": 41.0725},
+  "raw_directory": "<scratch>/startup/raw",
+  "raw_file_paths_relative_to": "raw_directory",
+  "rejected_directory": "<scratch>/startup/rejected",
+  "additional_check_attempts": [
+    {"check": "core-3.4.7", "attempt": "sequential rerun 1", "exit_code": 1, "runs": 313, "assertions": 9822, "failures": 1, "errors": 0, "issue": "network_test.rb:376 compares live tick8 with restored checkpoint7", "log": "<scratch>/startup/raw/core-3.4.7-rerun-1.log"}
+  ],
+  "required_checks_pass": true
+}
