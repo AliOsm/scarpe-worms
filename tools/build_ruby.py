@@ -108,8 +108,11 @@ def build(cache):
             path.unlink()
     for directory in ('include', 'share'):
         shutil.rmtree(prefix / directory, ignore_errors=True)
-    for path in prefix.rglob('*.a'):
-        path.unlink()
+    # Ruby's bundled-gem installer also copies native compilation intermediates.
+    # Keep sources/notices and loadable extensions, not archives or object files.
+    for pattern in ('*.a', '*.o', '*.obj'):
+        for path in prefix.rglob(pattern):
+            path.unlink()
     shutil.copy2(downloads / 'cacert.pem', prefix / 'lib/ca-bundle.crt')
     notices = prefix / 'notices'
     notices.mkdir()
