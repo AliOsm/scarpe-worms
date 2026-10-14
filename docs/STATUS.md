@@ -1,6 +1,15 @@
 # Current status
 
-Updated **2026-10-14** · client **0.5.8** · published release **0.5.8** · protocol **4**.
+Updated **2026-10-14** · client **0.5.9** · published release **0.5.8** · protocol **4**.
+
+## 0.5.9 public TLS certificate chains
+
+The server now sends every PEM certificate after the leaf in `--cert` as the
+TLS intermediate chain. This lets clients validate certificates issued by a
+public CA without pinning a fingerprint; the protocol and saved-state formats
+remain unchanged. The regression suite covers a multi-certificate server
+handshake, and the deployed host will be checked with the issued public CA
+certificate after the release image is updated.
 
 ## 0.5.7 combat responsiveness
 

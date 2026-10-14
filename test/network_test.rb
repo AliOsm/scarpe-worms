@@ -240,6 +240,25 @@ class NetworkTest < Minitest::Test
     assert_equal state.dig("match", "terrain_checksum"), Burrow::Terrain.restore(state.dig("match", "terrain")).checksum
   end
 
+  def test_tls_sends_certificate_chain
+    stop_server
+    cert, key = Burrow::Server::Certificate.ensure_pair(File.join(@directory, "tls-chain"))
+    extra, = Burrow::Server::Certificate.ensure_pair(File.join(@directory, "tls-chain-extra"))
+    chain = File.join(@directory, "fullchain.pem")
+    File.write(chain, File.read(cert) + File.read(extra))
+    start_server(certificate: chain, key: key)
+
+    tcp = TCPSocket.new("127.0.0.1", @server.port)
+    context = OpenSSL::SSL::SSLContext.new
+    context.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    ssl = OpenSSL::SSL::SSLSocket.new(tcp, context)
+    ssl.connect
+    assert_equal 2, ssl.peer_cert_chain.length
+  ensure
+    ssl&.close
+    tcp&.close
+  end
+
   def test_invalid_addresses_fail_promptly_and_ipv6_loopback_connects
     invalid = Burrow::Client::Connection.new(endpoint: "tls://bad host:4388", name: "Invalid").connect
     @connections << invalid

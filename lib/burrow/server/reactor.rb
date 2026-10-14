@@ -121,9 +121,14 @@ module Burrow
 
       def tls_context(certificate, key)
         raise ArgumentError, "Supply a key with the certificate." unless key
+        certificate_pem = File.read(certificate)
+        leaf = OpenSSL::X509::Certificate.new(certificate_pem)
+        chain = certificate_pem.scan(/-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----/m)
+          .drop(1).map { |pem| OpenSSL::X509::Certificate.new(pem) }
         OpenSSL::SSL::SSLContext.new.tap do |context|
           context.min_version = OpenSSL::SSL::TLS1_2_VERSION
-          context.cert = OpenSSL::X509::Certificate.new(File.read(certificate))
+          context.cert = leaf
+          context.extra_chain_cert = chain unless chain.empty?
           context.key = OpenSSL::PKey.read(File.read(key))
           @fingerprint = Digest::SHA256.hexdigest(context.cert.to_der)
         end

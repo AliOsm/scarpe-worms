@@ -90,6 +90,9 @@ docker compose stop burrow
 
 For a custom certificate, mount the certificate and private key read-only and
 set the service command to `--cert /certs/fullchain.pem --key /certs/key.pem`.
+The certificate file may contain the leaf followed by its intermediate chain;
+the server sends those certificates to clients. A public CA certificate can be
+used with an empty fingerprint.
 The game protocol is TLS over TCP, not HTTP/WebSocket; a web-only reverse proxy
 needs a TCP stream listener. Keep server and client protocol versions matched.
 

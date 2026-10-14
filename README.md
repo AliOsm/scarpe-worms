@@ -3,7 +3,9 @@
 An original desktop artillery game built with [Scarpe](https://github.com/scarpe-team/scarpe)'s native renderer.
 Up to six teams, destructible random maps, 48 weapons and tools, and self-hosted online play.
 
-**0.5.8 adds minimap dragging and pinch camera zoom.** Settings →
+**0.5.9 fixes public TLS certificate chains for hosted servers.** The server
+now sends the intermediate certificates from a PEM chain, so public CA clients
+can connect without a fingerprint. **0.5.8 adds minimap dragging and pinch camera zoom.** Settings →
 **Responsive movement** compares immediate local walking/jumps with the original
 server playback. The Mac app bundles OpenAL Soft, busy battles have more sound
 voices, and crater textures are prepared faster. Protocol-4 hosts and existing
@@ -11,7 +13,7 @@ saves remain compatible; weapons stay server-driven. See [current status](docs/S
 
 ![Burrow Brigade battlefield](docs/evidence/battlefield/glacier-islands-overview.png)
 
-**Status: 0.5.8 preview.** Ruby 4.0+ only, with Ruby 4.0.7 bundled in the macOS
+**Status: 0.5.9 preview.** Ruby 4.0+ only, with Ruby 4.0.7 bundled in the macOS
 (Apple silicon), Windows and Linux clients and server image. Rust is pinned to 1.99.0. 0.5.4 removed
 the host stall at every crater and made matches start a second faster. 0.5.3 made
 grubs squeak when hit, call for a medic, say "buh-bye" and pop into a little ghost,
