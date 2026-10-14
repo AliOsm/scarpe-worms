@@ -5,18 +5,29 @@ Up to six teams, destructible random maps, 48 weapons and tools, and self-hosted
 
 ![Burrow Brigade battlefield](docs/evidence/battlefield/glacier-islands-overview.png)
 
-**Status: 0.5.4 preview (unreleased).** A measured optimization pass removed the
-host stall at every crater, makes craters appear 230 ms sooner and matches start a
-second faster. 0.5.3 made grubs squeak when hit, call for a medic,
-say "buh-bye" and pop into a little ghost, leaving their team's gravestone; big hits
-land with comic POW!, BONK! and KABOOM! bursts, and sheep baa while cows moo.
+**Status: 0.5.5 preview.** The first downloadable release, with clients for macOS
+(Apple silicon), Windows and Linux and a Docker image for the server. 0.5.4 removed
+the host stall at every crater and made matches start a second faster. 0.5.3 made
+grubs squeak when hit, call for a medic, say "buh-bye" and pop into a little ghost,
+leaving their team's gravestone; big hits land with comic POW!, BONK! and KABOOM!
+bursts, and sheep baa while cows moo.
 0.5.2 reworked all 48 weapons, and 0.5.0 brought organic islands with caves, overhangs, sea
 arches and ruins; blasts that fling grubs, mines and barrels; spreading fire; and
 two-step weapons such as a homing rocket you lock on, then aim and charge. This builds
 on 0.4.0's painted environments and the glossy arcade interface
-([screenshots](docs/evidence/README.md)). The first distribution target is Apple
-silicon, macOS 13+; native Mac and human acceptance remain before a sales release.
+([screenshots](docs/evidence/README.md)). The clients are unsigned previews: expect
+Gatekeeper and SmartScreen prompts, and human acceptance remains before a sales release.
 See [current status and next work](docs/STATUS.md).
+
+## Download and play
+
+Download **Burrow Brigade** for **Apple silicon macOS**, **Windows x64** or
+**Linux x86-64** from [GitHub Releases](https://github.com/AliOsm/scarpe-worms/releases).
+The clients include Ruby and the native renderer; no development setup is needed.
+The release notes cover installation, unsigned-app prompts and SHA-256 hashes.
+
+Each release also includes Docker images for **Linux amd64 and ARM64** and a
+ready-to-use Compose file for hosting your own server; see [Hosting](docs/HOSTING.md).
 
 ## Run from source
 
@@ -33,7 +44,8 @@ cd scarpe-worms
 Setup downloads pinned Scarpe source, applies the independent patches, installs
 gems, and builds the native renderer. No sibling prototype repo is needed.
 
-For a standalone Mac app, follow [macOS packaging](docs/MACOS.md).
+To build the clients yourself, follow the [macOS](docs/MACOS.md), [Windows](docs/WINDOWS.md)
+and [Linux](docs/LINUX.md) guides.
 App bundles and ZIPs are build artifacts, not files in the source checkout.
 
 ## Play
@@ -58,6 +70,9 @@ stages. See the [weapon guide](docs/WEAPONS.md).
 Hosts and clients must use **protocol 4** together.
 
 ## Host online
+
+Each release ships `compose.yaml` and loadable server images; from a checkout you
+can also build the image yourself:
 
 ```sh
 docker compose up -d --build

@@ -1,8 +1,36 @@
 # Current status
 
-Updated **2026-10-14** · game **0.5.4 (unreleased)** · protocol **4** · macOS preview.
+Updated **2026-10-14** · game **0.5.5** · protocol **4** · macOS, Windows and Linux previews.
 
-## 0.5.4 optimization round (unreleased)
+## 0.5.5 releases for macOS, Windows and Linux
+
+A `v*` tag now publishes a GitHub Release once every client has been built and
+played on its own operating system ([release process](RELEASE.md)):
+
+- **macOS** (`package-macos.yml`): the Apple silicon ZIP, cross-built on Linux,
+  then launched on a `macos-15` runner (menu, bot match, focus/charge, resize,
+  save and resume, Unicode paths). Timing benchmarks are informational.
+- **Windows** (`package-windows.yml`, [guide](WINDOWS.md)): a per-user installer
+  and a portable ZIP with the RubyInstaller runtime, the patched renderer built
+  with MSVC (new patch 0025: Windows process groups and runtime fixes) and OpenAL
+  Soft. On a `windows-2022` runner the core suite passes; the installer installs
+  into a Unicode path with spaces, plays and resumes a three-team bot match with
+  audio, upgrades and uninstalls; the portable ZIP does the same headless.
+- **Linux** (`package-linux.yml`, [guide](LINUX.md)): a portable tar.gz with
+  Traveling Ruby 3.4.7, the renderer and OpenAL Soft built on Ubuntu 22.04
+  (glibc 2.35). It plays, saves and resumes on Ubuntu 22.04 and 24.04 runners
+  and in Debian 12 and Fedora 40 containers, headless and under Xvfb, including
+  PulseAudio and ALSA playback paths.
+- **Server**: amd64 and ARM64 Docker image archives built natively, reloaded and
+  put through a six-team TLS match with restart recovery, plus `compose.yaml`.
+  `deploy-server.yml` still publishes the GHCR image and deploys the owner's host.
+
+Timing logs moved to platform locations: `%LOCALAPPDATA%\Burrow Brigade\Logs`
+on Windows and `$XDG_STATE_HOME/burrow-brigade/logs` on Linux (macOS unchanged).
+All clients are unsigned: macOS Gatekeeper and Windows SmartScreen will warn.
+Nobody has yet played the Windows or Linux builds on a physical machine.
+
+## 0.5.4 optimization round
 
 The owner heard lagging audio while playing packaged 0.5.3 on an M3 Pro. Eight
 Astra 6 Max agents swept audio, the Ruby frame loop, the native renderer, the
@@ -480,7 +508,9 @@ next playtest can answer it.
 1. Play 0.5.0 with people: tune blast force, tumbling, fire damage and the new maps
    (island size, cave frequency, set-piece density) from their feedback.
 2. Run the packaged game on the M3 Pro and clean Apple silicon Macs, including
-   Retina/external displays, Finder launch, focus, resizing and sleep/wake.
+   Retina/external displays, Finder launch, focus, resizing and sleep/wake; play
+   the Windows build on a Windows 10/11 PC and the Linux build on a Wayland and an
+   X11 desktop with real audio.
 3. Play 0.5.4 on the M3 Pro and send the session's `audio.json`/`game.json` if
    sound still lags; note whether Bluetooth headphones were used. Listen to the
    mixed audio, including the 0.5.3 voices, squeaks and announcer
@@ -495,10 +525,10 @@ next playtest can answer it.
 
 ## Repository handoff
 
-The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 24
-independent patches; the arcade interface added 0013, the renderer investigation
+The source is self-contained. `setup.sh` (or `setup-windows.ps1`) fetches pinned
+Scarpe and applies 25 independent patches; the arcade interface added 0013, the renderer investigation
 added 0014–0017, cadence and clock work added 0018–0019, the zoom follow-up
-added 0020–0023, and the 0.5.4 round added 0024. Protocol 4 hosts and clients must upgrade together.
+added 0020–0023, the 0.5.4 round added 0024, and Windows support added 0025. Protocol 4 hosts and clients must upgrade together.
 Runtime assets live in the source tree, so running the game needs no image service or
 asset download. Generated bundles, raw captures and player data remain ignored.
 The server image is published on GHCR and deployed from the `v0.5.4` tag; no Mac

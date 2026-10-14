@@ -113,8 +113,10 @@ tree with `python3 tools/verify_scarpe.py`. Do not commit the dependency checkou
 - Update the relevant guide when behavior or setup changes.
 - Keep [STATUS.md](docs/STATUS.md) current when priorities or release evidence change.
 - Keep saves, tokens, certificates, caches, and build archives out of commits.
-- Follow [macOS packaging](docs/MACOS.md) and [release requirements](docs/RELEASE.md) for distribution.
+- Follow the platform guides ([macOS](docs/MACOS.md), [Windows](docs/WINDOWS.md), [Linux](docs/LINUX.md)) and the [release process](docs/RELEASE.md) for distribution.
 
-CI runs core and native checks on Ruby 3.4.7 and 4.0.7. The separate macOS preview
-workflow runs manually or for `v*` tags; it builds a ZIP and exercises it on an
-Apple silicon runner. Workflow results are evidence only after they run.
+CI runs core and native checks on Ruby 3.4.7 and 4.0.7. The `package-macos`,
+`package-windows` and `package-linux` workflows build and exercise each client on
+its own runner for packaging pull requests, manual runs and `v*` release tags;
+`release.yml` publishes a tag's GitHub Release only after all of them pass
+([release process](docs/RELEASE.md)). Workflow results are evidence only after they run.
