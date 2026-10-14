@@ -1,6 +1,6 @@
 # Current status
 
-Updated **2026-10-14** · client **0.5.9** · published release **0.5.8** · protocol **4**.
+Updated **2026-10-14** · client **0.5.9** · published release **0.5.9** · protocol **4**.
 
 ## 0.5.9 public TLS certificate chains
 
@@ -10,6 +10,10 @@ public CA without pinning a fingerprint; the protocol and saved-state formats
 remain unchanged. The regression suite covers a multi-certificate server
 handshake, and the deployed host will be checked with the issued public CA
 certificate after the release image is updated.
+
+[0.5.9 is published](https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.9).
+All release package and server verification jobs pass; production runs the
+0.5.9 image with the renewed certificate chain.
 
 ## 0.5.7 combat responsiveness
 
