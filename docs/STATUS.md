@@ -1,6 +1,6 @@
 # Current status
 
-Updated **2026-10-14** · client **0.5.8** · published release **0.5.7** · protocol **4**.
+Updated **2026-10-14** · client **0.5.8** · published release **0.5.8** · protocol **4**.
 
 ## 0.5.7 combat responsiveness
 
@@ -51,6 +51,13 @@ removes the on-screen zoom buttons, and accepts macOS two-finger pinch gestures
 through the existing pointer-anchored wheel zoom path. Keyboard zoom remains
 available. Ruby, native Linux, asset, audio and container validation passes; a
 physical macOS pinch playtest is still useful for input feel.
+
+[0.5.8 is published](https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.8).
+All 18 release assets are uploaded and their GitHub SHA-256 digests plus the
+published `SHA256SUMS` and provenance files are verified. The [release workflow](https://github.com/AliOsm/scarpe-worms/actions/runs/38628287193),
+[game/native checks](https://github.com/AliOsm/scarpe-worms/actions/runs/38628286999),
+and [server deployment](https://github.com/AliOsm/scarpe-worms/actions/runs/38628286972)
+pass. Production is healthy and reports **0.5.8 · protocol 4 · YJIT**.
 
 [0.5.7 is published](https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.7).
 All 18 downloaded assets and their checksums are verified; the Mac archive
