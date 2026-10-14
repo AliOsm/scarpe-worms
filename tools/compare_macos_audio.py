@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Alternate packaged Apple/OpenAL Soft combat captures on one Apple silicon runner.
 
-Records existing rendering thresholds even when they fail; does not relax them.
+Records comparison timings; the separate packaged benchmark retains its gates.
 This measures submissions and device properties, not audible output or scanout.
 """
 from pathlib import Path
