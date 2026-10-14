@@ -8,8 +8,8 @@ The server now sends every PEM certificate after the leaf in `--cert` as the
 TLS intermediate chain. This lets clients validate certificates issued by a
 public CA without pinning a fingerprint; the protocol and saved-state formats
 remain unchanged. The regression suite covers a multi-certificate server
-handshake, and the deployed host will be checked with the issued public CA
-certificate after the release image is updated.
+handshake, and the deployed host was checked with the issued public CA
+certificate after the release image was updated.
 
 [0.5.9 is published](https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.9).
 All release package and server verification jobs pass; production runs the
