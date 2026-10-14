@@ -39,10 +39,11 @@ official Worms title.
   supporting DLLs remain separate and replaceable. SDKs/build tools are omitted.
 - chunky_png (MIT), ffi/libffi (BSD/MIT), base64 and logger (Ruby/BSD-2-Clause),
   fastimage (MIT): complete gem sources and licenses included in the Mac app.
-- OpenAL Soft 1.24.3 (LGPL-2.0-or-later) supplies the native audio mixer on
-  macOS, Windows and Linux. The library remains separate and replaceable;
+- OpenAL Soft (LGPL-2.0-or-later) supplies the native audio mixer: 1.24.3 on
+  macOS and Linux, 1.25.2 on Windows. The library remains separate and replaceable;
   its license ships with each package. Unmodified source and build inputs:
-  https://github.com/kcat/openal-soft/releases/tag/1.24.3 and the pinned
+  https://github.com/kcat/openal-soft/releases/tag/1.24.3,
+  https://github.com/kcat/openal-soft/releases/tag/1.25.2 and the pinned
   `packaging/*/dependencies.json` manifests. Mac and Linux build recipes are
   in `tools/package_macos.py` and `tools/package_linux.py`.
 - Native Rust dependency notices are collected from the exact Cargo lockfile

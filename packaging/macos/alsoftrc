@@ -1,10 +1,8 @@
 # Burrow Brigade's packaged CoreAudio profile.
 #
-# OpenAL Soft defaults to three 20 ms periods. That protects a heavily loaded
-# process, but it leaves roughly 40 ms of audio mixed ahead of the hardware.
-# The game submits short effects from its bounded presentation loop, so two
-# 256-frame periods keep shots and impacts responsive while retaining one full
-# period of scheduling headroom.
+# Reduce OpenAL's configured scheduling cushion from its generic defaults.
+# CoreAudio's hardware callback requests the rendered frame count directly;
+# these values do not set the hardware buffer or measure acoustic latency.
 [general]
 period_size = 256
 periods = 2

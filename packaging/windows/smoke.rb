@@ -92,13 +92,18 @@ Scarpe::Native.after_first_heartbeat do
     auto.snapshot(ENV.fetch("BURROW_SMOKE_SHOT"))
 
     # A runner has no physical output. The actual dynamically loaded OpenAL
-    # Soft DLL mixes through its null driver, with all cues decoded and 12 voices.
+    # Soft DLL mixes through its null driver, with all cues decoded and the
+    # renderer's configured effect pool plus a separate music source.
     audio = client.instance_variable_get(:@audio)
+    audio_renderer = audio.available ? audio.instance_variable_get(:@al).alGetString(0xb003) : nil
+    effect_voices = audio.available ? audio.instance_variable_get(:@voice_limit) : 0
     unless ENV["SCARPE_NATIVE_HEADLESS"] == "1"
       raise "Bundled audio failed: #{audio.error}" unless audio.available
       raise "Cue preload incomplete" unless audio.instance_variable_get(:@buffers).size == Burrow::Client::Audio::CUES.size
-      raise "Effect voice count changed" unless audio.instance_variable_get(:@sources).size == 13
-      12.times { audio.play("explosion", throttle: false) }
+      expected_voices = audio_renderer.to_s.include?("OpenAL Soft") ? Burrow::Client::Audio::MAX_VOICES : Burrow::Client::Audio::LEGACY_VOICES
+      raise "Effect voice count changed: #{audio_renderer}: #{effect_voices}" unless effect_voices == expected_voices
+      raise "Audio source count changed" unless audio.instance_variable_get(:@sources).size == expected_voices + 1
+      effect_voices.times { audio.play("explosion", throttle: false) }
     end
     hosts = client.instance_variable_get(:@local_servers).values.map { |entry| entry[:server].pid }
     renderer = Scarpe::Native::DisplayService.instance.child.instance_variable_get(:@pid)
@@ -154,7 +159,7 @@ Scarpe::Native.after_first_heartbeat do
       focus_cancels_charge: !resumed, unicode_profile: true, unicode_terrain_path: true,
       headless: ENV["SCARPE_NATIVE_HEADLESS"] == "1", openal_available: audio.available,
       decoded_cues: audio.instance_variable_get(:@buffers).size,
-      effect_voices: Burrow::Client::Audio::MAX_VOICES,
+      audio_renderer: audio_renderer, effect_voices: effect_voices,
       window: window,
       bundled_interpreter: ENV.fetch("BURROW_RUBY"), external_encoding: Encoding.default_external.name,
       worker_startup: worker_startup,

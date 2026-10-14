@@ -19,9 +19,12 @@ python3 tools/check_distributable.py
 
 Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.7) and its `.sha256` sidecar.
 The archive bundles Ruby 4.0.7, patched native Scarpe, OpenAL Soft 1.24.3 with
-CoreAudio, a low-latency two-period mixer profile, gems, fonts, art, and audio.
-CMake is needed to build the mixer. The profile keeps two 256-frame periods so
-effects are not held in a 40 ms mix-ahead queue on the default 48 kHz output.
+CoreAudio, a two-period mixer profile, gems, fonts, art, and audio.
+CMake is needed to build the mixer. The profile selects two 256-frame periods,
+lowering OpenAL's configured scheduling cushion. CoreAudio renders the frames
+requested by the hardware callback; this setting does not set its buffer size
+or measure audible latency. The measured runner still reported a 512-frame
+hardware buffer at 48 kHz and a 12.75 ms device path.
 Players do not need a separate Ruby, Rust, browser, or server installation.
 
 Build downloads are checksum-pinned in `packaging/macos/dependencies.json` and

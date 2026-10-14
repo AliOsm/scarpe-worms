@@ -16,6 +16,7 @@ def main():
         parser.error('The delivered audio backend must be checked on macOS')
     env, ruby = package_environment(args.app, windowed=True)
     env.update(BURROW_MUTE='0', BURROW_AUDIO_EXPECT_RENDERER='OpenAL Soft',
+        ALSOFT_CONF=str(args.app.resolve()/'Contents/Resources/runtime/lib/alsoftrc'),
         BURROW_OPENAL_LIBRARY=str(args.app.resolve()/'Contents/Resources/runtime/lib/libopenal.1.dylib'))
     subprocess.run([str(ruby), '-EUTF-8', str(Path(__file__).with_name('check_audio.rb'))],
                    env=env, check=True, timeout=30)
