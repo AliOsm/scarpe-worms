@@ -1,0 +1,619 @@
+{
+ "version": "0.5.4",
+ "date": "2026-10-14",
+ "scope": "Final whole-game A/B of the integrated 0.5.4 optimization round against frozen 0.5.3",
+ "baseline": {
+  "commit": "8bf41ed",
+  "version": "0.5.3"
+ },
+ "candidate": {
+  "branch": "perf2/integration",
+  "commit": "9230629",
+  "note": "Code identical to the shipped 0.5.4 except the effect-voice count: the five-pair run used 24 voices; 0.5.4 ships 12 after the Mac runner showed 24 slowing zoom (perf-0.5.4-mac.json). Audio rows were re-measured with 12 voices (5 pairs); the other probes do not depend on the voice count on the OpenAL null mixer."
+ },
+ "machine": {
+  "os": "Ubuntu 26.04 (Linux x86_64)",
+  "cpu": "Intel(R) Core(TM) i5-8500 CPU @ 3.00GHz",
+  "cores": 6,
+  "ruby": "3.4.7 (packaged runtime version)",
+  "display": "Xvfb 3840x2400, scale 2, 1920x1200 window",
+  "audio": "OpenAL Soft null backend (no device)"
+ },
+ "method": "Five interleaved pairs (baseline then candidate) per probe, each capture under an exclusive benchmark lock with no other agent running; background services (databases, containers) were present in both arms. Medians across the five runs; candidate_better_pairs counts strict per-pair improvements.",
+ "probes": {
+  "host": "tools/perf_host_bench.rb --scenario heavy --teams 6 --worms 6 --ticks 900 --seed perf-heavy-6 (unpaced; tick = step + snapshot + 2 s checkpoint cadence)",
+  "audio": "tools/perf_audio_bench.rb --scenario combat (production Audio with a 36-grub multi-kill script; OpenAL null mixer)",
+  "match_start": "tools/perf_painter_run.py --mode app (headless app: Quick Battle click to battle painted)",
+  "session": "tools/perf_terrain_session.rb --transport tcp --terrain --rounds 3 (real host subprocess and client over loopback TCP; same version on both ends)",
+  "render": "tools/check_rendering.py --scale 2 --size 1920x1200 --audio from each tree (whole game: Ruby + native renderer + live bots)"
+ },
+ "results": [
+  {
+   "metric": "Host: ticks over 33.3 ms (900 ticks)",
+   "pairs": 5,
+   "baseline_median": 16,
+   "candidate_median": 0,
+   "baseline_range": [
+    16,
+    16
+   ],
+   "candidate_range": [
+    0,
+    0
+   ],
+   "change_pct": -100.0,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Host: tick max ms",
+   "pairs": 5,
+   "baseline_median": 63.419,
+   "candidate_median": 26.41,
+   "baseline_range": [
+    63.14,
+    71.359
+   ],
+   "candidate_range": [
+    25.916,
+    26.858
+   ],
+   "change_pct": -58.4,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Host: tick p99 ms",
+   "pairs": 5,
+   "baseline_median": 62.205,
+   "candidate_median": 24.8,
+   "baseline_range": [
+    62.092,
+    62.525
+   ],
+   "candidate_range": [
+    24.696,
+    24.836
+   ],
+   "change_pct": -60.1,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Host: tick p50 ms",
+   "pairs": 5,
+   "baseline_median": 1.006,
+   "candidate_median": 0.905,
+   "baseline_range": [
+    1.003,
+    1.015
+   ],
+   "candidate_range": [
+    0.897,
+    0.914
+   ],
+   "change_pct": -10.0,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Host: CPU ms per simulated second",
+   "pairs": 5,
+   "baseline_median": 65.481,
+   "candidate_median": 42.413,
+   "baseline_range": [
+    65.227,
+    66.053
+   ],
+   "candidate_range": [
+    42.333,
+    42.591
+   ],
+   "change_pct": -35.2,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Audio: steals in the combat fixture (12 voices shipped)",
+   "pairs": 5,
+   "baseline_median": 6,
+   "candidate_median": 6,
+   "baseline_range": [
+    5,
+    6
+   ],
+   "candidate_range": [
+    5,
+    6
+   ],
+   "change_pct": 0.0,
+   "candidate_better_pairs": 1
+  },
+  {
+   "metric": "Audio: delayed-cue lateness median ms, deadline probe",
+   "pairs": 5,
+   "baseline_median": 17.525,
+   "candidate_median": 8.828,
+   "baseline_range": [
+    17.386,
+    17.708
+   ],
+   "candidate_range": [
+    8.665,
+    8.988
+   ],
+   "change_pct": -49.6,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Match start: Quick Battle to battle painted ms",
+   "pairs": 5,
+   "baseline_median": 4503.721,
+   "candidate_median": 3386.922,
+   "baseline_range": [
+    4470.682,
+    4531.827
+   ],
+   "candidate_range": [
+    3370.248,
+    3403.625
+   ],
+   "change_pct": -24.8,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Match start: GUI update max during load ms",
+   "pairs": 5,
+   "baseline_median": 162.246,
+   "candidate_median": 137.134,
+   "baseline_range": [
+    159.674,
+    163.927
+   ],
+   "candidate_range": [
+    132.555,
+    143.069
+   ],
+   "change_pct": -15.5,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Match start: total RSS KiB at battle",
+   "pairs": 5,
+   "baseline_median": 229748,
+   "candidate_median": 232304,
+   "baseline_range": [
+    229180,
+    232392
+   ],
+   "candidate_range": [
+    229996,
+    233032
+   ],
+   "change_pct": 1.1,
+   "candidate_better_pairs": 1
+  },
+  {
+   "metric": "Session: jump to event ms",
+   "pairs": 5,
+   "baseline_median": 66.91,
+   "candidate_median": 50.231,
+   "baseline_range": [
+    66.874,
+    67.069
+   ],
+   "candidate_range": [
+    50.215,
+    66.869
+   ],
+   "change_pct": -24.9,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Session: fire to event ms",
+   "pairs": 5,
+   "baseline_median": 50.482,
+   "candidate_median": 50.545,
+   "baseline_range": [
+    50.256,
+    50.762
+   ],
+   "candidate_range": [
+    50.215,
+    54.362
+   ],
+   "change_pct": 0.1,
+   "candidate_better_pairs": 1
+  },
+  {
+   "metric": "Session: blast to terrain packet sent ms",
+   "pairs": 5,
+   "baseline_median": 61.353,
+   "candidate_median": 23.916,
+   "baseline_range": [
+    30.447,
+    76.832
+   ],
+   "candidate_range": [
+    11.213,
+    42.858
+   ],
+   "change_pct": -61.0,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Session: blast to crater tiles ready ms",
+   "pairs": 5,
+   "baseline_median": 283.355,
+   "candidate_median": 50.022,
+   "baseline_range": [
+    283.215,
+    283.404
+   ],
+   "candidate_range": [
+    33.304,
+    50.105
+   ],
+   "change_pct": -82.3,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Session: playback underruns",
+   "pairs": 5,
+   "baseline_median": 2,
+   "candidate_median": 0,
+   "baseline_range": [
+    1,
+    3
+   ],
+   "candidate_range": [
+    0,
+    0
+   ],
+   "change_pct": -100.0,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Session: playback resyncs",
+   "pairs": 5,
+   "baseline_median": 0,
+   "candidate_median": 0,
+   "baseline_range": [
+    0,
+    0
+   ],
+   "candidate_range": [
+    0,
+    0
+   ],
+   "change_pct": null,
+   "candidate_better_pairs": 0
+  },
+  {
+   "metric": "Render combat: paint mean ms",
+   "pairs": 5,
+   "baseline_median": 2.587,
+   "candidate_median": 2.598,
+   "baseline_range": [
+    2.523,
+    2.624
+   ],
+   "candidate_range": [
+    2.493,
+    2.664
+   ],
+   "change_pct": 0.4,
+   "candidate_better_pairs": 2
+  },
+  {
+   "metric": "Render combat: presented mean ms",
+   "pairs": 5,
+   "baseline_median": 16.557,
+   "candidate_median": 16.586,
+   "baseline_range": [
+    16.404,
+    16.61
+   ],
+   "candidate_range": [
+    16.309,
+    16.629
+   ],
+   "change_pct": 0.2,
+   "candidate_better_pairs": 2
+  },
+  {
+   "metric": "Render combat: presented p95 ms",
+   "pairs": 5,
+   "baseline_median": 20.622,
+   "candidate_median": 20.597,
+   "baseline_range": [
+    20.582,
+    21.86
+   ],
+   "candidate_range": [
+    20.343,
+    20.873
+   ],
+   "change_pct": -0.1,
+   "candidate_better_pairs": 3
+  },
+  {
+   "metric": "Render combat: presented max ms",
+   "pairs": 5,
+   "baseline_median": 36.337,
+   "candidate_median": 55.324,
+   "baseline_range": [
+    33.585,
+    88.959
+   ],
+   "candidate_range": [
+    36.789,
+    65.786
+   ],
+   "change_pct": 52.3,
+   "candidate_better_pairs": 1
+  },
+  {
+   "metric": "Render combat: intervals over 33 ms",
+   "pairs": 5,
+   "baseline_median": 2,
+   "candidate_median": 3,
+   "baseline_range": [
+    1,
+    3
+   ],
+   "candidate_range": [
+    3,
+    5
+   ],
+   "change_pct": 50.0,
+   "candidate_better_pairs": 0
+  },
+  {
+   "metric": "Render pan: paint mean ms",
+   "pairs": 5,
+   "baseline_median": 4.18,
+   "candidate_median": 4.198,
+   "baseline_range": [
+    4.126,
+    4.292
+   ],
+   "candidate_range": [
+    4.139,
+    4.287
+   ],
+   "change_pct": 0.4,
+   "candidate_better_pairs": 2
+  },
+  {
+   "metric": "Render pan: presented mean ms",
+   "pairs": 5,
+   "baseline_median": 16.665,
+   "candidate_median": 16.711,
+   "baseline_range": [
+    16.647,
+    16.694
+   ],
+   "candidate_range": [
+    16.66,
+    16.904
+   ],
+   "change_pct": 0.3,
+   "candidate_better_pairs": 1
+  },
+  {
+   "metric": "Render pan: presented p95 ms",
+   "pairs": 5,
+   "baseline_median": 19.615,
+   "candidate_median": 19.668,
+   "baseline_range": [
+    19.465,
+    20.261
+   ],
+   "candidate_range": [
+    19.224,
+    19.814
+   ],
+   "change_pct": 0.3,
+   "candidate_better_pairs": 3
+  },
+  {
+   "metric": "Render pan: presented max ms",
+   "pairs": 5,
+   "baseline_median": 27.914,
+   "candidate_median": 37.046,
+   "baseline_range": [
+    26.034,
+    35.749
+   ],
+   "candidate_range": [
+    26.191,
+    96.126
+   ],
+   "change_pct": 32.7,
+   "candidate_better_pairs": 1
+  },
+  {
+   "metric": "Render pan: intervals over 33 ms",
+   "pairs": 5,
+   "baseline_median": 0,
+   "candidate_median": 1,
+   "baseline_range": [
+    0,
+    2
+   ],
+   "candidate_range": [
+    0,
+    2
+   ],
+   "change_pct": null,
+   "candidate_better_pairs": 1
+  },
+  {
+   "metric": "Render zoom: paint mean ms",
+   "pairs": 5,
+   "baseline_median": 3.915,
+   "candidate_median": 3.772,
+   "baseline_range": [
+    3.54,
+    3.983
+   ],
+   "candidate_range": [
+    3.307,
+    3.793
+   ],
+   "change_pct": -3.6,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Render zoom: presented mean ms",
+   "pairs": 5,
+   "baseline_median": 18.508,
+   "candidate_median": 18.556,
+   "baseline_range": [
+    18.344,
+    18.806
+   ],
+   "candidate_range": [
+    18.19,
+    19.057
+   ],
+   "change_pct": 0.3,
+   "candidate_better_pairs": 3
+  },
+  {
+   "metric": "Render zoom: presented p95 ms",
+   "pairs": 5,
+   "baseline_median": 26.282,
+   "candidate_median": 25.787,
+   "baseline_range": [
+    25.839,
+    28.828
+   ],
+   "candidate_range": [
+    24.926,
+    27.821
+   ],
+   "change_pct": -1.9,
+   "candidate_better_pairs": 4
+  },
+  {
+   "metric": "Render zoom: presented max ms",
+   "pairs": 5,
+   "baseline_median": 36.229,
+   "candidate_median": 36.911,
+   "baseline_range": [
+    27.565,
+    42.602
+   ],
+   "candidate_range": [
+    27.535,
+    44.908
+   ],
+   "change_pct": 1.9,
+   "candidate_better_pairs": 3
+  },
+  {
+   "metric": "Render zoom: intervals over 33 ms",
+   "pairs": 5,
+   "baseline_median": 1,
+   "candidate_median": 1,
+   "baseline_range": [
+    0,
+    3
+   ],
+   "candidate_range": [
+    0,
+    3
+   ],
+   "change_pct": 0.0,
+   "candidate_better_pairs": 3
+  },
+  {
+   "metric": "Render zoom_sweep: paint mean ms",
+   "pairs": 5,
+   "baseline_median": 11.264,
+   "candidate_median": 10.639,
+   "baseline_range": [
+    10.89,
+    11.388
+   ],
+   "candidate_range": [
+    10.379,
+    10.677
+   ],
+   "change_pct": -5.5,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Render zoom_sweep: presented mean ms",
+   "pairs": 5,
+   "baseline_median": 21.775,
+   "candidate_median": 20.321,
+   "baseline_range": [
+    20.712,
+    21.925
+   ],
+   "candidate_range": [
+    20.102,
+    20.56
+   ],
+   "change_pct": -6.7,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Render zoom_sweep: presented p95 ms",
+   "pairs": 5,
+   "baseline_median": 29.575,
+   "candidate_median": 26.491,
+   "baseline_range": [
+    26.576,
+    30.222
+   ],
+   "candidate_range": [
+    26.034,
+    28.368
+   ],
+   "change_pct": -10.4,
+   "candidate_better_pairs": 5
+  },
+  {
+   "metric": "Render zoom_sweep: presented max ms",
+   "pairs": 5,
+   "baseline_median": 54.725,
+   "candidate_median": 40.061,
+   "baseline_range": [
+    29.996,
+    59.211
+   ],
+   "candidate_range": [
+    36.364,
+    43.542
+   ],
+   "change_pct": -26.8,
+   "candidate_better_pairs": 4
+  },
+  {
+   "metric": "Render zoom_sweep: intervals over 33 ms",
+   "pairs": 5,
+   "baseline_median": 4,
+   "candidate_median": 1,
+   "baseline_range": [
+    0,
+    7
+   ],
+   "candidate_range": [
+    1,
+    3
+   ],
+   "change_pct": -75.0,
+   "candidate_better_pairs": 4
+  }
+ ],
+ "render_tail_analysis": "Combat intervals over 33 ms rose from a median of 2 to 3 per run of 730-970 combat frames (baseline 1-3, candidate 3-5). Per-phase costs did not: native layout/paint/present means and p99s, Ruby update p95/p99 and the count of native frames over 16 ms were equal or lower in the candidate. The extra intervals are single dropped frames (34-41 ms) where two on-time Ruby updates straddle a 20-24 ms native frame; such frames occur in both arms. Craters now arrive about 230 ms sooner after a blast, so their tile loads overlap the blast's busiest frames; this is the most likely explanation but was not isolated. Off-CPU stalls (wall far above CPU) occurred in both arms and failed the 60 ms budget in 3 of 10 runs (baseline 1, candidate 2).",
+ "checks": {
+  "ruby_4_0_7": "327 runs, 10,156 assertions, 0 failures",
+  "ruby_3_4_7": "327 runs, 10,156 assertions, 0 failures",
+  "native_journeys": "7/7",
+  "scarpe_patches": "verify_scarpe passed (0001-0024)"
+ },
+ "limits": [
+  "Linux/Xvfb and the OpenAL null mixer measure submission and presentation cadence, not audible output or physical display latency.",
+  "Mac results are recorded separately (GitHub Apple silicon runner VM)."
+ ]
+}

@@ -1,0 +1,373 @@
+{
+ "version": "0.5.4",
+ "date": "2026-10-14",
+ "scope": "Packaged app on GitHub Apple silicon runners (macos-15 VM, 1x display, 60 Hz, Apple OpenAL.framework, built-in 48 kHz output). Sustained-rendering stages from tools/check_rendering.py --app --audio; active-motion presentation intervals in ms.",
+ "finding": "Every capture with 24 effect voices slowed the zoom stage (mean 28.1-29.0 ms, 50-63 intervals over 33 ms); every 12-voice capture measured 18.6-24.3 ms. The integrated build with 12 voices measured 19.3/20.6 ms zoom and 19.1/19.7 ms combat p95, within or better than same-hour 0.5.3 controls (zoom 23.5/24.3, combat p95 21.9/24.1). 0.5.4 therefore keeps 12 voices.",
+ "failures": "The strict 60 ms single-interval gate failed in several runs of both versions (single combat/pan stalls, typical of the shared VM). Run 38502548883 (24 voices) failed earlier in check_package's Mac activity check, which passed for the same commit in two other runs; it has no rendering data.",
+ "limits": [
+  "A shared runner VM is not the owner's M3 Pro; nothing here is an audible or physical-display measurement.",
+  "Runs at different hours vary; the same-hour controls (38502541862, 38502563813, 38502556246, 38502580862, 38502574056) are the fairest comparison."
+ ],
+ "runs": [
+  {
+   "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38466855194",
+   "build": "main 0.5.3",
+   "effect_voices": 12,
+   "conclusion": "success",
+   "stages": {
+    "combat": {
+     "count": 660,
+     "mean_ms": 16.17,
+     "p95_ms": 20.36,
+     "max_ms": 23.63,
+     "over_33ms": 0
+    },
+    "pan": {
+     "count": 357,
+     "mean_ms": 16.8,
+     "p95_ms": 19.91,
+     "max_ms": 45.75,
+     "over_33ms": 2
+    },
+    "zoom": {
+     "count": 391,
+     "mean_ms": 18.63,
+     "p95_ms": 33.46,
+     "max_ms": 65.95,
+     "over_33ms": 25
+    },
+    "zoom_sweep": {
+     "count": 266,
+     "mean_ms": 16.7,
+     "p95_ms": 19.42,
+     "max_ms": 66.04,
+     "over_33ms": 2
+    }
+   }
+  },
+  {
+   "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38381424287",
+   "build": "main 0.5.3 (earlier, 2026-10-13)",
+   "effect_voices": 12,
+   "conclusion": "failure",
+   "stages": {
+    "combat": {
+     "count": 775,
+     "mean_ms": 16.52,
+     "p95_ms": 21.95,
+     "max_ms": 149.17,
+     "over_33ms": 3
+    },
+    "pan": {
+     "count": 360,
+     "mean_ms": 16.66,
+     "p95_ms": 21.65,
+     "max_ms": 27.8,
+     "over_33ms": 0
+    },
+    "zoom": {
+     "count": 336,
+     "mean_ms": 21.72,
+     "p95_ms": 48.78,
+     "max_ms": 90.25,
+     "over_33ms": 39
+    },
+    "zoom_sweep": {
+     "count": 267,
+     "mean_ms": 16.76,
+     "p95_ms": 23.83,
+     "max_ms": 48.68,
+     "over_33ms": 3
+    }
+   }
+  },
+  {
+   "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38502541862",
+   "build": "main 0.5.3 (same-hour control)",
+   "effect_voices": 12,
+   "conclusion": "failure",
+   "stages": {
+    "combat": {
+     "count": 591,
+     "mean_ms": 16.04,
+     "p95_ms": 21.95,
+     "max_ms": 46.6,
+     "over_33ms": 1
+    },
+    "pan": {
+     "count": 360,
+     "mean_ms": 16.63,
+     "p95_ms": 20.57,
+     "max_ms": 26.05,
+     "over_33ms": 0
+    },
+    "zoom": {
+     "count": 310,
+     "mean_ms": 23.51,
+     "p95_ms": 53.94,
+     "max_ms": 132.64,
+     "over_33ms": 48
+    },
+    "zoom_sweep": {
+     "count": 266,
+     "mean_ms": 17.0,
+     "p95_ms": 26.38,
+     "max_ms": 63.87,
+     "over_33ms": 7
+    }
+   }
+  },
+  {
+   "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38502563813",
+   "build": "main 0.5.3 (same-hour control)",
+   "effect_voices": 12,
+   "conclusion": "failure",
+   "stages": {
+    "combat": {
+     "count": 567,
+     "mean_ms": 16.31,
+     "p95_ms": 24.13,
+     "max_ms": 61.87,
+     "over_33ms": 8
+    },
+    "pan": {
+     "count": 359,
+     "mean_ms": 16.73,
+     "p95_ms": 22.49,
+     "max_ms": 36.43,
+     "over_33ms": 2
+    },
+    "zoom": {
+     "count": 301,
+     "mean_ms": 24.26,
+     "p95_ms": 50.14,
+     "max_ms": 85.43,
+     "over_33ms": 72
+    },
+    "zoom_sweep": {
+     "count": 271,
+     "mean_ms": 16.51,
+     "p95_ms": 23.54,
+     "max_ms": 34.99,
+     "over_33ms": 3
+    }
+   }
+  },
+  {
+   "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38479251771",
+   "build": "perf2/audio (24 voices)",
+   "effect_voices": 24,
+   "conclusion": "success",
+   "stages": {
+    "combat": {
+     "count": 578,
+     "mean_ms": 16.17,
+     "p95_ms": 22.57,
+     "max_ms": 41.89,
+     "over_33ms": 6
+    },
+    "pan": {
+     "count": 358,
+     "mean_ms": 16.76,
+     "p95_ms": 20.59,
+     "max_ms": 49.98,
+     "over_33ms": 2
+    },
+    "zoom": {
+     "count": 254,
+     "mean_ms": 28.76,
+     "p95_ms": 96.26,
+     "max_ms": 167.89,
+     "over_33ms": 51
+    },
+    "zoom_sweep": {
+     "count": 267,
+     "mean_ms": 16.91,
+     "p95_ms": 23.71,
+     "max_ms": 39.76,
+     "over_33ms": 2
+    }
+   }
+  },
+  {
+   "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38480987501",
+   "build": "perf2/audio (24 voices)",
+   "effect_voices": 24,
+   "conclusion": "success",
+   "stages": {
+    "combat": {
+     "count": 583,
+     "mean_ms": 16.1,
+     "p95_ms": 21.57,
+     "max_ms": 52.22,
+     "over_33ms": 2
+    },
+    "pan": {
+     "count": 360,
+     "mean_ms": 16.65,
+     "p95_ms": 21.06,
+     "max_ms": 32.01,
+     "over_33ms": 0
+    },
+    "zoom": {
+     "count": 260,
+     "mean_ms": 28.11,
+     "p95_ms": 80.74,
+     "max_ms": 176.36,
+     "over_33ms": 50
+    },
+    "zoom_sweep": {
+     "count": 272,
+     "mean_ms": 16.27,
+     "p95_ms": 22.57,
+     "max_ms": 31.6,
+     "over_33ms": 0
+    }
+   }
+  },
+  {
+   "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38499931164",
+   "build": "perf2/integration (24 voices)",
+   "effect_voices": 24,
+   "conclusion": "failure",
+   "stages": {
+    "combat": {
+     "count": 567,
+     "mean_ms": 16.41,
+     "p95_ms": 22.11,
+     "max_ms": 161.15,
+     "over_33ms": 5
+    },
+    "pan": {
+     "count": 359,
+     "mean_ms": 16.69,
+     "p95_ms": 21.76,
+     "max_ms": 33.22,
+     "over_33ms": 0
+    },
+    "zoom": {
+     "count": 251,
+     "mean_ms": 29.05,
+     "p95_ms": 81.76,
+     "max_ms": 193.18,
+     "over_33ms": 63
+    },
+    "zoom_sweep": {
+     "count": 272,
+     "mean_ms": 16.59,
+     "p95_ms": 25.47,
+     "max_ms": 48.55,
+     "over_33ms": 3
+    }
+   }
+  },
+  {
+   "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38502574056",
+   "build": "perf2/integration (24 voices, same-hour)",
+   "effect_voices": 24,
+   "conclusion": "success",
+   "stages": {
+    "combat": {
+     "count": 583,
+     "mean_ms": 15.82,
+     "p95_ms": 21.19,
+     "max_ms": 44.97,
+     "over_33ms": 4
+    },
+    "pan": {
+     "count": 360,
+     "mean_ms": 16.66,
+     "p95_ms": 21.19,
+     "max_ms": 28.46,
+     "over_33ms": 0
+    },
+    "zoom": {
+     "count": 258,
+     "mean_ms": 28.39,
+     "p95_ms": 85.41,
+     "max_ms": 166.11,
+     "over_33ms": 52
+    },
+    "zoom_sweep": {
+     "count": 269,
+     "mean_ms": 16.77,
+     "p95_ms": 24.83,
+     "max_ms": 59.23,
+     "over_33ms": 8
+    }
+   }
+  },
+  {
+   "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38502556246",
+   "build": "perf2/integration with 12 voices (same-hour)",
+   "effect_voices": 12,
+   "conclusion": "success",
+   "stages": {
+    "combat": {
+     "count": 731,
+     "mean_ms": 16.3,
+     "p95_ms": 19.08,
+     "max_ms": 37.54,
+     "over_33ms": 1
+    },
+    "pan": {
+     "count": 360,
+     "mean_ms": 16.61,
+     "p95_ms": 19.51,
+     "max_ms": 24.71,
+     "over_33ms": 0
+    },
+    "zoom": {
+     "count": 378,
+     "mean_ms": 19.32,
+     "p95_ms": 34.89,
+     "max_ms": 116.4,
+     "over_33ms": 25
+    },
+    "zoom_sweep": {
+     "count": 269,
+     "mean_ms": 16.39,
+     "p95_ms": 19.73,
+     "max_ms": 34.15,
+     "over_33ms": 1
+    }
+   }
+  },
+  {
+   "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38502580862",
+   "build": "perf2/integration with 12 voices (same-hour)",
+   "effect_voices": 12,
+   "conclusion": "failure",
+   "stages": {
+    "combat": {
+     "count": 592,
+     "mean_ms": 15.99,
+     "p95_ms": 19.7,
+     "max_ms": 40.99,
+     "over_33ms": 3
+    },
+    "pan": {
+     "count": 358,
+     "mean_ms": 16.74,
+     "p95_ms": 20.28,
+     "max_ms": 64.92,
+     "over_33ms": 1
+    },
+    "zoom": {
+     "count": 356,
+     "mean_ms": 20.56,
+     "p95_ms": 47.66,
+     "max_ms": 99.42,
+     "over_33ms": 42
+    },
+    "zoom_sweep": {
+     "count": 269,
+     "mean_ms": 16.58,
+     "p95_ms": 22.81,
+     "max_ms": 68.34,
+     "over_33ms": 3
+    }
+   }
+  }
+ ]
+}

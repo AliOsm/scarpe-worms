@@ -5,6 +5,7 @@ their scope; generic filenames are outputs of individual tools.
 
 | Evidence | Start here |
 | --- | --- |
+| 0.5.4 optimization round | [Final Linux A/B vs 0.5.3](perf-0.5.4-final-linux.json), [Apple silicon runner captures](perf-0.5.4-mac.json); per-area experiments for [audio](perf-0.5.4-audio.json), [frame loop](perf-0.5.4-frame.json), [renderer](perf-0.5.4-renderer.json), [host](perf-0.5.4-host.json), [network/playback](perf-0.5.4-net.json), [startup/runtime](perf-0.5.4-startup.json), [terrain packets](perf-0.5.4-terrain.json) and [terrain painting](perf-0.5.4-painter.json) |
 | 0.5.3 grub reactions: sounds and animations | [Linux tests, assets, native lab captures, rendering and limits](reactions-0.5.3-linux.json) |
 | 0.5.2 server deployment and YJIT host | [GitHub Actions deploy rehearsal, redeploy during a match, tick cost](server-deploy-0.5.2.json) |
 | 0.5.2 weapons sweep (48 weapons, integrated) | [Linux tests, native lab, checkers and performance](weapons-0.5.2-linux.json); family reports for [mobility](weapons-mobility-linux.json), [munitions](munitions-sweep.json) and [critters](weapons-critters-linux.json) |
@@ -36,8 +37,8 @@ their scope; generic filenames are outputs of individual tools.
 | Prior 0.3.0 baseline and clean setup | [release-0.3.0.json](release-0.3.0.json), [repository-bootstrap.json](repository-bootstrap.json) |
 | Previous smoothness fix | [release-0.2.4.json](release-0.2.4.json), [timing history](../history/PERFORMANCE.md) |
 
-Report paths use `<workspace>`, `<ruby-home>`, or `<user-home>` where local absolute
-paths were removed for publication. Measurements and checksums are unchanged.
+Report paths use `<workspace>`, `<ruby-home>`, `<user-home>` or `<scratch>` (an optimization
+round's local capture directory) where local absolute paths were removed for publication. Measurements and checksums are unchanged.
 Fresh captures and raw frame arrays stay local or in CI artifacts; regenerate
 with the commands in [VALIDATION.md](../VALIDATION.md).
 

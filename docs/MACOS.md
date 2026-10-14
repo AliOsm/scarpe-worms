@@ -13,7 +13,7 @@ python3 tools/verify_macos.py 'dist/Burrow Brigade.app'
 python3 tools/check_distributable.py
 ```
 
-Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.3) and its `.sha256` sidecar.
+Output: `dist/Burrow-Brigade-<version>-macos-arm64.zip` (currently 0.5.4) and its `.sha256` sidecar.
 The archive bundles Ruby 3.4.7, patched native Scarpe, gems, fonts, art, and audio.
 Players do not need a separate Ruby, Rust, browser, or server installation.
 
@@ -49,7 +49,8 @@ ditto -c -k --keepParent "$HOME/Library/Logs/Burrow Brigade" "$HOME/Desktop/Burr
 ```
 
 Quote `$HOME`, not `~`. Reports include `session.json`, `ruby.json`, `rust.json`,
-and `game.json`. They retain bounded timing samples locally; nothing is uploaded.
+`game.json` and `audio.json` (when each sound was due and started, drops, and the
+output device's reported latency and type, e.g. built-in or Bluetooth). They retain bounded timing samples locally; nothing is uploaded.
 Review diagnostics before sharing them publicly.
 
 ## Verify a package

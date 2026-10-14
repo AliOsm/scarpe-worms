@@ -226,3 +226,60 @@ from 16.57/16.67 to 16.53/16.71 ms; with timer slack they changed from 16.61/16.
 to 16.48/16.67 ms. Linux software pacing is unchanged. Discrete zoom intervals
 vary with idle scene content and are retained in the report; their paint budget
 passes. No budget was relaxed and no game logic or Ruby timer was changed.
+
+## 0.5.4 optimization round (2026-10-14)
+
+The owner heard lagging audio in packaged 0.5.3 on an M3 Pro. Eight agents
+measured one area each against a frozen 0.5.3 tree: five interleaved runs per
+comparison under an exclusive benchmark lock, kept only for a ≥5% median win
+holding in ≥4 of 5 pairs, with identical pixels, per-tick simulation hashes and
+protocol-4 interoperability in both directions. Rejected patches and raw captures
+stayed outside the repository; each area's experiments are in
+`docs/validation/perf-0.5.4-*.json`.
+
+**Host stall at every crater.** `Terrain#export` deflated the whole material
+grid at zlib's default level and hashed it with `Digest::SHA256` on the reactor
+thread whenever the terrain changed: 16 of 900 ticks overran 33 ms in a six-team
+heavy match, up to 63–71 ms. Snapshots stalled with it, so the client's
+50–150 ms playback buffer drained at the explosion (2–3 underruns per loopback
+session with craters) and the blast's sound and picture arrived late together.
+`Zlib::RLE` at level 1 produces a standard zlib stream about three times faster;
+masks that would exceed 192 KiB fall back to default compression, keeping frames
+far inside the 512 KiB limit. OpenSSL hashing replaced Digest. Late ticks fell to
+zero (worst 26 ms), blast → packet sent from 61 to 24 ms, and underruns to zero.
+
+**Crater pipeline.** The terrain worker resampled the full minimap from every
+tile after each revision; it now updates only changed tile regions. PNG UP
+filtering and the texture kit's average-filter decoding use packed integer
+arithmetic per scanline, with byte-identical tiles. Blast → crater tiles ready
+fell from 283 to 50 ms and Quick Battle → painted battlefield from 4.50 to 3.39 s.
+
+**Audio.** Delayed cues (voices, pop/poof/thud) were flushed with the frame's
+start time, so a cue that became due during frame work waited for the next
+frame: median lateness fell from 17.5 to 8.8 ms by reading the clock after frame
+work. Voice selection became one allocation-free pass. `audio.json` records due
+versus start time, drops, cut-offs, OpenAL call time and the default output
+device's reported latency and transport. Twenty-four effect voices removed every
+cut-off in a heavy Linux fixture (6 → 0 per 7 s), but all four Apple silicon
+runner captures with 24 voices slowed zoom to 28–29 ms mean against 19–24 ms
+with 12, so 0.5.4 keeps 12. Apple's OpenAL costs, not the game's Ruby work,
+differ between those builds; a follow-up measures cheaper Apple mixing settings.
+
+**Smaller wins.** Host collision samples and hazard scans stopped allocating
+(tick p50 −10%; with the export change, host CPU per simulated second fell from
+65 to 42 ms). Outlined comic captions are pooled (repeat blast frames 18–20 → 7–8
+ms of Ruby preparation; a broader pool changed pixels and was rejected).
+Timeline sampling merges worm rows without temporary arrays (−17.6% CPU). Patch
+0024 builds opaque images' alpha-run index without a second pixel scan (zoom
+paint −3.6% to −5%).
+
+**Runtime.** YJIT shortened match start by 1.3 s but doubled the maximum combat
+frame CPU, raised GUI memory 24% and is not compiled into the pinned Traveling
+Ruby; GC heap/malloc settings and disabling major GC failed their guards.
+
+**Remaining.** Linux combat presentation means and p95s are unchanged, but the
+median count of single dropped combat frames rose from 2 to 3 per run while
+per-frame Ruby and native costs did not; crater tile loads now overlap blast
+frames, which is the likely cause. Shared Mac runners still fail the strict 60 ms
+single-interval gate in some runs of both versions. Only the owner's Mac can show
+whether the audible lag is gone.

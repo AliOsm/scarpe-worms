@@ -95,7 +95,7 @@ If SSH is not on port 22, add `DEPLOY_PORT` and scan with `ssh-keyscan -p PORT`.
 Optionally require a reviewer on the environment. Deploy by tagging the release on `main`:
 
 ```sh
-git tag v0.5.3 && git push origin v0.5.3
+git tag v0.5.4 && git push origin v0.5.4
 ```
 
 The run summary shows the version and certificate fingerprint; players connect

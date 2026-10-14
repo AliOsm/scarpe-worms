@@ -65,6 +65,13 @@ It exercises real TCP/TLS host subprocesses, App input, Timeline playback and
 OpenAL submission, plus a 36-grub snapshot workload. Linux uses the null mixer;
 these timings do not measure acoustic output or display latency.
 
+The 0.5.4 round's harnesses live in `tools/perf_*`; each file's header gives its
+command. `perf_host_bench.rb` (per-tick cost and state hashes), `perf_audio_bench.rb`
+(voice pressure and delayed-cue lateness), `perf_painter_run.py` (match start),
+`perf_terrain_session.rb` (real mixed-version sessions) and `perf_frame_reactions.rb`
+(blast-heavy frames) accept `BURROW_BENCH_SOURCE` or explicit roots for A/B runs
+against an archived tree. Run them under one exclusive lock, never alongside builds.
+
 For Ruby frame costs, add `BURROW_BENCH_PROFILE=1` to the rendering command.
 Its summary includes per-method CPU/wall time, allocations, native property
 messages (including unchanged messages), stage GC counts/time, and connection

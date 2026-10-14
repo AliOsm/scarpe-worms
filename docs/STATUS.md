@@ -1,6 +1,62 @@
 # Current status
 
-Updated **2026-10-13** · game **0.5.3 (unreleased)** · protocol **4** · macOS preview.
+Updated **2026-10-14** · game **0.5.4 (unreleased)** · protocol **4** · macOS preview.
+
+## 0.5.4 optimization round (unreleased)
+
+The owner heard lagging audio while playing packaged 0.5.3 on an M3 Pro. Eight
+Astra 6 Max agents swept audio, the Ruby frame loop, the native renderer, the
+host, networking/playback, startup/runtime, terrain packets and terrain painting.
+Each kept a change only when five interleaved runs against frozen 0.5.3 showed
+a win beyond noise with no regression and unchanged pixels, simulation and wire
+format ([method and per-area reports](validation/README.md)). The integrated
+build was then measured against 0.5.3 again, five pairs on Ruby 3.4.7
+([final Linux report](validation/perf-0.5.4-final-linux.json)):
+
+| Measure (Linux, medians of five runs) | 0.5.3 | 0.5.4 |
+| --- | --- | --- |
+| Host ticks over 33 ms (six teams, heavy weapons, 900 ticks) | 16 | 0 |
+| Slowest host tick / CPU per simulated second | 63 / 65 ms | 26 / 42 ms |
+| Blast → terrain packet sent / crater tiles ready | 61 / 283 ms | 24 / 50 ms |
+| Playback underruns in a loopback match with craters | 2 | 0 |
+| Jump → event on screen (loopback) | 67 ms | 50 ms |
+| Delayed sound (voice, pop, thud) start after its due time | 17.5 ms | 8.8 ms |
+| Quick Battle → battlefield painted | 4.50 s | 3.39 s |
+| Combat / pan presented frame mean | 16.56 / 16.67 ms | 16.59 / 16.71 ms |
+
+- **The likely lag:** every crater made the host rebuild its whole terrain packet
+  (default zlib + SHA-256) on the simulation thread, about 60 ms. In Quick battle
+  the host runs on the player's Mac, so the client's playback ran dry exactly at
+  the explosion, delaying its sound and picture. zlib's run-length strategy
+  (any zlib reader decodes it; default compression remains the fallback for
+  unusual masks) and OpenSSL hashing removed every late tick.
+- Craters appear sooner: the terrain worker updates only changed minimap regions
+  and filters/decodes PNG rows with packed integer arithmetic (tiles byte-identical),
+  which also makes the first paint a second faster.
+- Delayed sounds no longer wait an extra frame; voice selection is allocation-free.
+  Big-blast captions reuse their text nodes (repeat blast frames 18–20 → 7–8 ms of
+  Ruby work); playback sampling allocates less; host collision loops are cheaper;
+  native patch 0024 skips a second scan of opaque images when resizing.
+- Every session now writes `audio.json` beside the other timing logs: when each
+  sound was due and started, drops and cut-offs, and the output device's reported
+  latency and type (built-in, Bluetooth, …), without device names.
+
+On GitHub's Apple silicon runner ([report](validation/perf-0.5.4-mac.json)), the
+integrated build measured combat p95 19.1/19.7 ms and zoom 19.3/20.6 ms mean,
+against 21.9/24.1 and 23.5/24.3 ms for 0.5.3 in the same hour. Raising effect
+voices from 12 to 24 removed cut-off sounds on Linux but slowed Mac zoom in all
+four captures (28–29 ms), so 0.5.4 keeps 12 voices; whether Apple's OpenAL can
+mix 24 more cheaply is being measured separately.
+
+Rejected on data: YJIT (faster match start but higher frame/tick maxima and
+memory; the packaged Mac Ruby has no YJIT), GC tuning, deferred requires, four
+parallel terrain painters (twice the memory), a smaller playback buffer (added
+an underrun), faster PNG presets, broader effect pooling (changed pixels) and a
+compressed snapshot envelope (protocol change, +67% decode CPU). In the Linux
+rendering comparison the combat stage had one more single dropped frame per run
+(median 3 vs 2) although per-frame Ruby and native costs were unchanged; earlier
+crater loads overlapping blast frames are the likely reason. Nobody has played
+0.5.4 or listened to it on a Mac yet.
 
 ## 0.5.3 grub reactions: sounds and animations (unreleased)
 
@@ -404,43 +460,39 @@ Mac limits, and the kept/reverted change decisions.
 
 ## Next checks
 
-The owner reports dropped frames and lagging audio in packaged 0.5.0 on an M3 Pro.
-The Ruby frame workstream now suppresses unchanged native properties, reuses actor
-presentation data, builds at most two names per frame, and defers invisible hazard
-animation and actor resizes. The visible deterministic native fixtures are
-byte-identical before and after on Ruby 3.4.7 and 4.0.7. On Linux Ruby 3.4.7,
-the idle 36-grub/60-flame scene drops from 4,039 to 182 allocations per frame;
-animated flames drop from 4,711 to 825. Both core suites and seven native journeys
-pass. The [Ruby frame report](validation/ruby-frame-0.5.0-linux.json) records live
-measurements, failed captures under CPU contention, and remaining zoom bursts.
-These Ruby changes are included in the packaged Mac cadence captures above;
-they do not establish that every frame meets its deadline or that the reported
-audio lag is resolved.
+The owner heard lagging audio in packaged 0.5.3 on an M3 Pro. 0.5.4 removes the
+measured host stall at every crater and the extra frame wait on delayed sounds;
+whether that was the lag the owner heard is not yet known. Each session's
+`audio.json` and `game.json` (in `~/Library/Logs/Burrow Brigade/performance/`)
+now show late, dropped and cut-off sounds and the output device type, so the
+next playtest can answer it.
 
 1. Play 0.5.0 with people: tune blast force, tumbling, fire damage and the new maps
    (island size, cave frequency, set-piece density) from their feedback.
 2. Run the packaged game on the M3 Pro and clean Apple silicon Macs, including
    Retina/external displays, Finder launch, focus, resizing and sleep/wake.
-3. Listen to the mixed audio, including the 0.5.3 voices, squeaks and announcer
+3. Play 0.5.4 on the M3 Pro and send the session's `audio.json`/`game.json` if
+   sound still lags; note whether Bluetooth headphones were used. Listen to the
+   mixed audio, including the 0.5.3 voices, squeaks and announcer
    (`ruby tools/build_audio.rb` rebuilds them; tune pitches in `Audio::VOICES`),
    and complete two-to-six-person internet matches.
    Collect human feedback on aiming, camera, balance and small-window legibility.
 4. Launch the 0.5.0 archive on Macs and run the 30-minute soak; profile the isolated
    timing outlier if it reproduces, preserving the 0.2.4 precise-wait/playback fixes.
 5. Complete the [release requirements](RELEASE.md) before sales.
-6. Configure the deploy server and secrets, push `v0.5.3`, and connect from
+6. Configure the deploy server and secrets, push `v0.5.4`, and connect from
    another network to confirm the published host.
 
 ## Repository handoff
 
-The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 23
+The source is self-contained. `setup.sh` fetches pinned Scarpe and applies 24
 independent patches; the arcade interface added 0013, the renderer investigation
-added 0014–0017, cadence and clock work added 0018–0019, and the zoom follow-up
-added 0020–0023. Protocol 4 hosts and clients must upgrade together.
+added 0014–0017, cadence and clock work added 0018–0019, the zoom follow-up
+added 0020–0023, and the 0.5.4 round added 0024. Protocol 4 hosts and clients must upgrade together.
 Runtime assets live in the source tree, so running the game needs no image service or
 asset download. Generated bundles, raw captures and player data remain ignored.
 No publishing or deployment was performed; the server deploy workflow awaits
-the owner's first `v0.5.3` tag.
+the owner's first `v0.5.4` tag.
 
 The [clean-checkout bootstrap report](validation/repository-bootstrap.json)
 belongs to the preceding 0.3.0 baseline, not a fresh 0.4.0 clone. Current checks

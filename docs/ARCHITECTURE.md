@@ -31,6 +31,8 @@ The worker caches 384-world-pixel tiles. Only changed tiles and their bevel neig
 lobby previews are asynchronous too.
 Sprite images are retained and reused. Effects and terrain image caches are
 bounded. OpenAL mixes twelve sound voices and a separate music source in process.
+Each session's `audio.json` records when every cue was due and when it started, plus drops,
+steals and the output device's reported latency (no device names).
 
 In-app hosts also run in a separate Ruby process. AI, compression, checkpoints,
 and six-player broadcasting cannot compete for the GUI VM lock. Closing the
@@ -114,7 +116,9 @@ a snapshot acknowledges it, preventing duplicate clicks from spending ammo or
 skipping a weapon stage. `steer` carries direction/lift, with a 12-tick input lease;
 focus loss explicitly sends zero steering. Unchanged
 terrain is omitted; changed terrain carries revision, checksum, and a bounded
-zlib/base64 material mask.
+zlib/base64 material mask. Hosts compress it with zlib's run-length strategy
+(about three times faster than the default; any zlib reader accepts it) and fall
+back to default compression for unusual masks that would grow too large.
 
 TLS 1.2+ is required on public listeners. Clients verify the certificate through
 the OS/runtime CA store or an explicit fingerprint pin before hello. The reactor

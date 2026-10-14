@@ -5,7 +5,9 @@ Up to six teams, destructible random maps, 48 weapons and tools, and self-hosted
 
 ![Burrow Brigade battlefield](docs/evidence/battlefield/glacier-islands-overview.png)
 
-**Status: 0.5.3 preview (unreleased).** Grubs squeak when hit, call for a medic,
+**Status: 0.5.4 preview (unreleased).** A measured optimization pass removed the
+host stall at every crater, makes craters appear 230 ms sooner and matches start a
+second faster. 0.5.3 made grubs squeak when hit, call for a medic,
 say "buh-bye" and pop into a little ghost, leaving their team's gravestone; big hits
 land with comic POW!, BONK! and KABOOM! bursts, and sheep baa while cows moo.
 0.5.2 reworked all 48 weapons, and 0.5.0 brought organic islands with caves, overhangs, sea
