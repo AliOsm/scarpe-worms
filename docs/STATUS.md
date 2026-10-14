@@ -13,21 +13,35 @@ sequence acknowledgement, collision checks and a 400 ms / 96-command bound keep
 the preview disposable; the server owns all gameplay outcomes. Weapons and
 mobility tools remain server-driven. Protocol 4 and existing saves are unchanged.
 
-Initial Linux checks: 342 Ruby tests / 13,870 assertions pass, including 3,600
-host/prediction movement comparisons. A native TLS journey with 150 ms delayed
-commands verifies visible walking/jumping before the host update, convergence,
-the actual settings switch, focus/charge cancellation and small-window layout.
-The deterministic transport experiment covers loopback, 100/200 ms RTT, ordered
-jitter, an 800 ms delivery stall and a 600 ms UI pause. With 100 ms RTT and 10 Hz
-snapshots, median walking onset is 267 → 8 ms and jumping 238 → 7 ms at a 60 Hz
-sampling cadence. These are model/presentation measurements, not display photons.
-The existing playback buffer and its underrun behavior are unchanged.
+The [Apple silicon Mac build](https://github.com/AliOsm/scarpe-worms/actions/runs/38568085517/artifacts/11896308974)
+is ready for playtesting on macOS 13+. Extract the download, then the app ZIP
+inside. Its checksum and all 40 packaged Ruby source files match the tested
+commit `dcf3f9e`. [Validation report](validation/client-prediction-0.5.7.json).
 
-Full native journeys, rendering comparison, old-host interoperability, and a
-new Apple silicon package/installed-app validation are in progress. No production
-release tag or server deployment is part of this experiment. Human Mac feel and
-correction behavior still need the owner's playtest. `game.json` now records
-prediction activity, replay work and correction sizes with its bounded frames.
+Final Linux and Apple silicon CI each pass 345 Ruby tests / 13,889 assertions.
+All eight native journeys, 93 Rust integration tests, audio, windowed action and
+six-team TLS container recovery pass. The native prediction journey delays
+commands by 150 ms and verifies movement before the host update, convergence,
+the settings switch, focus/charge cancellation and small-window layout. All 900
+authoritative checkpoint hashes match 0.5.6; mixed-version TLS sessions and
+reconnects pass in both directions. Mac packaged launch, Unicode relocation,
+input, resize, saved-match recovery, archive/signature and deadline checks pass.
+
+The deterministic transport experiment covers loopback, 100/200 ms RTT, 450 ms
+fallback, ordered jitter, 800 ms upstream/downstream stalls and a 600 ms UI pause.
+With 100 ms RTT and 10 Hz snapshots, median walking onset is 267 → 8 ms and
+jumping 238 → 7 ms at a 60 Hz sampling cadence. These are model/presentation
+measurements, not display photons. The playback buffer retains its existing
+underrun behavior; unacknowledged previews expire after 400 ms.
+
+Rendering remains a limitation: Linux captures exceed the strict 60 ms frame
+threshold with prediction on, off and untouched 0.5.6. The final Mac capture
+also fails that informational threshold (combat mean 16.20 ms, p95 21.08 ms,
+max 98.27 ms), although the required package checks pass. The cause of the
+outliers is not established. Human Mac feel, visible corrections and audible
+output still need the owner's playtest. `game.json` records prediction activity,
+replay work and correction sizes. The build remains an experiment on its branch;
+the published release and production server remain 0.5.6.
 
 ## 0.5.6 Ruby 4 and Rust 1.99
 

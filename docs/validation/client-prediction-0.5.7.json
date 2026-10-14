@@ -1,0 +1,1744 @@
+{
+  "schema": 1,
+  "version": "0.5.7",
+  "date": "2026-10-14",
+  "status": "Completed experimental build; required checks passed; rendering threshold failures retained as limitations",
+  "source_commit": "dcf3f9e845e87d2be93693fd52c5418a286f6813",
+  "baseline_commit": "f7e9191",
+  "scope": "Experimental immediate movement transmission and client presentation for ordinary walking, jumps and backflips. Server authority, protocol 4 and checkpoint format 1 retained.",
+  "linux": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "ruby": "ruby 4.0.7 (2026-09-15 revision 229531a6cf) +PRISM [x86_64-linux]",
+    "focused_final": {
+      "tests": 14,
+      "assertions": 3710,
+      "failures": 0,
+      "errors": 0,
+      "source_commit": "dcf3f9e845e87d2be93693fd52c5418a286f6813"
+    },
+    "native": {
+      "journeys": 8,
+      "failures": 0,
+      "prediction_journey": "Real TLS and native input with 150 ms delayed commands; walking and jumps visible before host state, convergence, settings persistence, focus and charge cancellation, small-window layout."
+    },
+    "determinism": {
+      "ticks": 900,
+      "teams": 6,
+      "checkpoint_hashes_identical": true,
+      "simulation_hashes_identical": true,
+      "final_hash": "c83148ee3346e9850cb13bc9d490ca6374c2abac73bab543f6494be04e444a71"
+    },
+    "interop": {
+      "old-host-tls": {
+        "transport": "tls",
+        "remote": true,
+        "rounds": 3,
+        "interop": {
+          "reconnect_identity": true,
+          "resumed_sequence": 21,
+          "full_terrain_checksum": "0e50038f32097ef6a0549a04580658708485abd2014cc50e518ad401140bd0ab",
+          "full_history": 18,
+          "sync_sequence": 22,
+          "input_events_presented": 9
+        },
+        "guards": [
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "underruns": 0,
+            "resyncs": 0
+          }
+        ]
+      },
+      "old-client-tls": {
+        "transport": "tls",
+        "remote": true,
+        "rounds": 3,
+        "interop": {
+          "reconnect_identity": true,
+          "resumed_sequence": 20,
+          "full_terrain_checksum": "5979207a244d8eb93e6f4007a6b94f2daf786f143c08a2f2b6b8842cc6072aeb",
+          "full_history": 18,
+          "sync_sequence": 21,
+          "input_events_presented": 9
+        },
+        "guards": [
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "underruns": 0,
+            "resyncs": 0
+          },
+          {
+            "underruns": 0,
+            "resyncs": 0
+          }
+        ]
+      }
+    },
+    "latency": {
+      "version": "0.5.7",
+      "ruby": "4.0.7",
+      "platform": "x86_64-linux",
+      "scope": "Deterministic ordered transport simulation, actual input/host/playback code; 60 Hz sampled positions, not photons or network measurements",
+      "scenarios": {
+        "loopback": {
+          "off": {
+            "enabled": false,
+            "rtt_ms": 0,
+            "snapshot_hz": 30,
+            "walk_ms": {
+              "n": 6,
+              "median": 101.66666666665947,
+              "p95": 151.66666666667084,
+              "max": 151.66666666667084
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 73.33333333332348,
+              "p95": 83.3333333333286,
+              "max": 83.3333333333286
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 8.333333333339965,
+              "p95": 68.33333333332803,
+              "max": 68.33333333332803
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.04934800000000461,
+              "p95": 0.06507199999994384,
+              "max": 0.8007869999999695
+            },
+            "max_replay_steps": 0,
+            "max_pending": 1,
+            "sent_commands": 37,
+            "corrections": 0,
+            "max_correction_px": 0.0,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1261,
+              "median": 15.999999999841444,
+              "p95": 15.999999999987343,
+              "max": 16.888888888889753
+            }
+          },
+          "on": {
+            "enabled": true,
+            "rtt_ms": 0,
+            "snapshot_hz": 30,
+            "walk_ms": {
+              "n": 6,
+              "median": 16.66666666666572,
+              "p95": 25.000000000005684,
+              "max": 25.000000000005684
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 15.000000000000568,
+              "p95": 16.66666666666572,
+              "max": 16.66666666666572
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.10111200000006981,
+              "p95": 0.1260649999998975,
+              "max": 0.8782120000001559
+            },
+            "max_replay_steps": 1,
+            "max_pending": 2,
+            "sent_commands": 42,
+            "corrections": 43,
+            "max_correction_px": 6.5059091249698024,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1261,
+              "median": 15.999999999841444,
+              "p95": 15.999999999987343,
+              "max": 16.888888888889753
+            }
+          }
+        },
+        "remote_100": {
+          "off": {
+            "enabled": false,
+            "rtt_ms": 100,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 266.6666666666657,
+              "p95": 284.9999999999966,
+              "max": 284.9999999999966
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 238.33333333332973,
+              "p95": 248.33333333333485,
+              "max": 248.33333333333485
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 18.33333333333087,
+              "p95": 68.33333333332803,
+              "max": 68.33333333332803
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.03197300000001846,
+              "p95": 0.04956099999997576,
+              "max": 0.6596720000000555
+            },
+            "max_replay_steps": 0,
+            "max_pending": 3,
+            "sent_commands": 36,
+            "corrections": 0,
+            "max_correction_px": 0.0,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1254,
+              "median": 15.333333333175384,
+              "p95": 15.333333333324598,
+              "max": 21.333333333324116
+            }
+          },
+          "on": {
+            "enabled": true,
+            "rtt_ms": 100,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 8.333333333325754,
+              "p95": 25.000000000005684,
+              "max": 25.000000000005684
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 6.666666666660603,
+              "p95": 15.000000000000568,
+              "max": 15.000000000000568
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.14563399999989457,
+              "p95": 0.280730999999923,
+              "max": 1.2011569999998972
+            },
+            "max_replay_steps": 6,
+            "max_pending": 3,
+            "sent_commands": 42,
+            "corrections": 11,
+            "max_correction_px": 6.505909124878459,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1254,
+              "median": 15.333333333175384,
+              "p95": 15.333333333324598,
+              "max": 21.333333333324116
+            }
+          }
+        },
+        "remote_200": {
+          "off": {
+            "enabled": false,
+            "rtt_ms": 200,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 368.3333333333252,
+              "p95": 391.6666666666657,
+              "max": 391.6666666666657
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 331.66666666666345,
+              "p95": 339.9999999999892,
+              "max": 339.9999999999892
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 8.333333333339965,
+              "p95": 68.33333333332803,
+              "max": 68.33333333332803
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.031039000000010475,
+              "p95": 0.058882999999898544,
+              "max": 0.8769100000001195
+            },
+            "max_replay_steps": 0,
+            "max_pending": 4,
+            "sent_commands": 37,
+            "corrections": 0,
+            "max_correction_px": 0.0,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1251,
+              "median": 15.333333333190543,
+              "p95": 15.33333333334023,
+              "max": 20.666666666681742
+            }
+          },
+          "on": {
+            "enabled": true,
+            "rtt_ms": 200,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 16.66666666666572,
+              "p95": 25.000000000005684,
+              "max": 25.000000000005684
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 15.000000000000568,
+              "p95": 16.66666666666572,
+              "max": 16.66666666666572
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.18286300000003308,
+              "p95": 0.4024430000000301,
+              "max": 1.2155929999999593
+            },
+            "max_replay_steps": 9,
+            "max_pending": 5,
+            "sent_commands": 42,
+            "corrections": 14,
+            "max_correction_px": 5.053306913233433,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1251,
+              "median": 15.333333333190543,
+              "p95": 15.33333333334023,
+              "max": 20.666666666681742
+            }
+          }
+        },
+        "remote_450_fallback": {
+          "off": {
+            "enabled": false,
+            "rtt_ms": 450,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 608.3333333333343,
+              "p95": 633.33333333334,
+              "max": 633.33333333334
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 581.6666666666634,
+              "p95": 589.9999999999892,
+              "max": 589.9999999999892
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 0.0,
+              "p95": 58.33333333333712,
+              "max": 58.33333333333712
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.03300199999989317,
+              "p95": 0.05746599999989499,
+              "max": 1.0825889999996896
+            },
+            "max_replay_steps": 0,
+            "max_pending": 6,
+            "sent_commands": 37,
+            "corrections": 0,
+            "max_correction_px": 0.0,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1243,
+              "median": 15.333333333196228,
+              "p95": 15.33333333334023,
+              "max": 20.666666666680793
+            }
+          },
+          "on": {
+            "enabled": true,
+            "rtt_ms": 450,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 575.0000000000028,
+              "p95": 584.9999999999937,
+              "max": 584.9999999999937
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 581.6666666666634,
+              "p95": 589.9999999999892,
+              "max": 589.9999999999892
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.039279999999752846,
+              "p95": 0.06114799999989984,
+              "max": 0.5407539999997546
+            },
+            "max_replay_steps": 0,
+            "max_pending": 6,
+            "sent_commands": 41,
+            "corrections": 0,
+            "max_correction_px": 0.0,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1243,
+              "median": 15.333333333196228,
+              "p95": 15.33333333334023,
+              "max": 20.666666666680793
+            }
+          }
+        },
+        "jitter": {
+          "off": {
+            "enabled": false,
+            "rtt_ms": 100,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 283.33333333333144,
+              "p95": 301.6666666666623,
+              "max": 301.6666666666623
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 254.99999999999545,
+              "p95": 265.00000000000057,
+              "max": 265.00000000000057
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 18.33333333333087,
+              "p95": 68.33333333332803,
+              "max": 68.33333333332803
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.0333850000000524,
+              "p95": 0.058811000000158487,
+              "max": 0.8998099999999454
+            },
+            "max_replay_steps": 0,
+            "max_pending": 3,
+            "sent_commands": 36,
+            "corrections": 0,
+            "max_correction_px": 0.0,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1254,
+              "median": 0.0,
+              "p95": 5.6843418860808015e-12,
+              "max": 9.473903143468002e-12
+            }
+          },
+          "on": {
+            "enabled": true,
+            "rtt_ms": 100,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 1.6666666666651508,
+              "p95": 25.000000000005684,
+              "max": 25.000000000005684
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 6.666666666660603,
+              "p95": 15.000000000000568,
+              "max": 15.000000000000568
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.15007400000000004,
+              "p95": 0.2934589999998849,
+              "max": 1.0580720000001875
+            },
+            "max_replay_steps": 8,
+            "max_pending": 4,
+            "sent_commands": 42,
+            "corrections": 74,
+            "max_correction_px": 11.95838086596355,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1254,
+              "median": 0.0,
+              "p95": 5.6843418860808015e-12,
+              "max": 9.473903143468002e-12
+            }
+          }
+        },
+        "outage": {
+          "off": {
+            "enabled": false,
+            "rtt_ms": 100,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 283.33333333333144,
+              "p95": 391.6666666666657,
+              "max": 391.6666666666657
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 238.33333333332973,
+              "p95": 248.33333333333485,
+              "max": 248.33333333333485
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 18.33333333333087,
+              "p95": 68.33333333332803,
+              "max": 68.33333333332803
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.032412000000370256,
+              "p95": 0.05358800000010433,
+              "max": 0.7604319999998665
+            },
+            "max_replay_steps": 0,
+            "max_pending": 5,
+            "sent_commands": 36,
+            "corrections": 0,
+            "max_correction_px": 0.0,
+            "playback_underruns": 37,
+            "backlog_ms": {
+              "n": 1254,
+              "median": 16.666666666162655,
+              "p95": 33.33333333333049,
+              "max": 649.9999999999925
+            }
+          },
+          "on": {
+            "enabled": true,
+            "rtt_ms": 100,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 8.333333333325754,
+              "p95": 391.6666666666657,
+              "max": 391.6666666666657
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 6.666666666660603,
+              "p95": 15.000000000000568,
+              "max": 15.000000000000568
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.14685200000030818,
+              "p95": 0.28252799999961553,
+              "max": 1.2114189999996583
+            },
+            "max_replay_steps": 12,
+            "max_pending": 6,
+            "sent_commands": 42,
+            "corrections": 12,
+            "max_correction_px": 6.645119999999963,
+            "playback_underruns": 37,
+            "backlog_ms": {
+              "n": 1254,
+              "median": 16.666666666162655,
+              "p95": 33.33333333333049,
+              "max": 649.9999999999925
+            }
+          }
+        },
+        "upstream_outage": {
+          "off": {
+            "enabled": false,
+            "rtt_ms": 100,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 283.33333333333144,
+              "p95": 558.3333333333371,
+              "max": 558.3333333333371
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 238.33333333332973,
+              "p95": 248.33333333333485,
+              "max": 248.33333333333485
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 18.33333333333087,
+              "p95": 68.33333333332803,
+              "max": 68.33333333332803
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.03352099999975877,
+              "p95": 0.0543349999997389,
+              "max": 0.8331280000000163
+            },
+            "max_replay_steps": 0,
+            "max_pending": 5,
+            "sent_commands": 36,
+            "corrections": 0,
+            "max_correction_px": 0.0,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1254,
+              "median": 15.333333333175384,
+              "p95": 15.333333333324598,
+              "max": 21.333333333324116
+            }
+          },
+          "on": {
+            "enabled": true,
+            "rtt_ms": 100,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 8.333333333325754,
+              "p95": 25.000000000005684,
+              "max": 25.000000000005684
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 6.666666666660603,
+              "p95": 15.000000000000568,
+              "max": 15.000000000000568
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "frame_cpu_ms": {
+              "n": 1261,
+              "median": 0.14518500000004764,
+              "p95": 0.2734360000005154,
+              "max": 1.3078049999997177
+            },
+            "max_replay_steps": 6,
+            "max_pending": 6,
+            "sent_commands": 42,
+            "corrections": 18,
+            "max_correction_px": 9.403395944035765,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1254,
+              "median": 15.333333333175384,
+              "p95": 15.333333333324598,
+              "max": 21.333333333324116
+            }
+          }
+        },
+        "ui_pause": {
+          "off": {
+            "enabled": false,
+            "rtt_ms": 100,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 266.6666666666657,
+              "p95": 284.9999999999966,
+              "max": 284.9999999999966
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 231.66666666666913,
+              "p95": 233.33333333333428,
+              "max": 233.33333333333428
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 18.33333333333087,
+              "p95": 68.33333333332803,
+              "max": 68.33333333332803
+            },
+            "frame_cpu_ms": {
+              "n": 1224,
+              "median": 0.03239600000082277,
+              "p95": 0.0517939999999939,
+              "max": 0.5061839999997986
+            },
+            "max_replay_steps": 0,
+            "max_pending": 3,
+            "sent_commands": 36,
+            "corrections": 0,
+            "max_correction_px": 0.0,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1217,
+              "median": 15.333333333188648,
+              "p95": 15.333333333324598,
+              "max": 21.333333333324116
+            }
+          },
+          "on": {
+            "enabled": true,
+            "rtt_ms": 100,
+            "snapshot_hz": 10,
+            "walk_ms": {
+              "n": 6,
+              "median": 8.333333333325754,
+              "p95": 25.000000000005684,
+              "max": 25.000000000005684
+            },
+            "jump_ms": {
+              "n": 4,
+              "median": 15.000000000000568,
+              "p95": 15.00000000001478,
+              "max": 15.00000000001478
+            },
+            "enqueue_ms": {
+              "n": 10,
+              "median": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "frame_cpu_ms": {
+              "n": 1224,
+              "median": 0.14486599999941063,
+              "p95": 0.2673719999997104,
+              "max": 1.1378479999999414
+            },
+            "max_replay_steps": 6,
+            "max_pending": 3,
+            "sent_commands": 42,
+            "corrections": 9,
+            "max_correction_px": 6.505902562000163,
+            "playback_underruns": 0,
+            "backlog_ms": {
+              "n": 1217,
+              "median": 15.333333333188648,
+              "p95": 15.333333333324598,
+              "max": 21.333333333324116
+            }
+          }
+        }
+      },
+      "source_commit": "dcf3f9e845e87d2be93693fd52c5418a286f6813"
+    },
+    "rendering": [
+      {
+        "capture": "rendering-before",
+        "source": "f7e9191",
+        "gate": "passed",
+        "failure": null,
+        "scenarios": {
+          "combat": {
+            "presented_intervals": {
+              "count": 738,
+              "mean_ms": 16.53278308579301,
+              "p95_ms": 20.45646300000037,
+              "max_ms": 37.6697539999995,
+              "over_50ms": 0
+            },
+            "active_motion_intervals": {
+              "count": 738,
+              "mean_ms": 16.53278308579301,
+              "p95_ms": 20.45646300000037,
+              "max_ms": 37.6697539999995,
+              "over_50ms": 0
+            },
+            "app_update": {
+              "count": 1083,
+              "mean_ms": 16.666764939085187,
+              "p95_ms": 16.83711400255561,
+              "max_ms": 24.570986162871122,
+              "over_50ms": 0
+            }
+          },
+          "pan": {
+            "presented_intervals": {
+              "count": 355,
+              "mean_ms": 16.87436629295775,
+              "p95_ms": 21.82157800000084,
+              "max_ms": 42.10567100000162,
+              "over_50ms": 0
+            },
+            "active_motion_intervals": {
+              "count": 355,
+              "mean_ms": 16.87436629295775,
+              "p95_ms": 21.82157800000084,
+              "max_ms": 42.10567100000162,
+              "over_50ms": 0
+            },
+            "app_update": {
+              "count": 361,
+              "mean_ms": 16.666141265120945,
+              "p95_ms": 17.234132159501314,
+              "max_ms": 24.98723892495036,
+              "over_50ms": 0
+            }
+          },
+          "zoom": {
+            "presented_intervals": {
+              "count": 384,
+              "mean_ms": 19.078355093749998,
+              "p95_ms": 33.73374899999959,
+              "max_ms": 71.60630599999962,
+              "over_50ms": 4
+            },
+            "active_motion_intervals": {
+              "count": 174,
+              "mean_ms": 18.0640618314786,
+              "p95_ms": 24.273914999998425,
+              "max_ms": 33.73374899999959,
+              "over_50ms": 0
+            },
+            "app_update": {
+              "count": 440,
+              "mean_ms": 16.707462957128882,
+              "p95_ms": 16.900662798434496,
+              "max_ms": 33.444102853536606,
+              "over_50ms": 0
+            }
+          },
+          "zoom_sweep": {
+            "presented_intervals": {
+              "count": 226,
+              "mean_ms": 21.35822941592921,
+              "p95_ms": 30.260206000001233,
+              "max_ms": 47.736675000003004,
+              "over_50ms": 0
+            },
+            "active_motion_intervals": {
+              "count": 219,
+              "mean_ms": 21.18227362852096,
+              "p95_ms": 30.093807000000083,
+              "max_ms": 47.736675000003004,
+              "over_50ms": 0
+            },
+            "app_update": {
+              "count": 275,
+              "mean_ms": 17.753220396963034,
+              "p95_ms": 37.3746152035892,
+              "max_ms": 59.63356513530016,
+              "over_50ms": 1
+            }
+          }
+        }
+      },
+      {
+        "capture": "rendering-after",
+        "source": "experiment",
+        "gate": "failed",
+        "failure": "AssertionError: combat: a frame stalled",
+        "scenarios": {
+          "combat": {
+            "presented_intervals": {
+              "count": 596,
+              "mean_ms": 16.429265784495286,
+              "p95_ms": 21.532390000000845,
+              "max_ms": 63.131014999999735,
+              "over_50ms": 1
+            },
+            "active_motion_intervals": {
+              "count": 596,
+              "mean_ms": 16.429265784495286,
+              "p95_ms": 21.532390000000845,
+              "max_ms": 63.131014999999735,
+              "over_50ms": 1
+            },
+            "app_update": {
+              "count": 1082,
+              "mean_ms": 16.681952285365153,
+              "p95_ms": 16.89235307276249,
+              "max_ms": 42.906919959932566,
+              "over_50ms": 0
+            }
+          },
+          "pan": {
+            "presented_intervals": {
+              "count": 359,
+              "mean_ms": 16.71179088300836,
+              "p95_ms": 19.555415999999326,
+              "max_ms": 34.827524000000665,
+              "over_50ms": 0
+            },
+            "active_motion_intervals": {
+              "count": 359,
+              "mean_ms": 16.71179088300836,
+              "p95_ms": 19.555415999999326,
+              "max_ms": 34.827524000000665,
+              "over_50ms": 0
+            },
+            "app_update": {
+              "count": 361,
+              "mean_ms": 16.66671864383975,
+              "p95_ms": 16.993758734315634,
+              "max_ms": 23.639805149286985,
+              "over_50ms": 0
+            }
+          },
+          "zoom": {
+            "presented_intervals": {
+              "count": 240,
+              "mean_ms": 30.531226295833342,
+              "p95_ms": 83.59050800000034,
+              "max_ms": 165.38324700000118,
+              "over_50ms": 32
+            },
+            "active_motion_intervals": {
+              "count": 80,
+              "mean_ms": 22.69188683940557,
+              "p95_ms": 36.69008199999979,
+              "max_ms": 63.21004417281052,
+              "over_50ms": 1
+            },
+            "app_update": {
+              "count": 432,
+              "mean_ms": 17.05239678914141,
+              "p95_ms": 17.9504812695086,
+              "max_ms": 85.08152700960636,
+              "over_50ms": 2
+            }
+          },
+          "zoom_sweep": {
+            "presented_intervals": {
+              "count": 226,
+              "mean_ms": 21.409174061946903,
+              "p95_ms": 30.932758000005833,
+              "max_ms": 51.02932599999832,
+              "over_50ms": 1
+            },
+            "active_motion_intervals": {
+              "count": 226,
+              "mean_ms": 21.409174061946903,
+              "p95_ms": 30.932758000005833,
+              "max_ms": 51.02932599999832,
+              "over_50ms": 1
+            },
+            "app_update": {
+              "count": 277,
+              "mean_ms": 17.569273143724306,
+              "p95_ms": 34.189929254353046,
+              "max_ms": 47.725298907607794,
+              "over_50ms": 0
+            }
+          }
+        }
+      },
+      {
+        "capture": "rendering-off",
+        "source": "experiment",
+        "gate": "failed",
+        "failure": "AssertionError: combat: a frame stalled",
+        "scenarios": {
+          "combat": {
+            "presented_intervals": {
+              "count": 583,
+              "mean_ms": 16.739644180072084,
+              "p95_ms": 21.225677999999526,
+              "max_ms": 84.78546699999967,
+              "over_50ms": 2
+            },
+            "active_motion_intervals": {
+              "count": 583,
+              "mean_ms": 16.739644180072084,
+              "p95_ms": 21.225677999999526,
+              "max_ms": 84.78546699999967,
+              "over_50ms": 2
+            },
+            "app_update": {
+              "count": 1077,
+              "mean_ms": 16.75947221988741,
+              "p95_ms": 16.969512216746807,
+              "max_ms": 80.8385368436575,
+              "over_50ms": 1
+            }
+          },
+          "pan": {
+            "presented_intervals": {
+              "count": 355,
+              "mean_ms": 16.903068788732398,
+              "p95_ms": 19.525827000002494,
+              "max_ms": 51.440836999997686,
+              "over_50ms": 1
+            },
+            "active_motion_intervals": {
+              "count": 355,
+              "mean_ms": 16.903068788732398,
+              "p95_ms": 19.525827000002494,
+              "max_ms": 51.440836999997686,
+              "over_50ms": 1
+            },
+            "app_update": {
+              "count": 359,
+              "mean_ms": 16.759488596723603,
+              "p95_ms": 16.76866179332137,
+              "max_ms": 60.78188819810748,
+              "over_50ms": 1
+            }
+          },
+          "zoom": {
+            "presented_intervals": {
+              "count": 324,
+              "mean_ms": 22.603387364197527,
+              "p95_ms": 47.20044500000142,
+              "max_ms": 130.1308110000008,
+              "over_50ms": 13
+            },
+            "active_motion_intervals": {
+              "count": 92,
+              "mean_ms": 21.21707877988819,
+              "p95_ms": 33.80761600000426,
+              "max_ms": 63.581650999999795,
+              "over_50ms": 1
+            },
+            "app_update": {
+              "count": 440,
+              "mean_ms": 16.70462862292135,
+              "p95_ms": 17.684681806713343,
+              "max_ms": 48.53320633992553,
+              "over_50ms": 0
+            }
+          },
+          "zoom_sweep": {
+            "presented_intervals": {
+              "count": 228,
+              "mean_ms": 21.334794745614023,
+              "p95_ms": 29.08169900000246,
+              "max_ms": 43.68541399999515,
+              "over_50ms": 0
+            },
+            "active_motion_intervals": {
+              "count": 226,
+              "mean_ms": 21.314416241876607,
+              "p95_ms": 29.08169900000246,
+              "max_ms": 43.68541399999515,
+              "over_50ms": 0
+            },
+            "app_update": {
+              "count": 276,
+              "mean_ms": 17.753363988510724,
+              "p95_ms": 37.89267782121897,
+              "max_ms": 63.40313237160444,
+              "over_50ms": 1
+            }
+          }
+        }
+      },
+      {
+        "capture": "rendering-on-repeat",
+        "source": "experiment",
+        "gate": "failed",
+        "failure": "AssertionError: combat: a frame stalled",
+        "scenarios": {
+          "combat": {
+            "presented_intervals": {
+              "count": 585,
+              "mean_ms": 16.754012759417943,
+              "p95_ms": 21.49531999999965,
+              "max_ms": 131.96341200000106,
+              "over_50ms": 4
+            },
+            "active_motion_intervals": {
+              "count": 585,
+              "mean_ms": 16.754012759417943,
+              "p95_ms": 21.49531999999965,
+              "max_ms": 131.96341200000106,
+              "over_50ms": 4
+            },
+            "app_update": {
+              "count": 1079,
+              "mean_ms": 16.728430596267437,
+              "p95_ms": 16.90813899040222,
+              "max_ms": 55.40515296161175,
+              "over_50ms": 1
+            }
+          },
+          "pan": {
+            "presented_intervals": {
+              "count": 342,
+              "mean_ms": 17.540457125730995,
+              "p95_ms": 23.83263799999824,
+              "max_ms": 56.18761000000205,
+              "over_50ms": 2
+            },
+            "active_motion_intervals": {
+              "count": 342,
+              "mean_ms": 17.540457125730995,
+              "p95_ms": 23.83263799999824,
+              "max_ms": 56.18761000000205,
+              "over_50ms": 2
+            },
+            "app_update": {
+              "count": 359,
+              "mean_ms": 16.759548918668358,
+              "p95_ms": 17.30751944705844,
+              "max_ms": 49.84842101112008,
+              "over_50ms": 0
+            }
+          },
+          "zoom": {
+            "presented_intervals": {
+              "count": 269,
+              "mean_ms": 27.172066256505577,
+              "p95_ms": 65.57000599999441,
+              "max_ms": 148.6383129999993,
+              "over_50ms": 27
+            },
+            "active_motion_intervals": {
+              "count": 88,
+              "mean_ms": 20.080529357222257,
+              "p95_ms": 29.15037700000056,
+              "max_ms": 50.84005406653604,
+              "over_50ms": 1
+            },
+            "app_update": {
+              "count": 440,
+              "mean_ms": 16.704618620728567,
+              "p95_ms": 17.000314313918352,
+              "max_ms": 37.928178906440735,
+              "over_50ms": 0
+            }
+          },
+          "zoom_sweep": {
+            "presented_intervals": {
+              "count": 228,
+              "mean_ms": 21.43996263596492,
+              "p95_ms": 27.70240599999596,
+              "max_ms": 60.53783600000173,
+              "over_50ms": 1
+            },
+            "active_motion_intervals": {
+              "count": 227,
+              "mean_ms": 21.438061281578232,
+              "p95_ms": 27.70240599999596,
+              "max_ms": 60.53783600000173,
+              "over_50ms": 1
+            },
+            "app_update": {
+              "count": 276,
+              "mean_ms": 17.813845794054046,
+              "p95_ms": 34.61101511493325,
+              "max_ms": 67.44717806577682,
+              "over_50ms": 1
+            }
+          }
+        }
+      },
+      {
+        "capture": "rendering-baseline-repeat",
+        "source": "f7e9191",
+        "gate": "failed",
+        "failure": "AssertionError: combat: a frame stalled",
+        "scenarios": {
+          "combat": {
+            "presented_intervals": {
+              "count": 598,
+              "mean_ms": 16.471691944017838,
+              "p95_ms": 20.585185999999922,
+              "max_ms": 60.0626369999997,
+              "over_50ms": 1
+            },
+            "active_motion_intervals": {
+              "count": 598,
+              "mean_ms": 16.471691944017838,
+              "p95_ms": 20.585185999999922,
+              "max_ms": 60.0626369999997,
+              "over_50ms": 1
+            },
+            "app_update": {
+              "count": 1082,
+              "mean_ms": 16.69728957149312,
+              "p95_ms": 16.861233860254288,
+              "max_ms": 48.24496991932392,
+              "over_50ms": 0
+            }
+          },
+          "pan": {
+            "presented_intervals": {
+              "count": 349,
+              "mean_ms": 17.178218214899715,
+              "p95_ms": 22.026102000001657,
+              "max_ms": 65.96789099999967,
+              "over_50ms": 1
+            },
+            "active_motion_intervals": {
+              "count": 349,
+              "mean_ms": 17.178218214899715,
+              "p95_ms": 22.026102000001657,
+              "max_ms": 65.96789099999967,
+              "over_50ms": 1
+            },
+            "app_update": {
+              "count": 359,
+              "mean_ms": 16.713308649070168,
+              "p95_ms": 17.614066135138273,
+              "max_ms": 39.6589208394289,
+              "over_50ms": 0
+            }
+          },
+          "zoom": {
+            "presented_intervals": {
+              "count": 340,
+              "mean_ms": 21.534299664705877,
+              "p95_ms": 48.833001000001985,
+              "max_ms": 71.34057900000101,
+              "over_50ms": 14
+            },
+            "active_motion_intervals": {
+              "count": 138,
+              "mean_ms": 18.42711281125931,
+              "p95_ms": 25.24448781348875,
+              "max_ms": 31.805226999999547,
+              "over_50ms": 0
+            },
+            "app_update": {
+              "count": 442,
+              "mean_ms": 16.6666076805156,
+              "p95_ms": 16.88993303105235,
+              "max_ms": 22.68955809995532,
+              "over_50ms": 0
+            }
+          },
+          "zoom_sweep": {
+            "presented_intervals": {
+              "count": 196,
+              "mean_ms": 25.245865316326526,
+              "p95_ms": 40.26600299999927,
+              "max_ms": 112.0927629999997,
+              "over_50ms": 4
+            },
+            "active_motion_intervals": {
+              "count": 196,
+              "mean_ms": 25.245865316326526,
+              "p95_ms": 40.26600299999927,
+              "max_ms": 112.0927629999997,
+              "over_50ms": 4
+            },
+            "app_update": {
+              "count": 268,
+              "mean_ms": 18.482117182158156,
+              "p95_ms": 37.82919701188803,
+              "max_ms": 100.36109387874603,
+              "over_50ms": 5
+            }
+          }
+        }
+      }
+    ],
+    "catch_up_history_regression": {
+      "tests": 2,
+      "assertions": 11,
+      "failures": 0,
+      "errors": 0,
+      "source_commit": "579426942a39df36d1c44c3f34df1630a87ce518"
+    },
+    "core_final": {
+      "tests": 345,
+      "assertions": 13889,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "source_commit": "dcf3f9e845e87d2be93693fd52c5418a286f6813"
+    },
+    "ci_final": {
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38568022613",
+      "conclusion": "success",
+      "source_commit": "dcf3f9e845e87d2be93693fd52c5418a286f6813",
+      "core": {
+        "tests": 345,
+        "assertions": 13889,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0,
+        "source_commit": "dcf3f9e845e87d2be93693fd52c5418a286f6813"
+      },
+      "native_journeys": 8,
+      "rust_integration_tests": 93,
+      "windowed_action": "passed",
+      "audio": "passed",
+      "container": "Six-team TLS play, in-flight restart, session/certificate recovery and healthcheck passed"
+    },
+    "rendering_note": "Local captures during experiment development; source labels retain the baseline or experiment distinction. All captured threshold failures are retained. Final delivered source was separately exercised in Apple silicon CI."
+  },
+  "macos": {
+    "workflow_run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38568085517",
+    "source_commit": "dcf3f9e845e87d2be93693fd52c5418a286f6813",
+    "workflow_conclusion": "success",
+    "status": "Required package checks passed; informational rendering threshold failed",
+    "platform": "arm64-darwin24",
+    "ruby": "4.0.7",
+    "core": {
+      "tests": 345,
+      "assertions": 13889,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "source_commit": "dcf3f9e845e87d2be93693fd52c5418a286f6813"
+    },
+    "native_prediction_journey": "passed",
+    "archive_integrity_and_ad_hoc_signature_verification": "passed",
+    "package_checks": {
+      "package-macos-native": {
+        "ruby": "4.0.7",
+        "platform": "arm64-darwin24",
+        "boot": true,
+        "teams": 3,
+        "version": "0.5.7",
+        "resumed": true,
+        "external_encoding": "UTF-8",
+        "unicode_terrain_path": true,
+        "mac_activity": {
+          "supported": true,
+          "active": true,
+          "activations": 2,
+          "error": null,
+          "allows_idle_sleep": true,
+          "precise_timers": true
+        },
+        "terrain": true,
+        "arsenal": true,
+        "resize": true,
+        "movement_input": true,
+        "activation_cancels_charge": true,
+        "process_host": true,
+        "process_terrain": true,
+        "resize_reuses_terrain": true,
+        "resize_preserves_playback": true,
+        "headless": true,
+        "macos_execution": true,
+        "performance": {
+          "frames": 34,
+          "mean_ruby_scene_ms": 0.8622647058821125,
+          "p95_ruby_scene_ms": 3.414999999989732,
+          "max_ruby_scene_ms": 9.46500000000583
+        },
+        "bounded_local_diagnostics": true,
+        "launch_locale": "unset",
+        "launches": 2,
+        "unicode_data_path": true,
+        "recovered_same_match": true,
+        "restored_same_player": true
+      },
+      "package-macos-native-windowed-locale-c": {
+        "ruby": "4.0.7",
+        "platform": "arm64-darwin24",
+        "boot": true,
+        "teams": 3,
+        "version": "0.5.7",
+        "resumed": true,
+        "external_encoding": "UTF-8",
+        "unicode_terrain_path": true,
+        "mac_activity": {
+          "supported": true,
+          "active": true,
+          "activations": 2,
+          "error": null,
+          "allows_idle_sleep": true,
+          "precise_timers": true
+        },
+        "terrain": true,
+        "arsenal": true,
+        "resize": true,
+        "movement_input": true,
+        "activation_cancels_charge": true,
+        "process_host": true,
+        "process_terrain": true,
+        "resize_reuses_terrain": true,
+        "resize_preserves_playback": true,
+        "headless": false,
+        "macos_execution": true,
+        "performance": {
+          "frames": 34,
+          "mean_ruby_scene_ms": 0.8657941176462667,
+          "p95_ruby_scene_ms": 1.8570000000011078,
+          "max_ruby_scene_ms": 9.78399999999624
+        },
+        "bounded_local_diagnostics": true,
+        "launch_locale": "c",
+        "launches": 2,
+        "unicode_data_path": true,
+        "recovered_same_match": true,
+        "restored_same_player": true
+      }
+    },
+    "deadline_timer": {
+      "gate": "passed",
+      "ruby": "4.0.7",
+      "platform": "arm64-darwin24",
+      "backend": "KqueueTimer",
+      "requested_ms": 10,
+      "macos_execution": true,
+      "timer_slack_ms": 0,
+      "ordinary_timeout": {
+        "samples": 60,
+        "mean_ms": 39.170983333334185,
+        "p95_ms": 53.68599999999901,
+        "max_ms": 59.24699999999916
+      },
+      "deadline_descriptor": {
+        "samples": 60,
+        "mean_ms": 10.696866666664087,
+        "p95_ms": 14.000999999979058,
+        "max_ms": 14.706999999987147
+      },
+      "packaged": true
+    },
+    "rendering": {
+      "version": "0.5.7",
+      "ruby": "4.0.7",
+      "platform": "arm64-darwin24",
+      "window": [
+        1280,
+        800
+      ],
+      "world": [
+        4800,
+        1600
+      ],
+      "grubs": 36,
+      "surface": {
+        "surface_width": 1280,
+        "surface_height": 653,
+        "surface_scale_milli": 1000,
+        "render_width": 1280,
+        "render_height": 653,
+        "render_scale_milli": 1000,
+        "compositor_scaling": true
+      },
+      "scenarios": {
+        "combat": {
+          "presented_intervals": {
+            "count": 582,
+            "mean_ms": 16.198124185858845,
+            "p95_ms": 21.07608399999883,
+            "p99_ms": 28.21504100000105,
+            "max_ms": 98.27258299999997,
+            "over_33ms": 4,
+            "over_50ms": 2
+          },
+          "active_motion_intervals": {
+            "count": 582,
+            "mean_ms": 16.198124185858845,
+            "p95_ms": 21.07608399999883,
+            "p99_ms": 28.21504100000105,
+            "max_ms": 98.27258299999997,
+            "over_33ms": 4,
+            "over_50ms": 2
+          },
+          "updates": 1079,
+          "moving_updates": 563,
+          "paint": {
+            "count": 798,
+            "mean_ms": 1.408553969924812,
+            "p95_ms": 3.378917,
+            "p99_ms": 4.715583,
+            "max_ms": 72.10383300000001,
+            "over_33ms": 1,
+            "over_50ms": 1
+          },
+          "present": {
+            "count": 798,
+            "mean_ms": 1.4974618859649123,
+            "p95_ms": 2.528041,
+            "p99_ms": 3.7052500000000004,
+            "max_ms": 18.810916,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 1079,
+            "mean_ms": 16.729113067655238,
+            "p95_ms": 18.322999999980993,
+            "p99_ms": 20.234000000016295,
+            "max_ms": 85.2299999999957,
+            "over_33ms": 1,
+            "over_50ms": 1
+          }
+        },
+        "pan": {
+          "presented_intervals": {
+            "count": 360,
+            "mean_ms": 16.623525347222223,
+            "p95_ms": 21.269333000002888,
+            "p99_ms": 24.971374999999796,
+            "max_ms": 27.321750000002254,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "active_motion_intervals": {
+            "count": 360,
+            "mean_ms": 16.623525347222223,
+            "p95_ms": 21.269333000002888,
+            "p99_ms": 24.971374999999796,
+            "max_ms": 27.321750000002254,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "updates": 361,
+          "moving_updates": 361,
+          "paint": {
+            "count": 361,
+            "mean_ms": 2.2627345263157896,
+            "p95_ms": 3.9835000000000003,
+            "p99_ms": 5.453292,
+            "max_ms": 6.446333999999999,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 361,
+            "mean_ms": 1.4129748337950139,
+            "p95_ms": 2.122042,
+            "p99_ms": 2.572042,
+            "max_ms": 2.726791,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 361,
+            "mean_ms": 16.662728531855937,
+            "p95_ms": 18.80399999998872,
+            "p99_ms": 19.55699999999183,
+            "max_ms": 20.21500000000742,
+            "over_33ms": 0,
+            "over_50ms": 0
+          }
+        },
+        "zoom": {
+          "presented_intervals": {
+            "count": 252,
+            "mean_ms": 29.030574571428577,
+            "p95_ms": 83.20262499999842,
+            "p99_ms": 151.76970800000333,
+            "max_ms": 168.02700000000215,
+            "over_33ms": 52,
+            "over_50ms": 33
+          },
+          "active_motion_intervals": {
+            "count": 121,
+            "mean_ms": 15.228408579961378,
+            "p95_ms": 20.920624999998694,
+            "p99_ms": 22.473125000001204,
+            "max_ms": 22.785959000000133,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "updates": 440,
+          "moving_updates": 113,
+          "paint": {
+            "count": 253,
+            "mean_ms": 2.980648992094862,
+            "p95_ms": 7.512541000000001,
+            "p99_ms": 8.292708,
+            "max_ms": 10.271374999999999,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 253,
+            "mean_ms": 1.0693499407114624,
+            "p95_ms": 1.717541,
+            "p99_ms": 2.5539579999999997,
+            "max_ms": 3.047625,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 440,
+            "mean_ms": 16.667054545454558,
+            "p95_ms": 17.54399999998668,
+            "p99_ms": 18.1779999999776,
+            "max_ms": 19.437000000010585,
+            "over_33ms": 0,
+            "over_50ms": 0
+          }
+        },
+        "zoom_sweep": {
+          "presented_intervals": {
+            "count": 274,
+            "mean_ms": 16.183577554744524,
+            "p95_ms": 20.473750000000734,
+            "p99_ms": 23.430999999995095,
+            "max_ms": 27.894374999995364,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "active_motion_intervals": {
+            "count": 274,
+            "mean_ms": 16.183577554744524,
+            "p95_ms": 20.473750000000734,
+            "p99_ms": 23.430999999995095,
+            "max_ms": 27.894374999995364,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "updates": 268,
+          "moving_updates": 268,
+          "paint": {
+            "count": 275,
+            "mean_ms": 5.659638963636364,
+            "p95_ms": 8.152208,
+            "p99_ms": 12.211917,
+            "max_ms": 14.367333,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "present": {
+            "count": 275,
+            "mean_ms": 1.2648794145454545,
+            "p95_ms": 1.91225,
+            "p99_ms": 4.632375000000001,
+            "max_ms": 12.357375000000001,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "app_update": {
+            "count": 268,
+            "mean_ms": 16.667458955223903,
+            "p95_ms": 18.355000000013888,
+            "p99_ms": 19.323999999983243,
+            "max_ms": 24.29499999999507,
+            "over_33ms": 0,
+            "over_50ms": 0
+          }
+        }
+      },
+      "measurement": "macOS native window",
+      "macos_execution": true,
+      "packaged": true,
+      "wait_backend": {
+        "name": "KqueueTimer",
+        "error": null
+      },
+      "wait_overshoot": {
+        "count": 4345,
+        "mean_ms": 0.43651185270513637,
+        "p95_ms": 1.8950000000188538,
+        "p99_ms": 3.1016666666516812,
+        "max_ms": 68.7236666666422,
+        "over_33ms": 1,
+        "over_50ms": 1
+      },
+      "timer_slack_ms": 0,
+      "playback_backlog": {
+        "count": 2552,
+        "mean_ms": 8.510132204817562,
+        "p95_ms": 14.828786666672992,
+        "p99_ms": 15.91133333339864,
+        "max_ms": 18.339306666662242,
+        "over_33ms": 0,
+        "over_50ms": 0
+      },
+      "audio_output": "device",
+      "motion_analysis_version": 3,
+      "frame_clock_correlation": "per-frame wall clock",
+      "motion_interval_selection": "completed updates; already-presented motion may end at idle, new unpainted movement is charged until the next presentation; at most one sample per gap",
+      "gate": "failed",
+      "informational": true,
+      "threshold_max_ms": 60,
+      "failure": "AssertionError: combat: a frame stalled",
+      "log_outcome": "RENDERING: failure",
+      "workflow_note": "continue-on-error keeps the workflow successful; this benchmark did not pass.",
+      "audio_stress": {
+        "events": 14,
+        "openal_error": 0,
+        "description": "Synthetic multi-kill/drowning cues on the real context, separate from visual/host stages"
+      }
+    },
+    "previous_test_failure_fixed": {
+      "run": "https://github.com/AliOsm/scarpe-worms/actions/runs/38565449699",
+      "test": "NetworkTest#test_incremental_snapshots_overlap_and_sync_restores_full_history",
+      "reason": "A legitimate four-tick catch-up sent five frames including the overlap; the existing test assumed no more than four. Replaced the wall-clock length assumption with contiguous bounded history checks and an exact deterministic four-tick overlap regression. No server behavior changed."
+    }
+  },
+  "limits": [
+    "Controlled latency figures sample the presentation model at 60 Hz using actual App, Connection, Timeline, Prediction and Match code; they are not physical input-to-photon or acoustic measurements.",
+    "Linux rendering tail outliers exceeded the existing strict 60 ms gate with prediction enabled, disabled and untouched 0.5.6; their root cause is not established.",
+    "The final Apple silicon packaged rendering capture also exceeded that gate: combat mean 16.20 ms, p95 21.08 ms, max 98.27 ms. The informational step failed despite the workflow overall reporting success; required gameplay and recovery checks passed.",
+    "Rope, jetpack, parachute, weapons, damage and terrain remain server-driven. Prediction falls back for stale state/terrain, RTT at least 400 ms or commands unacknowledged longer than 400 ms. Replay is bounded to 12 ticks and 96 commands.",
+    "The 800 ms downstream outage produces the same 37 playback underruns with prediction on or off; prediction does not remove the underlying playback buffer limits.",
+    "Human Apple silicon playtesting is still needed to judge input feel, visible corrections, physical display behavior and audible output."
+  ],
+  "branch": "experiment/client-prediction",
+  "settings": {
+    "name": "Responsive movement",
+    "default": "on",
+    "off": "Restores original movement transmission gate and buffered server presentation",
+    "automation_override": "BURROW_PREDICTION=0 or BURROW_PREDICTION=1"
+  },
+  "artifact": {
+    "archive": "Burrow-Brigade-0.5.7-macos-arm64.zip",
+    "bytes": 50606624,
+    "sha256": "39a3aec5dfb685baa48655260cf94e98456c2160c917acc21167f519aed91bf6",
+    "checksum_matches": true,
+    "zip_integrity": "pass",
+    "version": "0.5.7",
+    "minimum_macos": "13.0",
+    "source_commit": "dcf3f9e845e87d2be93693fd52c5418a286f6813",
+    "packaged_ruby_files_compared": 40,
+    "packaged_ruby_files_match_source": true,
+    "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38568085517/artifacts/11896308974",
+    "artifact_name": "burrow-brigade-macos",
+    "artifact_id": 11896308974,
+    "installation": "Extract the GitHub artifact download, then extract Burrow-Brigade-0.5.7-macos-arm64.zip and launch Burrow Brigade.app.",
+    "distribution": "Experimental CI artifact; no production release or main merge. Developer ID signing and notarization are not provided."
+  },
+  "reproduce": [
+    "bundle exec rake test",
+    "bundle exec ruby -Itest test/prediction_test.rb",
+    "bundle exec ruby tools/check_prediction.rb --output /tmp/burrow-prediction.json",
+    "./bin/check-native",
+    "xvfb-run -a python3 tools/check_rendering.py --scale 2 --size 1920x1200 --audio",
+    "GitHub package-macos.yml workflow at the recorded source commit builds and verifies the delivered archive."
+  ]
+}
