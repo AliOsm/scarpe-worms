@@ -158,6 +158,7 @@ module Burrow
       def eligible?(view, terrain, now)
         return false unless @state && @engaged && !@barrier && terrain
         return false if @lag >= HORIZON
+        return false if @commands.first && now - @commands.first[:at] > HORIZON
         return false unless @state["team"] == @player && view["active"] == @state["active"] && view["turn"] == @state["turn"]
         return false unless %w[aiming retreat].include?(@state["phase"]) && !@state["tool"]
         return false unless terrain.revision == @state["terrain_revision"] && now - @base_at <= HORIZON

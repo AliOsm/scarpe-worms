@@ -78,7 +78,7 @@ module PredictionExperiment
     match
   end
 
-  def run(enabled:, rtt:, cadence:, jitter: [0], outage: false, ui_pause: false)
+  def run(enabled:, rtt:, cadence:, jitter: [0], outage: false, upstream_outage: false, ui_pause: false)
     $prediction_time = 100.0
     match = course
     wire = Wire.new
@@ -151,7 +151,8 @@ module PredictionExperiment
       until wire.sent.empty?
         command = wire.sent.shift
         probes.each { |probe| probe[:enqueue_ms] ||= (command["at"] - probe[:at]) * 1000 if command["seq"] >= probe[:sequence] }
-        due = now + rtt / 2000.0
+        due = [now + rtt / 2000.0, outgoing.last&.first || 0].max
+        due = [due, 108.8].max if upstream_outage && now.between?(108, 108.8)
         outgoing << [due, command]
         receive_index += 1
       end
@@ -174,7 +175,8 @@ scenarios = {
   loopback: {rtt: 0, cadence: 1}, remote_100: {rtt: 100, cadence: 3}, remote_200: {rtt: 200, cadence: 3},
   remote_450_fallback: {rtt: 450, cadence: 3},
   jitter: {rtt: 100, cadence: 3, jitter: [0, 0.01, 0.035, 0.005, 0.055, 0]},
-  outage: {rtt: 100, cadence: 3, outage: true}, ui_pause: {rtt: 100, cadence: 3, ui_pause: true}
+  outage: {rtt: 100, cadence: 3, outage: true}, upstream_outage: {rtt: 100, cadence: 3, upstream_outage: true},
+  ui_pause: {rtt: 100, cadence: 3, ui_pause: true}
 }
 report = {version: Burrow::VERSION, ruby: RUBY_VERSION, platform: RUBY_PLATFORM,
   scope: "Deterministic ordered transport simulation, actual input/host/playback code; 60 Hz sampled positions, not photons or network measurements",

@@ -195,6 +195,24 @@ class PredictionTest < Minitest::Test
     end
   end
 
+  def test_fresh_snapshots_cannot_keep_a_stalled_unacknowledged_jump_alive
+    p, _state, match = setup_prediction(rtt: 100)
+    p.record("jump", values: {}, sequence: 1, now: 10)
+    match.step(15)
+    value = packet(match, ack: 0)
+    p.accept(value, player: "p0", rtt: 100, now: 10.5)
+    assert_same value["match"], p.present(value["match"], terrain: match.terrain, now: 10.51)
+    assert_equal 0, p.replayed_steps
+    # A late processed-command receipt restores ordinary prediction without
+    # applying the old jump again.
+    p.accept(packet(match, ack: 1), player: "p0", rtt: 100, now: 10.6)
+    p.record("move", values: {direction: 1}, sequence: 2, now: 10.6)
+    view = p.present(value["match"], terrain: match.terrain, now: 10.62)
+    assert p.active?
+    assert_operator active(view)["x"], :>, active(value["match"])["x"]
+    assert_equal 900.0, active(view)["y"]
+  end
+
   def test_prediction_aborts_at_water_or_fall_damage_without_changing_health
     [false, true].each do |fall|
       match = course("fall_damage" => fall)

@@ -19,6 +19,8 @@ refresh. A bounded command history replays the shared host movement/collision
 physics against the latest authoritative actor and the terrain worker's immutable
 collision mask, up to 12 ticks / 400 ms. Snapshot sequence receipts discard
 processed commands; measured RTT aligns replay with the local input clock.
+An input unacknowledged for 400 ms suspends prediction even if snapshots keep
+arriving, so an upstream stall cannot keep replaying an old jump.
 Small position corrections settle over about 80 ms and cannot cross solid terrain.
 Only position, velocity and facing are overlaid on the displayed actor. Damage,
 ammo, terrain, projectiles and turns remain authoritative. Weapons interrupt
