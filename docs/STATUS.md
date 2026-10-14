@@ -11,7 +11,7 @@ played on its own operating system ([release process](RELEASE.md)):
   then launched on a `macos-15` runner (menu, bot match, focus/charge, resize,
   save and resume, Unicode paths). Timing benchmarks are informational.
 - **Windows** (`package-windows.yml`, [guide](WINDOWS.md)): a per-user installer
-  and a portable ZIP with the RubyInstaller runtime, the patched renderer built
+  and a portable ZIP with Traveling Ruby 3.4.7 (as in aljam3-desktop), the patched renderer built
   with MSVC (new patch 0025: Windows process groups and runtime fixes) and OpenAL
   Soft. On a `windows-2022` runner the core suite passes; the installer installs
   into a Unicode path with spaces, plays and resumes a three-team bot match with

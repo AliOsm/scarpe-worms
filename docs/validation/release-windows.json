@@ -10,7 +10,7 @@
   "platform": "Windows-2022Server-10.0.20348-SP0"
  },
  "toolchain": {
-  "ruby": "3.4.7 (RubyInstaller x64-mingw-ucrt via ruby/setup-ruby)",
+  "ruby": "3.4.7: packages bundle Traveling Ruby 20251122 windows-x86_64; the runner builds and tests with RubyInstaller via ruby/setup-ruby",
   "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)",
   "target": "x86_64-pc-windows-msvc",
   "scarpe_revision": "eb883bc1778839735a6d8d1921911c656409bb2c",
