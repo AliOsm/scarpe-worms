@@ -1,8 +1,8 @@
 # Current status
 
-Updated **2026-10-15** · client **0.5.13 release candidate** · published release **0.5.10** · protocol **4**.
+Updated **2026-10-15** · client and published release **0.5.13** · protocol **4**.
 
-## 0.5.13 weapon physics release preparation
+## 0.5.13 weapon physics across the arsenal
 
 The two supplied videos informed short charged throws, continuous rebounds,
 rolling, water skimming, and the separation between a crater, a launched grub,
@@ -16,23 +16,34 @@ stay short and fused projectiles move on their last tick before exploding.
 Some mobility, utility and weapon profiles preserve their existing constants;
 profile coverage does not mean every item has a new behavior.
 
-Linux passes 361 Ruby tests / 14,538 assertions and both native prediction and
-physics journeys. The Apple silicon preview is packaged and verified from
-immutable commit `ee079a0` in the [Package macOS workflow](https://github.com/AliOsm/scarpe-worms/actions/runs/38802597969).
-The archive checksum and runner evidence are recorded in
-[the validation report](validation/weapon-physics-0.5.13.json). Its
-informational rendering benchmark has shared-runner outliers: combat peaks at
-73.82 ms and zoom-sweep at 127.96 ms; the workflow continued because those
-benchmarks are non-blocking and do not establish physical-Mac acceptance.
+[0.5.13 is published](https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.13)
+from `d1e65bc`. The [release workflow](https://github.com/AliOsm/scarpe-worms/actions/runs/38814510019),
+[game/native checks](https://github.com/AliOsm/scarpe-worms/actions/runs/38814510104)
+and [server deployment](https://github.com/AliOsm/scarpe-worms/actions/runs/38814510039)
+pass. All required macOS, Windows, Linux and server package checks pass, and
+the release workflow verified all 18 uploaded assets. Production is healthy
+and reports **0.5.13 · protocol 4 · YJIT**.
+The published manifest, sidecars and provenance match GitHub's asset digests;
+the downloaded Mac ZIP matches all 40 tagged game source files.
 
-The owner authorized publication after the Mac preview. The release will build
-and validate fresh macOS, Windows, Linux and server packages from the tagged
-source, and deploy the updated hosted server. Publication and deployment
-results are pending. Protocol 4 and version-one saves remain supported.
-Physics belongs to the host: use Quick Battle or an updated host to exercise
-it. The new client uses the old power curve for aim dots when connected to a
-host without `physics_revision` metadata. The new host advertises
-`physics_revision: 3`.
+The tagged Linux suite passes 361 Ruby tests / 14,538 assertions, all nine
+native journeys and 93 Rust tests. Apple silicon verifies native prediction and
+physics input, package integrity, relocated gameplay, save recovery and audio.
+Windows verifies installation, play, resume, upgrade, uninstall and portable
+launch; Linux verifies Ubuntu 22.04/24.04, Debian and Fedora. Both server image
+architectures verify six-team TLS play and restart recovery.
+
+The tagged Mac informational rendering benchmark failed its combat stall gate:
+mean 16.22 ms, p95 20.01 ms, maximum 101.29 ms. The deadline timer benchmark
+passed. These shared-runner measurements do not establish physical-Mac
+smoothness or human acceptance. See [release validation](validation/release-0.5.13.json)
+for current package evidence; the [earlier preview report](validation/weapon-physics-0.5.13.json)
+retains the original preview's source and measurements.
+
+Protocol 4 and version-one saves remain supported. Physics belongs to the host:
+use Quick Battle or an updated host to exercise it. The new client uses the old
+power curve for aim dots when connected to a host without `physics_revision`
+metadata. The new host advertises `physics_revision: 3`.
 
 
 ## 0.5.10 two-finger camera panning

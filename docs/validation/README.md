@@ -5,6 +5,7 @@ their scope; generic filenames are outputs of individual tools.
 
 | Evidence | Start here |
 | --- | --- |
+| 0.5.13 published physics retune | [Tagged platform checks, downloads, Mac timing limits and server deployment](release-0.5.13.json); [earlier Mac preview](weapon-physics-0.5.13.json) |
 | 0.5.11 weapon physics preview | [Video-driven regressions, native input and Apple silicon test package](weapon-physics-0.5.11.json) |
 | 0.5.7 combat responsiveness | [Damage-label preparation, terrain equivalence, mixed audio, Mac backend comparisons and remaining frame stalls](responsiveness-0.5.7.json) |
 | 0.5.7 movement experiment | [Apple silicon build, prediction latency, native checks, compatibility and rendering limits](client-prediction-0.5.7.json) |

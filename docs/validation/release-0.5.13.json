@@ -1,0 +1,300 @@
+{
+  "date": "2026-10-15",
+  "version": "0.5.13",
+  "status": "published",
+  "source_commit": "d1e65bcf0f13eb96d7f9f00036a515851b9f686a",
+  "tag": "v0.5.13",
+  "compatibility": {
+    "protocol": 4,
+    "checkpoint": 1,
+    "physics_revision": 3
+  },
+  "workflows": {
+    "release": {
+      "status": "success",
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38814510019"
+    },
+    "game_and_native": {
+      "status": "success",
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38814510104"
+    },
+    "deploy_server": {
+      "status": "success",
+      "url": "https://github.com/AliOsm/scarpe-worms/actions/runs/38814510039"
+    }
+  },
+  "tagged_source_checks": {
+    "ruby": "4.0.7",
+    "tests": 361,
+    "assertions": 14538,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "native_journeys_passed": 9,
+    "rust_tests_passed": 93,
+    "release_helper_tests_passed": 12,
+    "windowed_action_audio_and_container_checks": "passed"
+  },
+  "macos": {
+    "runner": "macos-15-arm64",
+    "minimum_macos": "13.0",
+    "native_input": "passed: prediction and physics journeys",
+    "codesign_deep_strict": "passed",
+    "static_integrity": {
+      "architecture": "arm64",
+      "macho_binaries": 96,
+      "resource_hashes_checked": 3296,
+      "adhoc_code_hashes_verified": true,
+      "notarized": false
+    },
+    "relocated_gameplay_and_recovery": [
+      {
+        "mode": "windowed",
+        "locale": "c",
+        "launches": 2,
+        "required_checks_passed": true
+      },
+      {
+        "mode": "headless",
+        "locale": "unset",
+        "launches": 2,
+        "required_checks_passed": true
+      }
+    ],
+    "audio": "passed: packaged CoreAudio/OpenAL playback, panning, mute, resume and 76 cues",
+    "informational_benchmarks": {
+      "deadline_timer": {
+        "outcome": "passed",
+        "backend": "KqueueTimer",
+        "samples": 60,
+        "mean_ms": 11.410200000000023,
+        "p95_ms": 14.50900000000388,
+        "max_ms": 15.114000000011174
+      },
+      "rendering": {
+        "outcome": "failed combat stall gate; non-blocking in the existing workflow",
+        "failure": "AssertionError: combat: a frame stalled",
+        "metric": "active_motion_intervals; renderer presentation measurements, not display scanout",
+        "scenarios": {
+          "combat": {
+            "count": 968,
+            "mean_ms": 16.218040504245202,
+            "p95_ms": 20.005375000000214,
+            "p99_ms": 26.14254100000224,
+            "max_ms": 101.2920829999997,
+            "over_33ms": 3,
+            "over_50ms": 1
+          },
+          "pan": {
+            "count": 360,
+            "mean_ms": 16.65547592777778,
+            "p95_ms": 18.535124999999653,
+            "p99_ms": 21.61883300000156,
+            "max_ms": 34.72062500000206,
+            "over_33ms": 1,
+            "over_50ms": 0
+          },
+          "zoom": {
+            "count": 123,
+            "mean_ms": 15.311742239231027,
+            "p95_ms": 18.661874999999384,
+            "p99_ms": 22.663166000000956,
+            "max_ms": 25.84608300000113,
+            "over_33ms": 0,
+            "over_50ms": 0
+          },
+          "zoom_sweep": {
+            "count": 274,
+            "mean_ms": 16.171072536496336,
+            "p95_ms": 20.075957999999616,
+            "p99_ms": 28.484792000000425,
+            "max_ms": 32.54891699999973,
+            "over_33ms": 0,
+            "over_50ms": 0
+          }
+        }
+      }
+    }
+  },
+  "windows": {
+    "passed": true,
+    "checks": [
+      "silent_per_user_install",
+      "unicode_installation_and_data_paths",
+      "start_menu_shortcut",
+      "installed_app_registry",
+      "windowed_native_match",
+      "openal_soft_null_mixer",
+      "save_and_resume",
+      "no_orphans",
+      "upgrade_removes_obsolete_resources",
+      "uninstall",
+      "preserved_saves",
+      "portable_extracted_zip",
+      "asset_checksums"
+    ]
+  },
+  "linux_packages": {
+    "debian": {
+      "passed": true,
+      "modes": [
+        "headless",
+        "windowed"
+      ]
+    },
+    "fedora": {
+      "passed": true,
+      "modes": [
+        "headless",
+        "windowed"
+      ]
+    },
+    "ubuntu-22.04": {
+      "passed": true,
+      "modes": [
+        "headless",
+        "windowed"
+      ]
+    },
+    "ubuntu-24.04": {
+      "passed": true,
+      "modes": [
+        "alsa",
+        "headless",
+        "pulse",
+        "windowed"
+      ]
+    }
+  },
+  "server_archives": {
+    "amd64": {
+      "image": "ghcr.io/aliosm/burrow-brigade:0.5.13",
+      "image_id": "sha256:32ecb535a0e20cddc6f4e8ee5f03fc8bb0daf7e5940c7bc721ea4aa9a59b0751",
+      "architecture": "amd64",
+      "source_revision": "d1e65bcf0f13eb96d7f9f00036a515851b9f686a",
+      "tls": true,
+      "teams": 6,
+      "grubs": 36,
+      "container_restart_recovered": true,
+      "session_preserved": true,
+      "certificate_preserved": true,
+      "healthcheck": true
+    },
+    "arm64": {
+      "image": "ghcr.io/aliosm/burrow-brigade:0.5.13",
+      "image_id": "sha256:ca3b1e450e39efced4246803a4df3c951eee8732ef678c1452b030d4eaa90900",
+      "architecture": "arm64",
+      "source_revision": "d1e65bcf0f13eb96d7f9f00036a515851b9f686a",
+      "tls": true,
+      "teams": 6,
+      "grubs": 36,
+      "container_restart_recovered": true,
+      "session_preserved": true,
+      "certificate_preserved": true,
+      "healthcheck": true
+    }
+  },
+  "production": {
+    "healthy": true,
+    "image": "ghcr.io/aliosm/burrow-brigade:0.5.13",
+    "version": "0.5.13",
+    "protocol": 4,
+    "yjit": true,
+    "verified_at": "2026-10-15T22:05:32Z",
+    "evidence": "Successful deployment job, Compose healthcheck, and server startup version in its log."
+  },
+  "downloads": {
+    "version": "0.5.13",
+    "tag": "v0.5.13",
+    "source_commit": "d1e65bcf0f13eb96d7f9f00036a515851b9f686a",
+    "release_url": "https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.13",
+    "published_at": "2026-10-15T22:17:37Z",
+    "assets_verified": 18,
+    "all_packages_downloaded": false,
+    "mac_archive_downloaded_and_hashed": true,
+    "metadata_and_sidecar_files_downloaded_and_hashed": 12,
+    "github_digests_verified": true,
+    "manifest_and_sidecars_verified": true,
+    "provenance_verified": true,
+    "mac_source_files_match_tag": 40,
+    "assets": {
+      "Burrow-Brigade-0.5.13-linux-x86_64.tar.gz": {
+        "bytes": 56294823,
+        "sha256": "07359687380367da5b6ddc6ad40f1c0492e68e64355ca4362e6c1c9020194d41"
+      },
+      "Burrow-Brigade-0.5.13-linux-x86_64.tar.gz.sha256": {
+        "bytes": 108,
+        "sha256": "bea3f9d63b0f7086a8858707592f4260cdef45b10531a9ba002e86989e047442"
+      },
+      "Burrow-Brigade-0.5.13-macos-arm64.zip": {
+        "bytes": 51234940,
+        "sha256": "be6d0892252adaad06e84950b8c03e65d44770e7af603b2d3a9ae8e4f84ce756"
+      },
+      "Burrow-Brigade-0.5.13-macos-arm64.zip.sha256": {
+        "bytes": 104,
+        "sha256": "9c55cbe482ba47f50037de6cb406f70bc5237e20e27d006976a0fac9a1490310"
+      },
+      "Burrow-Brigade-0.5.13-windows-x64-setup.exe": {
+        "bytes": 53507821,
+        "sha256": "496ce12bd893afb8bdc12ac68273cea225ed157f035f1519159956a2f075eeb4"
+      },
+      "Burrow-Brigade-0.5.13-windows-x64-setup.exe.sha256": {
+        "bytes": 110,
+        "sha256": "f15b080fdb5562b5569406c9ed33e8c37fdf15710c21f74e36bb85e434e63d8d"
+      },
+      "Burrow-Brigade-0.5.13-windows-x64.zip": {
+        "bytes": 61507940,
+        "sha256": "1f850671836de7720cacceaee779975b627048b703f64c14accfea17f54685b1"
+      },
+      "Burrow-Brigade-0.5.13-windows-x64.zip.sha256": {
+        "bytes": 104,
+        "sha256": "3023b4dfbd47df84253cd781001c5d0a018473de26974771f0d0a506d7f13dce"
+      },
+      "Burrow-Brigade-server-0.5.13-docker-linux-amd64.tar.gz": {
+        "bytes": 80913693,
+        "sha256": "1be181a7d0b1db73ea4993b5a4ee23c264c0330213553cf854a4eed4d975e18f"
+      },
+      "Burrow-Brigade-server-0.5.13-docker-linux-amd64.tar.gz.sha256": {
+        "bytes": 121,
+        "sha256": "430f2bc4ff3826e999484d6054b57e43ac550ee77ba067a68d1d3fc6c2a9a7b2"
+      },
+      "Burrow-Brigade-server-0.5.13-docker-linux-arm64.tar.gz": {
+        "bytes": 81015657,
+        "sha256": "7167d1f0d63ecbb5bb9c97d857461ac3b44b5c6d4009d0a4b46c29600b748298"
+      },
+      "Burrow-Brigade-server-0.5.13-docker-linux-arm64.tar.gz.sha256": {
+        "bytes": 121,
+        "sha256": "8f53ace2634e850c49f49220d2bfb9eb35382c1210078359652dd82ca8ce3b79"
+      },
+      "SHA256SUMS": {
+        "bytes": 826,
+        "sha256": "46bf41a75ff7e7b72325156f80b744179a05882c9bfdf402e7a6e9ef906f9e07"
+      },
+      "SHA256SUMS.sha256": {
+        "bytes": 77,
+        "sha256": "7485bc367ffd054591f9bd83d39c28a3976bbb694f0de0498e7266c250da4773"
+      },
+      "compose.yaml": {
+        "bytes": 720,
+        "sha256": "e2c3dab9e17a6e70ee9ec8ce67613d306e4d91d656576af36998ffc3dcbf78b3"
+      },
+      "compose.yaml.sha256": {
+        "bytes": 79,
+        "sha256": "3af943f3f993c84e7045c87f39b84e0c45bc4e30f21d7d41c061bad1e72847c3"
+      },
+      "release.json": {
+        "bytes": 1518,
+        "sha256": "441f83168cbddefcb3c4452f832b132f2993f41da02e2b026e26e67bdf7b25f2"
+      },
+      "release.json.sha256": {
+        "bytes": 79,
+        "sha256": "6c6766fa738417df588a0c1bed4cf7f6ef334bf089624e102e7d38212a4f5d2b"
+      }
+    }
+  },
+  "limits": [
+    "Mac rendering timing is informational on a shared CI runner; the combat stall gate failed.",
+    "Automated package checks do not establish physical-device smoothness, audible output or human balance acceptance.",
+    "macOS remains ad-hoc signed and unnotarized; Windows remains unsigned."
+  ]
+}

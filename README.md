@@ -23,7 +23,7 @@ saves remain compatible; weapons stay server-driven. See [current status](docs/S
 
 ![Burrow Brigade battlefield](docs/evidence/battlefield/glacier-islands-overview.png)
 
-**Status: 0.5.13 release candidate; 0.5.10 published.** Ruby 4.0+ only, with Ruby 4.0.7 bundled in the macOS
+**Status: [0.5.13 published](https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.13).** Ruby 4.0+ only, with Ruby 4.0.7 bundled in the macOS
 (Apple silicon), Windows and Linux clients and server image. Rust is pinned to 1.99.0. 0.5.4 removed
 the host stall at every crater and made matches start a second faster. 0.5.3 made
 grubs squeak when hit, call for a medic, say "buh-bye" and pop into a little ghost,

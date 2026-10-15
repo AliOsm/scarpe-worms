@@ -140,8 +140,10 @@ homing, melee, chain reactions and turn completion.
 short throw, timed wall rebound and a full-charge water skip to the far bank.
 It also runs on Apple silicon before packaging. The packaged prediction and
 physics journeys, menu/gameplay smoke, audio checks and archive verification
-pass; see the [validation record](validation/weapon-physics-0.5.13.json) for
-the runner evidence and the remaining informational rendering outliers.
+pass; see the [release validation](validation/release-0.5.13.json) for the tagged
+packages and the remaining informational rendering outliers. The
+[preview record](validation/weapon-physics-0.5.13.json) retains its earlier
+build evidence.
 
 Protocol 4 and version-one saves remain supported. Restored shots retain their
 saved velocity and remaining fuse, then follow the new host physics. A snapshot
