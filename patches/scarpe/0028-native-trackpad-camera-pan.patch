@@ -1,0 +1,180 @@
+--- a/native/src/window.rs
++++ b/native/src/window.rs
+@@ -596,18 +596,27 @@
+                 }
+             }
+             WindowEvent::MouseWheel { delta, .. } => {
+-                let dy = match delta {
+-                    MouseScrollDelta::LineDelta(_, y) => -y * 40.0,
+-                    MouseScrollDelta::PixelDelta(p) => -(p.to_logical::<f64>(scale).y as f32),
++                let (dy, dx, source) = match delta {
++                    // Line deltas are conventional wheel events. Keep their
++                    // horizontal component out of the game camera so a mouse
++                    // with a sideways wheel remains ordinary wheel input.
++                    MouseScrollDelta::LineDelta(_, y) => (-y * 40.0, 0.0, "wheel"),
++                    // Winit's precise pixel deltas are the two-finger trackpad
++                    // path on macOS. Its positive values mean content moves
++                    // right/down; the runtime negates them for callback axes.
++                    MouseScrollDelta::PixelDelta(p) => {
++                        let p = p.to_logical::<f64>(scale);
++                        (-(p.y as f32), -(p.x as f32), "trackpad")
++                    }
+                 };
+-                self.rt.wheel(app, dy, None);
++                self.rt.wheel_with_source(app, dy, dx, source, None);
+             }
+             // Reuse Scarpe's wheel subscription for a native two-finger pinch.
+             // Winit reports positive magnification deltas for zooming in, while
+             // Runtime::wheel uses the opposite sign for the browser-style
+             // scroll delta that it sends to Shoes callbacks.
+             WindowEvent::PinchGesture { delta, .. } if delta.is_finite() && delta != 0.0 => {
+-                self.rt.wheel(app, -delta as f32, None);
++                self.rt.wheel_with_source(app, -delta as f32, 0.0, "pinch", None);
+             }
+             WindowEvent::ModifiersChanged(m) => {
+                 let state = m.state();
+--- a/native/src/input.rs
++++ b/native/src/input.rs
+@@ -932,6 +932,14 @@
+     }
+ 
+     pub fn wheel(&mut self, app: Id, dy: f32, at: Option<(f32, f32)>) {
++        self.wheel_with_source(app, dy, 0.0, "wheel", at);
++    }
++
++    /// Route a scroll-like gesture through the normal scrollable controls and
++    /// wheel subscription. `dy` and `dx` use the renderer's internal sign;
++    /// callback values are negated below to retain Shoes' positive-up wheel
++    /// convention while exposing precise trackpad axes.
++    pub fn wheel_with_source(&mut self, app: Id, dy: f32, dx: f32, source: &str, at: Option<(f32, f32)>) {
+         self.ensure_layout(app);
+         let Some(view) = self.views.get_mut(&app) else { return };
+         let (x, y) = at.or(view.ui.pointer).unwrap_or((0.0, 0.0));
+@@ -963,7 +971,12 @@
+         }
+         for (item, parent) in self.subscriptions(app, "wheel") {
+             if Self::inside(&parent, x, y) {
+-                self.out.event("wheel", Some(item), vec![json!(-dy), json!(x.round() as i64), json!(y.round() as i64)]);
++                let mut args = vec![json!(-dy), json!(x.round() as i64), json!(y.round() as i64)];
++                if source != "wheel" || dx != 0.0 {
++                    args.push(json!(-dx));
++                    args.push(json!(source));
++                }
++                self.out.event("wheel", Some(item), args);
+             }
+         }
+         if let Some((px, py)) = self.views.get(&app).and_then(|v| v.ui.pointer) {
+--- a/lacci/lib/shoes/drawables/subscription_item.rb
++++ b/lacci/lib/shoes/drawables/subscription_item.rb
+@@ -99,9 +99,12 @@
+     when "wheel"
+       # Wheel event fires on mouse wheel/trackpad scroll.
+       # Block params: delta (positive = up/away, negative = down/toward)
+-      # Also passes x, y coordinates of cursor position.
+-      @unsub_id = bind_self_event("wheel") do |delta, x, y, **_kwargs|
+-        @callback&.call(delta, x, y)
++      # Also passes x, y coordinates, precise dx, and the native source.
++      # Source is "wheel", "trackpad", or "pinch"; the final two values are
++      # optional so callbacks written for the original three arguments remain
++      # valid when a display does not provide gesture metadata.
++      @unsub_id = bind_self_event("wheel") do |delta, x, y, *metadata, **_kwargs|
++        @callback&.call(delta, x, y, *metadata)
+       end
+     else
+       raise "Unknown Shoes event #{shoes_api_name.inspect} passed to SubscriptionItem!"
+--- a/native/src/protocol.rs
++++ b/native/src/protocol.rs
+@@ -83,7 +83,7 @@
+     KeyDown { key: String, app: Option<Id> },
+     KeyUp { key: String, app: Option<Id> },
+     WindowFocus { active: bool, app: Option<Id> },
+-    Wheel { dy: f32, x: Option<f32>, y: Option<f32>, app: Option<Id> },
++    Wheel { dy: f32, dx: Option<f32>, source: Option<String>, x: Option<f32>, y: Option<f32>, app: Option<Id> },
+     Resize { app: Option<Id>, w: f32, h: f32 },
+     Pixel { x: f32, y: f32, app: Option<Id> },
+     Frames { n: u32, app: Option<Id> },
+@@ -256,7 +256,7 @@
+         "key_down" => Op::KeyDown { key: required(s(obj, "key"), "key")?, app },
+         "key_up" => Op::KeyUp { key: required(s(obj, "key"), "key")?, app },
+         "window_focus" => Op::WindowFocus { active: required(obj.get("active").and_then(Value::as_bool), "active")?, app },
+-        "wheel" => Op::Wheel { dy: required(f(obj, "dy"), "dy")?, x: f(obj, "x"), y: f(obj, "y"), app },
++        "wheel" => Op::Wheel { dy: required(f(obj, "dy"), "dy")?, dx: f(obj, "dx"), source: s(obj, "source"), x: f(obj, "x"), y: f(obj, "y"), app },
+         "resize" => Op::Resize { app, w: required(f(obj, "w"), "w")?, h: required(f(obj, "h"), "h")? },
+         "pixel" => Op::Pixel { x: required(f(obj, "x"), "x")?, y: required(f(obj, "y"), "y")?, app },
+         "frames" => Op::Frames { n: obj.get("n").and_then(Value::as_u64).unwrap_or(1).min(u32::MAX as u64) as u32, app },
+@@ -482,7 +482,11 @@
+         );
+         assert_eq!(op(r#"{"t":"req","req":1,"op":"type","text":"hi"}"#), Op::Type { text: "hi".into(), app: None });
+         assert_eq!(op(r#"{"t":"req","req":1,"op":"key","key":"left"}"#), Op::Key { key: "left".into(), app: None });
+-        assert_eq!(op(r#"{"t":"req","req":1,"op":"wheel","dy":30}"#), Op::Wheel { dy: 30.0, x: None, y: None, app: None });
++        assert_eq!(op(r#"{"t":"req","req":1,"op":"wheel","dy":30}"#), Op::Wheel { dy: 30.0, dx: None, source: None, x: None, y: None, app: None });
++        assert_eq!(
++            op(r#"{"t":"req","req":2,"op":"wheel","dy":-8,"dx":-12,"source":"trackpad","x":40,"y":50}"#),
++            Op::Wheel { dy: -8.0, dx: Some(-12.0), source: Some("trackpad".into()), x: Some(40.0), y: Some(50.0), app: None }
++        );
+         assert_eq!(op(r#"{"t":"req","req":1,"op":"resize","w":300,"h":200}"#), Op::Resize { app: None, w: 300.0, h: 200.0 });
+         assert_eq!(op(r#"{"t":"req","req":1,"op":"pixel","x":1,"y":2}"#), Op::Pixel { x: 1.0, y: 2.0, app: None });
+         assert_eq!(op(r#"{"t":"req","req":1,"op":"frames","n":3}"#), Op::Frames { n: 3, app: None });
+--- a/native/src/automation.rs
++++ b/native/src/automation.rs
+@@ -111,7 +111,7 @@
+                 self.window_focus(app, active);
+                 Ok(Some(Value::Null))
+             }
+-            Op::Wheel { dy, x, y, app } => {
++            Op::Wheel { dy, dx, source, x, y, app } => {
+                 let app = self.app_for(app).ok_or_else(no_app)?;
+                 let at = match (x, y) {
+                     (Some(x), Some(y)) => {
+@@ -120,7 +120,7 @@
+                     }
+                     _ => None,
+                 };
+-                self.wheel(app, dy, at);
++                self.wheel_with_source(app, dy, dx.unwrap_or(0.0), source.as_deref().unwrap_or("wheel"), at);
+                 Ok(Some(Value::Null))
+             }
+             Op::Resize { app, w, h } => {
+--- a/lib/scarpe/native/automation.rb
++++ b/lib/scarpe/native/automation.rb
+@@ -77,9 +77,18 @@
+       request(:window_focus, active: active, app: @app)
+     end
+ 
+-    # dy in logical pixels, positive scrolls down; at (x, y), or where the pointer is.
+-    def wheel(dy, x: nil, y: nil)
+-      request(:wheel, dy: dy, x: x, y: y, app: @app)
++    # dy in logical pixels, positive scrolls down; dx is positive to the right.
++    # `source` is normally "wheel"; tests can use "trackpad" to exercise the
++    # precise two-finger camera path. Input is sent at (x, y), or the pointer.
++    def wheel(dy, dx: 0, source: "wheel", x: nil, y: nil)
++      request(:wheel, dy: dy, dx: dx, source: source, x: x, y: y, app: @app)
++    end
++
++    def trackpad(dx, dy, x: nil, y: nil)
++      # The helper takes the same positive-right/down values that a native
++      # PixelDelta callback exposes; the wheel request itself uses the
++      # renderer's scroll sign and is therefore inverted here.
++      wheel(-dy, dx: -dx, source: "trackpad", x: x, y: y)
+     end
+ 
+     def layout(app: app_id)
+--- a/lib/scarpe/native/shoes_spec.rb
++++ b/lib/scarpe/native/shoes_spec.rb
+@@ -179,9 +179,14 @@
+       automation.key(name)
+     end
+ 
+-    def wheel(dy, x: nil, y: nil)
++    def wheel(dy, x: nil, y: nil, dx: 0, source: "wheel")
+       app = Shoes.APPS.first
+-      automation.wheel(dy, x: x || app.width / 2.0, y: y || app.height / 2.0)
++      automation.wheel(dy, dx: dx, source: source, x: x || app.width / 2.0, y: y || app.height / 2.0)
++    end
++
++    def trackpad(dx, dy, x: nil, y: nil)
++      app = Shoes.APPS.first
++      automation.trackpad(dx, dy, x: x || app.width / 2.0, y: y || app.height / 2.0)
+     end
+ 
+     def layout_of(target)

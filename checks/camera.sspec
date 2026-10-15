@@ -73,6 +73,15 @@ assert_operator client.scene.camera.x, :<, before_minimap_drag, "dragging the mi
 scouted_backdrop = layout_of(backdrop)
 assert_operator scouted_backdrop.x, :<, initial_backdrop.x, "distant scenery should drift with camera exploration"
 assert_operator scouted_backdrop.x + scouted_backdrop.w, :>=, 1280, "parallax must never expose an empty edge"
+# A precise two-finger gesture carries both axes through the native wheel path.
+# Positive deltas move the free camera in the same direction as the gesture.
+client.scene.camera.navigate(2400, 800)
+before_trackpad = [client.scene.camera.x, client.scene.camera.y]
+auto.trackpad(120, 80, x: 700, y: 400)
+advance 0.05
+assert_operator client.scene.camera.x, :>, before_trackpad[0], "two-finger right should pan the camera right"
+assert_operator client.scene.camera.y, :>, before_trackpad[1], "two-finger down should pan the camera down"
+refute client.scene.camera.following
 client.preferences["motion"] = false
 advance 0.05
 still_backdrop = layout_of(backdrop)

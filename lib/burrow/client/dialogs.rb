@@ -361,7 +361,7 @@ module Burrow
             label(title, x + 136, top, 850, size: 22, font: Theme.display, weight: 700, color: Theme::YELLOW)
             label(detail, x + 136, top + 36, 900, size: 15, color: "#e3f1ff")
           end
-          label("Camera: Q / R or pinch zooms. Middle-drag pans; drag the minimap to move the view. G opens the map.\nRope: ↑↓ reels, ←→ swings. Captain wool: ←→ turns. Space releases.", x + 40, y + 650, 760, size: 13, color: "#e3f1ff")
+          label("Camera: Q / R, wheel or pinch zooms. Two-finger or middle-drag pans; drag the minimap to move the view. G opens the map.\nRope: ↑↓ reels, ←→ swings. Captain wool: ←→ turns. Space releases.", x + 40, y + 650, 760, size: 13, color: "#e3f1ff")
           button("Got it", x + 848, y + 650, 216, height: 48, primary: true, size: 20) { hide_overlay }
         end
       end

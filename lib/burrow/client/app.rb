@@ -51,15 +51,27 @@ module Burrow
           cancel_controls unless active
         end
         @shoes.motion { |x, y| pointer(x, y) }
-        @shoes.wheel do |delta, x, y|
-          if @page == :match && !overlay? && Burrow.clock - (@zoom_at || 0) > 0.12
-            sx = (x - @offset_x) / @scale
-            sy = (y - @offset_y) / @scale - Scene::Y
-            if sx.between?(0, 1440) && sy.between?(0, 720) && delta != 0 && !@scene.navigation_hit?(sx, sy)
-              @scene.camera.zoom_by(delta > 0 ? 1 : -1, anchor: [sx, sy])
-              @zoom_at = Burrow.clock
-              pointer(x, y)
-            end
+        @shoes.wheel do |delta, x, y, dx = 0, source = "wheel"|
+          next unless @page == :match && !overlay? && @scene
+
+          sx = (x - @offset_x) / @scale
+          sy = (y - @offset_y) / @scale - Scene::Y
+          next unless sx.between?(0, 1440) && sy.between?(0, 720) && !@scene.navigation_hit?(sx, sy)
+
+          if source.to_s == "trackpad"
+            # Scarpe reports precise two-finger scroll in window points. Convert
+            # it back to the game's fixed 1440x900 canvas before panning so a
+            # gesture covers the same battlefield distance at every window size.
+            pan_x = dx.to_f / @scale
+            pan_y = delta.to_f / @scale
+            next if pan_x.zero? && pan_y.zero?
+
+            @scene.camera.pan(pan_x, pan_y)
+            pointer(x, y)
+          elsif Burrow.clock - (@zoom_at || 0) > 0.12 && delta != 0
+            @scene.camera.zoom_by(delta > 0 ? 1 : -1, anchor: [sx, sy])
+            @zoom_at = Burrow.clock
+            pointer(x, y)
           end
         end
         @shoes.click { |button, x, y| pointer_click(button, x, y) }

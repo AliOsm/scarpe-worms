@@ -875,7 +875,7 @@ module Burrow
         saved, @scale = @scale, @ui_scale
         percent = (camera.zoom * 100).round
         if @caption_zoom != percent || @caption_following != camera.following
-          set_text(@camera_caption, "#{percent}%  #{camera.following ? 'FOLLOW' : 'FREE'}  ·  Wheel / pinch zoom · drag pan")
+          set_text(@camera_caption, "#{percent}%  #{camera.following ? 'FOLLOW' : 'FREE'}  ·  Wheel / pinch zoom · two-finger / drag pan")
           @caption_zoom, @caption_following = percent, camera.following
         end
         water_y = @state["water"].fdiv(@height).clamp(0, 1) * @map_h

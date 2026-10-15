@@ -1,6 +1,23 @@
 # Current status
 
-Updated **2026-10-14** · client **0.5.9** · published release **0.5.9** · protocol **4**.
+Updated **2026-10-15** · client **0.5.10** · published release **0.5.9** · protocol **4**.
+
+## 0.5.10 two-finger camera panning
+
+Precise trackpad scroll now carries both axes through the native wheel path. A
+two-finger swipe pans the free camera in the swipe direction; pinch remains
+pointer-anchored zoom, and ordinary mouse-wheel zoom is unchanged. Existing
+three-argument wheel subscriptions retain their wire shape, while trackpad and
+pinch events append source and axis metadata. The camera journey covers
+horizontal and vertical trackpad movement through native automation, alongside
+minimap and middle-drag panning.
+
+Ruby tests (348 runs / 13,905 assertions), all eight native journeys, the 59-case
+native protocol suite, and Scarpe patch verification pass. A physical macOS
+trackpad playtest is still useful for gesture feel and device-specific momentum.
+
+Protocol 4, existing saves and the server/client wire compatibility remain
+unchanged.
 
 ## 0.5.9 public TLS certificate chains
 

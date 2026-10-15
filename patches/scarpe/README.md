@@ -301,3 +301,9 @@ bundle exec ruby -Ivendor/scarpe/lib -Ivendor/scarpe/lacci/lib \
   magnification through Scarpe's existing wheel subscription. Positive pinch
   deltas become positive Shoes zoom deltas, while invalid magnification values
   are ignored. Other pointer and wheel behavior is unchanged.
+
+- `0028-native-trackpad-camera-pan.patch`: preserve precise horizontal and
+  vertical pixel scroll axes and identify native trackpad and pinch gestures in
+  the existing wheel subscription. Ordinary wheel events keep their original
+  three-argument wire shape; gesture metadata is appended only when present.
+  Automation can inject the same path with `trackpad(dx, dy)`.

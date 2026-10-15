@@ -222,7 +222,7 @@ module Burrow
         @fire_button.state = my_turn? && !@pending_action && (control || (aiming && can_equip?(@selected_weapon))) ? nil : "disabled"
         @pass_button.state = aiming && state["shots_left"].zero? && !@pending_action ? nil : "disabled"
         hint = if !my_turn?
-          "Watching the action · G map · F follow · Q / R or pinch zoom · E browse arsenal"
+          "Watching the action · G map · F follow · pinch zoom · two-finger pan · E browse arsenal"
         elsif control
           control[1]
         elsif critter

@@ -9,7 +9,7 @@ require "fileutils"
 
 module Burrow
   ROOT = File.expand_path("..", __dir__)
-  VERSION = "0.5.9"
+  VERSION = "0.5.10"
   PROTOCOL = 4
   TICK_RATE = 30
   DT = 1.0 / TICK_RATE
