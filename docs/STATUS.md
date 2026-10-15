@@ -1,6 +1,6 @@
 # Current status
 
-Updated **2026-10-15** · client **0.5.10** · published release **0.5.9** · protocol **4**.
+Updated **2026-10-15** · client **0.5.10** · published release **0.5.10** · protocol **4**.
 
 ## 0.5.10 two-finger camera panning
 
@@ -18,6 +18,12 @@ trackpad playtest is still useful for gesture feel and device-specific momentum.
 
 Protocol 4, existing saves and the server/client wire compatibility remain
 unchanged.
+
+[0.5.10 is published](https://github.com/AliOsm/scarpe-worms/releases/tag/v0.5.10).
+All 18 release assets and their GitHub SHA-256 digests are verified, including
+the published `SHA256SUMS` and provenance files. The [release workflow](https://github.com/AliOsm/scarpe-worms/actions/runs/38726690515)
+and [server deployment](https://github.com/AliOsm/scarpe-worms/actions/runs/38726690542)
+pass. Production is healthy and reports **0.5.10 · protocol 4 · YJIT**.
 
 ## 0.5.9 public TLS certificate chains
 
