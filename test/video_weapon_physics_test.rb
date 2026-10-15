@@ -25,12 +25,28 @@ class VideoWeaponPhysicsTest < Minitest::Test
   def restore(match) = Burrow::Match.restore(JSON.parse(JSON.generate(match.checkpoint)))
 
   def test_preview_can_distinguish_new_hosts_from_protocol_four_legacy_hosts
-    assert_equal 1, arena.snapshot[:physics_revision]
+    assert_equal 2, arena.snapshot[:physics_revision]
     assert_in_delta 157, Burrow::Physics.launch_speed("grenade", 0.05, legacy: true)
     assert_in_delta 33.5, Burrow::Physics.launch_speed("grenade", 0.05)
     assert_in_delta 670, Burrow::Physics.launch_speed("rocket", 1.0, legacy: true)
     assert_in_delta 670, Burrow::Physics.launch_speed("rocket", 1.0)
     [false, true].each { |legacy| assert_in_delta 580, Burrow::Physics.launch_speed("mortar", 0.05, legacy: legacy) }
+  end
+
+  def test_launcher_blast_has_a_readable_arc_and_carries_through_landing
+    match = arena
+    victim = match.worms[1]
+    start_x, start_y = victim.values_at(:x, :y)
+    match.send(:explode, start_x - 50, start_y - 10, damage: 48, radius: 48, owner: "p0", kind: "rocket")
+    impulse = Math.hypot(victim[:vx], victim[:vy])
+    assert_operator impulse, :>, 180, "a launcher impact must visibly throw the grub"
+    assert match.events.any? { |event| event[:kind] == "blast" && event[:worm] == victim[:id] }
+
+    match.step(15)
+    assert_operator victim[:y], :<, start_y - 20, "the victim rises into a visible arc"
+    assert victim[:launched]
+    match.step(30)
+    assert_operator victim[:x], :>, start_x + 90, "horizontal momentum survives the landing"
   end
 
   def test_light_taps_make_short_lobs_while_full_charge_keeps_long_range

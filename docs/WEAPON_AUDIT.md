@@ -12,7 +12,7 @@ sweep, including Captain wool's manual detonation and dedicated in-world art.
 
 ## Research and decisions
 
-The 0.5.11 test preview also studies the owner's two gameplay videos. See
+The 0.5.12 test preview also studies the owner's two gameplay videos. See
 [weapon physics research](WEAPON_PHYSICS.md) for timestamps, observed mechanics,
 the resulting changes and regression coverage. It supersedes the charge,
 collision and water-contact details below without changing the arsenal roster.

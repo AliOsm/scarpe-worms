@@ -74,6 +74,7 @@ module Burrow
           @hurt_until = presentation[:hurt_until]
           @deaths, @struck_at, @dizzy_until = presentation.values_at(:deaths, :struck_at, :dizzy_until).map { |table| table || {} }
           @impact_focus = presentation[:impact_focus]
+          @blast_focus = presentation[:blast_focus]
           @strike_focus = presentation[:strike_focus]
           @tracked_projectile = presentation[:tracked_projectile]
           @turn_notice_data = presentation[:turn_notice_data]
@@ -194,6 +195,7 @@ module Burrow
         if @last_turn != @state["turn"]
           @last_turn = @state["turn"]
           @impact_focus = nil
+          @blast_focus = nil
           @turn_notice_pending = true
           # Exploring a distant island is an explicit player choice. A new turn
           # must not steal the camera back until Follow is requested.
@@ -255,6 +257,22 @@ module Burrow
       def fx_sprite(name, x, y, scale = 1.0) = sprite_effect(name, x, y, scale)
       def fx_particle(x, y, color:, life:, size:, vx: 0, vy: 0) = add_particle(x, y, color: color, life: life, size: size, vx: vx, vy: vy)
       def fx_shake(strength, duration: 0.3) = camera.shake(strength, duration: duration, motion: @controller.motion?)
+
+      # A skim is a real water contact in the host simulation. Draw the wake
+      # from the outgoing velocity so a player can distinguish it from a shot
+      # that simply fell into the sea.
+      def fx_water_skip(event)
+        return unless @controller.motion?
+        x, y = event.values_at("x", "y")
+        vx = event.fetch("vx", 0).to_f
+        speed = [Math.hypot(vx, event.fetch("vy", -1).to_f), 1.0].max
+        dx = vx / speed
+        fx_line(x - dx * 58, y + 2, x + dx * 14, y + 2, color: "#e8ffffdd", width: 4, life: 0.22)
+        3.times do |i|
+          fx_particle(x - dx * (10 + i * 12), y - 2 - i * 2, color: i.zero? ? "#ffffff" : "#b9e9ee",
+            life: 0.3 + i * 0.05, size: 4 + i, vx: -dx * (35 + i * 18), vy: -48 - i * 14)
+        end
+      end
 
       # Aircraft belong to a strike's presentation, not the disposable effect
       # pool. Retain one pass so zoom/window rebuilds can redraw its current age.
@@ -329,12 +347,23 @@ module Burrow
           sprite_effect("sparkle", x, y - 15, 1.2)
         elsif event["kind"] == "jump"
           sprite_effect("dust", x, y, 0.8)
+        elsif event["kind"] == "bounce"
+          # Contact points make the rebound readable even when the camera is
+          # following a launched grub or a fast shell.
+          sprite_effect("dust", x, y, event["worm"] ? 0.62 : 0.42)
+          if @controller.motion?
+            add_particle(x, y, color: "#e5d2a5", life: 0.22, size: 4,
+              vx: event.fetch("vx", 0).to_f * 0.08, vy: -42)
+          end
         elsif event["kind"] == "activate"
           sprite_effect(event["stage"] == "flying" ? "smoke" : "dust", x, y, 0.6)
         elsif event["kind"] == "defeat"
           sprite_effect("smoke", x, y - 10, 1.1)
         elsif event["kind"] == "melee"
           sprite_effect("sparkle", x + event.fetch("facing", 1) * 25, y, 1.3)
+        elsif event["kind"] == "splash" && event["skim"]
+          fx_water_skip(event)
+          sprite_effect("splash", x, y, 1.05)
         elsif %w[explosion splash teleport dig].include?(event["kind"])
           fx = {"explosion" => "explosion", "splash" => "splash", "teleport" => "sparkle", "dig" => "dust"}.fetch(event["kind"])
           scale = fx == "explosion" ? (event.fetch("radius", 45) / 50.0).clamp(0.5, 2.6) : 1.0
@@ -405,7 +434,8 @@ module Burrow
           camera: camera, timeline: timeline, last_turn: @last_turn,
           finished_at: @finished_at, hurt_until: @hurt_until,
           deaths: @deaths, struck_at: @struck_at, dizzy_until: @dizzy_until,
-          impact_focus: @impact_focus, strike_focus: @strike_focus, tracked_projectile: @tracked_projectile,
+          impact_focus: @impact_focus, blast_focus: @blast_focus, strike_focus: @strike_focus,
+          tracked_projectile: @tracked_projectile,
           turn_notice_data: @turn_notice_data, turn_notice_pending: @turn_notice_pending}
         @terrain_art = nil
         saved
@@ -492,6 +522,17 @@ module Burrow
             cache_frame(path)
             node[:image].path = File.join(Theme::ART, path + ".png") if node[:path] != path
             node[:path], node[:pose], node[:frame], node[:facing_left] = path, state, frame, facing_left
+          end
+          rotation = if state == "tumble"
+            flight_age = [started - @struck_at.fetch(worm["id"], started), 0].max
+            direction = worm["vx"].to_f.negative? ? -1 : 1
+            (flight_age * 720 * direction).round % 360
+          else
+            0
+          end
+          if node[:rotation] != rotation && node[:image].respond_to?(:rotate)
+            node[:image].rotate(rotation)
+            node[:rotation] = rotation
           end
           tx, ty = @controller.target
           show_badge = worm["hp"] > 0 && (!dense || worm["id"] == @state["active"] || Math.hypot(tx - x, ty - y + 15) * camera.zoom < 22)
@@ -713,9 +754,16 @@ module Burrow
           # honors manual exploration; the first real bomb takes over tracking.
           target = [@strike_focus[:x] + @strike_focus[:vx] * strike_elapsed, @strike_focus[:y]]
           velocity, mode = [@strike_focus[:vx], 0], :projectile
+        elsif @blast_focus && now < @blast_focus[:until] &&
+            (victim = @state["worms"].find { |w| w["id"] == @blast_focus[:worm] }) && victim["hp"] > 0
+          # Keep the launched grub in frame after the crater flash.  The host's
+          # interpolated position and velocity are the camera target, so a
+          # reconnect or a delayed snapshot cannot invent a local trajectory.
+          target, velocity, mode = victim.values_at("x", "y"), victim.values_at("vx", "vy"), :blast
         elsif @impact_focus && now < @impact_focus[:until]
           target, mode = @impact_focus[:point], :impact
         else
+          @blast_focus = nil if @blast_focus && now >= @blast_focus[:until]
           @tracked_projectile = nil
           target, velocity, mode = active&.values_at("x", "y"), nil, :actor
         end
@@ -924,7 +972,7 @@ module Burrow
           @actor_layer.append do
             node[:slot] = @shoes.stack(left: 0, top: 0, width: m[:width], height: m[:height]) do
               node[:image] = @shoes.image(File.join(Theme::ART, "grubs/#{color}-idle-0.png"), left: node[:offset_x] - px(32),
-                top: m[:sprite_top], width: px(64), height: px(64), alt: "")
+                top: m[:sprite_top], width: px(64), height: px(64), alt: "").tap { |image| image.transform(:center) }
               # Hide or reveal an outlined name with one property change. Its
               # full actor bounds preserve the original text clipping exactly.
               node[:badge] = @shoes.stack(left: 0, top: 0, width: m[:width], height: m[:height]) {}
@@ -1204,6 +1252,9 @@ module Burrow
             @dizzy_until[id] = now + 2.4
             comic("pow", "OUCH!", event["x"], event["y"] - 36, now) if event["amount"].to_i >= 40
           end
+        when "blast"
+          @struck_at[id] = now
+          @blast_focus = {worm: id, until: now + 1.9}
         when "defeat"
           @deaths[id] = {at: now} if id
         when "splash"

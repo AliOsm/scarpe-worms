@@ -89,7 +89,11 @@ module Burrow
           offset = weapon == "meteor" ? 22 : 15
           scene.fx_particle(x - vx / speed * offset, y - vy / speed * offset,
             color: weapon == "meteor" ? "#f5a86fc0" : "#d9d6ba99", life: 0.38,
-            size: weapon == "meteor" ? 9 : 6, vx: -vx * 0.03, vy: -18)
+            size: weapon == "meteor" ? 9 : 8, vx: -vx * 0.03, vy: -18)
+          if weapon == "rocket" && speed > 260
+            scene.fx_line(x - vx / speed * 34, y - vy / speed * 34,
+              x - vx / speed * 8, y - vy / speed * 8, color: "#e6dfc38c", width: 2, life: 0.12)
+          end
         end
         true
       end

@@ -1,4 +1,4 @@
-# Weapon physics preview · 0.5.11
+# Weapon physics preview · 0.5.12
 
 This is an unreleased Apple silicon test build for the owner's acceptance.
 Its tuning is original to Burrow Brigade; the videos inform behavior rather
@@ -58,16 +58,41 @@ redistributed with the repository or app.
   Steep/slow shots, fragments, sticky charges and dynamite sink. Homing retains
   underwater flight. Splash events mark skims without a premature explosion.
 - **Blast follow-through:** a tumbling grub uses its new velocity during the
-  remaining movement substeps after hitting a wall, floor or ceiling. Damage,
-  blast strengths and chain-reaction delays are unchanged.
+  remaining movement substeps after hitting a wall, floor or ceiling. The
+  second pass adds weapon-specific impulse, a visible landing rebound and a
+  delayed chain window so the short's crater → flight → landing sequence reads.
 
 These thresholds are design choices, not measurements extracted from the videos.
 The simulation remains host-owned at 30 Hz. Presentation timing, frame deadlines
 and terrain workers retain their existing architecture.
 
+## Second video pass
+
+The first preview corrected discrete contacts but left the signature video
+sequence too subtle in play. This preview makes the reference motion explicit:
+
+- launcher and hand-bomb blasts use weapon-specific pressure multipliers and a
+  stronger lift impulse, so a grub rises, travels away from the crater, rebounds
+  on landing and slides before the turn settles;
+- each launched victim reports authoritative impulse metadata, letting the
+  client follow the airborne grub through the landing and delayed mine/barrel
+  chain without predicting a local path;
+- landing and shell contacts produce a small contact cue, while the tumbling
+  grub rotates in presentation during its host-owned flight;
+- water-skipping events carry outgoing velocity. The client draws a wake in that
+  direction and the rocket keeps its smoke trail, making a shallow skim visibly
+  different from a shot that sinks;
+- blast-propelled mines, crates and barrels wait 14–20 ticks before a triggered
+  chain detonation. Direct gun ruptures keep their existing short fuse.
+
+Critter blasts retain their previous impulse scale because those weapons already
+have long remote flight budgets; the video-driven tuning applies to launchers,
+bouncing bombs and hazards.
+
 ## Verification and compatibility
 
-`test/video_weapon_physics_test.rb` covers short-lob range, terminal airburst
+`test/video_weapon_physics_test.rb` covers short-lob range, the launcher arc and
+landing carry-through, terminal airburst
 position, floor/wall/corner contacts, blast rebounds, both skim directions,
 energy loss, sinking exceptions, exact fuses, far-bank impact, bot targeting and
 checkpoint recovery on every subsequent tick. Existing weapon tests cover wind,
@@ -77,11 +102,12 @@ homing, melee, chain reactions and turn completion.
 `checks/physics.sspec` drives actual native keyboard/pointer input through TLS:
 short throw, timed wall rebound and a full-charge water skip to the far bank.
 It also runs on Apple silicon before packaging. See the
-[validation record](validation/weapon-physics-0.5.11.json) for completed runs.
+[validation record](validation/weapon-physics-0.5.12.json) for packaged runner
+results once the build completes.
 
 Protocol 4 and version-one saves remain supported. Restored shots retain their
 saved velocity and remaining fuse, then follow the new host physics. A snapshot
-adds optional `physics_revision: 1`; the new client uses the legacy power curve
+adds optional `physics_revision: 2`; the new client uses the legacy power curve
 when that field is absent. Upgrade clients on a new host for accurate aim dots.
 An old online host still owns its original rules, even when joined from this app.
 

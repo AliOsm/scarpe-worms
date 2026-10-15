@@ -118,7 +118,7 @@ activation can be sent. The server validates ownership, parameters, phase, and a
 
 ## Munitions details
 
-In the 0.5.11 test build, charged weapons use the full power range: a light tap
+In the 0.5.12 test build, charged weapons use the full power range: a light tap
 makes a short lob, while full charge keeps the same maximum launch speed. The
 aim dots and bot power calculations use that curve. Moon mortar still has fixed
 power. Grenades continue moving through the last tick of their selected fuse.
@@ -131,8 +131,11 @@ Fast, shallow Pocket rockets, Moon mortars, Tick-tocks, Party poppers, Fruit
 salads, Big troubles, Choir bombs and Stink bombs can skim across water. Each
 skip loses speed and retains the original fuse. Slow or steep entries sink;
 fragments, sticky charges and placed dynamite sink too. Love letter retains its
-underwater homing flight. Test these changes in a local match or on a host
-running the preview: an older online host continues to simulate its own rules.
+underwater homing flight. Launcher and bomb blasts now carry grubs through a
+visible arc, landing rebound and delayed hazard chain; the camera follows the
+authoritative victim flight. A skim event carries outgoing velocity for a
+visible wake. Test these changes in a local match or on a host running the
+preview: an older online host continues to simulate its own rules.
 
 Air support spends one charge for an entire pass. The bomber releases five objects
 at 0.4-second intervals in the chosen approach direction, covering about 152 world

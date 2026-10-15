@@ -4,7 +4,7 @@ module Burrow
   module Physics
     # A five-percent charge should be a short lob, not a quarter-power shot.
     # The host, bot and aim dots must agree on the whole charge range.
-    REVISION = 1
+    REVISION = 2
 
     def self.launch_speed(weapon, power, legacy: false)
       return 580.0 if weapon == "mortar"
@@ -12,6 +12,22 @@ module Burrow
     end
 
     WATER_SKIMMERS = %w[rocket mortar grenade cluster banana mega_bomb holy_bomb poison].freeze
+
+    # The reference blasts have a readable separation between the crater, the
+    # airborne grub and its landing.  Keep that impulse in the simulation so a
+    # client cannot manufacture a different-looking flight locally.  These
+    # multipliers are deliberately modest for small explosives and stronger for
+    # the launcher-sized impacts that are meant to throw a grub across a ledge.
+    BLAST_KNOCK = {
+      "rocket" => 1.22, "homing" => 1.14, "mortar" => 1.08, "grenade" => 1.12,
+      "cluster" => 1.04, "sticky" => 1.12, "dynamite" => 1.18, "mega_bomb" => 1.08,
+      "banana" => 1.1, "holy_bomb" => 1.14, "poison" => 0.86, "barrel" => 1.1,
+      "mine" => 1.0, "blast" => 1.0,
+      # Critters already carry their own large movement budget. Keep their
+      # blast impulse at the pre-preview scale so a remote sheep does not hold
+      # the turn longer simply because launcher impacts became more readable.
+      "sheep" => 0.78, "super_sheep" => 0.78, "skunk" => 0.78
+    }.freeze
 
     def self.water_skip_velocity(weapon, vx, vy)
       return unless WATER_SKIMMERS.include?(weapon) && vx.abs >= 180 && vy > 0 && vy <= vx.abs * 0.45
@@ -83,7 +99,9 @@ module Burrow
           end
         elsif tumbling
           # A blasted grub keeps its momentum, rebounds and slides to a stop.
-          w[:vx] *= was_grounded ? 0.86 : 0.995
+          # The slightly softer airborne drag and longer ground slide make the
+          # arc readable before the grub settles beside the new crater.
+          w[:vx] *= was_grounded ? 0.9 : 0.996
           w[:vy] += gravity * DT unless was_grounded
           if was_grounded && w[:vx].abs < 16
             w[:launched] = tumbling = false
@@ -119,9 +137,13 @@ module Burrow
           ny = w[:y] + dy
           if dy >= 0 && (terrain.solid?(w[:x] - 6, ny) || terrain.solid?(w[:x] + 6, ny))
             impact = w[:vy]
-            if tumbling && impact > 110
-              w[:vy] = -impact * 0.3
-              w[:vx] *= 0.8
+            if tumbling && impact > 100
+              # A landing has a visible second hop instead of becoming a
+              # one-frame hard stop.  The remaining tick is integrated below,
+              # so this rebound immediately carries into a slide or another
+              # contact.
+              w[:vy] = -impact * 0.38
+              w[:vx] *= 0.84
               emit("bounce", x: w[:x], y: w[:y], worm: w[:id]) if impact > 170
             else
               w[:vy] = 0.0
@@ -282,7 +304,11 @@ module Burrow
       terrain.carve(x, y, radius)
       emit("explosion", x: x, y: y, radius: radius, style: kind)
       reach = radius + 27
-      strength = (120 + damage * 2.2) * knock
+      blast_knock = BLAST_KNOCK.fetch(kind, 1.0) * knock
+      # A blast is an impulse, not a fixed displacement.  The extra base force
+      # keeps launcher hits visible at the edge of the radius while damage still
+      # scales the centre of the pressure wave.
+      strength = (155 + damage * 2.8) * blast_knock
       worms.each do |w|
         next if w[:hp] <= 0
         distance = Math.hypot(w[:x] - x, w[:y] - 10 - y)
@@ -291,9 +317,13 @@ module Burrow
         hurt(w, (damage * ratio).round, source: owner)
         next if w[:hp] <= 0
         w[:rope] = nil
-        throw_body(w, x, y + 10, strength * ratio, lift: (60 + 90 * ratio) * knock)
+        throw_body(w, x, y + 10, strength * ratio, lift: (74 + 138 * ratio) * blast_knock)
+        # This is presentation metadata only.  The position and velocity remain
+        # authoritative in the worm snapshot, while the client can keep the
+        # camera on the launched victim through the landing and chain reaction.
+        emit("blast", worm: w[:id], x: w[:x], y: w[:y], vx: w[:vx], vy: w[:vy], style: kind)
       end
-      shove(x, y, reach, strength, owner)
+      shove(x, y, reach, strength, owner, knock: blast_knock)
     end
 
     # Push a body away from a blast centre, with extra lift off the ground.
@@ -311,13 +341,13 @@ module Burrow
 
     # A blast also moves the battlefield's loose objects: resting bombs roll away,
     # mines, barrels and gravestones fly, close mines arm a short fuse and barrels rupture.
-    def shove(x, y, reach, strength, owner)
+    def shove(x, y, reach, strength, owner, knock: 1.0)
       projectiles.each do |p|
         next unless p[:bounce] && !p[:attached_to] && p[:life] > 0
         distance = Math.hypot(p[:x] - x, p[:y] - y)
         next if distance > reach
         ratio = (1 - distance / (reach + 1)).clamp(0.15, 1)
-        throw_body(p, x, y, strength * ratio * 0.8, lift: 50 * ratio)
+        throw_body(p, x, y, strength * ratio * 0.8, lift: 50 * ratio * knock)
         p[:stuck], p[:support_x], p[:support_y] = false, nil, nil
       end
       worms.each do |w|
@@ -335,14 +365,17 @@ module Burrow
         distance = Math.hypot(h[:x] - x, h[:y] - 8 - y)
         next if distance > reach
         ratio = (1 - distance / (reach + 1)).clamp(0.15, 1)
-        throw_body(h, x, y + 8, strength * ratio / mass, lift: 70 * ratio / mass)
+        throw_body(h, x, y + 8, strength * ratio / mass, lift: 70 * ratio * knock / mass)
         h[:chute] = false
         case h[:kind]
         when "mine", "crate", "turret"
-          ignite(h, owner, 8 + @rng.rand(10)) if ratio > (h[:kind] == "mine" ? 0.5 : 0.6)
+          # Leave a readable trigger window after the first blast.  The short
+          # delay in the reference is long enough to see the victim land before
+          # the nearby mine or crate starts the second explosion.
+          ignite(h, owner, 14 + @rng.rand(7)) if ratio > (h[:kind] == "mine" ? 0.5 : 0.6)
         when "barrel"
           h[:hp] = h.fetch(:hp, 20) - (strength * ratio / 9)
-          ignite(h, owner, 4 + @rng.rand(6)) if h[:hp] <= 0
+          ignite(h, owner, 14 + @rng.rand(7)) if h[:hp] <= 0
         end
       end
     end
@@ -521,7 +554,7 @@ module Burrow
               p[:vx] = p[:vy] = 0.0
             end
             if p[:age] - p.fetch(:last_bounce, -10) > 2
-              emit("bounce", x: p[:x], y: p[:y])
+              emit("bounce", x: p[:x], y: p[:y], vx: p[:vx], vy: p[:vy], weapon: p[:weapon])
               p[:last_bounce] = p[:age]
             end
           else
@@ -540,7 +573,9 @@ module Burrow
             if rebound
               p[:vx], p[:vy] = rebound
               p[:y] = water - 0.01
-              emit("splash", x: p[:x], y: water, weapon: p[:weapon], skim: true)
+              p[:skip_count] = p.fetch(:skip_count, 0) + 1
+              emit("splash", x: p[:x], y: water, weapon: p[:weapon], skim: true,
+                vx: p[:vx], vy: p[:vy], skips: p[:skip_count])
             else
               p[:y] = water + 0.01
               break

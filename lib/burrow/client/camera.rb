@@ -106,7 +106,11 @@ module Burrow
         wanted_x, wanted_y = tx - VIEW_WIDTH * 0.46 / zoom, ty - VIEW_HEIGHT * 0.58 / zoom
         # A small safe area absorbs walking, hops and resting physics jitter.
         # Projectiles use tighter framing so quick flights stay in view.
-        dead_x, dead_y = mode == :actor ? [95.0, 52.0] : [18.0, 12.0]
+        dead_x, dead_y = case mode
+        when :actor then [95.0, 52.0]
+        when :blast then [28.0, 20.0]
+        else [18.0, 12.0]
+        end
         dx, dy = wanted_x - x, wanted_y - y
         unless @snap
           dx = outside_deadzone(dx, dead_x / zoom)
@@ -114,7 +118,8 @@ module Burrow
         end
         # Elapsed time, rather than a frame count, keeps 30/60/120 Hz motion
         # consistent and recovers immediately after a delayed UI frame.
-        blend = @snap ? 1.0 : 1 - Math.exp(-[dt, 0].max * (mode == :actor ? 7 : 11))
+        response = mode == :actor ? 7 : mode == :blast ? 9 : 11
+        blend = @snap ? 1.0 : 1 - Math.exp(-[dt, 0].max * response)
         @x += dx * blend if dx.abs * zoom > 0.35
         @y += dy * blend if dy.abs * zoom > 0.35
         @snap = false
