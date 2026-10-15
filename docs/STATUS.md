@@ -14,12 +14,14 @@ projectiles move on their last tick before exploding.
 
 Linux passes 360 Ruby tests / 14,191 assertions and the physics native journey,
 including short throw, three-second wall rebound, water skip and far-bank
-impact. The Apple silicon package is being rebuilt from this preview branch;
-its checksum and Mac runner evidence will be recorded in
-`validation/weapon-physics-0.5.12.json`. The previous 0.5.11 runner's
-informational sustained-rendering benchmark had one shared-runner combat frame
-over its 60 ms gate; that remains a performance limitation until this package
-is measured.
+impact. The Apple silicon preview package is built and verified from commit
+`dff7220` in the [Package macOS workflow](https://github.com/AliOsm/scarpe-worms/actions/runs/38775008630).
+The required package, gameplay, input, recovery, audio and native checks pass.
+The archive checksum and runner evidence are recorded in
+[the validation report](validation/weapon-physics-0.5.12.json). Its
+informational rendering benchmark still has shared-runner outliers: combat
+peaks at 70.41 ms and zoom at 67.18 ms; the workflow continued because this
+is not physical-Mac acceptance.
 
 This branch is for the owner's Mac playtest before release. No release tag,
 publication or production deployment is part of this preview. Protocol 4 and

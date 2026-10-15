@@ -1,0 +1,108 @@
+{
+  "version": "0.5.12",
+  "status": "unreleased test build",
+  "date": "2026-10-15",
+  "source_commit": "dff72201ded6b895bc89c43f62baf56fb3d257f1",
+  "references": [
+    "https://www.youtube.com/shorts/KQJyX3acyPU",
+    "https://www.youtube.com/watch?v=EyrKBNpAMiI"
+  ],
+  "local_weapon_lab": {
+    "rocket": {
+      "completed": true,
+      "events": ["fire", "explosion", "damage", "blast", "bounce", "turn"]
+    },
+    "grenade": {
+      "completed": true,
+      "events": ["fire", "bounce", "explosion", "turn"]
+    },
+    "barrel": {
+      "physics_events": ["fire", "hazard_place", "explosion", "hazard_trigger", "barrel_rupture"],
+      "settlement_tail": "the short lab tail ended before the turn handover; the rupture and burning flame propagation completed"
+    }
+  },
+  "linux": {
+    "ruby": "4.0.7",
+    "core": {
+      "tests": 360,
+      "assertions": 14191,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "native": {
+      "checks/physics.sspec": {
+        "status": "passed",
+        "assertions": 14,
+        "journey": "short throw, wall rebound, water skim and far-bank impact"
+      }
+    },
+    "regression": "video_weapon_physics_test.rb covers the launcher blast arc, landing carry-through, delayed prop chain, water wake metadata and legacy compatibility"
+  },
+  "macos": {
+    "target": "Apple silicon, macOS 13+",
+    "build": {
+      "status": "packaged and verified",
+      "workflow": "https://github.com/AliOsm/scarpe-worms/actions/runs/38775008630",
+      "runner": "macos-15-arm64",
+      "os": "macOS 15.7.9",
+      "ruby": "4.0.7",
+      "archive": {
+        "name": "Burrow-Brigade-0.5.12-macos-arm64.zip",
+        "bytes": 51231496,
+        "sha256": "0ca9353f3e2c1e8e62e6123cea89fa92cda17085310c08335955e4d69c1438ab",
+        "artifact": "https://github.com/AliOsm/scarpe-worms/actions/runs/38775008630/artifacts/11992779567"
+      },
+      "verification": {
+        "native_checks": "passed: prediction and physics journeys on the Apple silicon package",
+        "ruby_tests": {
+          "runs": 360,
+          "assertions": 14191,
+          "failures": 0,
+          "errors": 0
+        },
+        "signature": {
+          "codesign": "passed",
+          "architecture": "arm64",
+          "minimum_macos": "13.0",
+          "macho_binaries": 96,
+          "resource_hashes_checked": 3296,
+          "adhoc_code_hashes_verified": true,
+          "notarized": false
+        },
+        "packaged_gameplay": "passed: menu, three-team bot match, input, clean quit, Unicode paths, C locale, resize and saved-match recovery",
+        "audio": "passed: CoreAudio playback, panning, mute, resume and 76 cues"
+      },
+      "informational_benchmarks": {
+        "waits": {
+          "outcome": "passed",
+          "backend": "KqueueTimer",
+          "deadline_mean_ms": 11.3451,
+          "deadline_p95_ms": 14.871,
+          "deadline_max_ms": 15.095
+        },
+        "rendering": {
+          "outcome": "informational gate failed; workflow continued",
+          "combat_mean_ms": 16.2551,
+          "combat_p95_ms": 19.9149,
+          "combat_max_ms": 70.41,
+          "pan_mean_ms": 16.8945,
+          "pan_p95_ms": 21.6572,
+          "zoom_max_ms": 67.1787,
+          "note": "The shared runner exceeded the 60 ms combat gate on two frames; this is not physical Mac acceptance."
+        }
+      }
+    },
+    "physical_playtest": "pending owner acceptance"
+  },
+  "release": {
+    "published": false,
+    "tag_created": false,
+    "production_deployed": false
+  },
+  "compatibility": {
+    "protocol": 4,
+    "checkpoint": 1,
+    "optional_snapshot_physics_revision": 2
+  }
+}
