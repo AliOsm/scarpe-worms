@@ -13,7 +13,7 @@ Start with [current status](STATUS.md). Contributors and agents should also read
 | Build and verify the Linux client | [Linux](LINUX.md) |
 | Navigate the processes and protocol | [Architecture](ARCHITECTURE.md) |
 | Change physics or input contracts | [Weapon audit and references](WEAPON_AUDIT.md) |
-| Review the 0.5.12 physics test build | [Video study, changes and Mac playtest](WEAPON_PHYSICS.md) |
+| Review the 0.5.13 physics test build | [Video study, changes and Mac playtest](WEAPON_PHYSICS.md) |
 | Edit art and regenerate assets | [Art direction](ART_DIRECTION.md) |
 | Review visual references and asset choices | [Presentation research](ART_RESEARCH.md) |
 | Assess what actually passed | [Validation](VALIDATION.md) and [report index](validation/README.md) |

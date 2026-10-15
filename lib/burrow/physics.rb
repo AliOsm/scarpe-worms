@@ -4,35 +4,147 @@ module Burrow
   module Physics
     # A five-percent charge should be a short lob, not a quarter-power shot.
     # The host, bot and aim dots must agree on the whole charge range.
-    REVISION = 2
+    REVISION = 3
 
     def self.launch_speed(weapon, power, legacy: false)
+      weapon = weapon.to_s
       return 580.0 if weapon == "mortar"
-      legacy ? 130 + power * 540 : 670.0 * power
+      speed = legacy ? 130 + power * 540 : 670.0 * power
+      legacy ? speed : speed * profile(weapon)[:launch_scale]
     end
 
     WATER_SKIMMERS = %w[rocket mortar grenade cluster banana mega_bomb holy_bomb poison].freeze
+
+    # Every arsenal entry gets an explicit physical profile. The values are
+    # readable knobs rather than a second rules engine: projectiles use the
+    # launch/gravity/wind/restitution fields, direct and close attacks use
+    # their impulse fields, and multi-stage weapons use their movement fields.
+    def self.freeze_profile(values)
+      values.each_value { |value| value.freeze if value.is_a?(Array) }
+      values.freeze
+    end
+
+    DEFAULT_PROFILE = freeze_profile({
+      launch_scale: 1.0, gravity_scale: 1.0, wind_scale: 0.0,
+      restitution: 0.55, water_skip: false, water_min_speed: 180.0,
+      water_down_ratio: 0.45, water_horizontal: 0.85, water_vertical: 0.65,
+      blast_knock: 1.0, blast_lift: 1.0, direct_push: 1.0, direct_lift: 1.0,
+      melee_impulse: nil, self_lift: -175.0, walker_speed: 105.0, walker_jump: -135.0,
+      guided_speed: 260.0, guided_turn: 2.7, digger_vx: 110.0, digger_vy: -150.0,
+      homing_turn: 2.6, homing_accel: 160.0, homing_min_speed: 260.0,
+      digger_tunnel_vx: 52.0, digger_tunnel_vy: 76.0,
+      fragment_horizontal: 1.0, fragment_lift: 1.0,
+      sky_speed: 95.0, drop_speed: 130.0, release_spacing: 12,
+      meteor_drift: 85.0, meteor_drop: 130.0, prop_mass: 1.0,
+      tool_step: 3.0, tool_lift: 1.35, dash_step: 9.0, dash_speed: 230.0, dash_lift: -95.0,
+      rope_reel: 105.0, rope_pump: 320.0, rope_hook: 1150.0, rope_retract: 1600.0,
+      jetpack_lift: 980.0, jetpack_start: -80.0, jetpack_side_accel: 620.0,
+      quake_horizontal: 420.0, quake_lift: 90.0
+    })
+
+    WEAPON_PROFILES = {
+      # Launchers and thrown explosives.
+      "rocket" => {launch_scale: 1.0, gravity_scale: 1.0, wind_scale: 1.0,
+        water_skip: true, blast_knock: 1.22, blast_lift: 1.06},
+      "mortar" => {launch_scale: 1.0, gravity_scale: 1.04,
+        water_skip: true, blast_knock: 1.08, blast_lift: 1.02},
+      "homing" => {launch_scale: 0.96, gravity_scale: 1.0, wind_scale: 1.0,
+        homing_turn: 2.45, blast_knock: 1.14, blast_lift: 1.03},
+      "grenade" => {launch_scale: 1.0, gravity_scale: 1.0,
+        restitution: 0.55, water_skip: true, blast_knock: 1.12, blast_lift: 1.04},
+      "cluster" => {launch_scale: 0.94, gravity_scale: 1.02,
+        restitution: 0.48, water_skip: true, fragment_horizontal: 0.95, fragment_lift: 1.02,
+        blast_knock: 1.04},
+      "sticky" => {launch_scale: 0.9, gravity_scale: 0.98,
+        blast_knock: 1.12, blast_lift: 1.02},
+      "dynamite" => {gravity_scale: 1.03, restitution: 0.2,
+        blast_knock: 1.18, blast_lift: 1.05},
+      "mega_bomb" => {launch_scale: 0.84, gravity_scale: 1.08,
+        restitution: 0.38, water_skip: true, blast_knock: 1.08, blast_lift: 1.04},
+      "banana" => {launch_scale: 1.02, gravity_scale: 0.96,
+        restitution: 0.72, water_skip: true, fragment_horizontal: 1.08, fragment_lift: 0.94,
+        blast_knock: 1.10, blast_lift: 1.02},
+      "holy_bomb" => {launch_scale: 0.82, gravity_scale: 0.92,
+        restitution: 0.32, water_skip: true, blast_knock: 1.14, blast_lift: 1.06},
+      "poison" => {launch_scale: 0.9, gravity_scale: 1.0,
+        restitution: 0.5, water_skip: true, blast_knock: 0.86, blast_lift: 0.9},
+
+      # Direct weapons have distinct body response instead of one shove.
+      "shotgun" => {direct_push: 1.0, direct_lift: 1.0},
+      "rifle" => {direct_push: 0.82, direct_lift: 0.82},
+      "minigun" => {direct_push: 0.45, direct_lift: 0.5},
+      "laser" => {direct_push: 0.72, direct_lift: 0.7},
+      "flamethrower" => {direct_push: 0.3, direct_lift: 0.35},
+
+      # Close attacks share the same impulse vocabulary as blasts.
+      "fire_punch" => {melee_impulse: [110.0, -300.0], self_lift: -175.0},
+      "dragon_punch" => {dash_speed: 230.0, dash_lift: -95.0},
+      "prod" => {melee_impulse: [150.0, -45.0]},
+      "bat" => {melee_impulse: [520.0, nil]},
+      "axe" => {melee_impulse: [35.0, -35.0]},
+
+      # Air support and global forces keep their distinct approaches while
+      # sharing the same drop/contact assumptions as ordinary ordnance.
+      "airstrike" => {gravity_scale: 1.0, sky_speed: 100.0, drop_speed: 132.0,
+        release_spacing: 13, blast_knock: 1.02},
+      "mine_strike" => {gravity_scale: 1.02, sky_speed: 100.0, drop_speed: 132.0,
+        release_spacing: 13},
+      "napalm" => {gravity_scale: 1.0, sky_speed: 100.0, drop_speed: 132.0,
+        release_spacing: 13, blast_knock: 0.92, blast_lift: 0.75},
+      "meteor" => {gravity_scale: 1.08, meteor_drift: 92.0, meteor_drop: 140.0,
+        blast_knock: 1.1, blast_lift: 1.04},
+      "earthquake" => {quake_horizontal: 420.0, quake_lift: 96.0},
+
+      # Critters carry their own movement budget, but their release, flight and
+      # final blast still pass through this table.
+      "sheep" => {walker_speed: 108.0, walker_jump: -140.0, blast_knock: 0.78, blast_lift: 0.82},
+      "super_sheep" => {guided_speed: 260.0, guided_turn: 2.7, blast_knock: 0.78, blast_lift: 0.82},
+      "mole" => {walker_speed: 100.0, walker_jump: -130.0, digger_vx: 115.0, digger_vy: -160.0,
+        blast_knock: 0.82, blast_lift: 0.86},
+      "skunk" => {walker_speed: 98.0, walker_jump: -128.0, blast_knock: 0.78, blast_lift: 0.8},
+      "cow" => {walker_speed: 112.0, walker_jump: -138.0, blast_knock: 0.8, blast_lift: 0.84},
+
+      # Placed props and hazards use their profile for mass and blast response.
+      # `prop_mass` is a multiplier on PROP_MASS, so these remain modest
+      # differences rather than accidentally applying the catalogue mass twice.
+      "mine" => {prop_mass: 0.92},
+      "turret" => {prop_mass: 1.05, blast_knock: 0.92, blast_lift: 0.9},
+      "barrel" => {prop_mass: 1.08, blast_knock: 1.1, blast_lift: 1.04},
+
+      # Mobility, tools, supplies and turn controls are listed too, so every
+      # selectable item has an intentional physical contract.
+      "rope" => {rope_reel: 105.0, rope_pump: 320.0, rope_hook: 1150.0, rope_retract: 1600.0},
+      "jetpack" => {jetpack_lift: 980.0, jetpack_start: -80.0, jetpack_side_accel: 620.0},
+      "parachute" => {gravity_scale: 0.45},
+      "teleport" => {}, "girder" => {prop_mass: 1.2},
+      "drill" => {tool_step: 2.8, tool_lift: 1.35},
+      "blowtorch" => {tool_step: 3.0, tool_lift: 1.35},
+      "heal" => {}, "shield" => {}, "freeze" => {}, "double_damage" => {},
+      "low_gravity" => {gravity_scale: 0.45}, "wind_control" => {}, "skip" => {}
+    }.to_h do |id, overrides|
+      [id, freeze_profile(DEFAULT_PROFILE.merge(overrides))]
+    end.freeze
+
+    def self.profile(weapon)
+      WEAPON_PROFILES.fetch(weapon.to_s, DEFAULT_PROFILE)
+    end
+
+    # Preserve the old read-only lookup for tooling written against the first
+    # preview while making the profile table authoritative for simulation.
+    BLAST_KNOCK = WEAPON_PROFILES.to_h { |id, tuning| [id, tuning[:blast_knock]] }.freeze
 
     # The reference blasts have a readable separation between the crater, the
     # airborne grub and its landing.  Keep that impulse in the simulation so a
     # client cannot manufacture a different-looking flight locally.  These
     # multipliers are deliberately modest for small explosives and stronger for
     # the launcher-sized impacts that are meant to throw a grub across a ledge.
-    BLAST_KNOCK = {
-      "rocket" => 1.22, "homing" => 1.14, "mortar" => 1.08, "grenade" => 1.12,
-      "cluster" => 1.04, "sticky" => 1.12, "dynamite" => 1.18, "mega_bomb" => 1.08,
-      "banana" => 1.1, "holy_bomb" => 1.14, "poison" => 0.86, "barrel" => 1.1,
-      "mine" => 1.0, "blast" => 1.0,
-      # Critters already carry their own large movement budget. Keep their
-      # blast impulse at the pre-preview scale so a remote sheep does not hold
-      # the turn longer simply because launcher impacts became more readable.
-      "sheep" => 0.78, "super_sheep" => 0.78, "skunk" => 0.78
-    }.freeze
-
     def self.water_skip_velocity(weapon, vx, vy)
-      return unless WATER_SKIMMERS.include?(weapon) && vx.abs >= 180 && vy > 0 && vy <= vx.abs * 0.45
+      weapon = weapon.to_s
+      tuning = profile(weapon)
+      return unless tuning[:water_skip] && WATER_SKIMMERS.include?(weapon) &&
+        vx.abs >= tuning[:water_min_speed] && vy > 0 && vy <= vx.abs * tuning[:water_down_ratio]
       # Shallow, fast shots skip; every contact loses energy until they sink.
-      [vx * 0.85, -vy * 0.65]
+      [vx * tuning[:water_horizontal], -vy * tuning[:water_vertical]]
     end
 
     def gravity = 285 * config["gravity"] * (@low_gravity ? 0.45 : 1)
@@ -59,6 +171,9 @@ module Burrow
         w[:parachute_open] = !!(w[:parachute] && !was_grounded && w[:vy] >= 0 && !w[:jetpack] && !attached && !w[:frozen])
         w[:launched] = false if w[:jetpack] || attached || w[:parachute_open]
         tumbling = w[:launched]
+        jetpack_tuning = Physics.profile("jetpack")
+        rope_tuning = Physics.profile("rope")
+        parachute_tuning = Physics.profile("parachute")
         controlled = w[:id] == active_id && %w[aiming retreat].include?(phase) && tick <= w[:input_until] && !w[:frozen] && !@tool && !tumbling
         direction = controlled ? w[:input] : 0
         lift = controlled ? w[:lift] : 0
@@ -73,8 +188,8 @@ module Burrow
           thrusting = !direction.zero? || lift > 0
           w[:thrusting] = thrusting
           w[:fuel] -= 1 if thrusting
-          w[:vx] = (w[:vx] * 0.96 + direction * 620 * DT).clamp(-210, 210)
-          w[:vy] = (w[:vy] + gravity * DT - [lift, 0].max * 980 * DT) * 0.995
+          w[:vx] = (w[:vx] * 0.96 + direction * jetpack_tuning[:jetpack_side_accel] * DT).clamp(-210, 210)
+          w[:vy] = (w[:vy] + gravity * DT - [lift, 0].max * jetpack_tuning[:jetpack_lift] * DT) * 0.995
           w[:vy] = w[:vy].clamp(-220, 180)
           if w[:fuel] <= 0
             w[:jetpack] = false
@@ -82,14 +197,14 @@ module Burrow
             w[:parachute] = true
           end
         elsif attached
-          w[:rope][:length] = (w[:rope][:length] - lift * 105 * DT).clamp(28, 460)
+          w[:rope][:length] = (w[:rope][:length] - lift * rope_tuning[:rope_reel] * DT).clamp(28, 460)
           # Apply input tangentially to the rope so pumping creates a real
           # pendulum instead of sliding along the anchor radius.
           dxr, dyr = w[:x] - w[:rope][:x], w[:y] - 12 - w[:rope][:y]
           distance = [Math.hypot(dxr, dyr), 1.0].max
           nx, ny = dxr / distance, dyr / distance
-          w[:vx] += ny * ny * direction * 320 * DT
-          w[:vy] += -nx * ny * direction * 320 * DT + gravity * DT
+          w[:vx] += ny * ny * direction * rope_tuning[:rope_pump] * DT
+          w[:vy] += -nx * ny * direction * rope_tuning[:rope_pump] * DT + gravity * DT
           w[:vx] *= 0.998
           w[:vy] *= 0.998
           speed = Math.hypot(w[:vx], w[:vy])
@@ -113,7 +228,7 @@ module Burrow
         else
           w[:vx] *= was_grounded ? 0.68 : 0.985
           w[:vx] = (w[:vx] + (direction * 130 + wind * 18) * DT).clamp(-100, 100) if w[:parachute_open]
-          w[:vy] += gravity * DT unless was_grounded
+          w[:vy] += gravity * (w[:parachute_open] ? parachute_tuning[:gravity_scale] : 1.0) * DT unless was_grounded
           w[:vy] = [w[:vy], 65].min if w[:parachute_open]
         end
         w[:vx] = 0.0 if w[:vx].abs < 0.3
@@ -201,10 +316,11 @@ module Burrow
     # Its finite flight/retraction and paid airborne chain all live in checkpoints.
     def update_rope_hook(w)
       rope = w[:rope]
+      tuning = Physics.profile("rope")
       if rope[:stage] == "retracting"
         dx, dy = w[:x] - rope[:x], w[:y] - 12 - rope[:y]
         distance = Math.hypot(dx, dy)
-        step = 1600 * DT
+        step = tuning[:rope_retract] * DT
         if distance <= step
           w[:rope] = nil
         else
@@ -214,7 +330,7 @@ module Burrow
         end
         return
       end
-      travel = [1150 * DT, 460 - rope[:travel]].min
+      travel = [tuning[:rope_hook] * DT, 460 - rope[:travel]].min
       steps = [(travel / 1.0).ceil, 1].max
       steps.times do
         rope[:x] += rope[:ux] * travel / steps
@@ -304,7 +420,8 @@ module Burrow
       terrain.carve(x, y, radius)
       emit("explosion", x: x, y: y, radius: radius, style: kind)
       reach = radius + 27
-      blast_knock = BLAST_KNOCK.fetch(kind, 1.0) * knock
+      tuning = Physics.profile(kind)
+      blast_knock = tuning[:blast_knock] * knock
       # A blast is an impulse, not a fixed displacement.  The extra base force
       # keeps launcher hits visible at the edge of the radius while damage still
       # scales the centre of the pressure wave.
@@ -317,7 +434,7 @@ module Burrow
         hurt(w, (damage * ratio).round, source: owner)
         next if w[:hp] <= 0
         w[:rope] = nil
-        throw_body(w, x, y + 10, strength * ratio, lift: (74 + 138 * ratio) * blast_knock)
+        throw_body(w, x, y + 10, strength * ratio, lift: (74 + 138 * ratio) * blast_knock * tuning[:blast_lift])
         # This is presentation metadata only.  The position and velocity remain
         # authoritative in the worm snapshot, while the client can keep the
         # camera on the launched victim through the landing and chain reaction.
@@ -360,8 +477,9 @@ module Burrow
         w[:vy] += (ny * strength * ratio - 70 * ratio) / GRAVE_MASS
       end
       hazards.each do |h|
-        mass = PROP_MASS[h[:kind]]
-        next unless mass
+        base_mass = PROP_MASS[h[:kind]]
+        next unless base_mass
+        mass = base_mass * Physics.profile(h[:kind])[:prop_mass]
         distance = Math.hypot(h[:x] - x, h[:y] - 8 - y)
         next if distance > reach
         ratio = (1 - distance / (reach + 1)).clamp(0.15, 1)
@@ -466,34 +584,37 @@ module Burrow
         p[:stuck], p[:attached_to] = false, nil
       end
       if p[:guided]
+        tuning = Physics.profile(p[:weapon])
         # Old checkpoints have no separate motor timer. Bound their remaining
         # flight by the saved lifetime, preserving the normal gravity fallback.
         p[:flight_ticks] = p.fetch(:flight_ticks, [p[:life], CRITTER_FLIGHT_TICKS].min) - 1
         if p[:flight_ticks] <= 0
           p[:stage], p[:guided], p[:steer] = "falling", false, 0
           p[:life] = [p[:life], 4 * TICK_RATE].min
-          p[:vy] += gravity * DT
+          p[:vy] += gravity * tuning[:gravity_scale] * DT
           emit("critter_fall", weapon: p[:weapon], x: p[:x], y: p[:y])
         else
           steering = tick <= p.fetch(:input_until, 0) ? p.fetch(:steer, 0) : 0
-          p[:heading] = p.fetch(:heading, Math.atan2(p[:vy], p[:vx])) + steering * CRITTER_TURN_RATE * DT
-          p[:vx], p[:vy] = Math.cos(p[:heading]) * CRITTER_FLIGHT_SPEED, Math.sin(p[:heading]) * CRITTER_FLIGHT_SPEED
+          p[:heading] = p.fetch(:heading, Math.atan2(p[:vy], p[:vx])) + steering * tuning[:guided_turn] * DT
+          p[:vx], p[:vy] = Math.cos(p[:heading]) * tuning[:guided_speed], Math.sin(p[:heading]) * tuning[:guided_speed]
           emit("critter_trail", weapon: p[:weapon], x: p[:x], y: p[:y], vx: p[:vx], vy: p[:vy]) if p[:age] % 4 == 0
         end
       elsif p[:homing] && p[:age] > TICK_RATE / 2 && p[:age] <= HOMING_TICKS
         # After a short ballistic launch the motor locks on: rotate towards the
         # beacon at a bounded rate, preserving speed through turns, and cruise
         # at a speed set by the launch power. Once the motor burns out it falls.
+        tuning = Physics.profile(p[:weapon])
         desired = Math.atan2(p[:target_y] - p[:y], p[:target_x] - p[:x])
         heading = Math.atan2(p[:vy], p[:vx])
         delta = Math.atan2(Math.sin(desired - heading), Math.cos(desired - heading))
-        heading += delta.clamp(-2.6 * DT, 2.6 * DT)
+        heading += delta.clamp(-tuning[:homing_turn] * DT, tuning[:homing_turn] * DT)
         cruise = p.fetch(:cruise, 670)
-        speed = (Math.hypot(p[:vx], p[:vy]) + 160 * DT).clamp([260, cruise].min, cruise)
+        speed = (Math.hypot(p[:vx], p[:vy]) + tuning[:homing_accel] * DT).clamp([tuning[:homing_min_speed], cruise].min, cruise)
         p[:vx], p[:vy] = Math.cos(heading) * speed, Math.sin(heading) * speed
       else
-        p[:vx] += wind * 42 * DT if p[:wind]
-        p[:vy] += gravity * DT
+        tuning = Physics.profile(p[:weapon])
+        p[:vx] += wind * 42 * tuning[:wind_scale] * DT if p[:wind]
+        p[:vy] += gravity * tuning[:gravity_scale] * DT
       end
       remaining, contacts = DT, 0
       while remaining > 0.000001
@@ -513,7 +634,8 @@ module Burrow
         victim = nil if solid && p[:stage] != "diving"
         if solid && !victim && p[:stage] == "diving"
           p[:stage] = "digging"
-          p[:vx], p[:vy] = p[:direction] * 52.0, 76.0
+          tuning = Physics.profile(p[:weapon])
+          p[:vx], p[:vy] = p[:direction] * tuning[:digger_tunnel_vx], tuning[:digger_tunnel_vy]
           emit("critter_dive", weapon: p[:weapon], x: p[:x], y: p[:y])
           advance_digger(p)
           break
@@ -616,13 +738,15 @@ module Burrow
     CRITTER_FLIGHT_SPEED = 260.0
     CRITTER_TURN_RATE = 2.7
     CRITTER_FLIGHT_TICKS = 8 * TICK_RATE
+    # Kept as a compatibility lookup for callers that used the old constant;
+    # live collision code reads the complete weapon profile above.
     BOUNCE = {"banana" => 0.72, "cluster" => 0.48, "mega_bomb" => 0.38, "holy_bomb" => 0.32,
       "dynamite" => 0.2, "poison" => 0.5}.freeze
 
     def reflect_projectile(p, nx, ny)
       dot = p[:vx] * nx + p[:vy] * ny
       return if dot >= 0
-      bounce = BOUNCE.fetch(p[:weapon], 0.55)
+      bounce = Physics.profile(p[:weapon])[:restitution]
       # Gentle contacts roll; hard impacts scrub off more speed along the surface.
       gentle = dot > -40 && ny < -0.1
       grip = gentle ? 0.98 : 0.8
@@ -637,12 +761,13 @@ module Burrow
     end
 
     def advance_walker(p)
+      tuning = Physics.profile(p[:weapon])
       direction = p.fetch(:direction, p[:vx] < 0 ? -1 : 1)
       p[:direction] = direction
-      p[:vx] = direction * 105.0
+      p[:vx] = direction * tuning[:walker_speed]
       grounded = p[:vy] >= 0 && (terrain.solid?(p[:x] - 4, p[:y] + 7) || terrain.solid?(p[:x] + 4, p[:y] + 7))
       blocked = false
-      p[:vy] += gravity * DT
+      p[:vy] += gravity * tuning[:gravity_scale] * DT
       steps = [((p[:vx].abs + p[:vy].abs) * DT / 2).ceil, 1].max
       steps.times do
         nx = p[:x] + p[:vx] * DT / steps
@@ -656,7 +781,7 @@ module Burrow
         else
           blocked = true
           if grounded
-            p[:vy] = -165
+            p[:vy] = -165 * tuning[:gravity_scale]
             grounded = false
           end
         end
@@ -680,7 +805,7 @@ module Burrow
       end
       # Sheep attempt a jump at a ledge; cows commit to their direction.
       if grounded && p[:kind] != "herd" && !terrain.solid?(p[:x] + direction * 12, p[:y] + 12)
-        p[:vy] = -135
+        p[:vy] = tuning[:walker_jump]
       end
       if p[:spraying] && p[:age] % 12 == 0
         gas_cloud(p[:x], p[:y] - 6, p[:owner], radius: 35, life: 150, weapon: p[:weapon])
@@ -688,6 +813,7 @@ module Burrow
     end
 
     def advance_digger(p)
+      tuning = Physics.profile(p[:weapon])
       nx, ny = p[:x] + p[:vx] * DT, p[:y] + p[:vy] * DT
       # Probe ahead of the tunnel we just carved, not its empty centre.
       in_earth = terrain.solid?(nx + p[:direction] * 13, ny + 19)
@@ -698,6 +824,10 @@ module Burrow
       terrain.carve(nx, ny, 17, scorch: false)
       p[:dug] = true
       p[:x], p[:y] = nx, ny
+      # Keep tunnel motion on the profile even for old checkpoints that saved
+      # the pre-profile dive constants.
+      p[:vx] = p[:direction] * tuning[:digger_tunnel_vx]
+      p[:vy] = tuning[:digger_tunnel_vy]
       emit("critter_dirt", weapon: p[:weapon], x: nx, y: ny, vx: p[:vx], vy: p[:vy]) if p[:age] % 5 == 0
       p[:life] = 0 if projectile_victim(p, nx, ny)
     end
@@ -807,6 +937,7 @@ module Burrow
 
     # Loose props fall, bounce, slide and settle; parachuted crates drift down.
     def prop_motion(h)
+      tuning = Physics.profile(h[:weapon] || h[:kind])
       vx, vy = h.fetch(:vx, 0.0), h.fetch(:vy, 0.0)
       grounded = terrain.solid?(h[:x], h[:y] + 1)
       if grounded && vy >= 0 && vx.abs < 8
@@ -817,7 +948,7 @@ module Burrow
       if h[:chute]
         vx, vy = wind * 14, 40.0
       else
-        vy += gravity * DT unless grounded && vy >= 0
+        vy += gravity * tuning[:gravity_scale] * DT unless grounded && vy >= 0
         vx *= grounded ? 0.8 : 0.995
       end
       steps = [((vx.abs + vy.abs) * DT / 2).ceil, 1].max

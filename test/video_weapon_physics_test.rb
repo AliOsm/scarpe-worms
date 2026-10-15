@@ -25,12 +25,24 @@ class VideoWeaponPhysicsTest < Minitest::Test
   def restore(match) = Burrow::Match.restore(JSON.parse(JSON.generate(match.checkpoint)))
 
   def test_preview_can_distinguish_new_hosts_from_protocol_four_legacy_hosts
-    assert_equal 2, arena.snapshot[:physics_revision]
+    assert_equal 3, arena.snapshot[:physics_revision]
     assert_in_delta 157, Burrow::Physics.launch_speed("grenade", 0.05, legacy: true)
     assert_in_delta 33.5, Burrow::Physics.launch_speed("grenade", 0.05)
     assert_in_delta 670, Burrow::Physics.launch_speed("rocket", 1.0, legacy: true)
     assert_in_delta 670, Burrow::Physics.launch_speed("rocket", 1.0)
     [false, true].each { |legacy| assert_in_delta 580, Burrow::Physics.launch_speed("mortar", 0.05, legacy: legacy) }
+  end
+
+  def test_every_catalog_weapon_has_a_complete_profile
+    assert_equal Burrow::Catalog::WEAPONS.keys.sort, Burrow::Physics::WEAPON_PROFILES.keys.sort
+    required = %i[launch_scale gravity_scale restitution blast_knock blast_lift prop_mass]
+    Burrow::Catalog::WEAPONS.each_key do |id|
+      profile = Burrow::Physics.profile(id)
+      assert profile.frozen?, id
+      required.each { |field| assert profile.key?(field), "#{id} is missing #{field}" }
+    end
+    assert_operator Burrow::Physics.profile("rifle")[:direct_push], :>, Burrow::Physics.profile("minigun")[:direct_push]
+    assert_operator Burrow::Physics.profile("bat")[:melee_impulse][0], :>, Burrow::Physics.profile("prod")[:melee_impulse][0]
   end
 
   def test_launcher_blast_has_a_readable_arc_and_carries_through_landing

@@ -189,8 +189,8 @@ class WeaponsCloseTest < Minitest::Test
       victim[:x] = angle < -90 ? 265 : 335
       fire(match, "bat", angle: angle)
       assert_equal 68, victim[:hp]
-      assert_in_delta Math.cos(angle * Math::PI / 180) * 490, victim[:vx], 0.001
-      assert_in_delta Math.sin(angle * Math::PI / 180) * 490, victim[:vy], 0.001
+      assert_in_delta Math.cos(angle * Math::PI / 180) * Burrow::Physics.profile("bat")[:melee_impulse][0], victim[:vx], 0.001
+      assert_in_delta Math.sin(angle * Math::PI / 180) * Burrow::Physics.profile("bat")[:melee_impulse][0], victim[:vy], 0.001
     end
   end
 
@@ -200,7 +200,7 @@ class WeaponsCloseTest < Minitest::Test
     victim[:x] = 335
     fire(match, "prod")
     assert_equal 100, victim[:hp]
-    assert_equal [140, -35], victim.values_at(:vx, :vy)
+    assert_equal Burrow::Physics.profile("prod")[:melee_impulse], victim.values_at(:vx, :vy)
     match = arena
     victim = match.worms[1]
     victim[:x], victim[:hp] = 335, 75

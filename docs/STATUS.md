@@ -1,33 +1,31 @@
 # Current status
 
-Updated **2026-10-15** · client **0.5.12 test preview** · published release **0.5.10** · protocol **4**.
+Updated **2026-10-15** · client **0.5.13 test preview** · published release **0.5.10** · protocol **4**.
 
-## 0.5.12 weapon physics preview (unreleased)
+## 0.5.13 full-arsenal weapon physics preview (unreleased)
 
-The two supplied videos informed short charged throws, continuous rebounds and
+The two supplied videos informed short charged throws, continuous rebounds,
 rolling, water skimming, and the separation between a crater, a launched grub,
-its landing and a delayed prop chain. This pass adds weapon-specific blast
-impulses, a visible landing rebound, camera follow through the airborne victim,
-and a velocity-based wake for water skips. Full-power reach, weapon damage and
-host ownership remain unchanged; low-power shots stay short and fused
-projectiles move on their last tick before exploding.
+its landing and a delayed prop chain. This pass applies that physical language
+to all 48 catalog entries through immutable profiles: launcher gravity and
+restitution, direct-hit push, close-attack impulses, sky-drop timing, critter
+movement, loose-prop mass, rope and jetpack motion, parachutes, and digging
+tools. Full-power reach, weapon damage and host ownership remain unchanged;
+low-power shots stay short and fused projectiles move on their last tick before
+exploding.
 
-Linux passes 360 Ruby tests / 14,191 assertions and the physics native journey,
-including short throw, three-second wall rebound, water skip and far-bank
-impact. The Apple silicon preview package is built and verified from commit
-`dff7220` in the [Package macOS workflow](https://github.com/AliOsm/scarpe-worms/actions/runs/38775008630).
-The required package, gameplay, input, recovery, audio and native checks pass.
-The archive checksum and runner evidence are recorded in
-[the validation report](validation/weapon-physics-0.5.12.json). Its
-informational rendering benchmark still has shared-runner outliers: combat
-peaks at 70.41 ms and zoom at 67.18 ms; the workflow continued because this
-is not physical-Mac acceptance.
+Linux passes 361 Ruby tests / 14,538 assertions in this source pass; the native
+physics journey is still required before packaging. The Apple silicon preview
+will be built and verified from the final immutable commit in the Package macOS
+workflow. The archive checksum and runner evidence will be recorded in
+[the validation report](validation/weapon-physics-0.5.13.json).
 
 This branch is for the owner's Mac playtest before release. No release tag,
 publication or production deployment is part of this preview. Protocol 4 and
 version-one saves remain supported. Physics belongs to the host: test in Quick
 battle or host with this build to exercise it. The new client uses the old power
 curve for aim dots when connected to a host without `physics_revision` metadata.
+The new host advertises `physics_revision: 3`.
 
 
 ## 0.5.10 two-finger camera panning

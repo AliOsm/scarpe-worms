@@ -46,7 +46,7 @@ module Burrow
           vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, damage: damage,
           life: %w[bounce cluster sticky gas].include?(kind) ? ((id == "holy_bomb" ? 5 : fuse) * TICK_RATE).round : 9 * TICK_RATE,
           bounce: %w[bounce cluster gas].include?(kind), sticky: kind == "sticky", homing: kind == "homing",
-          target_x: x, target_y: y, wind: id != "mortar" && %w[projectile homing].include?(kind), shooter: active_id, **staged)
+          target_x: x, target_y: y, wind: Physics.profile(id)[:wind_scale] > 0, shooter: active_id, **staged)
       when "place"
         # A close wall must not place the charge on its far side or inside it.
         px, py = active[:x], active[:y] - 8
@@ -80,52 +80,61 @@ module Burrow
         if kind == "meteor"
           # A shower crosses the whole battlefield in readable waves, not six
           # simultaneous flashes. Persisted projectile delays keep saves exact.
+          tuning = Physics.profile(id)
+          drop_gravity = gravity * tuning[:gravity_scale]
           6.times do |i|
             landing = 40 + (world_width - 80) * (i + @rng.rand) / 6.0
-            vx = @rng.rand(-85.0..85.0)
+            vx = @rng.rand(-tuning[:meteor_drift]..tuning[:meteor_drift])
+            drop_speed = tuning[:meteor_drop]
             drop = [terrain.surface(landing) + 40, 40].max
-            fall = (-130 + Math.sqrt(130**2 + 2 * gravity * drop)) / gravity
-            projectile(weapon, x: landing - vx * fall, y: -40, vx: vx, vy: 130,
+            fall = (-drop_speed + Math.sqrt(drop_speed**2 + 2 * drop_gravity * drop)) / drop_gravity
+            projectile(weapon, x: landing - vx * fall, y: -40, vx: vx, vy: drop_speed,
               damage: damage, life: 12 * TICK_RATE, delay: i * 9, sky_drop: true)
           end
         else
           # The plane and release points use the same trajectory. Its bombs
           # inherit its speed and cover a 152-pixel stick in approach order.
-          vx, top, spacing = side * 95.0, -40.0, 12
+          tuning = Physics.profile(id)
+          vx, top, spacing = side * tuning[:sky_speed], -40.0, tuning[:release_spacing]
+          drop_speed = tuning[:drop_speed]
+          drop_gravity = gravity * tuning[:gravity_scale]
           drop = [y - top, 40].max
-          fall = (-130 + Math.sqrt(130**2 + 2 * gravity * drop)) / gravity
+          fall = (-drop_speed + Math.sqrt(drop_speed**2 + 2 * drop_gravity * drop)) / drop_gravity
           first = x - vx * fall - vx * (2 * spacing).fdiv(TICK_RATE)
           lead = 18
           start = first - vx * lead.fdiv(TICK_RATE)
           emit("strike", weapon: id, x: start, y: top - 14, vx: vx, side: side,
             duration: (lead + spacing * 4 + 24).fdiv(TICK_RATE))
           5.times do |i|
-            projectile(weapon, x: first + vx * (i * spacing).fdiv(TICK_RATE), y: top, vx: vx, vy: 130,
+            projectile(weapon, x: first + vx * (i * spacing).fdiv(TICK_RATE), y: top, vx: vx, vy: drop_speed,
               damage: damage, life: 12 * TICK_RATE, delay: lead + i * spacing,
               drop_mine: kind == "mines", fire: kind == "napalm", sky_drop: true)
           end
         end
       when "quake"
+        tuning = Physics.profile("earthquake")
         worms.each do |w|
           next if w[:hp] <= 0 || w[:frozen]
-          w[:vx] += (@rng.rand - 0.5) * 420
-          w[:vy] = -90 - @rng.rand * 70
+          w[:vx] += (@rng.rand - 0.5) * tuning[:quake_horizontal]
+          w[:vy] = -tuning[:quake_lift] - @rng.rand * 70
           w[:rope] = nil
           w[:launched] = true
           hurt(w, damage, source: team[:id])
         end
         hazards.each do |h|
           next unless %w[mine barrel crate turret].include?(h[:kind])
-          h[:vx] = h.fetch(:vx, 0) + (@rng.rand - 0.5) * 240 / Physics::PROP_MASS.fetch(h[:kind])
+          mass = Physics::PROP_MASS.fetch(h[:kind]) * Physics.profile(h[:kind])[:prop_mass]
+          h[:vx] = h.fetch(:vx, 0) + (@rng.rand - 0.5) * tuning[:quake_horizontal] * 0.57 / mass
           h[:vy], h[:launched], h[:chute] = -70 - @rng.rand * 60, true, false
         end
         emit("quake", x: active[:x], y: active[:y], radius: 100,
           points: worms.select { |w| w[:hp] > 0 }.first(8).map { |w| [w[:x], w[:y]] })
       when "walker", "guided", "digger", "poisoner", "herd"
+        tuning = Physics.profile(id)
         count = kind == "herd" ? 3 : 1
         count.times do |i|
           projectile(weapon, x: active[:x] + active[:facing] * 10, y: active[:y] - 8,
-            vx: active[:facing] * 105, vy: -80, direction: active[:facing], shooter: active_id,
+            vx: active[:facing] * tuning[:walker_speed], vy: -80, direction: active[:facing], shooter: active_id,
             damage: damage, walker: true, remote: kind != "herd", stage: "walking", delay: i * 24,
             poisoner: kind == "poisoner", life: (kind == "guided" || kind == "digger" ? 12 : 8) * TICK_RATE)
         end
@@ -150,7 +159,7 @@ module Burrow
         active[:jetpack] = true
         active[:launched] = false
         active[:thrusting] = false
-        active[:vy] = -80
+        active[:vy] = Physics.profile("jetpack")[:jetpack_start]
       when "parachute"
         active[:launched] = false
         active[:parachute] = true
@@ -311,10 +320,11 @@ module Burrow
 
     def activate_control(owner)
       if (p = controllable_projectile(owner))
+        tuning = Physics.profile(p[:weapon])
         case [p[:kind], p[:stage]]
         when ["guided", "walking"]
           p[:stage], p[:walker], p[:guided] = "flying", false, true
-          p[:vx], p[:vy], p[:heading] = 0.0, -Physics::CRITTER_FLIGHT_SPEED, -Math::PI / 2
+          p[:vx], p[:vy], p[:heading] = 0.0, -tuning[:guided_speed], -Math::PI / 2
           p[:steer], p[:input_until] = 0, tick
           p[:flight_ticks], p[:life] = Physics::CRITTER_FLIGHT_TICKS, Physics::CRITTER_FLIGHT_TICKS + 4 * TICK_RATE
           # A late takeoff still gets its full flight, without handing control
@@ -324,7 +334,7 @@ module Burrow
           p[:life], p[:guided], p[:remote], p[:stage] = 0, false, false, "detonating"
         when ["digger", "walking"]
           p[:stage], p[:walker] = "diving", false
-          p[:vx], p[:vy] = p[:direction] * 110.0, -150.0
+          p[:vx], p[:vy] = p[:direction] * tuning[:digger_vx], tuning[:digger_vy]
         when ["poisoner", "walking"]
           p[:stage], p[:spraying], p[:remote] = "spraying", true, false
           p[:life] = 4 * TICK_RATE
@@ -374,11 +384,12 @@ module Burrow
         explode(p[:x], p[:y], damage: p[:damage], radius: p[:radius], owner: p[:owner], kind: p[:weapon])
       end
       if (p[:kind] == "cluster" || p[:weapon] == "mortar") && !p[:fragment]
+        tuning = Physics.profile(p[:weapon])
         count = p[:weapon] == "banana" ? 6 : 5
         count.times do |i|
           projectiles << {id: next_object_id, weapon: p[:weapon], kind: "projectile", owner: p[:owner],
-            x: p[:x], y: p[:y] - 12, vx: (i - (count - 1) / 2.0) * 85 + p[:vx] * 0.3,
-            vy: -135 - @rng.rand * 95, age: 0, life: 100, radius: p[:weapon] == "banana" ? 40 : 25,
+            x: p[:x], y: p[:y] - 12, vx: (i - (count - 1) / 2.0) * 85 * tuning[:fragment_horizontal] + p[:vx] * 0.3,
+            vy: (-135 - @rng.rand * 95) * tuning[:fragment_lift], age: 0, life: 100, radius: p[:weapon] == "banana" ? 40 : 25,
             damage: (p[:weapon] == "banana" ? 45 : p[:weapon] == "mortar" ? 15 : 24) * p.fetch(:damage_scale, 1), fragment: true, stage: "fragment"}
           record_projectile(projectiles.last)
         end
@@ -434,9 +445,11 @@ module Burrow
         next if victim[:frozen] || victim[:hp] <= 0
         # A stream pushes gently; a cartridge applies one impulse even when all
         # five pellets connect. Neither kind gives the target extra fall damage.
-        force = kind == "flame" ? 10 : kind == "burst" ? 16 : 40
+        tuning = Physics.profile(shot[:weapon])
+        force = (kind == "flame" ? 10 : kind == "burst" ? 16 : 40) * tuning[:direct_push]
+        lift = (kind == "flame" ? 5 : 18) * tuning[:direct_lift]
         victim[:vx] += Math.cos(angle) * force
-        victim[:vy] += Math.sin(angle) * force - (kind == "flame" ? 5 : 18)
+        victim[:vy] += Math.sin(angle) * force - lift
         victim[:launched] = true
       end
       prop_hits.each do |id, amount|
@@ -524,20 +537,22 @@ module Burrow
         hit = weapon[:id] == "axe" ? (w[:hp] / 2.0).ceil * (@damage_boost ? 2 : 1) : damage
         hurt(w, hit, source: team[:id])
         next if w[:frozen] || w[:hp] <= 0
+        impulse = Physics.profile(weapon[:id])[:melee_impulse]
         case weapon[:id]
         when "bat"
-          w[:vx], w[:vy] = Math.cos(angle) * 490, Math.sin(angle) * 490
+          speed = impulse ? impulse[0] : 490
+          w[:vx], w[:vy] = Math.cos(angle) * speed, Math.sin(angle) * speed
         when "prod"
-          w[:vx], w[:vy] = active[:facing] * 140, -35
+          w[:vx], w[:vy] = active[:facing] * (impulse ? impulse[0] : 140), impulse ? impulse[1] : -35
         when "axe"
-          w[:vx], w[:vy] = active[:facing] * 25, -25
+          w[:vx], w[:vy] = active[:facing] * (impulse ? impulse[0] : 25), impulse ? impulse[1] : -25
         when "fire_punch"
-          w[:vx], w[:vy] = active[:facing] * 95, -285
+          w[:vx], w[:vy] = active[:facing] * (impulse ? impulse[0] : 95), impulse ? impulse[1] : -285
         end
         w[:launched] = true
       end
       if weapon[:id] == "fire_punch"
-        active[:vy], active[:launched] = -175, true
+        active[:vy], active[:launched] = Physics.profile("fire_punch")[:self_lift], true
       end
       emit("melee", x: active[:x], y: active[:y] - 10, style: weapon[:id], worm: active_id,
         facing: active[:facing], angle: angle, hits: victims.map { |w| w[:id] })
@@ -558,7 +573,8 @@ module Burrow
         return
       end
       if @tool[:kind] == "dash"
-        x = (active[:x] + @tool[:direction] * 9).clamp(12, world_width - 12)
+        tuning = Physics.profile("dragon_punch")
+        x = (active[:x] + @tool[:direction] * tuning[:dash_step]).clamp(12, world_width - 12)
         terrain.carve(x, active[:y] - 10, 23, scorch: false)
         active[:x] = x if body_clear?(x, active[:y])
         @tool[:hits] ||= []
@@ -570,7 +586,7 @@ module Burrow
           @tool[:hits] << w[:id]
           hits << w[:id]
           hurt(w, @tool[:damage], source: @tool[:owner])
-          w[:vx], w[:vy], w[:launched] = @tool[:direction] * 230, -95, true if w[:hp] > 0 && !w[:frozen]
+          w[:vx], w[:vy], w[:launched] = @tool[:direction] * tuning[:dash_speed], tuning[:dash_lift], true if w[:hp] > 0 && !w[:frozen]
         end
         if tick % 3 == 0 || !hits.empty?
           emit("melee", x: active[:x], y: active[:y] - 10, style: "dragon_punch", worm: active_id,
@@ -579,9 +595,10 @@ module Burrow
         return
       end
       drilling = @tool[:kind] == "drill"
+      tuning = Physics.profile(drilling ? "drill" : "blowtorch")
       lift = tick <= @tool.fetch(:input_until, 0) ? @tool.fetch(:lift, 0) : 0
-      nx = (active[:x] + (drilling ? 0 : @tool[:direction] * 3)).clamp(12, world_width - 12)
-      ny = active[:y] + (drilling ? 2.8 : -lift * 1.35)
+      nx = (active[:x] + (drilling ? 0 : @tool[:direction] * tuning[:tool_step])).clamp(12, world_width - 12)
+      ny = active[:y] + (drilling ? tuning[:tool_step] : -lift * tuning[:tool_lift])
       x = nx + (drilling ? 0 : @tool[:direction] * 12)
       y = ny + (drilling ? 4 : -10)
       terrain.carve(x, y, drilling ? 22 : 25, scorch: !drilling)
@@ -600,7 +617,7 @@ module Burrow
       end
       if tick % 3 == 0
         emit("dig", x: x, y: y, radius: 22, worm: active_id, style: @tool[:kind], facing: @tool[:direction],
-          lift: lift, angle: drilling ? Math::PI / 2 : Math.atan2(-lift * 1.35, @tool[:direction] * 3))
+          lift: lift, angle: drilling ? Math::PI / 2 : Math.atan2(-lift * tuning[:tool_lift], @tool[:direction] * tuning[:tool_step]))
       end
     end
   end

@@ -1,4 +1,4 @@
-# Weapon physics preview · 0.5.12
+# Weapon physics preview · 0.5.13
 
 This is an unreleased Apple silicon test build for the owner's acceptance.
 Its tuning is original to Burrow Brigade; the videos inform behavior rather
@@ -89,6 +89,38 @@ Critter blasts retain their previous impulse scale because those weapons already
 have long remote flight budgets; the video-driven tuning applies to launchers,
 bouncing bombs and hazards.
 
+## Full-arsenal retune
+
+The 0.5.13 pass moves the physical constants into one immutable profile for
+each of the 48 catalog entries. This makes the visible response consistent in
+Quick Battle, bot traces, checkpoints and the aim preview instead of changing
+only the three weapons in the reference sequence.
+
+- **Launchers and explosives** use individual launch scale, gravity, wind,
+  restitution, water-entry and blast-lift values. Cluster and banana fragments
+  inherit their parent's spread and lift, while heavy bombs settle with lower
+  rebound and Stink bomb remains a low-pressure gas release.
+- **Direct weapons** have distinct body impulses: the rifle is a precise shove,
+  the minigun is a light repeated push, the laser sits between them, and the
+  flamethrower keeps a soft stream push. Shotgun keeps its cartridge contract
+  and one recoil impulse for a five-pellet hit.
+- **Close attacks** read their launch vectors from the profile. Uppercrust,
+  Little nudge, Home run and Half measure therefore keep separate lift and
+  horizontal responses; Dragon dash uses the same profile for its rush and
+  victim launch.
+- **Sky weapons** share the drop solver but have separate bomber speed, drop
+  speed, spacing, meteor drift and quake impulses. The gravity multiplier used
+  to place a drop is the same multiplier used while it falls.
+- **Critters** use profile speeds for release, walking, ledge hops, Captain
+  wool's flight, Tunnel buddy's dive and tunnel motion, and their final blast.
+- **Props and mobility** use profile mass and gravity. Mines, barrels and
+  sentries therefore move differently under a blast; rope hook/reel/pump,
+  jetpack thrust, parachute fall and drill/blowtorch/dash travel are also
+  authoritative profile values.
+
+The profile table is checked against `Catalog::WEAPONS` in regression tests, so
+adding a selectable weapon without a physical contract fails the test suite.
+
 ## Verification and compatibility
 
 `test/video_weapon_physics_test.rb` covers short-lob range, the launcher arc and
@@ -103,12 +135,12 @@ homing, melee, chain reactions and turn completion.
 short throw, timed wall rebound and a full-charge water skip to the far bank.
 It also runs on Apple silicon before packaging. The packaged prediction and
 physics journeys, menu/gameplay smoke, audio checks and archive verification
-pass; see the [validation record](validation/weapon-physics-0.5.12.json) for
+pass; see the [validation record](validation/weapon-physics-0.5.13.json) for
 the runner evidence and the remaining informational rendering outliers.
 
 Protocol 4 and version-one saves remain supported. Restored shots retain their
 saved velocity and remaining fuse, then follow the new host physics. A snapshot
-adds optional `physics_revision: 2`; the new client uses the legacy power curve
+adds optional `physics_revision: 3`; the new client uses the legacy power curve
 when that field is absent. Upgrade clients on a new host for accurate aim dots.
 An old online host still owns its original rules, even when joined from this app.
 

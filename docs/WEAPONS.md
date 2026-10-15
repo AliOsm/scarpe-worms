@@ -118,7 +118,7 @@ activation can be sent. The server validates ownership, parameters, phase, and a
 
 ## Munitions details
 
-In the 0.5.12 test build, charged weapons use the full power range: a light tap
+In the 0.5.13 test build, charged weapons use the full power range: a light tap
 makes a short lob, while full charge keeps the same maximum launch speed. The
 aim dots and bot power calculations use that curve. Moon mortar still has fixed
 power. Grenades continue moving through the last tick of their selected fuse.
