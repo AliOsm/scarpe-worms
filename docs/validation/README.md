@@ -5,6 +5,7 @@ their scope; generic filenames are outputs of individual tools.
 
 | Evidence | Start here |
 | --- | --- |
+| 0.5.11 weapon physics preview | [Video-driven regressions, native input and Apple silicon test package](weapon-physics-0.5.11.json) |
 | 0.5.7 combat responsiveness | [Damage-label preparation, terrain equivalence, mixed audio, Mac backend comparisons and remaining frame stalls](responsiveness-0.5.7.json) |
 | 0.5.7 movement experiment | [Apple silicon build, prediction latency, native checks, compatibility and rendering limits](client-prediction-0.5.7.json) |
 | 0.5.6 Ruby 4 and Rust 1.99 | [Source, runtime relocation, packaged clients and server checks](runtime-0.5.6.json) |

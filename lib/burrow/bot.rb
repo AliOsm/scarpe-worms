@@ -61,15 +61,26 @@ module Burrow
 
     def impact(match, degrees, power)
       angle = degrees * Math::PI / 180
-      x = match.active[:x] + Math.cos(angle) * 20
-      y = match.active[:y] - 13 + Math.sin(angle) * 20
-      vx, vy = Math.cos(angle) * (130 + power * 540), Math.sin(angle) * (130 + power * 540)
+      x, y = match.send(:muzzle_point, angle)
+      speed = Physics.launch_speed("rocket", power)
+      vx, vy = Math.cos(angle) * speed, Math.sin(angle) * speed
       240.times do |tick|
         vx += match.wind * 42 * DT
         vy += match.send(:gravity) * DT
         3.times do
-          x += vx * DT / 3
-          y += vy * DT / 3
+          nx, ny = x + vx * DT / 3, y + vy * DT / 3
+          if y <= match.water && ny >= match.water && vy > 0
+            fraction = (match.water - y) / (ny - y)
+            x += (nx - x) * fraction
+            y = match.water
+            rebound = Physics.water_skip_velocity("rocket", vx, vy)
+            return [x, y] unless rebound
+            vx, vy = rebound
+            x += vx * DT / 3 * (1 - fraction)
+            y += vy * DT / 3 * (1 - fraction) - 0.01
+          else
+            x, y = nx, ny
+          end
           hit = tick > 5 && match.worms.any? { |w| w[:hp] > 0 && Math.hypot(w[:x] - x, w[:y] - 10 - y) < 12 }
           return [x, y] if hit || match.terrain.solid?(x, y) || y > match.water || x < 0 || x > match.world_width
         end

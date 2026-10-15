@@ -1,0 +1,49 @@
+{
+  "version": "0.5.11",
+  "status": "unreleased test build",
+  "date": "2026-10-15",
+  "references": [
+    "https://www.youtube.com/shorts/KQJyX3acyPU",
+    "https://www.youtube.com/watch?v=EyrKBNpAMiI"
+  ],
+  "linux": {
+    "ruby": "4.0.7",
+    "native_physics_journey": "passed: short lob, wall rebound with exact fuse, water skim and far-bank impact",
+    "full_native_suite": {
+      "journeys": 9,
+      "assertions": 281,
+      "failures": 0,
+      "errors": 0,
+      "duration_seconds": 163.2
+    },
+    "regression_sensitivity": {
+      "baseline_commit": "e369218",
+      "new_tests_run_on_0_5_10": 11,
+      "expected_failures": 9,
+      "errors": 0,
+      "description": "Failures reproduce the old short-lob range, terminal airburst, paused rebounds, absent water skips and missing revision metadata."
+    },
+    "core": {
+      "tests": 359,
+      "assertions": 14186,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 108.5
+    }
+  },
+  "macos": {
+    "target": "Apple silicon, macOS 13+",
+    "build": "pending",
+    "physical_playtest": "pending owner acceptance"
+  },
+  "release": {
+    "published": false,
+    "tag_created": false,
+    "production_deployed": false
+  },
+  "compatibility": {
+    "protocol": 4,
+    "checkpoint": 1,
+    "optional_snapshot_physics_revision": 1
+  }
+}

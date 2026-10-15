@@ -4,7 +4,7 @@ module Burrow
   module Catalog
     # All gameplay values live here; every ID has a server-side implementation.
     DATA = [
-      ["rocket", "Pocket rocket", "Launchers", "projectile", 48, 48, -1, "Aim and charge a wind-sensitive rocket. Explodes on the first impact."],
+      ["rocket", "Pocket rocket", "Launchers", "projectile", 48, 48, -1, "Aim and charge a wind-sensitive rocket. Fast, shallow shots skim water; solid impacts explode."],
       ["mortar", "Moon mortar", "Launchers", "projectile", 18, 26, 3, "Tap to launch a fixed-power shell. Impact scatters five smaller fragments."],
       ["homing", "Love letter", "Launchers", "homing", 45, 42, 2, "Lock, aim, then charge. Its motor steers after half a second and burns for four seconds."],
       ["grenade", "Tick-tock", "Explosives", "bounce", 52, 50, -1, "Set a 1–5 second fuse, charge and throw. Bounces, rolls and blasts on the count."],

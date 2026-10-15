@@ -73,6 +73,8 @@ jobs:
       - run: bundle exec rake test
       - name: Native delayed-input prediction and comparison switch
         run: ./bin/check-native checks/prediction.sspec
+      - name: Native short throws, wall rebounds and water skimming
+        run: ./bin/check-native checks/physics.sspec
       - uses: actions/cache@v4
         with:
           path: .cache/macos

@@ -1,0 +1,148 @@
+---
+display: native
+timeout: 150
+----------- app code
+ENV["BURROW_DATA_DIR"] = File.join(Dir.pwd, "physics-data")
+require File.join(ENV.fetch("BURROW_ROOT"), "lib/burrow/server/reactor")
+require File.join(ENV.fetch("BURROW_ROOT"), "lib/burrow/server/certificate")
+require "stringio"
+module PhysicsCourse
+  def initialize(**args)
+    super
+    water_course = config["seed"] == "physics-water"
+    ground = water_course ? 1180 : 900
+    data = "\0".b * terrain.cols * terrain.rows
+    data[(ground / 2) * terrain.cols..] = "\1" * ((terrain.rows - ground / 2) * terrain.cols)
+    if water_course
+      (ground / 2...terrain.rows).each { |row| data[row * terrain.cols + 180, 345] = "\0" * 345 }
+    end
+    @terrain = Burrow::Terrain.new(seed: config.seed_number, width: world_width, height: world_height, data: data)
+    @terrain.bridge(350, 830, width: 0, height: 70) if config["seed"] == "physics-wall"
+    worms.zip([300, 1400, 1600, 1800]).each { |w, x| w.merge!(x: x.to_f, y: ground.to_f, vx: 0.0, vy: 0.0) }
+    @motion_frames.clear
+    record_motion
+  end
+end
+Burrow::Match.prepend(PhysicsCourse)
+dir = File.join(Dir.pwd, "physics-server")
+cert, key = Burrow::Server::Certificate.ensure_pair(File.join(dir, "tls"))
+$physics_server = Burrow::Server::Reactor.new(port: 0, data_dir: dir, certificate: cert, key: key, logger: Logger.new(StringIO.new))
+$physics_thread = Thread.new { $physics_server.run }
+ENV["BURROW_CONNECT"] = "tls://127.0.0.1:#{$physics_server.port}"
+ENV["BURROW_FINGERPRINT"] = $physics_server.fingerprint
+at_exit do
+  $physics_friend&.close
+  $physics_server.stop
+  $physics_thread.join(5)
+end
+load File.join(ENV.fetch("BURROW_ROOT"), "game.rb")
+----------- test code
+client = Shoes.APPS.first.instance_variable_get(:@burrow)
+auto = Scarpe::Native::DisplayService.instance.automation
+wait_real = lambda do |seconds = 15, &condition|
+  deadline = Burrow.clock + seconds
+  until condition.call
+    raise "Physics journey timed out at #{caller_locations(1, 1).first}; notice=#{client.instance_variable_get(:@last_notice)}" if Burrow.clock > deadline
+    sleep 0.015
+    advance 0.02
+  end
+end
+pause = lambda do |seconds|
+  deadline = Burrow.clock + seconds
+  wait_real.call { Burrow.clock >= deadline }
+end
+wait_real.call { client.connection.status == "online" }
+client.action("create", name: "Physics course", config: {"seed" => "physics-lob", "worms" => 2, "health" => 200,
+  "scheme" => "sandbox", "wind" => 0, "mines" => 0, "barrels" => 0, "crates" => false,
+  "retreat_seconds" => 0, "turn_seconds" => 90, "fall_damage" => false})
+wait_real.call { client.page == :lobby }
+$physics_friend = Burrow::Client::Connection.new(endpoint: ENV["BURROW_CONNECT"], name: "Observer", fingerprint: $physics_server.fingerprint).connect
+wait_real.call { $physics_friend.status == "online" }
+$physics_friend.send_action("join", code: client.room["code"])
+wait_real.call { client.room["members"].size == 2 }
+host = lambda { $physics_server.rooms.values.first.match }
+start = lambda do
+  $physics_friend.send_action("ready", ready: true)
+  wait_real.call { client.room["members"].last["ready"] }
+  click_on "Start the mischief"
+  wait_real.call { client.page == :match && client.scene.terrain_revision >= 0 && client.my_turn? }
+  pause.call(0.3)
+end
+reset = lambda do |seed|
+  $physics_friend.send_action("surrender")
+  wait_real.call { client.state["phase"] == "finished" }
+  client.action("rematch")
+  wait_real.call { client.page == :lobby }
+  client.action("configure", config: client.room["config"].merge("seed" => seed))
+  wait_real.call { client.room.dig("config", "seed") == seed }
+  start.call
+end
+equip = lambda do |id|
+  press_key "e"
+  name = Burrow::Catalog.fetch(id)[:name]
+  click_on images.find { |i| i.alt.to_s.start_with?(name + ", ") }
+  click_on "Equip"
+  assert_equal id, client.selected_weapon
+end
+aim = lambda do |x, y|
+  sx, sy = client.scene.camera.screen(x, y)
+  scale = client.instance_variable_get(:@scale)
+  auto.mouse(:move, client.instance_variable_get(:@offset_x) + sx * scale,
+    client.instance_variable_get(:@offset_y) + (sy + Burrow::Client::Scene::Y) * scale)
+end
+start.call
+
+# A quick native press/release must give a useful short throw and an exact fuse.
+equip.call("grenade")
+press_key "1"
+aim.call(650, 887)
+auto.key_down(" ")
+pause.call(0.04)
+auto.key_up(" ")
+wait_real.call { host.call.projectiles.any? }
+shot = host.call.projectiles.first
+launch_x = shot[:x]
+fired = host.call.events.find { |e| e[:kind] == "fire" }
+assert_operator host.call.inputs.find { |i| i[:type] == "fire" }[:values]["power"], :<, 0.2
+snapshot "physics-short-lob"
+wait_real.call { host.call.events.any? { |e| e[:kind] == "explosion" } }
+blast = host.call.events.find { |e| e[:kind] == "explosion" }
+assert_equal 30, blast[:tick] - fired[:tick]
+assert_operator blast[:x] - launch_x, :<, 90
+assert_equal 1, host.call.events.count { |e| e[:kind] == "fire" }
+
+# A real charged throw rebounds off a thin wall and keeps its selected fuse.
+reset.call("physics-wall")
+equip.call("grenade")
+press_key "3"
+aim.call(650, 887)
+auto.key_down(" ")
+pause.call(0.4)
+auto.key_up(" ")
+wait_real.call { host.call.projectiles.any? { |p| p[:vx] < -20 } }
+assert host.call.events.any? { |e| e[:kind] == "bounce" }
+assert_operator host.call.projectiles.first[:life], :>, 60
+snapshot "physics-wall-rebound"
+wait_real.call { host.call.events.any? { |e| e[:kind] == "explosion" } }
+fired = host.call.events.find { |e| e[:kind] == "fire" }
+blast = host.call.events.find { |e| e[:kind] == "explosion" }
+assert_equal 90, blast[:tick] - fired[:tick]
+
+# Full charge across an open channel: native input -> TLS host -> skip -> far bank.
+reset.call("physics-water")
+equip.call("rocket")
+aim.call(950, 1167)
+auto.key_down(" ")
+wait_real.call { host.call.events.any? { |e| e[:kind] == "fire" } }
+auto.key_up(" ")
+wait_real.call { host.call.events.any? { |e| e[:skim] } }
+assert host.call.projectiles.any?, "the rocket survives its water contact"
+wait_real.call { client.state["events"].any? { |e| e["skim"] } }
+snapshot "physics-water-skim"
+wait_real.call { host.call.events.any? { |e| e[:kind] == "explosion" } }
+blast = host.call.events.find { |e| e[:kind] == "explosion" }
+assert_in_delta 1050, blast[:x], 1, "the rocket reaches the far bank"
+assert_equal 1, host.call.events.count { |e| e[:kind] == "fire" }
+assert_equal 1, host.call.events.count { |e| e[:kind] == "explosion" }
+wait_real.call { client.scene.terrain_revision == client.state["terrain_revision"] }
+snapshot "physics-far-bank-impact"

@@ -999,7 +999,7 @@ module Burrow
         aimed = can_aim && Catalog::AIMED.include?(weapon[:kind]) && !@controller.special_control
         angle = @controller.angle * Math::PI / 180
         cos, sin = Math.cos(angle), Math.sin(angle)
-        speed = weapon[:id] == "mortar" ? 580 : 130 + @controller.power * 540
+        speed = Physics.launch_speed(weapon[:id], @controller.power, legacy: @state.fetch("physics_revision", 0) < 1)
         ballistic = Catalog::CHARGED.include?(weapon[:kind])
         gravity = 285 * @state.dig("config", "gravity") * (@state.dig("effects", "low_gravity") ? 0.45 : 1) if aimed
         wind = ballistic && (weapon[:id] == "rocket" || weapon[:id] == "homing")
@@ -1007,8 +1007,14 @@ module Burrow
           if aimed
             distance = 26 + i * 10
             t = (distance - 20) / speed
-            drift = wind ? @state["wind"] * 21 * t * t : 0
-            fall = ballistic ? 0.5 * gravity * t * t : 0
+            if ballistic
+              # Keep a light lob's preview near the muzzle and within the
+              # ballistic part of a homing launch, rather than drawing seconds ahead.
+              t = [t, (i + 1) * 0.04].min
+              distance = 20 + speed * t
+            end
+            drift = wind ? @state["wind"] * 21 * t * (t + DT) : 0
+            fall = ballistic ? 0.5 * gravity * t * (t + DT) : 0
             move_to(dot, px(x + cos * distance + drift - 2), px(y - 13 + sin * distance + fall - 2))
             dot.show if dot.hidden
           else

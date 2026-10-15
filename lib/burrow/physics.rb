@@ -2,6 +2,23 @@
 
 module Burrow
   module Physics
+    # A five-percent charge should be a short lob, not a quarter-power shot.
+    # The host, bot and aim dots must agree on the whole charge range.
+    REVISION = 1
+
+    def self.launch_speed(weapon, power, legacy: false)
+      return 580.0 if weapon == "mortar"
+      legacy ? 130 + power * 540 : 670.0 * power
+    end
+
+    WATER_SKIMMERS = %w[rocket mortar grenade cluster banana mega_bomb holy_bomb poison].freeze
+
+    def self.water_skip_velocity(weapon, vx, vy)
+      return unless WATER_SKIMMERS.include?(weapon) && vx.abs >= 180 && vy > 0 && vy <= vx.abs * 0.45
+      # Shallow, fast shots skip; every contact loses energy until they sink.
+      [vx * 0.85, -vy * 0.65]
+    end
+
     def gravity = 285 * config["gravity"] * (@low_gravity ? 0.45 : 1)
     def grounded?(w) = terrain.solid?(w[:x] - 6, w[:y] + 1) || terrain.solid?(w[:x] + 6, w[:y] + 1)
 
@@ -85,7 +102,10 @@ module Burrow
         dx, dy = w[:vx] * DT, w[:vy] * DT
         steps = [(dx.abs + dy.abs).fdiv(2).ceil, 1].max
         steps.times do
-          nx = (w[:x] + dx / steps).clamp(10, world_width - 10)
+          # A rebound changes the remaining motion in THIS tick. Reusing the
+          # pre-impact displacement made blasted grubs pause at each contact.
+          dx, dy = w[:vx] * DT / steps, w[:vy] * DT / steps
+          nx = (w[:x] + dx).clamp(10, world_width - 10)
           if body_clear?(nx, w[:y])
             w[:x] = nx
           elsif was_grounded && (!direction.zero? || tumbling) && (up = (1..(tumbling ? 5 : 7)).find { |offset| body_clear?(nx, w[:y] - offset) })
@@ -93,11 +113,10 @@ module Burrow
           elsif tumbling && w[:vx].abs > 45
             # Tumbling grubs rebound off walls instead of sticking to them.
             w[:vx] = -w[:vx] * 0.45
-            dx = 0
           else
             w[:vx] = 0
           end
-          ny = w[:y] + dy / steps
+          ny = w[:y] + dy
           if dy >= 0 && (terrain.solid?(w[:x] - 6, ny) || terrain.solid?(w[:x] + 6, ny))
             impact = w[:vy]
             if tumbling && impact > 110
@@ -111,10 +130,8 @@ module Burrow
                 hurt(w, ((impact - 225) * 0.16).round, source: nil)
               end
             end
-            dy = 0
           elsif dy < 0 && !body_clear?(w[:x], ny)
             w[:vy] = tumbling ? -w[:vy] * 0.3 : 0.0
-            dy = 0
           else
             w[:y] = ny
           end
@@ -372,7 +389,7 @@ module Burrow
         # fuse expires, so the blast is evaluated at the terminal position.
         attached_victim = p[:stuck] && p[:attached_to] &&
           worms.any? { |worm| worm[:id] == p[:attached_to] && worm[:hp] > 0 }
-        if p[:life] > 0 || choir_waiting || attached_victim
+        if p[:life] >= 0 || choir_waiting || attached_victim
           if p[:stage] == "digging"
             advance_digger(p)
           elsif p[:walker]
@@ -445,9 +462,17 @@ module Burrow
         p[:vx] += wind * 42 * DT if p[:wind]
         p[:vy] += gravity * DT
       end
-      steps = [(Math.hypot(p[:vx], p[:vy]) * DT / 1.5).ceil, 1].max
-      steps.times do
-        nx, ny = p[:x] + p[:vx] * DT / steps, p[:y] + p[:vy] * DT / steps
+      remaining, contacts = DT, 0
+      while remaining > 0.000001
+        duration = [remaining, 1.5 / [Math.hypot(p[:vx], p[:vy]), 1.0].max].min
+        nx, ny = p[:x] + p[:vx] * duration, p[:y] + p[:vy] * duration
+        # Clip to the surface before checking submerged terrain. Homing rockets
+        # retain their existing underwater flight; fragments and placed charges sink.
+        water_contact = !p[:homing] && p[:y] <= water && ny >= water && p[:vy] > 0
+        if water_contact
+          duration *= (water - p[:y]) / (ny - p[:y])
+          nx, ny = p[:x] + p[:vx] * duration, water
+        end
         victim = projectile_victim(p, nx, ny)
         solid = terrain.solid?(nx, ny)
         # Terrain contact wins over a body behind it, except that a diving
@@ -460,6 +485,18 @@ module Burrow
           advance_digger(p)
           break
         elsif solid || victim
+          # Find the first contact inside this <=1.5px sweep and spend only
+          # that flight time. The outgoing velocity uses the rest of the tick.
+          from_x, from_y = p.values_at(:x, :y)
+          free, hit = 0.0, 1.0
+          8.times do
+            mid = (free + hit) * 0.5
+            sx, sy = from_x + (nx - from_x) * mid, from_y + (ny - from_y) * mid
+            blocked = solid ? terrain.solid?(sx, sy) : Math.hypot(sx - victim[:x], sy - victim[:y] + 10) < 12
+            blocked ? hit = mid : free = mid
+          end
+          p[:x], p[:y] = from_x + (nx - from_x) * free, from_y + (ny - from_y) * free
+          remaining -= duration * free
           if p[:sticky]
             p[:stuck] = true
             p[:vx] = p[:vy] = 0.0
@@ -478,19 +515,37 @@ module Burrow
             end
             reflect_projectile(p, *normal)
             # Bombs settle on level ground and keep rolling down steeper slopes.
-            if !victim && p[:vx].abs < 12 && p[:vy].abs < 22 && normal[1] < -0.8
+            if !victim && p[:vx].abs < 12 && p[:vy].abs < 22 && normal[1] < -0.97
               p[:stuck] = true
               p[:support_x], p[:support_y] = nx, ny
               p[:vx] = p[:vy] = 0.0
             end
-            emit("bounce", x: p[:x], y: p[:y]) if p[:age] - p.fetch(:last_bounce, -10) > 2
-            p[:last_bounce] = p[:age]
+            if p[:age] - p.fetch(:last_bounce, -10) > 2
+              emit("bounce", x: p[:x], y: p[:y])
+              p[:last_bounce] = p[:age]
+            end
           else
             p[:life] = 0
           end
-          break
+          break if p[:stuck] || !p[:bounce]
+          # A tight crevice can make several simultaneous contacts. Bound the
+          # work deterministically without ending the fuse or embedding the bomb.
+          contacts += 1
+          break if contacts >= 8
         else
           p[:x], p[:y] = nx, ny
+          remaining -= duration
+          if water_contact
+            rebound = Physics.water_skip_velocity(p[:weapon], p[:vx], p[:vy]) unless p[:fragment]
+            if rebound
+              p[:vx], p[:vy] = rebound
+              p[:y] = water - 0.01
+              emit("splash", x: p[:x], y: water, weapon: p[:weapon], skim: true)
+            else
+              p[:y] = water + 0.01
+              break
+            end
+          end
         end
       end
     end
@@ -534,7 +589,9 @@ module Burrow
       return if dot >= 0
       bounce = BOUNCE.fetch(p[:weapon], 0.55)
       # Gentle contacts roll; hard impacts scrub off more speed along the surface.
-      grip = dot > -40 ? 0.9 : 0.8
+      gentle = dot > -40 && ny < -0.1
+      grip = gentle ? 0.98 : 0.8
+      bounce = 0.0 if gentle
       tangent_x, tangent_y = p[:vx] - dot * nx, p[:vy] - dot * ny
       p[:vx] = tangent_x * grip - dot * nx * bounce
       p[:vy] = tangent_y * grip - dot * ny * bounce

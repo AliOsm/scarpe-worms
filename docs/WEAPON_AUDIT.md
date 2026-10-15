@@ -12,6 +12,11 @@ sweep, including Captain wool's manual detonation and dedicated in-world art.
 
 ## Research and decisions
 
+The 0.5.11 test preview also studies the owner's two gameplay videos. See
+[weapon physics research](WEAPON_PHYSICS.md) for timestamps, observed mechanics,
+the resulting changes and regression coverage. It supersedes the charge,
+collision and water-contact details below without changing the arsenal roster.
+
 The [Team17 World Party manual](https://cdn.akamai.steamstatic.com/steam/apps/270910/manuals/Worms_World_Party_Remastered_MANUAL.pdf)
 distinguishes charged throws, instantaneous guns, target selection, remote
 activation, and mobility controls. That distinction now drives the input layer:

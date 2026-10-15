@@ -36,7 +36,7 @@ module Burrow
       emit("fire", weapon: id, worm: active_id, x: active[:x], y: active[:y] - 12)
       case kind
       when "projectile", "bounce", "cluster", "sticky", "homing", "gas"
-        speed = id == "mortar" ? 580 : 130 + power * 540
+        speed = Physics.launch_speed(id, power)
         mx, my = muzzle_point(angle)
         staged = {}
         # The launch power sets how fast a homing rocket cruises once its motor locks on.

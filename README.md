@@ -3,6 +3,12 @@
 An original desktop artillery game built with [Scarpe](https://github.com/scarpe-team/scarpe)'s native renderer.
 Up to six teams, destructible random maps, 48 weapons and tools, and self-hosted online play.
 
+**0.5.11 is an unreleased physics test build.** Light taps now make short throws;
+bombs roll and rebound without pausing at contact, blast victims carry their
+rebound through the same tick, and fast, shallow rockets and thrown bombs skim
+water. Fuses include their final movement tick. See the [reference study and
+test notes](docs/WEAPON_PHYSICS.md). The published release remains **0.5.10**.
+
 **0.5.10 adds two-finger camera panning.** A two-finger trackpad swipe moves the
 free camera horizontally or vertically, while a pinch still zooms around the
 pointer. **0.5.9 fixes public TLS certificate chains for hosted servers.** The server
@@ -15,7 +21,7 @@ saves remain compatible; weapons stay server-driven. See [current status](docs/S
 
 ![Burrow Brigade battlefield](docs/evidence/battlefield/glacier-islands-overview.png)
 
-**Status: 0.5.10 preview.** Ruby 4.0+ only, with Ruby 4.0.7 bundled in the macOS
+**Status: 0.5.11 test preview; 0.5.10 published.** Ruby 4.0+ only, with Ruby 4.0.7 bundled in the macOS
 (Apple silicon), Windows and Linux clients and server image. Rust is pinned to 1.99.0. 0.5.4 removed
 the host stall at every crater and made matches start a second faster. 0.5.3 made
 grubs squeak when hit, call for a medic, say "buh-bye" and pop into a little ghost,

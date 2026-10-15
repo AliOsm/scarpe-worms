@@ -1,6 +1,29 @@
 # Current status
 
-Updated **2026-10-15** · client **0.5.10** · published release **0.5.10** · protocol **4**.
+Updated **2026-10-15** · client **0.5.11 test preview** · published release **0.5.10** · protocol **4**.
+
+## 0.5.11 weapon physics preview (unreleased)
+
+The two supplied Worms Armageddon videos informed short charged throws, continuous
+rebounds and rolling, water skimming, and blast follow-through. The
+[reference study](WEAPON_PHYSICS.md) records observed sequences, original tuning,
+compatibility and a Mac playtest checklist. Full-power reach and weapon damage
+stay the same; low-power shots now travel much less far. Fused projectiles move
+on their last tick before exploding. Fast, shallow rockets and bouncing bombs
+can skip across water while losing energy; steep shots still sink.
+
+Linux passes 359 Ruby tests / 14,186 assertions and all nine native journeys,
+including short throw, three-second wall rebound, water skip and far-bank
+impact. Nine of the new regressions fail against unchanged 0.5.10, reproducing
+the corrected behaviors. Apple silicon packaging and performance evidence will
+be recorded in [the preview validation report](validation/weapon-physics-0.5.11.json).
+
+This branch is for the owner's Mac playtest before release. No release tag,
+publication or production deployment is part of this preview. Protocol 4 and
+version-one saves remain supported. Physics belongs to the host: test in Quick
+battle or host with this build to exercise it. The new client uses the old power
+curve for aim dots when connected to a host without `physics_revision` metadata.
+
 
 ## 0.5.10 two-finger camera panning
 
