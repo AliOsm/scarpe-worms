@@ -15,8 +15,15 @@ can skip across water while losing energy; steep shots still sink.
 Linux passes 359 Ruby tests / 14,186 assertions and all nine native journeys,
 including short throw, three-second wall rebound, water skip and far-bank
 impact. Nine of the new regressions fail against unchanged 0.5.10, reproducing
-the corrected behaviors. Apple silicon packaging and performance evidence will
-be recorded in [the preview validation report](validation/weapon-physics-0.5.11.json).
+the corrected behaviors. The Apple silicon package and its required checks pass
+in the [Package macOS workflow](https://github.com/AliOsm/scarpe-worms/actions/runs/38741348665)
+at commit `0903aa9`: the arm64 archive checksum is recorded in [the preview
+validation report](validation/weapon-physics-0.5.11.json), ad-hoc signatures
+verify, packaged menu/bot/input/save recovery passes in headless and windowed
+runs, and the 76-cue CoreAudio check passes. The workflow's informational
+sustained-rendering benchmark had one shared-runner combat frame over its 60 ms
+gate; its combat mean was 16.25 ms and p95 was 22.40 ms. This does not replace
+the owner's physical Mac playtest.
 
 This branch is for the owner's Mac playtest before release. No release tag,
 publication or production deployment is part of this preview. Protocol 4 and

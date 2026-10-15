@@ -33,7 +33,58 @@
   },
   "macos": {
     "target": "Apple silicon, macOS 13+",
-    "build": "pending",
+    "build": {
+      "status": "packaged and verified",
+      "source_commit": "0903aa933b7912f2560d0fecdcc3a8aab4fb45d9",
+      "workflow": "https://github.com/AliOsm/scarpe-worms/actions/runs/38741348665",
+      "runner": "macos-15, arm64",
+      "os": "macOS 15.7.9 (24G830)",
+      "ruby": "4.0.7",
+      "archive": {
+        "name": "Burrow-Brigade-0.5.11-macos-arm64.zip",
+        "bytes": 51229030,
+        "sha256": "70cfcced7c03a8b58789702198f433aa6501a0a504f77ceace0383b96348a83e",
+        "artifact": "https://github.com/AliOsm/scarpe-worms/actions/runs/38741348665/artifacts/11976329972"
+      },
+      "verification": {
+        "native_physics_journey": "passed: short throw, wall rebound, water skim and far-bank impact",
+        "ruby_tests": {
+          "runs": 359,
+          "assertions": 14186,
+          "failures": 0,
+          "errors": 0
+        },
+        "signature": {
+          "codesign": "passed",
+          "architecture": "arm64",
+          "minimum_macos": "13.0",
+          "macho_binaries": 96,
+          "resource_hashes_checked": 3296,
+          "adhoc_code_hashes_verified": true,
+          "notarized": false
+        },
+        "packaged_gameplay": "passed: menu, three-team bot match, input, clean quit, Unicode paths, C locale, resize and saved-match recovery",
+        "audio": "passed: OpenAL Soft/CoreAudio playback, panning, mute, resume and 76 cues"
+      },
+      "informational_benchmarks": {
+        "waits": {
+          "outcome": "passed",
+          "backend": "KqueueTimer",
+          "mean_ms": 10.8321,
+          "p95_ms": 13.534,
+          "max_ms": 15.154
+        },
+        "rendering": {
+          "outcome": "informational gate failed; workflow continued",
+          "combat_mean_ms": 16.2511,
+          "combat_p95_ms": 22.3981,
+          "combat_max_ms": 61.7163,
+          "pan_mean_ms": 16.7631,
+          "pan_p95_ms": 22.133,
+          "note": "The shared macOS runner had one combat frame above the 60 ms gate; this is not physical Mac acceptance."
+        }
+      }
+    },
     "physical_playtest": "pending owner acceptance"
   },
   "release": {
