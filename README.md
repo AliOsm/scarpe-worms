@@ -3,12 +3,13 @@
 An original desktop artillery game built with [Scarpe](https://github.com/scarpe-team/scarpe)'s native renderer.
 Up to six teams, destructible random maps, 48 weapons and tools, and self-hosted online play.
 
-**0.5.13 is an unreleased full-arsenal physics test build.** The video pass now
-retunes every weapon profile: launcher arcs and water skips, direct-hit push,
-melee impulses, sky drops, critter movement, loose props, rope and jetpack
-motion, and tool travel. The host owns the physics and the Mac preview is ready
-for Quick Battle testing. See the [reference study and test notes](docs/WEAPON_PHYSICS.md).
-The published release remains **0.5.10**.
+**0.5.13 brings the weapon physics retune across the arsenal.** Short throws,
+continuous rebounds, water skips and blast landings have clearer motion.
+Weapon-specific profiles cover all 48 weapons and tools, with changes to
+launcher arcs, direct-hit push, melee impulses, sky drops, critters and loose
+props. Mobility and utility items keep their individual rules. The host owns
+the physics: use Quick Battle or an updated online host to play the new tuning.
+See the [reference study and test notes](docs/WEAPON_PHYSICS.md).
 
 **0.5.10 adds two-finger camera panning.** A two-finger trackpad swipe moves the
 free camera horizontally or vertically, while a pinch still zooms around the
@@ -22,7 +23,7 @@ saves remain compatible; weapons stay server-driven. See [current status](docs/S
 
 ![Burrow Brigade battlefield](docs/evidence/battlefield/glacier-islands-overview.png)
 
-**Status: 0.5.13 test preview; 0.5.10 published.** Ruby 4.0+ only, with Ruby 4.0.7 bundled in the macOS
+**Status: 0.5.13 release candidate; 0.5.10 published.** Ruby 4.0+ only, with Ruby 4.0.7 bundled in the macOS
 (Apple silicon), Windows and Linux clients and server image. Rust is pinned to 1.99.0. 0.5.4 removed
 the host stall at every crater and made matches start a second faster. 0.5.3 made
 grubs squeak when hit, call for a medic, say "buh-bye" and pop into a little ghost,

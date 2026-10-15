@@ -104,7 +104,7 @@ can retain aiming; Double tap has two shots in one cartridge. Every action has
 a server implementation. Match checkpoints contain all simulation fields,
 terrain, inventories, in-flight objects, bot planning, and the PRNG state.
 
-The 0.5.13 preview advertises optional `physics_revision: 3` in match snapshots.
+The 0.5.13 host advertises optional `physics_revision: 3` in match snapshots.
 Clients without that field remain protocol-compatible; new clients fall back
 to the legacy charge curve when displaying aim dots for an old host. A new
 host uses linear charge speed, bounded multiple contacts within each 30 Hz tick,

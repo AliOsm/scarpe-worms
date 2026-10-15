@@ -1,7 +1,7 @@
-# Weapon physics preview · 0.5.13
+# Weapon physics · 0.5.13
 
-This is an unreleased Apple silicon test build for the owner's acceptance.
-Its tuning is original to Burrow Brigade; the videos inform behavior rather
+This tuning was developed through Apple silicon previews and is included in
+0.5.13. It is original to Burrow Brigade; the videos inform behavior rather
 than supplying exact physical constants or game assets.
 
 ## Reference study
@@ -38,9 +38,11 @@ redistributed with the repository or app.
 
 ## Implemented behavior
 
-- **Charge:** launch speed is `670 × power` pixels/second. The former
+- **Charge:** base launch speed is `670 × power` pixels/second, multiplied by
+  the weapon's launch scale. The former
   `130 + 540 × power` made a 5% tap launch at 157 px/s; it now launches at
-  33.5 px/s. Full charge remains 670 px/s. Mortar stays fixed at 580 px/s.
+  33.5 px/s for the rocket and grenade. Their full charge remains 670 px/s;
+  other thrown weapons use their profile's scale. Mortar stays fixed at 580 px/s.
   The host, bot and aim dots share the speed function. Short-lob dots stay near
   the muzzle and account for the host's discrete gravity/wind integration.
 - **Contacts:** projectile sweeps remain at most 1.5 pixels long. Contact is
@@ -85,9 +87,9 @@ sequence too subtle in play. This preview makes the reference motion explicit:
 - blast-propelled mines, crates and barrels wait 14–20 ticks before a triggered
   chain detonation. Direct gun ruptures keep their existing short fuse.
 
-Critter blasts retain their previous impulse scale because those weapons already
-have long remote flight budgets; the video-driven tuning applies to launchers,
-bouncing bombs and hazards.
+At this stage, critter blasts retained their previous impulse scale because
+those weapons already had long remote flight budgets. The full-arsenal pass
+below subsequently gave critters their own blast profiles.
 
 ## Full-arsenal retune
 
@@ -120,6 +122,9 @@ only the three weapons in the reference sequence.
 
 The profile table is checked against `Catalog::WEAPONS` in regression tests, so
 adding a selectable weapon without a physical contract fails the test suite.
+Some profiles, including rope, jetpack and non-projectile utilities, preserve
+their established constants or rules; coverage is not a claim that every item
+has changed motion.
 
 ## Verification and compatibility
 
@@ -146,7 +151,7 @@ An old online host still owns its original rules, even when joined from this app
 
 ## Mac playtest
 
-Use **Quick battle**, or create a match hosted by this preview build.
+Use **Quick battle**, or create a match hosted by 0.5.13.
 
 1. Compare a quick Space tap with a half and full charge of **Tick-tock**.
    Try one- and three-second fuses near a wall and on a slope.
@@ -158,5 +163,5 @@ Use **Quick battle**, or create a match hosted by this preview build.
 4. Check **Fruit salad**, **Choir bomb**, and **Velcro bomb** for their different
    rebound, rest/warning and attachment behavior. Resume an unfinished match.
 
-Check feel, balance, sound and smoothness on the physical Mac before accepting
-a release. This test build is ad-hoc signed and unnotarized like earlier previews.
+Check feel, balance, sound and smoothness on a physical Mac after installing.
+The Mac app is ad-hoc signed and unnotarized like earlier downloads.

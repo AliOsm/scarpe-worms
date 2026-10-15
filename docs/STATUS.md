@@ -1,8 +1,8 @@
 # Current status
 
-Updated **2026-10-15** · client **0.5.13 test preview** · published release **0.5.10** · protocol **4**.
+Updated **2026-10-15** · client **0.5.13 release candidate** · published release **0.5.10** · protocol **4**.
 
-## 0.5.13 full-arsenal weapon physics preview (unreleased)
+## 0.5.13 weapon physics release preparation
 
 The two supplied videos informed short charged throws, continuous rebounds,
 rolling, water skimming, and the separation between a crater, a launched grub,
@@ -10,9 +10,11 @@ its landing and a delayed prop chain. This pass applies that physical language
 to all 48 catalog entries through immutable profiles: launcher gravity and
 restitution, direct-hit push, close-attack impulses, sky-drop timing, critter
 movement, loose-prop mass, rope and jetpack motion, parachutes, and digging
-tools. Full-power reach, weapon damage and host ownership remain unchanged;
-low-power shots stay short and fused projectiles move on their last tick before
-exploding.
+tools. The base full-charge speed remains 670 px/s, with per-weapon launch
+scales; weapon damage and host ownership remain unchanged. Low-power shots
+stay short and fused projectiles move on their last tick before exploding.
+Some mobility, utility and weapon profiles preserve their existing constants;
+profile coverage does not mean every item has a new behavior.
 
 Linux passes 361 Ruby tests / 14,538 assertions and both native prediction and
 physics journeys. The Apple silicon preview is packaged and verified from
@@ -23,12 +25,14 @@ informational rendering benchmark has shared-runner outliers: combat peaks at
 73.82 ms and zoom-sweep at 127.96 ms; the workflow continued because those
 benchmarks are non-blocking and do not establish physical-Mac acceptance.
 
-This branch is for the owner's Mac playtest before release. No release tag,
-publication or production deployment is part of this preview. Protocol 4 and
-version-one saves remain supported. Physics belongs to the host: test in Quick
-battle or host with this build to exercise it. The new client uses the old power
-curve for aim dots when connected to a host without `physics_revision` metadata.
-The new host advertises `physics_revision: 3`.
+The owner authorized publication after the Mac preview. The release will build
+and validate fresh macOS, Windows, Linux and server packages from the tagged
+source, and deploy the updated hosted server. Publication and deployment
+results are pending. Protocol 4 and version-one saves remain supported.
+Physics belongs to the host: use Quick Battle or an updated host to exercise
+it. The new client uses the old power curve for aim dots when connected to a
+host without `physics_revision` metadata. The new host advertises
+`physics_revision: 3`.
 
 
 ## 0.5.10 two-finger camera panning
