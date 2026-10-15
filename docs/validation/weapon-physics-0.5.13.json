@@ -1,0 +1,110 @@
+{
+  "version": "0.5.13",
+  "status": "unreleased test build",
+  "date": "2026-10-15",
+  "source_commit": "ee079a03deff17cd2d0c530703e4976be45e6c41",
+  "physics_revision": 3,
+  "references": [
+    "https://www.youtube.com/shorts/KQJyX3acyPU",
+    "https://www.youtube.com/watch?v=EyrKBNpAMiI"
+  ],
+  "retune": {
+    "catalog_profiles": 48,
+    "profile_coverage": "Catalog::WEAPONS == Physics::WEAPON_PROFILES",
+    "families": [
+      "launchers and explosives",
+      "direct weapons",
+      "close attacks",
+      "sky weapons",
+      "critters",
+      "hazards and loose props",
+      "rope, jetpack, parachute and tools"
+    ]
+  },
+  "linux": {
+    "ruby": "4.0.7",
+    "core": {
+      "tests": 361,
+      "assertions": 14538,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "native": {
+      "checks/prediction.sspec": {
+        "status": "passed",
+        "journey": "delayed input, prediction and comparison switch"
+      },
+      "checks/physics.sspec": {
+        "status": "passed",
+        "journey": "short throw, wall rebound, water skim and far-bank impact"
+      }
+    },
+    "profile_regression": "Every catalog weapon has a frozen profile; direct and melee responses are distinct."
+  },
+  "macos": {
+    "target": "Apple silicon, macOS 13+",
+    "build": {
+      "status": "packaged and verified",
+      "workflow": "https://github.com/AliOsm/scarpe-worms/actions/runs/38802597969",
+      "runner": "macos-15-arm64",
+      "ruby": "4.0.7",
+      "archive": {
+        "name": "Burrow-Brigade-0.5.13-macos-arm64.zip",
+        "bytes": 51234611,
+        "sha256": "158974f8ec2e8c801b37b94f0d5435e2557317d48f61ad120ec78b6df7f0d3a0",
+        "artifact": "https://github.com/AliOsm/scarpe-worms/actions/runs/38802597969/artifacts/12005831168"
+      },
+      "verification": {
+        "native_checks": "passed: prediction and physics journeys on the Apple silicon package",
+        "ruby_tests": {
+          "runs": 361,
+          "assertions": 14538,
+          "failures": 0,
+          "errors": 0
+        },
+        "signature": {
+          "codesign": "passed",
+          "architecture": "arm64",
+          "minimum_macos": "13.0",
+          "macho_binaries": 96,
+          "resource_hashes_checked": 3296,
+          "adhoc_code_hashes_verified": true,
+          "notarized": false
+        },
+        "packaged_gameplay": "passed: menu, three-team bot match, input, clean quit, Unicode paths, C locale, resize and saved-match recovery",
+        "audio": "passed: CoreAudio/OpenAL playback, panning, mute, resume and 76 cues"
+      },
+      "informational_benchmarks": {
+        "waits": {
+          "outcome": "passed",
+          "backend": "KqueueTimer",
+          "deadline_mean_ms": 11.3398,
+          "deadline_p95_ms": 14.582,
+          "deadline_max_ms": 15.232
+        },
+        "rendering": {
+          "outcome": "informational gate failed; workflow continued",
+          "combat_mean_ms": 16.2646,
+          "combat_p95_ms": 21.1464,
+          "combat_max_ms": 73.8218,
+          "pan_mean_ms": 16.674,
+          "pan_p95_ms": 19.2814,
+          "zoom_sweep_max_ms": 127.9639,
+          "note": "The shared runner exceeded the 60 ms combat gate and zoom-sweep budget; required gameplay and package checks passed. This is not physical Mac acceptance."
+        }
+      }
+    },
+    "physical_playtest": "pending owner acceptance"
+  },
+  "release": {
+    "published": false,
+    "tag_created": false,
+    "production_deployed": false
+  },
+  "compatibility": {
+    "protocol": 4,
+    "checkpoint": 1,
+    "optional_snapshot_physics_revision": 3
+  }
+}

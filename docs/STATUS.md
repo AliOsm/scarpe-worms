@@ -14,11 +14,14 @@ tools. Full-power reach, weapon damage and host ownership remain unchanged;
 low-power shots stay short and fused projectiles move on their last tick before
 exploding.
 
-Linux passes 361 Ruby tests / 14,538 assertions in this source pass; the native
-physics journey is still required before packaging. The Apple silicon preview
-will be built and verified from the final immutable commit in the Package macOS
-workflow. The archive checksum and runner evidence will be recorded in
-[the validation report](validation/weapon-physics-0.5.13.json).
+Linux passes 361 Ruby tests / 14,538 assertions and both native prediction and
+physics journeys. The Apple silicon preview is packaged and verified from
+immutable commit `ee079a0` in the [Package macOS workflow](https://github.com/AliOsm/scarpe-worms/actions/runs/38802597969).
+The archive checksum and runner evidence are recorded in
+[the validation report](validation/weapon-physics-0.5.13.json). Its
+informational rendering benchmark has shared-runner outliers: combat peaks at
+73.82 ms and zoom-sweep at 127.96 ms; the workflow continued because those
+benchmarks are non-blocking and do not establish physical-Mac acceptance.
 
 This branch is for the owner's Mac playtest before release. No release tag,
 publication or production deployment is part of this preview. Protocol 4 and
